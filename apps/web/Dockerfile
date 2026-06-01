@@ -15,7 +15,8 @@ RUN npm ci
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY --from=deps /app/node_modules       ./node_modules
+COPY --from=deps /app/node_modules          ./node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 
 COPY packages/shared/ ./packages/shared/
 COPY apps/web/        ./apps/web/
@@ -24,7 +25,7 @@ COPY package.json     ./
 ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app/apps/web
-RUN node /app/node_modules/.bin/next build
+RUN node node_modules/next/dist/bin/next build
 
 # ── Production stage ──────────────────────────────────────
 FROM node:20-alpine AS runner
