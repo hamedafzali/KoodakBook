@@ -25,7 +25,7 @@ COPY package.json     ./
 ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app/apps/web
-RUN node node_modules/next/dist/bin/next build
+RUN node node_modules/next/dist/bin/next build --webpack
 
 # ── Production stage ──────────────────────────────────────
 FROM node:20-alpine AS runner
