@@ -3,8 +3,11 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-COPY packages/shared/package.json ./packages/shared/
+COPY packages/shared/package.json  ./packages/shared/
 COPY apps/web/package.json         ./apps/web/
+COPY apps/backend/package.json     ./apps/backend/
+COPY apps/admin/package.json       ./apps/admin/
+COPY apps/mobile/package.json      ./apps/mobile/
 
 RUN npm ci
 
