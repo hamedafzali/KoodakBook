@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.gitignore
+*.md
+!apps/mobile/README.md
+doc
+uploads
+.env
+**/.env
+**/.env.local

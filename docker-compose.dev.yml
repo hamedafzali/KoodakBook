@@ -1,0 +1,89 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB:       koodakbook
+      POSTGRES_USER:     koodakbook
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./supabase/migrations/001_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./supabase/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U koodakbook"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: node:20-alpine
+    working_dir: /app
+    # only install if node_modules is missing, then watch source
+    command: sh -c "[ ! -f node_modules/.package-lock.json ] && npm install; npx tsx watch apps/backend/src/index.ts"
+    environment:
+      PORT:           4000
+      DATABASE_URL:   postgres://koodakbook:secret@db:5432/koodakbook
+      JWT_SECRET:     dev_secret_change_in_production
+      JWT_EXPIRES_IN: 30d
+      WEB_URL:        http://localhost:3000
+      ADMIN_URL:      http://localhost:3001
+      UPLOADS_DIR:    /app/uploads
+      ADMIN_EMAIL:    admin@koodakbook.com
+      ADMIN_PASSWORD: admin123
+    volumes:
+      - .:/app                              # source — live edits reflected immediately
+      - backend_node_modules:/app/node_modules   # persists between restarts
+      - uploads_dev:/app/uploads
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "[ ! -f node_modules/.package-lock.json ] && npm install; npm run dev --workspace=@koodakbook/web"
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:4000
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - .:/app                                        # source — live edits reflected immediately
+      - web_node_modules:/app/node_modules            # persists between restarts
+      - web_app_node_modules:/app/apps/web/node_modules  # prevent host stale modules leaking in
+      - web_next_cache:/app/apps/web/.next            # persists Next.js build cache
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  admin:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "[ ! -f node_modules/.package-lock.json ] && npm install; npm run dev --workspace=@koodakbook/admin"
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:4000
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - .:/app
+      - admin_node_modules:/app/node_modules
+      - admin_app_node_modules:/app/apps/admin/node_modules
+      - admin_next_cache:/app/apps/admin/.next
+    ports:
+      - "127.0.0.1:3001:3001"   # localhost only — not exposed to network
+    depends_on:
+      - backend
+
+volumes:
+  postgres_dev_data:
+  uploads_dev:
+  backend_node_modules:
+  web_node_modules:
+  web_app_node_modules:
+  web_next_cache:
+  admin_node_modules:
+  admin_app_node_modules:
+  admin_next_cache:

@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+  --font-vazirmatn: 'Vazirmatn', sans-serif;
+}
+
+@theme inline {
+  --font-sans: var(--font-vazirmatn);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  direction: rtl;
+  font-family: var(--font-vazirmatn), sans-serif;
+}
+
+.ltr {
+  direction: ltr;
+}
+
+.persian-text {
+  line-height: 1.8;
+}
