@@ -19,9 +19,9 @@ COPY apps/web/        ./apps/web/
 COPY package.json     ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PATH=/app/node_modules/.bin:$PATH
 
-RUN npm run build --workspace=@koodakbook/web
+WORKDIR /app/apps/web
+RUN node /app/node_modules/.bin/next build
 
 # ── Production stage ──────────────────────────────────────
 FROM node:20-alpine AS runner
