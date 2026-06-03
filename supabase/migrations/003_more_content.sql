@@ -196,7 +196,8 @@ where l.title = 'Greetings' and w.english in ('hello','goodbye','thank you','yes
 insert into badges (key, title, description) values
   ('words_25',    'Word Master!',     'Learned 25 Persian words'),
   ('stories_3',   'Book Lover!',      'Read 3 Persian stories'),
-  ('lessons_5',   'Star Student!',    'Completed 5 lessons');
+  ('lessons_5',   'Star Student!',    'Completed 5 lessons')
+  on conflict (key) do nothing;
 
 -- ═══════════════════════════════════════════════════════════
 -- New Stories

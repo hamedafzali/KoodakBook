@@ -3,7 +3,7 @@ create extension if not exists "pgcrypto";
 
 -- ── Users ─────────────────────────────────────────────────
 
-create table users (
+create table if not exists users (
   id            uuid primary key default gen_random_uuid(),
   email         text unique not null,
   password_hash text not null,
@@ -12,7 +12,7 @@ create table users (
 
 -- ── Content tables ────────────────────────────────────────
 
-create table words (
+create table if not exists words (
   id            uuid primary key default gen_random_uuid(),
   persian       text not null,
   english       text not null,
@@ -23,7 +23,7 @@ create table words (
   image_url     text
 );
 
-create table letters (
+create table if not exists letters (
   id              uuid primary key default gen_random_uuid(),
   character       text not null,
   name_persian    text not null,
@@ -34,7 +34,7 @@ create table letters (
   example_word_id uuid references words(id)
 );
 
-create table lessons (
+create table if not exists lessons (
   id            uuid primary key default gen_random_uuid(),
   title         text not null,
   type          text not null check (type in ('vocabulary','alphabet','phonics')),
@@ -44,7 +44,7 @@ create table lessons (
   thumbnail_url text
 );
 
-create table lesson_items (
+create table if not exists lesson_items (
   id          uuid primary key default gen_random_uuid(),
   lesson_id   uuid not null references lessons(id) on delete cascade,
   item_type   text not null check (item_type in ('word','letter')),
@@ -53,7 +53,7 @@ create table lesson_items (
   order_index int not null
 );
 
-create table stories (
+create table if not exists stories (
   id              uuid primary key default gen_random_uuid(),
   title_persian   text not null,
   title_english   text not null,
@@ -66,7 +66,7 @@ create table stories (
   created_at      timestamptz not null default now()
 );
 
-create table story_pages (
+create table if not exists story_pages (
   id            uuid primary key default gen_random_uuid(),
   story_id      uuid not null references stories(id) on delete cascade,
   page_number   int not null,
@@ -76,14 +76,14 @@ create table story_pages (
   audio_url     text
 );
 
-create table story_page_words (
+create table if not exists story_page_words (
   id        uuid primary key default gen_random_uuid(),
   page_id   uuid not null references story_pages(id) on delete cascade,
   word_id   uuid not null references words(id),
   position  int not null
 );
 
-create table badges (
+create table if not exists badges (
   id          uuid primary key default gen_random_uuid(),
   key         text unique not null,
   title       text not null,
@@ -93,7 +93,7 @@ create table badges (
 
 -- ── Child tables ──────────────────────────────────────────
 
-create table children (
+create table if not exists children (
   id          uuid primary key default gen_random_uuid(),
   parent_id   uuid not null references users(id) on delete cascade,
   name        text not null,
@@ -105,7 +105,7 @@ create table children (
 
 -- ── Progress tables ───────────────────────────────────────
 
-create table child_sessions (
+create table if not exists child_sessions (
   id           uuid primary key default gen_random_uuid(),
   child_id     uuid not null references children(id) on delete cascade,
   started_at   timestamptz not null default now(),
@@ -113,7 +113,7 @@ create table child_sessions (
   duration_sec int
 );
 
-create table child_word_progress (
+create table if not exists child_word_progress (
   id             uuid primary key default gen_random_uuid(),
   child_id       uuid not null references children(id) on delete cascade,
   word_id        uuid not null references words(id),
@@ -124,7 +124,7 @@ create table child_word_progress (
   unique (child_id, word_id)
 );
 
-create table child_lesson_progress (
+create table if not exists child_lesson_progress (
   id           uuid primary key default gen_random_uuid(),
   child_id     uuid not null references children(id) on delete cascade,
   lesson_id    uuid not null references lessons(id),
@@ -134,7 +134,7 @@ create table child_lesson_progress (
   unique (child_id, lesson_id)
 );
 
-create table child_story_progress (
+create table if not exists child_story_progress (
   id           uuid primary key default gen_random_uuid(),
   child_id     uuid not null references children(id) on delete cascade,
   story_id     uuid not null references stories(id),
@@ -145,7 +145,7 @@ create table child_story_progress (
   unique (child_id, story_id)
 );
 
-create table child_badges (
+create table if not exists child_badges (
   id         uuid primary key default gen_random_uuid(),
   child_id   uuid not null references children(id) on delete cascade,
   badge_id   uuid not null references badges(id),
@@ -155,12 +155,12 @@ create table child_badges (
 
 -- ── Indexes ───────────────────────────────────────────────
 
-create index on users (email);
-create index on children (parent_id);
-create index on child_sessions (child_id);
-create index on child_word_progress (child_id);
-create index on child_lesson_progress (child_id);
-create index on child_story_progress (child_id);
-create index on child_badges (child_id);
-create index on story_pages (story_id);
-create index on lesson_items (lesson_id);
+create index if not exists idx_users_email                 on users (email);
+create index if not exists idx_children_parent_id          on children (parent_id);
+create index if not exists idx_child_sessions_child_id     on child_sessions (child_id);
+create index if not exists idx_child_word_prog_child_id    on child_word_progress (child_id);
+create index if not exists idx_child_lesson_prog_child_id  on child_lesson_progress (child_id);
+create index if not exists idx_child_story_prog_child_id   on child_story_progress (child_id);
+create index if not exists idx_child_badges_child_id       on child_badges (child_id);
+create index if not exists idx_story_pages_story_id        on story_pages (story_id);
+create index if not exists idx_lesson_items_lesson_id      on lesson_items (lesson_id);
