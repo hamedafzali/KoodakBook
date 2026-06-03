@@ -1,7 +1,8 @@
 import { ApiResponse } from '@koodakbook/shared'
 import { getToken } from './auth'
 
-const BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000'
+// Relative base: Next.js rewrites /api/* → backend, so no host needed
+const BASE = ''
 
 async function request<T>(path: string, options?: RequestInit): Promise<ApiResponse<T>> {
   const token = getToken()

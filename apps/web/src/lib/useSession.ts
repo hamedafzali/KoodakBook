@@ -3,8 +3,6 @@ import { useEffect, useRef } from 'react'
 import { api } from './api'
 import { getToken } from './auth'
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000'
-
 export function useChildSession(childId: string | null) {
   const sessionId = useRef<string | null>(null)
 
@@ -17,13 +15,10 @@ export function useChildSession(childId: string | null) {
 
     function endSession() {
       if (!sessionId.current) return
-      // sendBeacon is reliable during page unload — no fetch
-      const token = getToken()
-      const url = `${BACKEND}/api/progress/sessions/${sessionId.current}/end`
+      // sendBeacon with relative URL — works because Next.js proxies /api/* to backend
+      const url = `/api/progress/sessions/${sessionId.current}/end`
       if (navigator.sendBeacon) {
         const blob = new Blob([JSON.stringify({})], { type: 'application/json' })
-        // sendBeacon doesn't support custom headers — use fetch for normal navigation
-        // and sendBeacon as fallback for unload
         navigator.sendBeacon(url, blob)
       }
       sessionId.current = null

@@ -44,9 +44,9 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
-      args:
-        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:4000}
     restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:4000
     ports:
       - "3002:3001"
     depends_on:
@@ -56,9 +56,9 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      args:
-        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:4000}
     restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:4000
     ports:
       - "3001:3000"
     depends_on:

@@ -9,8 +9,6 @@ interface Props {
   currentUrl?: string | null
 }
 
-const BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000'
-
 export default function FileUpload({ type, onUploaded, label, currentUrl }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -26,7 +24,7 @@ export default function FileUpload({ type, onUploaded, label, currentUrl }: Prop
     const form = new FormData()
     form.append('file', file)
 
-    const res = await fetch(`${BASE}/api/admin/upload/${type}`, {
+    const res = await fetch(`/api/admin/upload/${type}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${getToken()}` },
       body: form,
@@ -48,10 +46,10 @@ export default function FileUpload({ type, onUploaded, label, currentUrl }: Prop
           {uploading ? 'در حال آپلود...' : '📎 انتخاب فایل'}
         </button>
         {preview && type === 'audio' && (
-          <audio controls src={preview.startsWith('http') ? preview : `${BASE}${preview}`} className="h-8 ltr" />
+          <audio controls src={preview} className="h-8 ltr" />
         )}
         {preview && type === 'images' && (
-          <img src={preview.startsWith('http') ? preview : `${BASE}${preview}`} className="h-12 w-12 object-cover rounded-lg" alt="" />
+          <img src={preview} className="h-12 w-12 object-cover rounded-lg" alt="" />
         )}
         {preview && !['audio','images'].includes(type) && (
           <span className="text-xs text-green-600">✓ آپلود شد</span>

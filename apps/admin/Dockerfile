@@ -16,9 +16,6 @@ COPY packages/shared/ ./packages/shared/
 COPY apps/admin/      ./apps/admin/
 COPY package.json     ./
 ENV NEXT_TELEMETRY_DISABLED=1
-# Receive backend URL at build time so Next.js bakes it into the bundle
-ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
-ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 WORKDIR /app/apps/admin
 RUN node node_modules/next/dist/bin/next build --webpack
 

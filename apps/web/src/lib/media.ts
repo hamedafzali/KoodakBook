@@ -1,7 +1,6 @@
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:4000'
-
+// Upload URLs are relative paths (/uploads/...) — proxied through Next.js
+// to the backend. Absolute URLs (http://...) are passed through unchanged.
 export function mediaUrl(url: string | null | undefined): string | null {
   if (!url) return null
-  if (url.startsWith('http')) return url
-  return `${BACKEND}${url}`
+  return url
 }
