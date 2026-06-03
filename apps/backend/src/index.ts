@@ -17,40 +17,33 @@ const app = express()
 const PORT = process.env.PORT ?? 4000
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
-// Build allowed origins: explicit env vars + derive admin URL from WEB_URL if not set
-function buildAllowedOrigins(): string[] {
-  const origins = new Set<string>()
+// Explicitly configured origins
+const explicitOrigins = new Set<string>(
+  [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    process.env.WEB_URL,
+    process.env.ADMIN_URL,
+  ].filter(Boolean) as string[]
+)
 
-  // Always allow localhost variants for local dev
-  origins.add('http://localhost:3000')
-  origins.add('http://localhost:3001')
-  origins.add('http://localhost:3002')
+// Allow any origin on the standard app ports (3000-3002) so LAN access via
+// any hostname or IP works without needing to configure every variation.
+const APP_PORTS = new Set(['3000', '3001', '3002'])
 
-  const webUrl   = process.env.WEB_URL
-  const adminUrl = process.env.ADMIN_URL
-
-  if (webUrl)   origins.add(webUrl)
-  if (adminUrl) origins.add(adminUrl)
-
-  // If ADMIN_URL not set but WEB_URL is, derive admin URL by replacing the port
-  if (webUrl && !adminUrl) {
-    try {
-      const u = new URL(webUrl)
-      u.port = '3002'
-      origins.add(u.toString().replace(/\/$/, ''))
-      u.port = '3001'
-      origins.add(u.toString().replace(/\/$/, ''))
-    } catch { /* ignore malformed URL */ }
-  }
-
-  return [...origins]
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true  // same-origin / server-to-server
+  if (explicitOrigins.has(origin)) return true
+  try {
+    const port = new URL(origin).port
+    if (APP_PORTS.has(port)) return true
+  } catch { /* malformed origin */ }
+  return false
 }
 
-const allowedOrigins = buildAllowedOrigins()
-console.log('CORS allowed origins:', allowedOrigins.join(', '))
-
 app.use(cors({
-  origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)),
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
   credentials: true,
 }))
 app.use(express.json())
