@@ -39,7 +39,7 @@ create table if not exists lessons (
   title         text not null,
   type          text not null check (type in ('vocabulary','alphabet','phonics')),
   stage         int not null,
-  order_index   int not null unique,
+  order_index   int not null,
   description   text,
   thumbnail_url text
 );
@@ -56,7 +56,7 @@ create table if not exists lesson_items (
 create table if not exists stories (
   id              uuid primary key default gen_random_uuid(),
   title_persian   text not null,
-  title_english   text not null unique,
+  title_english   text not null,
   stage           int not null,
   age_min         int,
   age_max         int,
@@ -152,6 +152,11 @@ create table if not exists child_badges (
   earned_at  timestamptz not null default now(),
   unique (child_id, badge_id)
 );
+
+-- ── Unique constraints (separate ALTER so they survive IF NOT EXISTS table skips) ──
+
+alter table stories add constraint if not exists stories_title_english_key unique (title_english);
+alter table lessons add constraint if not exists lessons_order_index_key   unique (order_index);
 
 -- ── Indexes ───────────────────────────────────────────────
 
