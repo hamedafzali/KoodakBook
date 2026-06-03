@@ -153,10 +153,10 @@ create table if not exists child_badges (
   unique (child_id, badge_id)
 );
 
--- ── Unique constraints (separate ALTER so they survive IF NOT EXISTS table skips) ──
+-- ── Unique indexes ────────────────────────────────────────
 
-alter table stories add constraint if not exists stories_title_english_key unique (title_english);
-alter table lessons add constraint if not exists lessons_order_index_key   unique (order_index);
+create unique index if not exists stories_title_english_key on stories (title_english);
+create unique index if not exists lessons_order_index_key   on lessons (order_index);
 
 -- ── Indexes ───────────────────────────────────────────────
 
