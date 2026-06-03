@@ -13,21 +13,49 @@ interface Props {
 
 export default function RewardPopup({ badge, onClose }: Props) {
   const closed = useRef(false)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     playComplete()
 
-    // burst confetti
     const burst = () => {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.55 }, colors: ['#f97316','#eab308','#22c55e','#3b82f6','#ec4899'] })
       confetti({ particleCount: 40, spread: 120, origin: { y: 0.55 }, startVelocity: 20, colors: ['#fbbf24','#fb923c','#f43f5e'] })
     }
     burst()
     const t2 = setTimeout(burst, 600)
-    const t3 = setTimeout(() => { if (!closed.current) onClose() }, 5000)
+    const t3 = setTimeout(() => { if (!closed.current) handleClose() }, 5000)
 
-    return () => { clearTimeout(t2); clearTimeout(t3) }
-  }, [onClose])
+    /* Focus the close button for keyboard users */
+    const tf = setTimeout(() => closeButtonRef.current?.focus(), 300)
+
+    return () => { clearTimeout(t2); clearTimeout(t3); clearTimeout(tf) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /* Trap focus inside the dialog */
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') { handleClose(); return }
+      if (e.key !== 'Tab') return
+      const el = dialogRef.current
+      if (!el) return
+      const focusable = el.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus() }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleClose() {
     closed.current = true
@@ -42,8 +70,13 @@ export default function RewardPopup({ badge, onClose }: Props) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={handleClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reward-title"
+        aria-describedby="reward-desc"
       >
         <motion.div
+          ref={dialogRef}
           className="bg-white rounded-[2rem] p-8 max-w-xs w-full text-center shadow-2xl"
           initial={{ scale: 0.3, opacity: 0, rotate: -10 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
@@ -64,11 +97,13 @@ export default function RewardPopup({ badge, onClose }: Props) {
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.3 }}
             className="text-6xl mb-3"
+            aria-hidden="true"
           >
             🏆
           </motion.div>
 
           <motion.h2
+            id="reward-title"
             className="text-2xl font-bold text-amber-600 mb-1"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -78,7 +113,8 @@ export default function RewardPopup({ badge, onClose }: Props) {
           </motion.h2>
 
           <motion.p
-            className="text-gray-500 text-sm mb-6"
+            id="reward-desc"
+            className="text-gray-500 text-sm mb-6 persian-text"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
@@ -87,8 +123,9 @@ export default function RewardPopup({ badge, onClose }: Props) {
           </motion.p>
 
           <motion.button
+            ref={closeButtonRef}
             onClick={handleClose}
-            className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 px-8 rounded-2xl text-lg shadow-md w-full"
+            className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 px-8 rounded-[1.25rem] text-lg shadow-md w-full min-h-[52px] touch-target"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.96 }}
             initial={{ opacity: 0, y: 10 }}

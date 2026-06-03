@@ -1,13 +1,66 @@
 @import "tailwindcss";
 
-:root {
-  --font-vazirmatn: 'Vazirmatn', sans-serif;
-}
-
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
 @theme inline {
+  /* Fonts */
+  --font-persian: 'Vazirmatn', sans-serif;
+  --font-vazirmatn: 'Vazirmatn', sans-serif;
   --font-sans: var(--font-vazirmatn);
+
+  /* Brand — Saffron */
+  --color-brand:         #D4871A;
+  --color-brand-mid:     #F5A623;
+  --color-brand-light:   #FEF3C7;
+  --color-brand-pale:    #FFFBF0;
+
+  /* Child Activity Colors */
+  --color-lesson:        #E63946;   /* Pomegranate  — lessons     */
+  --color-alphabet:      #1D6FA4;   /* Persian Blue — alphabet    */
+  --color-story:         #2A9D5C;   /* Emerald      — stories     */
+  --color-reward:        #7B4EA0;   /* Violet       — rewards     */
+  --color-phonics:       #D4521A;   /* Burnt orange — phonics     */
+
+  /* Semantic */
+  --color-success:       #16A34A;
+  --color-warning:       #D97706;
+  --color-error:         #DC2626;
+  --color-info:          #2563EB;
+
+  /* Neutral — Warm */
+  --color-warm-white:    #FEFAF5;
+  --color-surface:       #FFFFFF;
+  --color-surface-subtle:#F5EFE6;
+  --color-border:        #E8DDD0;
+  --color-text-primary:  #3D3028;
+  --color-text-secondary:#9E8E7E;
+  --color-text-disabled: #C5B8AC;
+
+  /* Parent App — Slate */
+  --color-parent-bg:     #F1F5F9;
+  --color-parent-surface:#FFFFFF;
+  --color-parent-text:   #0F1F3D;
+  --color-parent-muted:  #475569;
+
+  /* Border Radius */
+  --radius-sm:  0.75rem;   /* 12px — inputs, chips, tags */
+  --radius-md:  1.25rem;   /* 20px — buttons, small cards */
+  --radius-lg:  1.75rem;   /* 28px — cards */
+  --radius-xl:  2.5rem;    /* 40px — modals, hero */
+  --radius-pill: 9999px;
+
+  /* Shadows */
+  --shadow-1: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-2: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-3: 0 8px 24px rgba(0,0,0,0.14);
+  --shadow-4: 0 20px 60px rgba(0,0,0,0.22);
+
+  /* Spacing */
+  --space-page-x:  1rem;
+  --space-section: 1.75rem;
+  --space-card:    1.25rem;
 }
 
+/* ── Base ──────────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -15,12 +68,88 @@
 body {
   direction: rtl;
   font-family: var(--font-vazirmatn), sans-serif;
+  background-color: var(--color-warm-white);
+  color: var(--color-text-primary);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
+/* ── Reduced Motion ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Direction Utilities ────────────────────────────────────────────────────── */
 .ltr {
   direction: ltr;
+  text-align: left;
 }
 
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+/* ── Typography Utilities ───────────────────────────────────────────────────── */
 .persian-text {
   line-height: 1.8;
+  font-family: var(--font-vazirmatn), sans-serif;
 }
+
+.persian-body {
+  font-size: 1.125rem;   /* 18px */
+  line-height: 1.8;
+}
+
+.persian-body-lg {
+  font-size: 1.25rem;    /* 20px — minimum for child reading */
+  line-height: 1.8;
+}
+
+/* ── Safe Area ─────────────────────────────────────────────────────────────── */
+.safe-bottom {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.pb-nav {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ── Focus ─────────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── Touch Targets ─────────────────────────────────────────────────────────── */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ── Child App Background ──────────────────────────────────────────────────── */
+.child-bg {
+  background: linear-gradient(160deg, #FFFBF0 0%, #FFF5E0 100%);
+}
+
+/* ── Card Base ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+}
+
+/* ── Gradient Backgrounds per Activity ─────────────────────────────────────── */
+.grad-lesson   { background: linear-gradient(135deg, #E63946, #F4695C); }
+.grad-alphabet { background: linear-gradient(135deg, #1D6FA4, #3B9ED0); }
+.grad-story    { background: linear-gradient(135deg, #2A9D5C, #48C78A); }
+.grad-reward   { background: linear-gradient(135deg, #7B4EA0, #A67BC6); }
+.grad-phonics  { background: linear-gradient(135deg, #D4521A, #F07044); }
+.grad-brand    { background: linear-gradient(135deg, #F5A623, #F07044); }

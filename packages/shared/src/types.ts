@@ -147,6 +147,9 @@ export type BadgeKey =
   | 'lessons_5'
   | 'streak_7'
   | 'all_alphabet'
+  | 'tried_today'
+  | 'practiced_again'
+  | 'streak_3'
 
 export interface Badge {
   id: string

@@ -2,17 +2,21 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
+import BottomNav from '@/components/child/BottomNav'
+import PageHeader from '@/components/child/PageHeader'
+import LoadingScreen from '@/components/child/LoadingScreen'
+import EmptyState from '@/components/child/EmptyState'
+import { LESSON_TYPE_EMOJI, LESSON_TYPE_LABEL } from '@koodakbook/shared'
 import type { Lesson, Child } from '@koodakbook/shared'
-
-const TYPE_EMOJI: Record<string, string> = { vocabulary: '📚', alphabet: '🔤', phonics: '🎵' }
-const TYPE_LABEL: Record<string, string> = { vocabulary: 'واژگان', alphabet: 'الفبا', phonics: 'آواشناسی' }
 
 export default function LessonListPage() {
   const router = useRouter()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [progress, setProgress] = useState<Record<string, boolean>>({})
+  const [childLevel, setChildLevel] = useState<number>(4)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -24,6 +28,7 @@ export default function LessonListPage() {
       ])
       if (lessonsRes.data) setLessons(lessonsRes.data)
       if (childRes.data?.[0]) {
+        setChildLevel(childRes.data[0].level ?? 4)
         const progRes = await api.get<{ lessons: { lesson_id: string; completed: boolean }[] }>(
           `/api/progress/${childRes.data[0].id}`
         )
@@ -43,38 +48,79 @@ export default function LessonListPage() {
     return acc
   }, {})
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500">در حال بارگذاری...</div>
+  if (loading) return <LoadingScreen message="در حال بارگذاری درس‌ها..." />
 
   return (
-    <div className="min-h-screen bg-amber-50 pb-24">
-      <div className="bg-gradient-to-br from-amber-400 to-orange-500 px-6 pt-10 pb-6 rounded-b-3xl text-white">
-        <button onClick={() => router.back()} className="text-amber-100 mb-3 block">← برگشت</button>
-        <h1 className="text-2xl font-bold">همه درس‌ها 📚</h1>
-        <p className="text-amber-100 text-sm mt-1">{lessons.length} درس موجود است</p>
-      </div>
+    <div className="min-h-screen child-bg pb-nav">
+      <PageHeader
+        title="همه درس‌ها 📚"
+        subtitle={`${lessons.length} درس موجود است`}
+        gradientClass="from-amber-400 to-orange-500"
+      />
 
-      <div className="px-4 pt-6 space-y-6">
+      <div className="px-4 pt-5 space-y-6">
+        {Object.keys(grouped).length === 0 && (
+          <EmptyState
+            message="هنوز درسی اضافه نشده"
+            subMessage="به زودی درس‌های جدید اضافه می‌شود!"
+          />
+        )}
+
         {Object.entries(grouped).map(([type, items]) => (
-          <section key={type}>
-            <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-              <span className="text-xl">{TYPE_EMOJI[type]}</span>
-              {TYPE_LABEL[type] ?? type}
+          <section key={type} aria-labelledby={`section-${type}`}>
+            <h2 id={`section-${type}`} className="font-bold text-gray-700 mb-3 flex items-center gap-2 text-base">
+              <span aria-hidden="true" className="text-xl">{LESSON_TYPE_EMOJI[type]}</span>
+              {LESSON_TYPE_LABEL[type] ?? type}
             </h2>
-            <div className="space-y-2">
+            <div className="space-y-2" role="list" aria-label={`درس‌های ${LESSON_TYPE_LABEL[type] ?? type}`}>
               {items.map(lesson => {
                 const done = progress[lesson.id]
+                const locked = lesson.stage > childLevel
                 return (
-                  <Link key={lesson.id} href={`/child/lesson/${lesson.id}`}
-                    className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${done ? 'bg-green-100' : 'bg-amber-100'}`}>
-                      {done ? '✅' : TYPE_EMOJI[lesson.type]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-800">{lesson.title}</p>
-                      {lesson.description && <p className="text-xs text-gray-400 truncate">{lesson.description}</p>}
-                    </div>
-                    <span className="text-gray-300 flex-shrink-0">←</span>
-                  </Link>
+                  <motion.div
+                    key={lesson.id}
+                    role="listitem"
+                    whileTap={locked ? {} : { scale: 0.98 }}
+                  >
+                    {locked ? (
+                      <div
+                        className="flex items-center gap-4 bg-white/50 rounded-[1.25rem] p-4 opacity-60 cursor-not-allowed"
+                        aria-label={`${lesson.title} — قفل شده، مرحله ${lesson.stage} لازم است`}
+                      >
+                        <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0 bg-gray-100">
+                          🔒
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-500">{lesson.title}</p>
+                          <p className="text-xs text-gray-400">مرحله {lesson.stage} لازم است</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <Link
+                        href={`/child/lesson/${lesson.id}`}
+                        aria-label={`${lesson.title}${done ? ' — تمام شده' : ''}`}
+                        className="flex items-center gap-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${done ? 'bg-green-100' : 'bg-amber-100'}`}>
+                          {done ? '✅' : LESSON_TYPE_EMOJI[lesson.type]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-800">{lesson.title}</p>
+                          {lesson.description && (
+                            <p className="text-sm text-gray-400 truncate mt-0.5">{lesson.description}</p>
+                          )}
+                        </div>
+                        <svg
+                          aria-hidden="true"
+                          className="w-5 h-5 text-gray-300 flex-shrink-0"
+                          fill="none" stroke="currentColor" strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </Link>
+                    )}
+                  </motion.div>
                 )
               })}
             </div>
@@ -82,12 +128,7 @@ export default function LessonListPage() {
         ))}
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-3 px-4">
-        <Link href="/child/home"    className="flex flex-col items-center gap-1 text-gray-400"><span className="text-2xl">🏠</span><span className="text-xs">خانه</span></Link>
-        <Link href="/child/lesson"  className="flex flex-col items-center gap-1 text-amber-600"><span className="text-2xl">📚</span><span className="text-xs font-medium">درس‌ها</span></Link>
-        <Link href="/child/story"   className="flex flex-col items-center gap-1 text-gray-400"><span className="text-2xl">📖</span><span className="text-xs">داستان</span></Link>
-        <Link href="/child/rewards" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-2xl">🏆</span><span className="text-xs">جوایز</span></Link>
-      </nav>
+      <BottomNav />
     </div>
   )
 }

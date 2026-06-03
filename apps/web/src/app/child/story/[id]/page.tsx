@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import StoryReader from '@/components/child/StoryReader'
 import RewardPopup from '@/components/child/RewardPopup'
+import LoadingScreen from '@/components/child/LoadingScreen'
 import type { Story, StoryPage, Badge, Child } from '@koodakbook/shared'
 
 type FullStory = Story & { pages: StoryPage[] }
@@ -45,19 +46,37 @@ export default function StoryPage() {
     else router.push('/child/home')
   }
 
-  if (!story) return <div className="min-h-screen flex items-center justify-center text-gray-500">در حال بارگذاری...</div>
+  if (!story) return <LoadingScreen message="در حال بارگذاری داستان..." />
 
   return (
     <>
       {newBadge && <RewardPopup badge={newBadge} onClose={() => router.push('/child/home')} />}
-      <div className="fixed top-4 left-4 z-10 flex items-center gap-2 bg-white rounded-full px-3 py-1.5 shadow text-sm">
-        <span>ترجمه</span>
-        <button onClick={() => setShowBilingual(v => !v)}
-          className={`w-10 h-6 rounded-full transition ${showBilingual ? 'bg-amber-500' : 'bg-gray-300'}`}>
-          <span className={`block w-4 h-4 bg-white rounded-full shadow transition-transform mx-1 ${showBilingual ? 'translate-x-4' : 'translate-x-0'}`} />
+
+      {/* Translation toggle — correctly positioned at end-side in RTL (right edge) */}
+      <div className="fixed top-4 right-4 z-20 flex items-center gap-2 bg-white/95 backdrop-blur rounded-full px-3 py-2 shadow-md text-sm">
+        <span className="text-gray-600 text-xs font-medium">ترجمه</span>
+        <button
+          onClick={() => setShowBilingual(v => !v)}
+          role="switch"
+          aria-checked={showBilingual}
+          aria-label={showBilingual ? 'غیرفعال کردن ترجمه' : 'فعال کردن ترجمه'}
+          className={`w-11 h-6 rounded-full transition-colors relative ${showBilingual ? 'bg-amber-500' : 'bg-gray-300'}`}
+        >
+          <span
+            className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
+              showBilingual ? 'right-1' : 'right-6'
+            }`}
+          />
         </button>
       </div>
-      <StoryReader story={story} showBilingual={showBilingual} onPageChange={handlePageChange} onComplete={handleComplete} />
+
+      <StoryReader
+        story={story}
+        showBilingual={showBilingual}
+        onBack={() => router.push('/child/story')}
+        onPageChange={handlePageChange}
+        onComplete={handleComplete}
+      />
     </>
   )
 }

@@ -6,26 +6,49 @@ const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
   variable: '--font-vazirmatn',
   display: 'swap',
+  weight: ['400', '500', '700'],
 })
 
 export const metadata: Metadata = {
-  title: 'KoodakBook — Persian for Kids',
-  description: 'Helping diaspora children learn Persian through stories, play, and family connection.',
+  title: 'KoodakBook — فارسی برای کودکان',
+  description: 'یادگیری فارسی برای کودکان ایرانی خارج از کشور — از طریق داستان، بازی و ارتباط با خانواده.',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'KoodakBook' },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'KoodakBook',
+  },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#f97316',
+  themeColor: '#F5A623',
   width: 'device-width',
   initialScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
-      <body className="min-h-full bg-amber-50 font-[family-name:var(--font-vazirmatn)]">
-        {children}
+      <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
+      <body
+        className="min-h-full bg-warm-white font-[family-name:var(--font-vazirmatn)]"
+        style={{ overscrollBehavior: 'none' }}
+      >
+        {/* Skip navigation for keyboard users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[9999] focus:bg-amber-500 focus:text-white focus:px-4 focus:py-2 focus:rounded-xl focus:font-bold"
+        >
+          رفتن به محتوای اصلی
+        </a>
+        <main id="main-content">
+          {children}
+        </main>
       </body>
     </html>
   )

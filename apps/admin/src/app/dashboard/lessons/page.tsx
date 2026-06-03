@@ -2,10 +2,9 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import type { Lesson, Word, Letter } from '@koodakbook/shared'
+import { LESSON_TYPE_EMOJI } from '@koodakbook/shared'
 
 type LessonItem = { id: string; item_type: 'word' | 'letter'; order_index: number; word?: Word; letter?: Letter }
-
-const TYPE_EMOJI: Record<string, string> = { vocabulary: '📚', alphabet: '🔤', phonics: '🎵' }
 
 export default function AdminLessonsPage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
@@ -95,7 +94,7 @@ export default function AdminLessonsPage() {
               className={`w-full text-right flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition text-sm ${
                 selected?.id === l.id ? 'border-amber-400 bg-amber-50' : 'border-gray-200 bg-white hover:border-amber-200'
               }`}>
-              <span>{TYPE_EMOJI[l.type]}</span>
+              <span>{LESSON_TYPE_EMOJI[l.type]}</span>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-800 truncate">{l.title}</p>
                 <p className="text-xs text-gray-400">مرحله {l.stage}</p>

@@ -2,10 +2,19 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { mediaUrl } from '@/lib/media'
+import BottomNav from '@/components/child/BottomNav'
+import PageHeader from '@/components/child/PageHeader'
+import LoadingScreen from '@/components/child/LoadingScreen'
+import EmptyState from '@/components/child/EmptyState'
+import { ACTIVITY_GRADIENTS } from '@koodakbook/shared'
 import type { Story, Child } from '@koodakbook/shared'
+
+const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } }
+const item = { hidden: { opacity: 0, scale: 0.94 }, show: { opacity: 1, scale: 1 } }
 
 export default function StoryListPage() {
   const router = useRouter()
@@ -34,44 +43,79 @@ export default function StoryListPage() {
     load()
   }, [router])
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-500">در حال بارگذاری...</div>
+  if (loading) return <LoadingScreen message="در حال بارگذاری داستان‌ها..." />
 
   return (
-    <div className="min-h-screen bg-amber-50 pb-24">
-      <div className="bg-gradient-to-br from-amber-400 to-orange-500 px-6 pt-10 pb-6 rounded-b-3xl text-white">
-        <button onClick={() => router.back()} className="text-amber-100 mb-3 block">← برگشت</button>
-        <h1 className="text-2xl font-bold">همه داستان‌ها 📖</h1>
-        <p className="text-amber-100 text-sm mt-1">{stories.length} داستان موجود است</p>
+    <div className="min-h-screen child-bg pb-nav">
+      <PageHeader
+        title="همه داستان‌ها 📖"
+        subtitle={`${stories.length} داستان موجود است`}
+        gradientClass="from-green-400 to-emerald-500"
+      />
+
+      <div className="px-4 pt-5">
+        {stories.length === 0 ? (
+          <EmptyState
+            message="هنوز داستانی نیست"
+            subMessage="به زودی داستان‌های جدید اضافه می‌شود!"
+          />
+        ) : (
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-2 gap-4"
+            role="list"
+            aria-label="لیست داستان‌ها"
+          >
+            {stories.map((story, idx) => {
+              const done = completed.has(story.id)
+              return (
+                <motion.div key={story.id} variants={item} role="listitem">
+                  <Link
+                    href={`/child/story/${story.id}`}
+                    aria-label={`${story.title_persian}${done ? ' — خوانده شده' : ''}${story.age_min ? `، برای ${story.age_min} تا ${story.age_max} سال` : ''}`}
+                    className="block bg-white rounded-[1.75rem] shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
+                  >
+                    {done && (
+                      <div
+                        className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium"
+                        aria-hidden="true"
+                      >
+                        ✅ خوندم
+                      </div>
+                    )}
+                    {mediaUrl(story.cover_url) ? (
+                      <img
+                        src={mediaUrl(story.cover_url)!}
+                        alt={story.title_persian}
+                        className="w-full h-32 object-cover"
+                      />
+                    ) : (
+                      <div
+                        className={`w-full h-32 bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} flex items-center justify-center text-5xl`}
+                        aria-hidden="true"
+                      >
+                        📖
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <p className="font-bold text-gray-800 text-sm leading-tight persian-text">{story.title_persian}</p>
+                      {story.age_min && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {story.age_min}–{story.age_max} سال
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        )}
       </div>
 
-      <div className="px-4 pt-6 grid grid-cols-2 gap-4">
-        {stories.map(story => {
-          const done = completed.has(story.id)
-          return (
-            <Link key={story.id} href={`/child/story/${story.id}`}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden relative">
-              {done && (
-                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full z-10">✅ خوندم</div>
-              )}
-              {mediaUrl(story.cover_url)
-                ? <img src={mediaUrl(story.cover_url)!} alt={story.title_english} className="w-full h-28 object-cover" />
-                : <div className="w-full h-28 bg-gradient-to-br from-amber-100 to-orange-200 flex items-center justify-center text-5xl">📖</div>
-              }
-              <div className="p-3">
-                <p className="font-bold text-gray-800 text-sm leading-tight">{story.title_persian}</p>
-                {story.age_min && <p className="text-xs text-gray-400 mt-1">{story.age_min}–{story.age_max} سال</p>}
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-3 px-4">
-        <Link href="/child/home"    className="flex flex-col items-center gap-1 text-gray-400"><span className="text-2xl">🏠</span><span className="text-xs">خانه</span></Link>
-        <Link href="/child/lesson"  className="flex flex-col items-center gap-1 text-gray-400"><span className="text-2xl">📚</span><span className="text-xs">درس‌ها</span></Link>
-        <Link href="/child/story"   className="flex flex-col items-center gap-1 text-amber-600"><span className="text-2xl">📖</span><span className="text-xs font-medium">داستان</span></Link>
-        <Link href="/child/rewards" className="flex flex-col items-center gap-1 text-gray-400"><span className="text-2xl">🏆</span><span className="text-xs">جوایز</span></Link>
-      </nav>
+      <BottomNav />
     </div>
   )
 }

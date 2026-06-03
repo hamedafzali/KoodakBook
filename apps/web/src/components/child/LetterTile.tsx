@@ -34,20 +34,23 @@ export default function LetterTile({ letter, onClick }: Props) {
   return (
     <motion.button
       onClick={handleClick}
-      className={`flex flex-col items-center gap-1 p-4 rounded-2xl border-2 shadow-sm w-full ${color}`}
+      className={`flex flex-col items-center gap-1 p-5 rounded-[1.25rem] border-2 shadow-sm w-full min-h-[100px] touch-target ${color}`}
       whileTap={{ scale: 0.85, rotate: [-2, 2, -1, 0] }}
       whileHover={{ scale: 1.05, y: -2 }}
       transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+      aria-label={`حرف ${letter.name_persian}، به انگلیسی ${letter.name_english}${letter.audio_url ? '، ضربه بزن تا بشنوی' : ''}`}
     >
       <motion.span
+        lang="fa"
         className="text-5xl font-bold"
+        aria-hidden="true"
         whileTap={{ scale: 1.3 }}
         transition={{ type: 'spring', stiffness: 500, damping: 12 }}
       >
         {letter.character}
       </motion.span>
-      <span className="text-sm font-medium">{letter.name_persian}</span>
-      <span className="text-xs ltr opacity-70">{letter.name_english}</span>
+      <span lang="fa" className="text-sm font-medium">{letter.name_persian}</span>
+      <span lang="en" className="text-xs ltr opacity-70">{letter.name_english}</span>
       {letter.audio_url && <audio ref={audioRef} src={mediaUrl(letter.audio_url)!} preload="none" />}
     </motion.button>
   )

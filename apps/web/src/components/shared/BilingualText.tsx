@@ -14,14 +14,28 @@ export default function BilingualText({ persian, english, persianClassName, engl
 
   return (
     <div className="space-y-1">
-      <p className={`persian-text ${persianClassName ?? 'text-xl font-medium'}`}>{persian}</p>
+      <p
+        lang="fa"
+        dir="rtl"
+        className={`persian-text text-right ${persianClassName ?? 'text-xl font-medium'}`}
+      >
+        {persian}
+      </p>
       {english && showEnglish && (
-        <p className={`ltr text-gray-500 ${englishClassName ?? 'text-sm'}`}>{english}</p>
+        <p
+          lang="en"
+          dir="ltr"
+          className={`text-left text-gray-500 ${englishClassName ?? 'text-base'}`}
+        >
+          {english}
+        </p>
       )}
       {showToggle && english && (
         <button
           onClick={() => setShowEnglish(v => !v)}
-          className="text-xs text-amber-500 hover:underline mt-1"
+          aria-expanded={showEnglish}
+          aria-controls="english-translation"
+          className="text-xs text-amber-600 hover:underline mt-1 transition-colors"
         >
           {showEnglish ? 'پنهان کردن ترجمه' : 'نمایش ترجمه'}
         </button>
