@@ -30,6 +30,10 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY packages/shared/src ./packages/shared/src
 
+# Bundle migrations so the container is self-contained on first boot
+COPY supabase/migrations/ ./migrations/
+COPY supabase/seed.sql    ./migrations/002_seed.sql
+
 RUN mkdir -p ./uploads/audio ./uploads/images ./uploads/pdfs
 
 EXPOSE 4000

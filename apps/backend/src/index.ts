@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import express from 'express'
+import { migrate } from './lib/migrate'
 import { seedAdmin } from './lib/seedAdmin'
 import cors from 'cors'
 import path from 'path'
@@ -42,5 +43,6 @@ app.use('/api/admin',     adminRouter)
 
 app.listen(PORT, async () => {
   console.log(`Backend running on http://localhost:${PORT}`)
+  await migrate()
   await seedAdmin()
 })

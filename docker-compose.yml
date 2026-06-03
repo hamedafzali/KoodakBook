@@ -27,7 +27,8 @@ services:
       DATABASE_URL:      postgres://koodakbook:${DB_PASSWORD:-changeme}@db:5432/koodakbook
       JWT_SECRET:        ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN:    30d
-      WEB_URL:           ${WEB_URL:-http://localhost:3000}
+      WEB_URL:           ${WEB_URL:-http://localhost:3001}
+      ADMIN_URL:         ${ADMIN_URL:-http://localhost:3002}
       UPLOADS_DIR:       /app/uploads
       ADMIN_EMAIL:       ${ADMIN_EMAIL:-admin@koodakbook.local}
       ADMIN_PASSWORD:    ${ADMIN_PASSWORD:-changeme}
