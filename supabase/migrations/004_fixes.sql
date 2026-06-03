@@ -8,10 +8,29 @@
 -- ═══════════════════════════════════════════════════════════
 
 -- ── 1. De-duplicate letters (keep earliest row per character) ──────────────
+-- Re-point lesson_items to the surviving letter first to satisfy the FK.
+with ranked as (
+  select id, character,
+         first_value(id) over (partition by character order by ctid) as keep_id
+  from letters
+)
+update lesson_items li
+set letter_id = r.keep_id
+from ranked r
+where li.letter_id = r.id and li.letter_id <> r.keep_id;
+
 delete from letters l
 using letters dup
 where l.character = dup.character
   and l.ctid > dup.ctid;
+
+-- Remove duplicate lesson_items that now point to the same letter in a lesson
+delete from lesson_items li
+using lesson_items dup
+where li.lesson_id = dup.lesson_id
+  and li.letter_id is not null
+  and li.letter_id = dup.letter_id
+  and li.ctid > dup.ctid;
 
 -- ── 2. De-duplicate words (keep earliest row per persian+english) ──────────
 -- Re-point lesson_items / story_page_words to the surviving word first.
