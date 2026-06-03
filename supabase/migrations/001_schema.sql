@@ -39,7 +39,7 @@ create table if not exists lessons (
   title         text not null,
   type          text not null check (type in ('vocabulary','alphabet','phonics')),
   stage         int not null,
-  order_index   int not null,
+  order_index   int not null unique,
   description   text,
   thumbnail_url text
 );
@@ -56,7 +56,7 @@ create table if not exists lesson_items (
 create table if not exists stories (
   id              uuid primary key default gen_random_uuid(),
   title_persian   text not null,
-  title_english   text not null,
+  title_english   text not null unique,
   stage           int not null,
   age_min         int,
   age_max         int,
