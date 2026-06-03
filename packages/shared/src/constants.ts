@@ -107,3 +107,85 @@ export const XP_LEVELS = [
   { min: 150, label: 'هنرجو',       labelEn: 'Apprentice' },
   { min: 350, label: 'استاد',       labelEn: 'Master'     },
 ] as const
+
+/**
+ * Word → emoji map, keyed by the English word value.
+ * Used as a visual stand-in until real illustrations are produced so that
+ * pre-readers always see a picture and the image-based quiz modes work.
+ */
+export const WORD_EMOJI: Record<string, string> = {
+  // Animals
+  cat: '🐱', dog: '🐶', horse: '🐴', cow: '🐄', chicken: '🐔', fish: '🐟',
+  rabbit: '🐰', elephant: '🐘', duck: '🦆', frog: '🐸', bear: '🐻',
+  camel: '🐫', monkey: '🐵', peacock: '🦚', turtle: '🐢', bee: '🐝',
+  lion: '🦁', bird: '🐦',
+  // Colors (color swatches)
+  red: '🟥', blue: '🟦', green: '🟩', yellow: '🟨', white: '⬜', black: '⬛',
+  orange: '🟧', pink: '🌸', purple: '🟪', brown: '🟫', grey: '◻️', golden: '🟡',
+  // Family
+  mom: '👩', dad: '👨', sister: '👧', brother: '👦',
+  grandma: '👵', grandmother: '👵', grandpa: '👴', grandfather: '👴',
+  uncle: '🧔', aunt: '👩', cousin: '🧒', baby: '👶',
+  // Body
+  head: '🗣️', eye: '👁️', mouth: '👄', hand: '✋', foot: '🦶', ear: '👂',
+  hair: '💇', eyebrow: '🤨', belly: '🤰', knee: '🦵', finger: '👆', neck: '🧣',
+  nose: '👃',
+  // Food
+  bread: '🍞', water: '💧', milk: '🥛', apple: '🍎', rice: '🍚', egg: '🥚',
+  banana: '🍌', grapes: '🍇', watermelon: '🍉', carrot: '🥕', yogurt: '🥣',
+  // Numbers
+  one: '1️⃣', two: '2️⃣', three: '3️⃣', four: '4️⃣', five: '5️⃣',
+  six: '6️⃣', seven: '7️⃣', eight: '8️⃣', nine: '9️⃣', ten: '🔟',
+  // Shapes
+  circle: '⭕', square: '🟦', triangle: '🔺', star: '⭐', heart: '❤️', rectangle: '🟧',
+  // Nature
+  tree: '🌳', flower: '🌸', sun: '☀️', cloud: '☁️', rain: '🌧️', moon: '🌙',
+  snow: '❄️', sea: '🌊', mountain: '⛰️', river: '🏞️', wind: '💨', sky: '🌤️',
+  // Objects
+  book: '📚', pen: '🖊️', table: '🪑', chair: '🪑', door: '🚪', window: '🪟',
+  bag: '🎒', clock: '🕐', car: '🚗', ball: '⚽', doll: '🪆', bed: '🛏️',
+  // Feelings
+  happy: '😊', sad: '😢', tired: '😴', hungry: '🍽️', scared: '😨',
+  laugh: '😄', cry: '😭', angry: '😠',
+  // Actions
+  eat: '🍴', sleep: '😴', run: '🏃', play: '🧸', read: '📖', write: '✏️',
+  go: '🚶', come: '👋', sit: '🪑', stand: '🧍',
+  // Greetings
+  hello: '👋', goodbye: '👋', 'thank you': '🙏', yes: '✅', no: '❌', please: '🙇',
+}
+
+export function wordEmoji(english: string | null | undefined): string | null {
+  if (!english) return null
+  return WORD_EMOJI[english.toLowerCase().trim()] ?? null
+}
+
+/**
+ * Persian-first lesson titles, keyed by the English title used in the seed.
+ * The child UI shows Persian; English remains as a secondary label.
+ */
+export const LESSON_TITLE_FA: Record<string, string> = {
+  'Animals':          'حیوانات',
+  'Colors':           'رنگ‌ها',
+  'Family':           'خانواده',
+  'Body Parts':       'بدن',
+  'Food & Drink':     'خوراکی‌ها',
+  'Numbers':          'عددها',
+  'Shapes':           'شکل‌ها',
+  'Nature':           'طبیعت',
+  'At Home':          'در خانه',
+  'Feelings':         'احساس‌ها',
+  'Actions':          'کارها',
+  'Greetings':        'سلام و احوال‌پرسی',
+  'Alphabet Group 1': 'الفبا - گروه ۱',
+  'Alphabet Group 2': 'الفبا - گروه ۲',
+  'Alphabet Group 3': 'الفبا - گروه ۳',
+  'Alphabet Group 4': 'الفبا - گروه ۴',
+  'Alphabet Group 5': 'الفبا - گروه ۵',
+  'Alphabet Group 6': 'الفبا - گروه ۶',
+  'Alphabet Group 7': 'الفبا - گروه ۷',
+  'Alphabet Group 8': 'الفبا - گروه ۸',
+}
+
+export function lessonTitleFa(title: string): string {
+  return LESSON_TITLE_FA[title] ?? title
+}

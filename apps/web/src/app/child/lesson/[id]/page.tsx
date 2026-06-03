@@ -10,7 +10,8 @@ import QuizCard, { type QuizQuestion, type QuizMode } from '@/components/child/Q
 import RewardPopup from '@/components/child/RewardPopup'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { playComplete } from '@/lib/sounds'
-import type { Lesson, LessonItem, Badge, Child, Word, Letter } from '@koodakbook/shared'
+import { initSpeech } from '@/lib/speech'
+import type { Lesson, LessonItem, Badge, Child } from '@koodakbook/shared'
 
 type LessonWithItems = Lesson & { items: LessonItem[] }
 
@@ -60,6 +61,7 @@ export default function LessonPage() {
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
+    initSpeech()
     async function load() {
       const [lessonRes, childRes] = await Promise.all([
         api.get<LessonWithItems>(`/api/lessons/${id}`),

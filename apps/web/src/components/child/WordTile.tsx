@@ -2,8 +2,10 @@
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { Word } from '@koodakbook/shared'
+import { wordEmoji } from '@koodakbook/shared'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
+import { speakPersian } from '@/lib/speech'
 
 interface Props {
   word: Word
@@ -13,10 +15,15 @@ interface Props {
 
 export default function WordTile({ word, size = 'md', onClick }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const recorded = mediaUrl(word.audio_url)
+  const emoji = wordEmoji(word.english)
+  const image = mediaUrl(word.image_url)
 
-  async function handleClick() {
+  function handleClick() {
     playTap()
-    if (word.audio_url && audioRef.current) audioRef.current.play().catch(() => {})
+    // Prefer a recorded clip; otherwise speak the word with TTS
+    if (recorded && audioRef.current) audioRef.current.play().catch(() => speakPersian(word.persian))
+    else speakPersian(word.persian)
     onClick?.()
   }
 
@@ -25,16 +32,9 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
     md: 'p-4 rounded-[1.25rem]',
     lg: 'p-6 rounded-[1.75rem]',
   }
-  const wordTextSizes = {
-    sm: 'text-2xl',
-    md: 'text-4xl',
-    lg: 'text-5xl',
-  }
-  const imgSizes = {
-    sm: 'w-16 h-16',
-    md: 'w-32 h-32',
-    lg: 'w-56 h-56 mt-2',
-  }
+  const wordTextSizes = { sm: 'text-2xl', md: 'text-4xl', lg: 'text-5xl' }
+  const imgSizes      = { sm: 'w-16 h-16', md: 'w-32 h-32', lg: 'w-56 h-56 mt-2' }
+  const emojiSizes    = { sm: 'text-6xl', md: 'text-8xl', lg: 'text-9xl' }
 
   return (
     <motion.button
@@ -43,11 +43,11 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
       whileTap={{ scale: 0.88 }}
       whileHover={{ scale: 1.03 }}
       transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-      aria-label={`کلمه فارسی: ${word.persian}، به انگلیسی: ${word.english}${word.audio_url ? '، ضربه بزن تا بشنوی' : ''}`}
+      aria-label={`کلمه فارسی: ${word.persian}، به انگلیسی: ${word.english}، ضربه بزن تا بشنوی`}
     >
-      {mediaUrl(word.image_url) && (
+      {image ? (
         <motion.img
-          src={mediaUrl(word.image_url)!}
+          src={image}
           alt=""
           aria-hidden="true"
           className={`object-contain rounded-xl mb-2 ${imgSizes[size]}`}
@@ -55,7 +55,18 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
         />
-      )}
+      ) : emoji ? (
+        <motion.span
+          aria-hidden="true"
+          className={`${emojiSizes[size]} leading-none mb-2`}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          {emoji}
+        </motion.span>
+      ) : null}
+
       <motion.span
         lang="fa"
         className={`font-bold text-gray-800 ${wordTextSizes[size]}`}
@@ -65,12 +76,10 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
         {word.persian}
       </motion.span>
       <span lang="en" className="text-gray-400 text-base ltr">{word.english}</span>
-      {word.audio_url && (
-        <span className="text-xs text-amber-500 flex items-center gap-1 mt-0.5" aria-hidden="true">
-          🔊 بشنو
-        </span>
-      )}
-      {word.audio_url && <audio ref={audioRef} src={mediaUrl(word.audio_url)!} preload="none" />}
+      <span className="text-xs text-amber-500 flex items-center gap-1 mt-0.5" aria-hidden="true">
+        🔊 بشنو
+      </span>
+      {recorded && <audio ref={audioRef} src={recorded} preload="none" />}
     </motion.button>
   )
 }

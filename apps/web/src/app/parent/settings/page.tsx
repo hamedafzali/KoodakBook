@@ -7,6 +7,7 @@ import { clearToken } from '@/lib/auth'
 import ParentGate from '@/components/parent/ParentGate'
 
 const GOAL_KEY = 'koodakbook_daily_goal_min'
+const TRANSLATION_KEY = 'koodakbook_show_translation'
 
 const DAILY_GOALS = [
   { value: 5,  label: '۵ دقیقه' },
@@ -24,11 +25,21 @@ export default function SettingsPage() {
   useEffect(() => {
     const stored = localStorage.getItem(GOAL_KEY)
     if (stored) setDailyGoal(parseInt(stored))
+    const trans = localStorage.getItem(TRANSLATION_KEY)
+    if (trans !== null) setShowTranslation(trans === '1')
   }, [])
 
   function handleGoalChange(val: number) {
     setDailyGoal(val)
     localStorage.setItem(GOAL_KEY, String(val))
+  }
+
+  function handleTranslationToggle() {
+    setShowTranslation(v => {
+      const next = !v
+      localStorage.setItem(TRANSLATION_KEY, next ? '1' : '0')
+      return next
+    })
   }
 
   async function handleLogout() {
@@ -98,7 +109,7 @@ export default function SettingsPage() {
                   role="switch"
                   aria-checked={showTranslation}
                   aria-label="نمایش ترجمه انگلیسی"
-                  onClick={() => setShowTranslation(v => !v)}
+                  onClick={handleTranslationToggle}
                   className={`w-12 h-7 rounded-full transition-colors relative ${showTranslation ? 'bg-amber-500' : 'bg-gray-300'}`}
                 >
                   <span className={`absolute top-1.5 w-4 h-4 bg-white rounded-full shadow transition-all ${showTranslation ? 'right-1.5' : 'right-7'}`} />

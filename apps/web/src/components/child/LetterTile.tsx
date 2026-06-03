@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import type { Letter } from '@koodakbook/shared'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
+import { speakPersian } from '@/lib/speech'
 
 interface Props {
   letter: Letter
@@ -27,7 +28,9 @@ export default function LetterTile({ letter, onClick }: Props) {
 
   function handleClick() {
     playTap()
-    if (letter.audio_url && audioRef.current) audioRef.current.play().catch(() => {})
+    // Prefer recorded audio; otherwise speak the letter name with TTS
+    if (letter.audio_url && audioRef.current) audioRef.current.play().catch(() => speakPersian(letter.name_persian))
+    else speakPersian(letter.name_persian)
     onClick?.()
   }
 

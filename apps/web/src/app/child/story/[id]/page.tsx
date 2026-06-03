@@ -16,6 +16,12 @@ export default function StoryPage() {
   const [story, setStory] = useState<FullStory | null>(null)
   const [childId, setChildId] = useState('')
   const [showBilingual, setShowBilingual] = useState(true)
+
+  // Honor the parent's translation preference as the default
+  useEffect(() => {
+    const pref = localStorage.getItem('koodakbook_show_translation')
+    if (pref !== null) setShowBilingual(pref === '1')
+  }, [])
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
 
   useEffect(() => {

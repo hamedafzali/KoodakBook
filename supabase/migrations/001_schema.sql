@@ -157,6 +157,8 @@ create table if not exists child_badges (
 
 create unique index if not exists stories_title_english_key on stories (title_english);
 create unique index if not exists lessons_order_index_key   on lessons (order_index);
+create unique index if not exists letters_character_key     on letters (character);
+create unique index if not exists words_persian_english_key on words (persian, english);
 
 -- ── Indexes ───────────────────────────────────────────────
 

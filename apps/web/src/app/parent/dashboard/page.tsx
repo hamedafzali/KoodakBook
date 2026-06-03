@@ -72,6 +72,10 @@ export default function ParentDashboardPage() {
 
   const { child, streak_days, words_learned, stories_completed, lessons_completed, recent_badges, recent_sessions } = summary
   const heatmap = buildWeekHeatmap(recent_sessions)
+  const todayMin = heatmap[heatmap.length - 1]?.totalMin ?? 0
+  const goalMin = typeof window !== 'undefined' ? parseInt(localStorage.getItem('koodakbook_daily_goal_min') ?? '10') : 10
+  const goalPct = Math.min(100, Math.round((todayMin / goalMin) * 100))
+  const goalMet = todayMin >= goalMin
 
   return (
     <ParentGate>
@@ -95,6 +99,31 @@ export default function ParentDashboardPage() {
         </div>
 
         <div className="px-4 pt-5 space-y-5">
+
+          {/* ── Daily goal ── */}
+          <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="goal-title">
+            <div className="flex items-center justify-between mb-2">
+              <h2 id="goal-title" className="font-bold text-slate-700 text-sm">هدف امروز</h2>
+              <span className={`text-sm font-bold ${goalMet ? 'text-green-600' : 'text-amber-600'}`}>
+                {goalMet ? '✅ انجام شد' : `${todayMin} از ${goalMin} دقیقه`}
+              </span>
+            </div>
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={goalPct}
+              aria-label={`هدف روزانه: ${goalPct} درصد`}
+              className="h-3 bg-slate-100 rounded-full overflow-hidden"
+            >
+              <motion.div
+                className={`h-full rounded-full ${goalMet ? 'bg-green-500' : 'bg-amber-500'}`}
+                initial={{ width: 0 }}
+                animate={{ width: `${goalPct}%` }}
+                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+              />
+            </div>
+          </section>
 
           {/* ── 7-Day Activity Heatmap ── */}
           <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="heatmap-title">

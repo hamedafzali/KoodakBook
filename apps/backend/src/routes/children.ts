@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/auth'
 const router = Router()
 
 const createChildSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().trim().min(1, 'نام لازم است').max(40, 'نام خیلی بلند است'),
   birth_year: z.number().int().min(2010).max(2025).nullable().optional(),
   level: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).default(1),
   avatar_url: z.string().url().nullable().optional(),

@@ -19,20 +19,26 @@ router.post('/sessions/start', requireAuth, async (req, res) => {
   res.status(201).json({ data: session, error: null })
 })
 
-// no requireAuth — session ID is a UUID secret; sendBeacon can't send headers
+// no requireAuth — session ID is an unguessable UUID; sendBeacon can't send headers.
+// Idempotent: only the first end call records duration, so repeated beacons
+// (visibility + unmount + beforeunload all fire) cannot inflate session time.
 router.post('/sessions/:id/end', async (req, res) => {
-  const session = await queryOne<{ started_at: string }>(
-    'select started_at from child_sessions where id = $1',
+  const session = await queryOne<{ started_at: string; ended_at: string | null }>(
+    'select started_at, ended_at from child_sessions where id = $1',
     [req.params.id]
   )
   if (!session) { res.status(404).json({ data: null, error: 'Session not found' }); return }
+  if (session.ended_at) { res.json({ data: { ok: true, already_ended: true }, error: null }); return }
 
-  const duration_sec = Math.round((Date.now() - new Date(session.started_at).getTime()) / 1000)
+  // Cap absurd durations (e.g. tab left open overnight) at 1 hour
+  const raw = Math.round((Date.now() - new Date(session.started_at).getTime()) / 1000)
+  const duration_sec = Math.min(Math.max(raw, 0), 3600)
+
   const [updated] = await query(
-    'update child_sessions set ended_at = now(), duration_sec = $1 where id = $2 returning *',
+    'update child_sessions set ended_at = now(), duration_sec = $1 where id = $2 and ended_at is null returning *',
     [duration_sec, req.params.id]
   )
-  res.json({ data: updated, error: null })
+  res.json({ data: updated ?? { ok: true }, error: null })
 })
 
 // ── Word progress ─────────────────────────────────────────
@@ -48,15 +54,26 @@ router.post('/word', requireAuth, async (req, res) => {
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
 
   const { child_id, word_id, status } = parsed.data
-  const mastered_at = status === 'mastered' ? 'now()' : null
+
+  // Mastery rule: a word is "mastered" after it has been practiced
+  // MASTERY_THRESHOLD times (each correct interaction posts one practice event).
+  const MASTERY_THRESHOLD = 3
 
   const [row] = await query(
     `insert into child_word_progress (child_id, word_id, status, mastered_at, replay_count)
-     values ($1, $2, $3, ${mastered_at ? 'now()' : 'null'}, 1)
+     values ($1, $2, $3, case when $3 = 'mastered' then now() else null end, 1)
      on conflict (child_id, word_id) do update
-       set status       = excluded.status,
-           mastered_at  = case when excluded.status = 'mastered' then now() else child_word_progress.mastered_at end,
-           replay_count = child_word_progress.replay_count + 1
+       set replay_count = child_word_progress.replay_count + 1,
+           status = case
+             when child_word_progress.replay_count + 1 >= ${MASTERY_THRESHOLD} then 'mastered'
+             when child_word_progress.status = 'mastered' then 'mastered'
+             else excluded.status
+           end,
+           mastered_at = case
+             when child_word_progress.replay_count + 1 >= ${MASTERY_THRESHOLD}
+                  and child_word_progress.mastered_at is null then now()
+             else child_word_progress.mastered_at
+           end
      returning *`,
     [child_id, word_id, status]
   )

@@ -5,13 +5,21 @@ import { getToken } from './auth'
 
 export function useChildSession(childId: string | null) {
   const sessionId = useRef<string | null>(null)
+  const lastStart = useRef<number>(0)
 
   useEffect(() => {
     if (!childId) return
 
-    // start session
-    api.post<{ id: string }>('/api/progress/sessions/start', { child_id: childId })
-      .then(res => { if (res.data) sessionId.current = res.data.id })
+    // Debounce: don't open a new session if one was opened in the last 2 minutes
+    function startSession() {
+      if (sessionId.current) return
+      if (Date.now() - lastStart.current < 120_000) return
+      lastStart.current = Date.now()
+      api.post<{ id: string }>('/api/progress/sessions/start', { child_id: childId })
+        .then(res => { if (res.data) sessionId.current = res.data.id })
+    }
+
+    startSession()
 
     function endSession() {
       if (!sessionId.current) return
@@ -34,11 +42,7 @@ export function useChildSession(childId: string | null) {
     // end when tab is hidden (most reliable for mobile)
     function handleVisibility() {
       if (document.visibilityState === 'hidden') endSession()
-      if (document.visibilityState === 'visible' && !sessionId.current) {
-        // resume — start a new session
-        api.post<{ id: string }>('/api/progress/sessions/start', { child_id: childId })
-          .then(res => { if (res.data) sessionId.current = res.data.id })
-      }
+      if (document.visibilityState === 'visible') startSession() // debounced
     }
 
     document.addEventListener('visibilitychange', handleVisibility)

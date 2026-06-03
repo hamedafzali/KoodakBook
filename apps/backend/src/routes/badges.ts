@@ -42,7 +42,7 @@ export async function checkAndAwardBadges(child_id: string): Promise<{ key: stri
         []
       ),
       query<{ started_at: string }>(
-        'select started_at from child_sessions where child_id = $1 order by started_at desc limit 7',
+        'select started_at from child_sessions where child_id = $1 order by started_at desc limit 30',
         [child_id]
       ),
       query<{ key: string }>(
@@ -51,11 +51,20 @@ export async function checkAndAwardBadges(child_id: string): Promise<{ key: stri
       ),
     ])
 
-  const earned = new Set(earnedKeys.map(r => r.key))
-
-  // 7-day streak
+  // Distinct session days (most recent 30)
   const days = new Set(sessionRows.map(r => r.started_at.slice(0, 10)))
-  const hasStreak = days.size >= 7
+  const hasStreak7 = days.size >= 7
+  const hasStreak3 = days.size >= 3
+  const triedToday = days.has(new Date().toISOString().slice(0, 10))
+
+  // A word reviewed more than once (effort, not just exposure)
+  const repeated = await queryOne<{ count: string }>(
+    'select count(*) from child_word_progress where child_id = $1 and replay_count >= 2',
+    [child_id]
+  )
+  const hasRepeated = parseInt(repeated?.count ?? '0') >= 1
+
+  const earned = new Set(earnedKeys.map(r => r.key))
 
   const words  = parseInt(wordCount?.count    ?? '0')
   const lessons = parseInt(lessonCount?.count ?? '0')
@@ -68,8 +77,12 @@ export async function checkAndAwardBadges(child_id: string): Promise<{ key: stri
   if (!earned.has('words_25')      && words  >= 25)   eligible.push('words_25')
   if (!earned.has('stories_3')     && stories >= 3)   eligible.push('stories_3')
   if (!earned.has('lessons_5')     && lessons >= 5)   eligible.push('lessons_5')
-  if (!earned.has('streak_7')      && hasStreak)      eligible.push('streak_7')
+  if (!earned.has('streak_7')      && hasStreak7)     eligible.push('streak_7')
   if (!earned.has('all_alphabet')  && parseInt(alphabetCount?.count ?? '0') >= parseInt(totalAlphabet?.count ?? '999')) eligible.push('all_alphabet')
+  // Effort badges
+  if (!earned.has('tried_today')     && triedToday)   eligible.push('tried_today')
+  if (!earned.has('practiced_again') && hasRepeated)  eligible.push('practiced_again')
+  if (!earned.has('streak_3')        && hasStreak3)   eligible.push('streak_3')
 
   if (eligible.length === 0) return []
 

@@ -5,6 +5,7 @@ import type { StoryPage, Story } from '@koodakbook/shared'
 import BilingualText from '../shared/BilingualText'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
+import { speakPersian, stopSpeaking } from '@/lib/speech'
 
 interface Props {
   story: Story & { pages: StoryPage[] }
@@ -23,6 +24,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
 
   function goNext() {
     playTap()
+    stopSpeaking()
     if (isLast) { onComplete?.(); return }
     const next = currentPage + 1
     setCurrentPage(next)
@@ -32,6 +34,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
 
   function goPrev() {
     playTap()
+    stopSpeaking()
     if (currentPage === 0) return
     const prev = currentPage - 1
     setCurrentPage(prev)
@@ -111,18 +114,20 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 persianClassName="persian-body-lg font-bold"
                 englishClassName="text-base mt-2"
               />
-              {mediaUrl(page.audio_url) && (
-                <motion.button
-                  onClick={() => audioRef.current?.play()}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label="پخش صدای این صفحه"
-                  className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px]"
-                >
-                  <span className="text-xl">🔊</span>
-                  <span>بشنو</span>
-                  <audio ref={audioRef} src={mediaUrl(page.audio_url)!} preload="none" />
-                </motion.button>
-              )}
+              <motion.button
+                onClick={() => {
+                  const recorded = mediaUrl(page.audio_url)
+                  if (recorded && audioRef.current) audioRef.current.play().catch(() => speakPersian(page.text_persian))
+                  else speakPersian(page.text_persian)
+                }}
+                whileTap={{ scale: 0.9 }}
+                aria-label="پخش صدای این صفحه"
+                className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px]"
+              >
+                <span className="text-xl">🔊</span>
+                <span>بشنو</span>
+                {mediaUrl(page.audio_url) && <audio ref={audioRef} src={mediaUrl(page.audio_url)!} preload="none" />}
+              </motion.button>
             </div>
           </motion.div>
         </AnimatePresence>

@@ -16,7 +16,8 @@ insert into words (persian, english, finglish, category, stage) values
   ('مرغ',     'chicken',  'morgh',       'animals', 1),
   ('ماهی',    'fish',     'mahi',        'animals', 1),
   ('خرگوش',   'rabbit',   'khargoosh',   'animals', 1),
-  ('فیل',     'elephant', 'fil',         'animals', 1);
+  ('فیل',     'elephant', 'fil',         'animals', 1)
+on conflict (persian, english) do nothing;
 
 -- ── Words — Colors ────────────────────────────────────────
 insert into words (persian, english, finglish, category, stage) values
@@ -27,7 +28,8 @@ insert into words (persian, english, finglish, category, stage) values
   ('سفید',    'white',    'sefid',       'colors', 1),
   ('مشکی',    'black',    'meshki',      'colors', 1),
   ('نارنجی',  'orange',   'naranji',     'colors', 1),
-  ('صورتی',   'pink',     'surati',      'colors', 1);
+  ('صورتی',   'pink',     'surati',      'colors', 1)
+on conflict (persian, english) do nothing;
 
 -- ── Words — Family ────────────────────────────────────────
 insert into words (persian, english, finglish, category, stage) values
@@ -36,7 +38,8 @@ insert into words (persian, english, finglish, category, stage) values
   ('خواهر',   'sister',   'khahar',      'family', 1),
   ('برادر',   'brother',  'baradar',     'family', 1),
   ('مادربزرگ','grandma',  'madarbozorg', 'family', 1),
-  ('پدربزرگ', 'grandpa',  'pedarbozorg', 'family', 1);
+  ('پدربزرگ', 'grandpa',  'pedarbozorg', 'family', 1)
+on conflict (persian, english) do nothing;
 
 -- ── Words — Body ──────────────────────────────────────────
 insert into words (persian, english, finglish, category, stage) values
@@ -45,7 +48,8 @@ insert into words (persian, english, finglish, category, stage) values
   ('دهان',    'mouth',    'dahan',       'body', 1),
   ('دست',     'hand',     'dast',        'body', 1),
   ('پا',      'foot',     'pa',          'body', 1),
-  ('گوش',     'ear',      'gush',        'body', 1);
+  ('گوش',     'ear',      'gush',        'body', 1)
+on conflict (persian, english) do nothing;
 
 -- ── Words — Food ──────────────────────────────────────────
 insert into words (persian, english, finglish, category, stage) values
@@ -54,7 +58,8 @@ insert into words (persian, english, finglish, category, stage) values
   ('شیر',     'milk',     'shir',        'food', 1),
   ('سیب',     'apple',    'sib',         'food', 1),
   ('برنج',    'rice',     'berenji',     'food', 1),
-  ('تخم‌مرغ', 'egg',      'tokhm morgh', 'food', 1);
+  ('تخم‌مرغ', 'egg',      'tokhm morgh', 'food', 1)
+on conflict (persian, english) do nothing;
 
 -- ── Letters ───────────────────────────────────────────────
 insert into letters (character, name_persian, name_english, "group", order_in_group) values
@@ -90,7 +95,8 @@ insert into letters (character, name_persian, name_english, "group", order_in_gr
   ('ن', 'نون',     'Nun',     8, 5),
   ('و', 'واو',     'Vav',     8, 6),
   ('ه', 'هه',      'He',      8, 7),
-  ('ی', 'یه',      'Ye',      8, 8);
+  ('ی', 'یه',      'Ye',      8, 8)
+on conflict (character) do nothing;
 
 -- ── Lessons ───────────────────────────────────────────────
 insert into lessons (title, type, stage, order_index, description) values

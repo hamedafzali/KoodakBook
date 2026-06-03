@@ -9,11 +9,21 @@ async function request<T>(path: string, options?: RequestInit): Promise<ApiRespo
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers: { ...headers, ...(options?.headers as Record<string, string> ?? {}) },
-  })
-  return res.json()
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers: { ...headers, ...(options?.headers as Record<string, string> ?? {}) },
+    })
+    try {
+      return await res.json()
+    } catch {
+      // Non-JSON response (e.g. 502 HTML page)
+      return { data: null, error: 'اتصال برقرار نشد. دوباره تلاش کن' }
+    }
+  } catch {
+    // Network failure / offline — never let the promise reject
+    return { data: null, error: 'اینترنت قطع است. دوباره تلاش کن' }
+  }
 }
 
 export const api = {
