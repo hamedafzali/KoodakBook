@@ -64,6 +64,31 @@ set example_word_id = r.keep_id
 from ranked r
 where lt.example_word_id = r.id and lt.example_word_id <> r.keep_id;
 
+-- child_word_progress: drop dup-pointing rows that would collide with the
+-- keeper's row, then re-point the rest (unique (child_id, word_id)).
+with ranked as (
+  select id, persian, english,
+         first_value(id) over (partition by persian, english order by ctid) as keep_id
+  from words
+)
+delete from child_word_progress cwp
+using ranked r
+where cwp.word_id = r.id and cwp.word_id <> r.keep_id
+  and exists (
+    select 1 from child_word_progress k
+    where k.child_id = cwp.child_id and k.word_id = r.keep_id
+  );
+
+with ranked as (
+  select id, persian, english,
+         first_value(id) over (partition by persian, english order by ctid) as keep_id
+  from words
+)
+update child_word_progress cwp
+set word_id = r.keep_id
+from ranked r
+where cwp.word_id = r.id and cwp.word_id <> r.keep_id;
+
 delete from words w
 using words dup
 where w.persian = dup.persian
