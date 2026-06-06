@@ -6,6 +6,8 @@ import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import ParentGate from '@/components/parent/ParentGate'
+import { pickChild, setActiveChildId } from '@/lib/activeChild'
+import { resolveLevel } from '@koodakbook/shared'
 import type { DashboardSummary, Child, ChildSession } from '@koodakbook/shared'
 
 /* Build 7-day activity data from sessions */
@@ -32,20 +34,34 @@ const SHORT_DAYS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
 
 export default function ParentDashboardPage() {
   const router = useRouter()
+  const [children, setChildren] = useState<Child[]>([])
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [loading, setLoading] = useState(true)
+
+  async function loadSummary(childId: string) {
+    const dashRes = await api.get<DashboardSummary>(`/api/dashboard/${childId}`)
+    if (dashRes.data) setSummary(dashRes.data)
+  }
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     async function load() {
       const childRes = await api.get<Child[]>('/api/children')
-      if (!childRes.data?.[0]) { setLoading(false); return }
-      const dashRes = await api.get<DashboardSummary>(`/api/dashboard/${childRes.data[0].id}`)
-      if (dashRes.data) setSummary(dashRes.data)
+      const list = childRes.data ?? []
+      setChildren(list)
+      const child = pickChild(list)
+      if (!child) { setLoading(false); return }
+      await loadSummary(child.id)
       setLoading(false)
     }
     load()
   }, [router])
+
+  function switchChild(id: string) {
+    setActiveChildId(id)
+    setLoading(true)
+    loadSummary(id).finally(() => setLoading(false))
+  }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -70,12 +86,13 @@ export default function ParentDashboardPage() {
     )
   }
 
-  const { child, streak_days, words_learned, stories_completed, lessons_completed, recent_badges, recent_sessions } = summary
+  const { child, streak_days, words_learned, stories_completed, lessons_completed, recent_badges, recent_sessions, xp } = summary
   const heatmap = buildWeekHeatmap(recent_sessions)
   const todayMin = heatmap[heatmap.length - 1]?.totalMin ?? 0
   const goalMin = typeof window !== 'undefined' ? parseInt(localStorage.getItem('koodakbook_daily_goal_min') ?? '10') : 10
   const goalPct = Math.min(100, Math.round((todayMin / goalMin) * 100))
   const goalMet = todayMin >= goalMin
+  const lvl = resolveLevel(xp ?? 0)
 
   return (
     <ParentGate>
@@ -96,9 +113,54 @@ export default function ParentDashboardPage() {
               ⚙️
             </Link>
           </div>
+
+          {/* Child switcher */}
+          {children.length > 1 && (
+            <div className="flex gap-2 mt-3 overflow-x-auto pb-1" role="tablist" aria-label="انتخاب کودک">
+              {children.map(c => (
+                <button
+                  key={c.id}
+                  role="tab"
+                  aria-selected={c.id === child.id}
+                  onClick={() => switchChild(c.id)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    c.id === child.id ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="px-4 pt-5 space-y-5">
+
+          {/* ── Level / XP ── */}
+          <section className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-[1.25rem] p-4 shadow-sm text-white" aria-labelledby="level-title">
+            <div className="flex items-center justify-between mb-2">
+              <h2 id="level-title" className="font-bold text-sm">سطح: {lvl.label}</h2>
+              <span className="text-sm font-bold">{xp ?? 0} XP</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={lvl.pct}
+              aria-label={`پیشرفت سطح: ${lvl.pct} درصد`}
+              className="h-3 bg-white/25 rounded-full overflow-hidden"
+            >
+              <motion.div
+                className="h-full bg-white rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${lvl.pct}%` }}
+                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+              />
+            </div>
+            <p className="text-xs text-white/80 mt-1.5">
+              {lvl.isMax ? 'بالاترین سطح! 🌟' : `${lvl.toNext} XP تا سطح بعدی`}
+            </p>
+          </section>
 
           {/* ── Daily goal ── */}
           <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="goal-title">

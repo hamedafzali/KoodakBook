@@ -6,6 +6,7 @@ import { isLoggedIn } from '@/lib/auth'
 import StoryReader from '@/components/child/StoryReader'
 import RewardPopup from '@/components/child/RewardPopup'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import { pickChild } from '@/lib/activeChild'
 import type { Story, StoryPage, Badge, Child } from '@koodakbook/shared'
 
 type FullStory = Story & { pages: StoryPage[] }
@@ -32,7 +33,8 @@ export default function StoryPage() {
         api.get<Child[]>('/api/children'),
       ])
       if (storyRes.data) setStory(storyRes.data)
-      if (childRes.data?.[0]) setChildId(childRes.data[0].id)
+      const child = pickChild(childRes.data ?? [])
+      if (child) setChildId(child.id)
     }
     load()
   }, [id, router])

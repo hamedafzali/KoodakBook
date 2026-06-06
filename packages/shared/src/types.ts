@@ -174,6 +174,7 @@ export interface DashboardSummary {
   words_learned: number
   stories_completed: number
   lessons_completed: number
+  xp: number
   recent_sessions: ChildSession[]
   recent_badges: ChildBadge[]
 }

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import ParentGate from '@/components/parent/ParentGate'
+import { pickChild } from '@/lib/activeChild'
 import type { Child, ChildWordProgress, ChildLessonProgress, ChildStoryProgress, ChildSession, Word, Lesson, Story } from '@koodakbook/shared'
 
 interface RawProgress {
@@ -46,8 +47,8 @@ export default function ParentProgressPage() {
     async function load() {
       try {
         const childRes = await api.get<Child[]>('/api/children')
-        if (!childRes.data?.[0]) { setLoading(false); return }
-        const c = childRes.data[0]
+        const c = pickChild(childRes.data ?? [])
+        if (!c) { setLoading(false); return }
         setChild(c)
 
         const [progRes, wordsRes, lessonsRes, storiesRes] = await Promise.all([

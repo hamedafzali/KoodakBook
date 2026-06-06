@@ -10,6 +10,7 @@ import PageHeader from '@/components/child/PageHeader'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import EmptyState from '@/components/child/EmptyState'
 import { LESSON_TYPE_EMOJI, LESSON_TYPE_LABEL } from '@koodakbook/shared'
+import { pickChild } from '@/lib/activeChild'
 import type { Lesson, Child } from '@koodakbook/shared'
 
 export default function LessonListPage() {
@@ -27,10 +28,11 @@ export default function LessonListPage() {
         api.get<Child[]>('/api/children'),
       ])
       if (lessonsRes.data) setLessons(lessonsRes.data)
-      if (childRes.data?.[0]) {
-        setChildLevel(childRes.data[0].level ?? 4)
+      const child = pickChild(childRes.data ?? [])
+      if (child) {
+        setChildLevel(child.level ?? 4)
         const progRes = await api.get<{ lessons: { lesson_id: string; completed: boolean }[] }>(
-          `/api/progress/${childRes.data[0].id}`
+          `/api/progress/${child.id}`
         )
         if (progRes.data) {
           const map: Record<string, boolean> = {}

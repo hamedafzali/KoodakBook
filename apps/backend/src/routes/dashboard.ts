@@ -44,8 +44,17 @@ router.get('/:child_id', requireAuth, async (req, res) => {
   }
 
   const words_learned    = (wordProgress    as { status: string }[]).filter(w => w.status !== 'introduced').length
+  const mastered_words   = (wordProgress    as { status: string }[]).filter(w => w.status === 'mastered').length
   const stories_completed = (storyProgress  as { completed: boolean }[]).filter(s => s.completed).length
   const lessons_completed = (lessonProgress as { completed: boolean }[]).filter(l => l.completed).length
+
+  // XP is derived from progress so it's always consistent (no separate counter to drift)
+  const xp =
+    words_learned * 5 +
+    mastered_words * 5 +
+    lessons_completed * 20 +
+    stories_completed * 15 +
+    streak_days * 10
 
   res.json({
     data: {
@@ -54,6 +63,7 @@ router.get('/:child_id', requireAuth, async (req, res) => {
       words_learned,
       stories_completed,
       lessons_completed,
+      xp,
       recent_sessions: sessions.slice(0, 5),
       recent_badges: badges,
     },

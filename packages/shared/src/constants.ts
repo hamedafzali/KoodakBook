@@ -108,6 +108,34 @@ export const XP_LEVELS = [
   { min: 350, label: 'استاد',       labelEn: 'Master'     },
 ] as const
 
+export interface XpLevel {
+  level: number       // 1-based index into XP_LEVELS
+  label: string
+  labelEn: string
+  xp: number          // total xp
+  intoLevel: number   // xp earned within the current level
+  span: number        // xp needed to span the current level (Infinity-safe number)
+  toNext: number      // xp remaining to next level (0 if max)
+  pct: number         // 0-100 progress within current level
+  isMax: boolean
+}
+
+/** Resolve a total XP value into level metadata for display. */
+export function resolveLevel(xp: number): XpLevel {
+  let idx = 0
+  for (let i = 0; i < XP_LEVELS.length; i++) {
+    if (xp >= XP_LEVELS[i].min) idx = i
+  }
+  const cur = XP_LEVELS[idx]
+  const next = XP_LEVELS[idx + 1]
+  const isMax = !next
+  const intoLevel = xp - cur.min
+  const span = isMax ? Math.max(intoLevel, 1) : next.min - cur.min
+  const toNext = isMax ? 0 : next.min - xp
+  const pct = isMax ? 100 : Math.min(100, Math.round((intoLevel / span) * 100))
+  return { level: idx + 1, label: cur.label, labelEn: cur.labelEn, xp, intoLevel, span, toNext, pct, isMax }
+}
+
 /**
  * Word → emoji map, keyed by the English word value.
  * Used as a visual stand-in until real illustrations are produced so that

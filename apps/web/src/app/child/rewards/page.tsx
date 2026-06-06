@@ -9,6 +9,7 @@ import type { ChildBadge, BadgeKey, Child } from '@koodakbook/shared'
 import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import { pickChild } from '@/lib/activeChild'
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } }
 const item = {
@@ -25,8 +26,9 @@ export default function RewardsPage() {
     if (!isLoggedIn()) { router.push('/login'); return }
     async function load() {
       const childRes = await api.get<Child[]>('/api/children')
-      if (!childRes.data?.[0]) { setLoading(false); return }
-      const badgesRes = await api.get<ChildBadge[]>(`/api/badges/${childRes.data[0].id}`)
+      const child = pickChild(childRes.data ?? [])
+      if (!child) { setLoading(false); return }
+      const badgesRes = await api.get<ChildBadge[]>(`/api/badges/${child.id}`)
       if (badgesRes.data) setEarned(badgesRes.data)
       setLoading(false)
     }

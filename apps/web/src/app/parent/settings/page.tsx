@@ -4,7 +4,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
+import { getActiveChildId, setActiveChildId } from '@/lib/activeChild'
 import ParentGate from '@/components/parent/ParentGate'
+import type { Child } from '@koodakbook/shared'
 
 const GOAL_KEY = 'koodakbook_daily_goal_min'
 const TRANSLATION_KEY = 'koodakbook_show_translation'
@@ -21,13 +23,27 @@ export default function SettingsPage() {
   const [dailyGoal, setDailyGoal] = useState<number>(10)
   const [showTranslation, setShowTranslation] = useState(true)
   const [logoutConfirm, setLogoutConfirm] = useState(false)
+  const [children, setChildren] = useState<Child[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem(GOAL_KEY)
     if (stored) setDailyGoal(parseInt(stored))
     const trans = localStorage.getItem(TRANSLATION_KEY)
     if (trans !== null) setShowTranslation(trans === '1')
+    setActiveId(getActiveChildId())
+    api.get<Child[]>('/api/children').then(res => {
+      if (res.data) {
+        setChildren(res.data)
+        if (!getActiveChildId() && res.data[0]) setActiveId(res.data[0].id)
+      }
+    })
   }, [])
+
+  function chooseChild(id: string) {
+    setActiveChildId(id)
+    setActiveId(id)
+  }
 
   function handleGoalChange(val: number) {
     setDailyGoal(val)
@@ -118,20 +134,39 @@ export default function SettingsPage() {
             </div>
           </section>
 
+          {/* Children */}
+          <section aria-labelledby="children-title">
+            <h2 id="children-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">کودکان</h2>
+            <div className="bg-white rounded-[1.25rem] shadow-sm divide-y divide-slate-100">
+              {children.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => chooseChild(c.id)}
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-right min-h-[56px]"
+                  aria-pressed={c.id === activeId}
+                >
+                  <span className="font-medium text-slate-800 text-sm">{c.name}</span>
+                  {c.id === activeId
+                    ? <span className="text-xs text-white bg-amber-500 px-2 py-0.5 rounded-full">فعال</span>
+                    : <span className="text-xs text-slate-400">انتخاب</span>}
+                </button>
+              ))}
+              <Link
+                href="/onboarding"
+                className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px] text-amber-700"
+              >
+                <span className="font-medium text-sm">+ افزودن کودک</span>
+                <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+            </div>
+          </section>
+
           {/* Account settings */}
           <section aria-labelledby="account-settings-title">
             <h2 id="account-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">حساب کاربری</h2>
             <div className="bg-white rounded-[1.25rem] shadow-sm divide-y divide-slate-100">
-              <Link
-                href="/onboarding"
-                className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px]"
-              >
-                <span className="font-medium text-slate-800 text-sm">ویرایش پروفایل کودک</span>
-                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-
               <button
                 onClick={resetParentPin}
                 className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-right min-h-[56px]"

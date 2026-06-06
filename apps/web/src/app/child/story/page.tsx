@@ -10,6 +10,7 @@ import BottomNav from '@/components/child/BottomNav'
 import PageHeader from '@/components/child/PageHeader'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import EmptyState from '@/components/child/EmptyState'
+import { pickChild } from '@/lib/activeChild'
 import { ACTIVITY_GRADIENTS } from '@koodakbook/shared'
 import type { Story, Child } from '@koodakbook/shared'
 
@@ -30,9 +31,10 @@ export default function StoryListPage() {
         api.get<Child[]>('/api/children'),
       ])
       if (storiesRes.data) setStories(storiesRes.data)
-      if (childRes.data?.[0]) {
+      const child = pickChild(childRes.data ?? [])
+      if (child) {
         const progRes = await api.get<{ stories: { story_id: string; completed: boolean }[] }>(
-          `/api/progress/${childRes.data[0].id}`
+          `/api/progress/${child.id}`
         )
         if (progRes.data) {
           setCompleted(new Set(progRes.data.stories.filter(s => s.completed).map(s => s.story_id)))

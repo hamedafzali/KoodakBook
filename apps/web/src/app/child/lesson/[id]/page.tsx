@@ -11,6 +11,7 @@ import RewardPopup from '@/components/child/RewardPopup'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
+import { pickChild } from '@/lib/activeChild'
 import type { Lesson, LessonItem, Badge, Child } from '@koodakbook/shared'
 
 type LessonWithItems = Lesson & { items: LessonItem[] }
@@ -68,9 +69,10 @@ export default function LessonPage() {
         api.get<Child[]>('/api/children'),
       ])
       if (lessonRes.data) setLesson(lessonRes.data)
-      if (childRes.data?.[0]) {
-        setChildId(childRes.data[0].id)
-        setChildLevel(childRes.data[0].level ?? 1)
+      const child = pickChild(childRes.data ?? [])
+      if (child) {
+        setChildId(child.id)
+        setChildLevel(child.level ?? 1)
       }
     }
     load()

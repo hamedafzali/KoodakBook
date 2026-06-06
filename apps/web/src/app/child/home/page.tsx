@@ -2,15 +2,17 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { mediaUrl } from '@/lib/media'
 import { useChildSession } from '@/lib/useSession'
+import { pickChild } from '@/lib/activeChild'
 import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import EmptyState from '@/components/child/EmptyState'
-import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI } from '@koodakbook/shared'
+import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
+import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel } from '@koodakbook/shared'
 import type { Lesson, Story, Child, DashboardSummary, ChildWordProgress, Word } from '@koodakbook/shared'
 
 const container = {
@@ -41,12 +43,15 @@ export default function ChildHomePage() {
   const [child, setChild] = useState<Child | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [stories, setStories] = useState<Story[]>([])
-  const [stats, setStats] = useState({ words: 0, streak: 0 })
+  const [stats, setStats] = useState({ words: 0, streak: 0, xp: 0 })
   const [reviewWords, setReviewWords] = useState<ReviewWord[]>([])
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   useChildSession(child?.id ?? null)
+
+  useEffect(() => { if (!hasSeenTutorial()) setShowTutorial(true) }, [])
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -56,7 +61,7 @@ export default function ChildHomePage() {
         api.get<Lesson[]>('/api/lessons'),
         api.get<Story[]>('/api/stories'),
       ])
-      const c = childRes.data?.[0]
+      const c = pickChild(childRes.data ?? [])
       if (c) {
         setChild(c)
         const [dashRes, wordsRes, progressRes] = await Promise.all([
@@ -64,7 +69,7 @@ export default function ChildHomePage() {
           api.get<Word[]>('/api/words'),
           api.get<{ words: ChildWordProgress[]; lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
         ])
-        if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days })
+        if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
 
         /* Spaced repetition: practiced words due for review */
         if (progressRes.data && wordsRes.data) {
@@ -103,6 +108,12 @@ export default function ChildHomePage() {
   return (
     <div className="min-h-screen child-bg pb-nav">
 
+      <AnimatePresence>
+        {showTutorial && (
+          <Tutorial childName={child?.name} onClose={() => setShowTutorial(false)} />
+        )}
+      </AnimatePresence>
+
       {/* ── Hero ── */}
       <div className="relative bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 pt-10 pb-16 px-5 rounded-b-[3rem] overflow-hidden">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
@@ -125,6 +136,9 @@ export default function ChildHomePage() {
                   ⭐ <span>{stats.words} کلمه</span>
                 </div>
               )}
+              <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
+                🎓 <span>{resolveLevel(stats.xp).label}</span>
+              </div>
             </div>
           </div>
           <Mascot size={110} mood={stats.streak > 0 ? 'happy' : 'idle'} className="-mb-6" />
@@ -280,10 +294,34 @@ export default function ChildHomePage() {
           )}
         </section>
 
-        {/* ── Quick actions ── */}
+        {/* ── Practice ── */}
         <section>
-          <h2 className="font-bold text-gray-800 text-base mb-3">بیشتر 🌟</h2>
+          <h2 className="font-bold text-gray-800 text-base mb-3">تمرین کن 🌟</h2>
           <div className="grid grid-cols-2 gap-3">
+            <Link href="/child/write" aria-label="تمرین نوشتن">
+              <motion.div
+                className="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
+                whileTap={{ scale: 0.96 }}
+              >
+                <span className="text-3xl" aria-hidden="true">✏️</span>
+                <div>
+                  <p className="font-bold text-sm">نوشتن</p>
+                  <p className="text-xs opacity-80">حرف‌ها را بنویس</p>
+                </div>
+              </motion.div>
+            </Link>
+            <Link href="/child/speak" aria-label="تمرین گفتن">
+              <motion.div
+                className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
+                whileTap={{ scale: 0.96 }}
+              >
+                <span className="text-3xl" aria-hidden="true">🎤</span>
+                <div>
+                  <p className="font-bold text-sm">گفتن</p>
+                  <p className="text-xs opacity-80">کلمه‌ها را بگو</p>
+                </div>
+              </motion.div>
+            </Link>
             <Link href="/child/rewards" aria-label="جوایز من">
               <motion.div
                 className="bg-white rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px]"
