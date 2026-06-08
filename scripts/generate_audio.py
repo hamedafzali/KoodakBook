@@ -44,6 +44,12 @@ MIGRATION = os.path.join(ROOT, "supabase", "migrations", "005_audio.sql")
 VOICE = "fa-IR-DilaraNeural"
 RATE = "-10%"  # slightly slower for clarity / early learners
 
+# Phonics: consonant × short-vowel syllables. MUST mirror PHONICS_CONSONANTS /
+# SHORT_VOWELS in packages/shared/src/constants.ts (slugs = consonant+vowel latin).
+PHONICS_CONSONANTS = [("ب", "b"), ("پ", "p"), ("ت", "t"), ("د", "d"),
+                      ("ر", "r"), ("س", "s"), ("م", "m"), ("ن", "n")]
+SHORT_VOWELS = [("َ", "a"), ("ِ", "e"), ("ُ", "o")]  # zabar, zir, pish
+
 
 def slugify(s: str) -> str:
     s = s.strip().lower()
@@ -166,6 +172,7 @@ async def main():
     os.makedirs(os.path.join(AUDIO_ROOT, "words"), exist_ok=True)
     os.makedirs(os.path.join(AUDIO_ROOT, "letters"), exist_ok=True)
     os.makedirs(os.path.join(AUDIO_ROOT, "stories"), exist_ok=True)
+    os.makedirs(os.path.join(AUDIO_ROOT, "phonics"), exist_ok=True)
 
     made = 0
     for w in words:
@@ -184,6 +191,14 @@ async def main():
         if await synth(p["persian"], path):
             made += 1
             print(f"  page   {p['title']} p{p['num']} -> audio/stories/{p['slug']}.mp3")
+    # Phonics syllables (consonant + short vowel)
+    for ch, clatin in PHONICS_CONSONANTS:
+        for mark, vlatin in SHORT_VOWELS:
+            slug = clatin + vlatin
+            path = os.path.join(AUDIO_ROOT, "phonics", f"{slug}.mp3")
+            if await synth(ch + mark, path):
+                made += 1
+                print(f"  syll   {ch + mark} -> audio/phonics/{slug}.mp3")
 
     print(f"Generated {made} new audio files (skipped existing).")
 

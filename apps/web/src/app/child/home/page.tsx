@@ -289,6 +289,18 @@ export default function ChildHomePage() {
         <section>
           <h2 className="font-bold text-gray-800 text-base mb-3">تمرین کن 🌟</h2>
           <div className="grid grid-cols-2 gap-3">
+            <Link href="/child/phonics" aria-label="صداها: زبر زیر پیش">
+              <motion.div
+                className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
+                whileTap={{ scale: 0.96 }}
+              >
+                <span className="text-3xl" aria-hidden="true">🎵</span>
+                <div>
+                  <p className="font-bold text-sm">صداها</p>
+                  <p className="text-xs opacity-90">زبر، زیر، پیش</p>
+                </div>
+              </motion.div>
+            </Link>
             <Link href="/child/write" aria-label="تمرین نوشتن">
               <motion.div
                 className="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"

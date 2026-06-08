@@ -207,6 +207,62 @@ export function isPremiumActive(
   return new Date(expiresAt).getTime() > Date.now()
 }
 
+/* ── Phonics: short vowels (the bridge from alphabet to reading) ────────────
+ * Persian short vowels are diacritics, not letters. Kids learn zabar/zir/pish
+ * to turn a consonant into a syllable (بَ=ba, بِ=be, بُ=bo) — the step that
+ * makes 2–3 letter words readable. Audio is pre-generated to /audio/phonics/. */
+export interface ShortVowel {
+  key: 'zabar' | 'zir' | 'pish'
+  mark: string          // combining diacritic
+  namePersian: string   // child-facing name
+  latin: 'a' | 'e' | 'o'
+  color: string         // tailwind gradient classes for its tiles
+}
+
+export const SHORT_VOWELS: ShortVowel[] = [
+  { key: 'zabar', mark: 'َ', namePersian: 'زبر', latin: 'a', color: 'from-red-500 to-orange-500' },
+  { key: 'zir',   mark: 'ِ', namePersian: 'زیر', latin: 'e', color: 'from-blue-500 to-cyan-600' },
+  { key: 'pish',  mark: 'ُ', namePersian: 'پیش', latin: 'o', color: 'from-green-500 to-emerald-600' },
+]
+
+/** Starter consonants — simple shapes/sounds, with their latin for slugs. */
+export const PHONICS_CONSONANTS: { ch: string; latin: string }[] = [
+  { ch: 'ب', latin: 'b' },
+  { ch: 'پ', latin: 'p' },
+  { ch: 'ت', latin: 't' },
+  { ch: 'د', latin: 'd' },
+  { ch: 'ر', latin: 'r' },
+  { ch: 'س', latin: 's' },
+  { ch: 'م', latin: 'm' },
+  { ch: 'ن', latin: 'n' },
+]
+
+export interface Syllable {
+  text: string          // consonant + vowel mark, e.g. 'بَ'
+  latin: string         // 'ba'
+  slug: string          // filename stem, == latin
+  consonant: string
+  vowelKey: ShortVowel['key']
+}
+
+/** All starter syllables (consonant × short vowel). Source of truth for the
+ * UI and for scripts/generate_audio.py (keep slugs in sync). */
+export function phonicsSyllables(): Syllable[] {
+  const out: Syllable[] = []
+  for (const c of PHONICS_CONSONANTS) {
+    for (const v of SHORT_VOWELS) {
+      const latin = c.latin + v.latin
+      out.push({ text: c.ch + v.mark, latin, slug: latin, consonant: c.ch, vowelKey: v.key })
+    }
+  }
+  return out
+}
+
+/** Recorded clip for a phonics syllable (falls back to TTS if missing). */
+export function phonicsAudioUrl(slug: string): string {
+  return `/audio/phonics/${slug}.mp3`
+}
+
 /**
  * Persian-first lesson titles, keyed by the English title used in the seed.
  * The child UI shows Persian; English remains as a secondary label.
