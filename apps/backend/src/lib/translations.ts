@@ -38,3 +38,39 @@ export async function listLocales() {
     'select code, name, direction from locales order by code'
   )
 }
+
+type TxEntry = { locale: string; field: string; value: string | null | undefined }
+
+/**
+ * Dual-write: keep content_translations in sync with the legacy columns on
+ * every admin create/update. Empty/null clears that translation. Idempotent.
+ */
+export async function upsertTranslations(
+  entityType: EntityType,
+  entityId: string,
+  entries: TxEntry[],
+): Promise<void> {
+  for (const e of entries) {
+    if (e.value == null || e.value === '') {
+      await query(
+        'delete from content_translations where entity_type=$1 and entity_id=$2 and locale=$3 and field=$4',
+        [entityType, entityId, e.locale, e.field]
+      )
+      continue
+    }
+    await query(
+      `insert into content_translations (entity_type, entity_id, locale, field, value)
+       values ($1,$2,$3,$4,$5)
+       on conflict (entity_type, entity_id, locale, field) do update set value = excluded.value`,
+      [entityType, entityId, e.locale, e.field, e.value]
+    )
+  }
+}
+
+/** Remove all translations for an entity (call on delete; loose FK = no cascade). */
+export async function deleteEntityTranslations(
+  entityType: EntityType,
+  entityId: string,
+): Promise<void> {
+  await query('delete from content_translations where entity_type=$1 and entity_id=$2', [entityType, entityId])
+}

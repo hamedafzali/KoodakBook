@@ -28,8 +28,11 @@ reversible (drop the two tables to revert).
 ## Cutover phases (each independently shippable & reversible)
 1. **Foundation (done, this branch):** add tables + backfill + `lib/translations.ts`
    read helper. No behavior change.
-2. **Dual-write:** admin create/update writes BOTH legacy columns and
-   `content_translations`, so they can't drift. Add a CI check that they match.
+2. **Dual-write (done, this branch):** admin create/update/delete for words,
+   stories and story pages also writes `content_translations` via
+   `lib/translations.ts` (`upsertTranslations`/`deleteEntityTranslations`), so the
+   two representations can't drift. Letters have no name-edit endpoint, so they
+   need no dual-write. (TODO: a CI/cron parity check.)
 3. **Read cutover:** curriculum routes accept `?locale=` (default `fa`/`en`) and
    read from `content_translations` via the helper, returning a normalized
    `{ text, ... }` shape. Frontend reads the normalized shape instead of
@@ -45,5 +48,8 @@ reversible (drop the two tables to revert).
 - Keep `entity_id` a loose reference (no cross-table FK); `entity_type` disambiguates.
 
 ## Status
-Phase 1 merged to a branch for review, **not** to `main` — merging before the
-dual-write phase (2) risks the translations table drifting from admin edits.
+Phases 1–2 on branch `i18n-foundation`, **not** yet on `main`. With dual-write in
+place the translations model can no longer drift, so this branch is now safe to
+merge. Phases 3 (read cutover) and 4 (drop legacy columns) remain — and Phase 3
+is the larger change (touches every curriculum reader + the frontend), so it
+warrants its own branch + review.

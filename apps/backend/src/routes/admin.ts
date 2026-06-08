@@ -5,6 +5,7 @@ import fs from 'fs'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAdmin } from '../middleware/admin'
+import { upsertTranslations, deleteEntityTranslations } from '../lib/translations'
 
 const router = Router()
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
@@ -25,6 +26,23 @@ const storage = multer.diskStorage({
   },
 })
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } })
+
+// Dual-write the language-agnostic translations alongside the legacy columns
+// (Phase 2 of the i18n cutover — see docs/i18n-plan.md).
+type Row = Record<string, unknown>
+const syncWordTranslations = (w: Row) => upsertTranslations('word', String(w.id), [
+  { locale: 'fa', field: 'text', value: w.persian as string },
+  { locale: 'en', field: 'text', value: w.english as string },
+  { locale: 'fa-Latn', field: 'text', value: w.finglish as string | null },
+])
+const syncStoryTranslations = (s: Row) => upsertTranslations('story', String(s.id), [
+  { locale: 'fa', field: 'title', value: s.title_persian as string },
+  { locale: 'en', field: 'title', value: s.title_english as string },
+])
+const syncPageTranslations = (p: Row) => upsertTranslations('story_page', String(p.id), [
+  { locale: 'fa', field: 'text', value: p.text_persian as string },
+  { locale: 'en', field: 'text', value: p.text_english as string | null },
+])
 
 // ── Identity check ───────────────────────────────────────
 router.get('/me', requireAdmin, (_req, res) => {
@@ -63,6 +81,7 @@ router.post('/words', requireAdmin, async (req, res) => {
     'insert into words (persian,english,finglish,category,stage,audio_url,image_url) values ($1,$2,$3,$4,$5,$6,$7) returning *',
     [persian, english, finglish ?? null, category, stage, audio_url ?? null, image_url ?? null]
   )
+  await syncWordTranslations(row)
   res.status(201).json({ data: row, error: null })
 })
 
@@ -74,10 +93,12 @@ router.patch('/words/:id', requireAdmin, async (req, res) => {
   const setClause = fields.map(([k], i) => `${k} = $${i + 1}`).join(', ')
   const values = fields.map(([, v]) => v)
   const row = await queryOne(`update words set ${setClause} where id = $${values.length + 1} returning *`, [...values, req.params.id])
+  if (row) await syncWordTranslations(row)
   res.json({ data: row, error: null })
 })
 
 router.delete('/words/:id', requireAdmin, async (req, res) => {
+  await deleteEntityTranslations('word', String(req.params.id))
   await query('delete from words where id = $1', [req.params.id])
   res.json({ data: { ok: true }, error: null })
 })
@@ -107,6 +128,7 @@ router.post('/stories', requireAdmin, async (req, res) => {
     'insert into stories (title_persian,title_english,stage,age_min,age_max,cover_url,audio_url) values ($1,$2,$3,$4,$5,$6,$7) returning *',
     [title_persian, title_english, stage, age_min ?? null, age_max ?? null, cover_url ?? null, audio_url ?? null]
   )
+  await syncStoryTranslations(row)
   res.status(201).json({ data: row, error: null })
 })
 
@@ -118,10 +140,19 @@ router.patch('/stories/:id', requireAdmin, async (req, res) => {
   const setClause = fields.map(([k], i) => `${k} = $${i + 1}`).join(', ')
   const values = fields.map(([, v]) => v)
   const row = await queryOne(`update stories set ${setClause} where id = $${values.length + 1} returning *`, [...values, req.params.id])
+  if (row) await syncStoryTranslations(row)
   res.json({ data: row, error: null })
 })
 
 router.delete('/stories/:id', requireAdmin, async (req, res) => {
+  // Story delete cascades to story_pages in the DB; clear translations for both
+  // the story and its pages first (translations use a loose FK, no cascade).
+  await query(
+    `delete from content_translations
+       where (entity_type = 'story' and entity_id = $1)
+          or (entity_type = 'story_page' and entity_id in (select id from story_pages where story_id = $1))`,
+    [req.params.id]
+  )
   await query('delete from stories where id = $1', [req.params.id])
   res.json({ data: { ok: true }, error: null })
 })
@@ -149,6 +180,7 @@ router.post('/stories/:story_id/pages', requireAdmin, async (req, res) => {
     'insert into story_pages (story_id,page_number,text_persian,text_english,image_url,audio_url) values ($1,$2,$3,$4,$5,$6) returning *',
     [req.params.story_id, page_number, text_persian, text_english ?? null, image_url ?? null, audio_url ?? null]
   )
+  await syncPageTranslations(row)
   res.status(201).json({ data: row, error: null })
 })
 
@@ -160,10 +192,12 @@ router.patch('/stories/:story_id/pages/:id', requireAdmin, async (req, res) => {
   const setClause = fields.map(([k], i) => `${k} = $${i + 1}`).join(', ')
   const values = fields.map(([, v]) => v)
   const row = await queryOne(`update story_pages set ${setClause} where id = $${values.length + 1} and story_id = $${values.length + 2} returning *`, [...values, req.params.id, req.params.story_id])
+  if (row) await syncPageTranslations(row)
   res.json({ data: row, error: null })
 })
 
 router.delete('/stories/:story_id/pages/:id', requireAdmin, async (req, res) => {
+  await deleteEntityTranslations('story_page', String(req.params.id))
   await query('delete from story_pages where id = $1 and story_id = $2', [req.params.id, req.params.story_id])
   res.json({ data: { ok: true }, error: null })
 })
