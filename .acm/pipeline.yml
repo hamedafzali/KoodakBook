@@ -1,0 +1,13 @@
+# KoodakBook CI/CD pipeline for the Advanced Container Manager native runner.
+# Flow: checkout (auto: git pull) → e2e → deploy.
+# A failed e2e stage halts the pipeline, so a broken build is never deployed.
+stages:
+  - name: e2e
+    run:
+      # Bring up an ephemeral stack, run Playwright (Chromium + WebKit), then
+      # always tear it down; the stage's exit code is Playwright's exit code.
+      - "docker compose -f docker-compose.ci.yml -p kb-ci up --build --abort-on-container-exit --exit-code-from playwright; code=$?; docker compose -f docker-compose.ci.yml -p kb-ci down -v --remove-orphans; exit $code"
+
+  - name: deploy
+    run:
+      - "docker compose up -d --build"
