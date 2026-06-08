@@ -256,4 +256,13 @@ router.get('/stats', requireAdmin, async (_req, res) => {
   })
 })
 
+// ── Weekly digest ────────────────────────────────────────
+// Trigger the weekly parent digest on demand. Schedule it (e.g. weekly cron)
+// to hit this endpoint, or run apps/backend/src/scripts/sendDigests.ts directly.
+router.post('/digest/run', requireAdmin, async (_req, res) => {
+  const { runWeeklyDigest } = await import('../lib/digest')
+  const result = await runWeeklyDigest()
+  res.json({ data: result, error: null })
+})
+
 export default router

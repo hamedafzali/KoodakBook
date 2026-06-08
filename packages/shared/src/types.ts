@@ -108,6 +108,17 @@ export interface ChildWordProgress {
   introduced_at: string
   mastered_at: string | null
   replay_count: number
+  box?: number
+  due_at?: string | null
+  last_reviewed_at?: string | null
+}
+
+/** A word the spaced-repetition scheduler says is due now. */
+export interface ReviewItem {
+  word_id: string
+  box: number
+  due_at: string
+  word: Word
 }
 
 export interface ChildLessonProgress {

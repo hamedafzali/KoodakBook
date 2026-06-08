@@ -47,39 +47,68 @@ const wordProgressSchema = z.object({
   child_id: z.string().uuid(),
   word_id: z.string().uuid(),
   status: z.enum(['introduced', 'practiced', 'mastered']),
+  // Leitner outcome of this interaction. Omitted = treated as a correct rep
+  // (so existing lesson/speak callers keep working unchanged).
+  result: z.enum(['correct', 'incorrect']).optional(),
 })
 
 router.post('/word', requireAuth, async (req, res) => {
   const parsed = wordProgressSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
 
-  const { child_id, word_id, status } = parsed.data
+  const { child_id, word_id, status, result } = parsed.data
+  const correct = result !== 'incorrect'
 
-  // Mastery rule: a word is "mastered" after it has been practiced
-  // MASTERY_THRESHOLD times (each correct interaction posts one practice event).
-  const MASTERY_THRESHOLD = 3
-
+  // Leitner: a correct rep promotes the word one box (max 5) and schedules the
+  // next review further out; a miss drops it back to box 1 and resurfaces it soon.
+  // Box 5 == mastered. Day intervals per destination box: 1,2,4,7,16.
   const [row] = await query(
-    `insert into child_word_progress (child_id, word_id, status, mastered_at, replay_count)
-     values ($1, $2, $3, case when $3 = 'mastered' then now() else null end, 1)
-     on conflict (child_id, word_id) do update
-       set replay_count = child_word_progress.replay_count + 1,
-           status = case
-             when child_word_progress.replay_count + 1 >= ${MASTERY_THRESHOLD} then 'mastered'
-             when child_word_progress.status = 'mastered' then 'mastered'
-             else excluded.status
-           end,
-           mastered_at = case
-             when child_word_progress.replay_count + 1 >= ${MASTERY_THRESHOLD}
-                  and child_word_progress.mastered_at is null then now()
-             else child_word_progress.mastered_at
-           end
+    `insert into child_word_progress
+       (child_id, word_id, status, box, due_at, last_reviewed_at, replay_count, mastered_at)
+     values ($1, $2, $3, 1, now() + interval '1 day', now(), 1,
+             case when $3 = 'mastered' then now() else null end)
+     on conflict (child_id, word_id) do update set
+       replay_count     = child_word_progress.replay_count + 1,
+       last_reviewed_at = now(),
+       box = case when $4 then least(child_word_progress.box + 1, 5) else 1 end,
+       due_at = now() + (case
+         when not $4 then interval '1 day'
+         when least(child_word_progress.box + 1, 5) <= 1 then interval '1 day'
+         when least(child_word_progress.box + 1, 5) = 2 then interval '2 days'
+         when least(child_word_progress.box + 1, 5) = 3 then interval '4 days'
+         when least(child_word_progress.box + 1, 5) = 4 then interval '7 days'
+         else interval '16 days' end),
+       status = case
+         when $4 and least(child_word_progress.box + 1, 5) >= 5 then 'mastered'
+         when child_word_progress.status = 'mastered' then 'mastered'
+         else 'practiced' end,
+       mastered_at = case
+         when $4 and least(child_word_progress.box + 1, 5) >= 5
+              and child_word_progress.mastered_at is null then now()
+         else child_word_progress.mastered_at end
      returning *`,
-    [child_id, word_id, status]
+    [child_id, word_id, status, correct]
   )
 
   const newBadges = await checkAndAwardBadges(child_id)
   res.json({ data: row, new_badges: newBadges, error: null })
+})
+
+// ── Words due for spaced-repetition review ─────────────────
+router.get('/:child_id/review', requireAuth, async (req, res) => {
+  const rows = await query(
+    `select cwp.word_id, cwp.box, cwp.due_at, row_to_json(w.*) as word
+     from child_word_progress cwp
+     join words w on w.id = cwp.word_id
+     where cwp.child_id = $1
+       and cwp.status <> 'introduced'
+       and cwp.due_at is not null
+       and cwp.due_at <= now()
+     order by cwp.due_at asc
+     limit 20`,
+    [req.params.child_id]
+  )
+  res.json({ data: rows, error: null })
 })
 
 // ── Lesson progress ───────────────────────────────────────
