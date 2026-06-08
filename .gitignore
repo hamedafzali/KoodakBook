@@ -55,3 +55,6 @@ supabase/.temp
 # uploads / temp
 uploads/
 tempImg/
+
+# python venv for asset generation
+scripts/.venv/

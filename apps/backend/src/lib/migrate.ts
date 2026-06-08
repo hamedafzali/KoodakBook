@@ -2,7 +2,12 @@ import fs from 'fs'
 import path from 'path'
 import { db } from './db'
 
-const MIGRATIONS_DIR = path.resolve(process.cwd(), 'migrations')
+// Prod bundles migrations at <cwd>/migrations (see Dockerfile). Dev runs from
+// the repo root where they live under supabase/migrations — point MIGRATIONS_DIR
+// there so 003/004/005 actually apply in dev too.
+const MIGRATIONS_DIR = process.env.MIGRATIONS_DIR
+  ? path.resolve(process.env.MIGRATIONS_DIR)
+  : path.resolve(process.cwd(), 'migrations')
 
 /** Split a SQL file into individual statements, ignoring blank lines and comments. */
 function splitStatements(sql: string): string[] {
