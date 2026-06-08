@@ -97,8 +97,8 @@ export default function SpeakPage() {
         >
           {emoji && <span className="text-7xl leading-none" aria-hidden="true">{emoji}</span>}
           <span className="text-5xl font-bold text-gray-800">{word.persian}</span>
-          <span className="text-base text-gray-400 ltr">{word.english}</span>
-          <span className="text-xs text-amber-500">🔊 اول گوش کن</span>
+          <span className="text-base text-gray-500 ltr">{word.english}</span>
+          <span className="text-xs text-amber-700">🔊 اول گوش کن</span>
         </button>
 
         {/* Mascot feedback */}

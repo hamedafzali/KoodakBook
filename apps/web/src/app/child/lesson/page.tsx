@@ -94,7 +94,7 @@ export default function LessonListPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-gray-500">{lesson.title}</p>
-                          <p className="text-xs text-gray-400">مرحله {lesson.stage} لازم است</p>
+                          <p className="text-xs text-gray-500">مرحله {lesson.stage} لازم است</p>
                         </div>
                       </div>
                     ) : (
@@ -109,7 +109,7 @@ export default function LessonListPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-gray-800">{lesson.title}</p>
                           {lesson.description && (
-                            <p className="text-sm text-gray-400 truncate mt-0.5">{lesson.description}</p>
+                            <p className="text-sm text-gray-500 truncate mt-0.5">{lesson.description}</p>
                           )}
                         </div>
                         <svg

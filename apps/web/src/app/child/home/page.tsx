@@ -98,13 +98,13 @@ export default function ChildHomePage() {
       </AnimatePresence>
 
       {/* ── Hero ── */}
-      <div className="relative bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 pt-10 pb-16 px-5 rounded-b-[3rem] overflow-hidden">
+      <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 pt-10 pb-16 px-5 rounded-b-[3rem] overflow-hidden">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
 
         <div className="relative flex items-end justify-between">
           <div className="text-white">
-            <p className="text-white/90 text-sm mb-1">{greeting()} 👋</p>
+            <p className="text-white text-sm mb-1">{greeting()} 👋</p>
             <h1 className="text-3xl font-bold leading-tight">
               {child?.name ?? 'کودک عزیز'}
             </h1>
@@ -321,7 +321,7 @@ export default function ChildHomePage() {
                 <span className="text-3xl" aria-hidden="true">🏆</span>
                 <div>
                   <p className="font-bold text-gray-800 text-sm">جوایز من</p>
-                  <p className="text-xs text-gray-400">مدال‌هایم</p>
+                  <p className="text-xs text-gray-500">مدال‌هایم</p>
                 </div>
               </motion.div>
             </Link>
@@ -333,7 +333,7 @@ export default function ChildHomePage() {
                 <span className="text-3xl" aria-hidden="true">👨‍👩‍👧</span>
                 <div>
                   <p className="font-bold text-gray-800 text-sm">بابا مامان</p>
-                  <p className="text-xs text-gray-400">داشبورد</p>
+                  <p className="text-xs text-gray-500">داشبورد</p>
                 </div>
               </motion.div>
             </Link>

@@ -54,4 +54,14 @@ router.post('/logout', requireAuth, (_req, res) => {
   res.json({ data: { ok: true }, error: null })
 })
 
+// Current account incl. plan — clients use this to gate premium UI.
+router.get('/me', requireAuth, async (_req, res) => {
+  const user = await queryOne(
+    'select id, email, plan, plan_expires_at from users where id = $1',
+    [res.locals.userId]
+  )
+  if (!user) { res.status(404).json({ data: null, error: 'Not found' }); return }
+  res.json({ data: user, error: null })
+})
+
 export default router

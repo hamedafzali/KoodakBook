@@ -32,7 +32,7 @@
   --color-surface-subtle:#F5EFE6;
   --color-border:        #E8DDD0;
   --color-text-primary:  #3D3028;
-  --color-text-secondary:#9E8E7E;
+  --color-text-secondary:#6B5D50;   /* darkened from #9E8E7E (~2.6:1) to clear WCAG AA on white */
   --color-text-disabled: #C5B8AC;
 
   /* Parent App — Slate */

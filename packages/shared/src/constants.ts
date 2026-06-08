@@ -13,6 +13,11 @@ export const WORD_CATEGORIES = [
   'body',
   'nature',
   'objects',
+  'numbers',
+  'shapes',
+  'feelings',
+  'actions',
+  'greetings',
 ] as const
 
 export const BADGE_KEYS = [
@@ -30,15 +35,15 @@ export const BADGE_KEYS = [
 ] as const
 
 export const BADGE_DEFINITIONS = {
-  first_lesson:    { title: 'اولین قدم!',       description: 'اولین درست را تموم کردی',           hint: 'یک درس کامل کن', effort: false },
+  first_lesson:    { title: 'اولین قدم!',       description: 'اولین درست را تمام کردی',           hint: 'یک درس کامل کن', effort: false },
   first_story:     { title: 'داستان‌خوان!',     description: 'اولین داستان فارسی را خواندی',      hint: 'یک داستان بخوان', effort: false },
   words_10:        { title: 'کلمه‌جمع‌کن!',     description: '۱۰ کلمه فارسی یاد گرفتی',          hint: '۱۰ کلمه یاد بگیر', effort: false },
   words_25:        { title: 'استاد کلمات!',     description: '۲۵ کلمه فارسی یاد گرفتی',          hint: '۲۵ کلمه یاد بگیر', effort: false },
   stories_3:       { title: 'کتاب‌دوست!',       description: '۳ داستان فارسی خواندی',             hint: '۳ داستان بخوان', effort: false },
-  lessons_5:       { title: 'شاگرد زرنگ!',      description: '۵ درس تموم کردی',                  hint: '۵ درس کامل کن', effort: false },
+  lessons_5:       { title: 'شاگرد زرنگ!',      description: '۵ درس تمام کردی',                  hint: '۵ درس کامل کن', effort: false },
   streak_7:        { title: '۷ روز قوی!',       description: '۷ روز پشت سر هم تمرین کردی',       hint: '۷ روز متوالی تمرین کن', effort: false },
   all_alphabet:    { title: 'قهرمان الفبا!',    description: 'همه‌ی حروف الفبا را یاد گرفتی',    hint: 'همه درس‌های الفبا را کامل کن', effort: false },
-  tried_today:     { title: 'امروز تلاش کردی!', description: 'امروز وارد اپ شدی و تمرین کردی',   hint: 'هر روز وارد اپ بشو', effort: true },
+  tried_today:     { title: 'امروز تلاش کردی!', description: 'امروز وارد برنامه شدی و تمرین کردی', hint: 'هر روز وارد برنامه بشو', effort: true },
   practiced_again: { title: 'دوباره تمرین!',    description: 'یک کلمه را دوباره مرور کردی',       hint: 'یک کلمه را مرور کن', effort: true },
   streak_3:        { title: '۳ روز پشت سرهم!',  description: '۳ روز متوالی تمرین کردی',           hint: '۳ روز متوالی تمرین کن', effort: true },
 } as const
@@ -54,13 +59,15 @@ export const LETTER_GROUPS: Record<number, string[]> = {
   8: ['ک', 'گ', 'ل', 'م', 'ن', 'و', 'ه', 'ی'],
 }
 
-/* Activity gradient classes — one source of truth used by home, lesson list, story list */
+/* Activity gradient classes — one source of truth used by home, lesson list, story list.
+ * Tiers kept at -500/-600 so white text on top clears WCAG large-text contrast (the
+ * old -400 tiers, esp. yellow, failed badly). */
 export const ACTIVITY_GRADIENTS = [
-  'from-red-400 to-orange-400',
-  'from-blue-400 to-cyan-400',
-  'from-green-400 to-emerald-400',
-  'from-purple-400 to-pink-400',
-  'from-yellow-400 to-amber-400',
+  'from-red-500 to-orange-500',
+  'from-blue-500 to-cyan-600',
+  'from-green-500 to-emerald-600',
+  'from-purple-500 to-pink-600',
+  'from-amber-500 to-orange-600',
 ] as const
 
 export const LESSON_TYPE_EMOJI: Record<string, string> = {
@@ -185,6 +192,19 @@ export const WORD_EMOJI: Record<string, string> = {
 export function wordEmoji(english: string | null | undefined): string | null {
   if (!english) return null
   return WORD_EMOJI[english.toLowerCase().trim()] ?? null
+}
+
+/* ── Entitlements ──────────────────────────────────────────── */
+export type Plan = 'free' | 'premium'
+
+/** Whether an account currently has active premium access. */
+export function isPremiumActive(
+  plan: string | null | undefined,
+  expiresAt?: string | null,
+): boolean {
+  if (plan !== 'premium') return false
+  if (!expiresAt) return true
+  return new Date(expiresAt).getTime() > Date.now()
 }
 
 /**
