@@ -8,7 +8,7 @@ import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { playTap, playSuccess } from '@/lib/sounds'
-import { speakPersian, initSpeech } from '@/lib/speech'
+import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Letter } from '@koodakbook/shared'
 
 export default function WritePage() {
@@ -38,7 +38,7 @@ export default function WritePage() {
       <div className="px-4 pt-5 flex flex-col items-center gap-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { playTap(); speakPersian(letter.name_persian) }}
+            onClick={() => { playTap(); speakOrPlay(letter.audio_url, letter.name_persian) }}
             className="bg-white rounded-2xl shadow-sm px-5 py-2 flex items-center gap-2 min-h-[44px]"
             aria-label={`بشنو: ${letter.name_persian}`}
           >

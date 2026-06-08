@@ -114,8 +114,12 @@ def parse_story_pages():
     """Returns list of dicts: title, num, persian, slug — one per story page."""
     pages, seen = [], set()
     title_pat = re.compile(r"title_english\s*=\s*'((?:[^']|'')*)'")
+    # Matches both page formats:
+    #   seed/004:  (N, 'fa', 'en')
+    #   003:       ((select id from s), N, 'fa', 'en')
+    # Captures (page_number, persian); the English column is ignored.
     tuple_pat = re.compile(
-        r"\(\s*(\d+)\s*,\s*'((?:[^']|'')*)'\s*,\s*'(?:(?:[^']|'')*)'\s*\)"
+        r"\(\s*(?:\(\s*select\s+id\s+from\s+s\s*\)\s*,\s*)?(\d+)\s*,\s*'((?:[^']|'')*)'"
     )
     for path in STORY_SQL_FILES:
         text = open(path, encoding="utf-8").read()

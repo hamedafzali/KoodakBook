@@ -10,7 +10,7 @@ import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess } from '@/lib/sounds'
-import { speakPersian, initSpeech } from '@/lib/speech'
+import { speakOrPlay, initSpeech } from '@/lib/speech'
 import { recognitionSupported, listenOnce } from '@/lib/recognition'
 import { wordEmoji } from '@koodakbook/shared'
 import type { Word, Child } from '@koodakbook/shared'
@@ -91,7 +91,7 @@ export default function SpeakPage() {
 
         {/* Word card */}
         <button
-          onClick={() => { playTap(); speakPersian(word.persian) }}
+          onClick={() => { playTap(); speakOrPlay(word.audio_url, word.persian) }}
           className="w-full max-w-sm bg-white rounded-[1.75rem] shadow-md p-6 flex flex-col items-center gap-2 touch-target"
           aria-label={`بشنو: ${word.persian}`}
         >

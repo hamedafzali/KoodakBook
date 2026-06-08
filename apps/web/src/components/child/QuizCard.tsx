@@ -5,7 +5,7 @@ import type { Word, Letter } from '@koodakbook/shared'
 import { wordEmoji } from '@koodakbook/shared'
 import { mediaUrl } from '@/lib/media'
 import { playTap, playSuccess } from '@/lib/sounds'
-import { speakPersian } from '@/lib/speech'
+import { speakPersian, speakOrPlay } from '@/lib/speech'
 
 export type QuizMode = 'flashcard' | 'listen_tap' | 'match_image' | 'name_it'
 
@@ -60,7 +60,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
     setFeedback(isCorrect ? 'correct' : 'incorrect')
     if (isCorrect) {
       playSuccess()
-      if (correctWord) speakPersian(correctWord.persian)
+      if (correctWord) speakOrPlay(correctWord.audio_url, correctWord.persian)
       setTimeout(onCorrect, 950)
     } else {
       playErrorSound()
@@ -103,7 +103,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
         <motion.div className="flex flex-col items-center gap-4 w-full"
           initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}>
           <motion.button
-            onClick={() => { playTap(); speakPersian(correctLetter.name_persian) }}
+            onClick={() => { playTap(); speakOrPlay(correctLetter.audio_url, correctLetter.name_persian) }}
             className="w-full bg-white rounded-[1.75rem] shadow-lg p-8 flex flex-col items-center gap-2 touch-target"
             whileTap={{ scale: 0.96 }}
             aria-label={`حرف فارسی: ${correctLetter.name_persian}. ضربه بزن تا بشنوی`}
