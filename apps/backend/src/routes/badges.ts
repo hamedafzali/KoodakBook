@@ -1,10 +1,11 @@
 import { Router } from 'express'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
+import { requireChildOwner } from '../middleware/childOwner'
 
 const router = Router()
 
-router.get('/:child_id', requireAuth, async (req, res) => {
+router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
   const rows = await query(
     `select cb.*, row_to_json(b.*) as badge
      from child_badges cb

@@ -2,13 +2,14 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
+import { requireChildOwner } from '../middleware/childOwner'
 import { checkAndAwardBadges } from './badges'
 
 const router = Router()
 
 // ── Sessions ──────────────────────────────────────────────
 
-router.post('/sessions/start', requireAuth, async (req, res) => {
+router.post('/sessions/start', requireAuth, requireChildOwner, async (req, res) => {
   const { child_id } = req.body
   if (!child_id) { res.status(400).json({ data: null, error: 'child_id required' }); return }
 
@@ -52,7 +53,7 @@ const wordProgressSchema = z.object({
   result: z.enum(['correct', 'incorrect']).optional(),
 })
 
-router.post('/word', requireAuth, async (req, res) => {
+router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
   const parsed = wordProgressSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
 
@@ -95,7 +96,7 @@ router.post('/word', requireAuth, async (req, res) => {
 })
 
 // ── Words due for spaced-repetition review ─────────────────
-router.get('/:child_id/review', requireAuth, async (req, res) => {
+router.get('/:child_id/review', requireAuth, requireChildOwner, async (req, res) => {
   const rows = await query(
     `select cwp.word_id, cwp.box, cwp.due_at, row_to_json(w.*) as word
      from child_word_progress cwp
@@ -119,7 +120,7 @@ const lessonProgressSchema = z.object({
   score: z.number().int().min(0).max(100).optional(),
 })
 
-router.post('/lesson', requireAuth, async (req, res) => {
+router.post('/lesson', requireAuth, requireChildOwner, async (req, res) => {
   const parsed = lessonProgressSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
 
@@ -146,7 +147,7 @@ const storyProgressSchema = z.object({
   completed: z.boolean().optional(),
 })
 
-router.post('/story', requireAuth, async (req, res) => {
+router.post('/story', requireAuth, requireChildOwner, async (req, res) => {
   const parsed = storyProgressSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
 
@@ -169,7 +170,7 @@ router.post('/story', requireAuth, async (req, res) => {
 
 // ── Full progress summary ─────────────────────────────────
 
-router.get('/:child_id', requireAuth, async (req, res) => {
+router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
   const { child_id } = req.params
   const [words, lessons, stories, sessions] = await Promise.all([
     query('select * from child_word_progress where child_id = $1', [child_id]),

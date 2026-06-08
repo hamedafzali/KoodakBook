@@ -1,10 +1,11 @@
 import { Router } from 'express'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
+import { requireChildOwner } from '../middleware/childOwner'
 
 const router = Router()
 
-router.get('/:child_id', requireAuth, async (req, res) => {
+router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
   const { child_id } = req.params
 
   const [child, sessions, wordProgress, storyProgress, lessonProgress, badges] = await Promise.all([
