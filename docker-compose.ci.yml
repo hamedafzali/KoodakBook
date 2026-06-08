@@ -54,6 +54,10 @@ services:
 
   playwright:
     image: mcr.microsoft.com/playwright:v1.49.1-jammy
+    # Pinned tag + "missing" = pull ONCE, then always reuse the cached image
+    # on the server. It only re-downloads if the image is removed (e.g. a
+    # `docker system prune -a` or ACM's prune wiping unused images).
+    pull_policy: missing
     working_dir: /work/e2e
     environment:
       BASE_URL: http://web:3000
