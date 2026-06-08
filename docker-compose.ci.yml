@@ -53,19 +53,13 @@ services:
         condition: service_healthy
 
   playwright:
-    image: mcr.microsoft.com/playwright:v1.49.1-jammy
-    # Pinned tag + "missing" = pull ONCE, then always reuse the cached image
-    # on the server. It only re-downloads if the image is removed (e.g. a
-    # `docker system prune -a` or ACM's prune wiping unused images).
-    pull_policy: missing
-    working_dir: /work/e2e
+    # Built (not bind-mounted) so it works under ACM's Docker-in-Docker — the
+    # build context is streamed to the daemon. Uses the cached Playwright base
+    # image (pulled once); later builds reuse layers.
+    build:
+      context: ./e2e
     environment:
       BASE_URL: http://web:3000
       CI: "true"
-    volumes:
-      - ./e2e:/work/e2e
-    # `npm ci` needs the lockfile; fall back to `npm install` so a transient
-    # checkout race can't fail the stage. Tests run only if install succeeds.
-    command: sh -c "(npm ci || npm install) && npx playwright test"
     depends_on:
       - web
