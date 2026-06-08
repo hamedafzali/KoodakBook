@@ -64,6 +64,8 @@ services:
       CI: "true"
     volumes:
       - ./e2e:/work/e2e
-    command: sh -c "npm ci && npx playwright test"
+    # `npm ci` needs the lockfile; fall back to `npm install` so a transient
+    # checkout race can't fail the stage. Tests run only if install succeeds.
+    command: sh -c "(npm ci || npm install) && npx playwright test"
     depends_on:
       - web
