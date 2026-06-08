@@ -105,13 +105,22 @@ export default function ParentDashboardPage() {
               <h1 className="font-bold text-xl text-slate-800">داشبورد والدین</h1>
               <p className="text-sm text-slate-500 mt-0.5">{child.name}</p>
             </div>
-            <Link
-              href="/parent/settings"
-              aria-label="تنظیمات"
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"
-            >
-              ⚙️
-            </Link>
+            <div className="flex items-center gap-1">
+              <Link
+                href="/parent/share"
+                aria-label="کارت پیشرفت برای اشتراک‌گذاری"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"
+              >
+                📤
+              </Link>
+              <Link
+                href="/parent/settings"
+                aria-label="تنظیمات"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"
+              >
+                ⚙️
+              </Link>
+            </div>
           </div>
 
           {/* Child switcher */}
