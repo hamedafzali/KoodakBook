@@ -105,16 +105,26 @@ Login with `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` file.
 
 ## Updating After Code Changes
 
+> **The server directory MUST be a real git checkout** of this repo, or `git pull`
+> updates nothing and the server silently drifts from the repo (this has bitten us).
+> Verify with `git -C <dir> rev-parse --is-inside-work-tree`. If it prints `fatal:
+> not a git repository`, convert it once (back up `.env`, `git init` + add the
+> remote + `git fetch` + `git checkout -f main`, restore `.env`).
+
 ```bash
-cd /opt/koodakbook
-git pull
-
-# Rebuild and restart changed services
-docker compose -f docker-compose.prod.yml up -d --build
-
-# Or rebuild a specific service
-docker compose -f docker-compose.prod.yml up -d --build backend
+cd /data/projects/KoodakBook   # the deploy checkout
+./deploy.sh                    # pull + build + restart + show migration/seed logs
+# or, per environment:
+COMPOSE=docker-compose.prod.yml ./deploy.sh
 ```
+
+What happens on `up -d --build`:
+- **DB migrations run automatically** on backend boot (`migrate()`), so schema +
+  content updates (e.g. audio, i18n) apply with no manual SQL.
+- **The admin account is re-seeded from env** (`seedAdmin()`): it creates the
+  admin if missing and **re-syncs the password when `ADMIN_PASSWORD` changes**.
+  Admin credentials therefore come from the server's `.env`
+  (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) — not the dev defaults.
 
 ---
 
