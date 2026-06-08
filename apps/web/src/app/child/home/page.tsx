@@ -12,8 +12,8 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import EmptyState from '@/components/child/EmptyState'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
-import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel } from '@koodakbook/shared'
-import type { Lesson, Story, Child, DashboardSummary, ChildWordProgress, Word } from '@koodakbook/shared'
+import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel, wordEmoji } from '@koodakbook/shared'
+import type { Lesson, Story, Child, DashboardSummary, ReviewItem } from '@koodakbook/shared'
 
 const container = {
   hidden: { opacity: 0 },
@@ -28,23 +28,13 @@ function greeting() {
   return 'شب بخیر'
 }
 
-/* Words due for spaced-repetition review: practiced more than 2 days ago */
-function dueMsThreshold() {
-  return 2 * 24 * 60 * 60 * 1000
-}
-
-interface ReviewWord {
-  progress: ChildWordProgress
-  word: Word
-}
-
 export default function ChildHomePage() {
   const router = useRouter()
   const [child, setChild] = useState<Child | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [stats, setStats] = useState({ words: 0, streak: 0, xp: 0 })
-  const [reviewWords, setReviewWords] = useState<ReviewWord[]>([])
+  const [reviewWords, setReviewWords] = useState<ReviewItem[]>([])
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
   const [showTutorial, setShowTutorial] = useState(false)
@@ -64,24 +54,17 @@ export default function ChildHomePage() {
       const c = pickChild(childRes.data ?? [])
       if (c) {
         setChild(c)
-        const [dashRes, wordsRes, progressRes] = await Promise.all([
+        const [dashRes, reviewRes, progressRes] = await Promise.all([
           api.get<DashboardSummary>(`/api/dashboard/${c.id}`),
-          api.get<Word[]>('/api/words'),
-          api.get<{ words: ChildWordProgress[]; lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
+          api.get<ReviewItem[]>(`/api/progress/${c.id}/review`),
+          api.get<{ lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
         ])
         if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
 
-        /* Spaced repetition: practiced words due for review */
-        if (progressRes.data && wordsRes.data) {
-          const wordMap = Object.fromEntries(wordsRes.data.map(w => [w.id, w]))
-          const now = Date.now()
-          const due = progressRes.data.words
-            .filter(wp => wp.status === 'practiced' && new Date(wp.introduced_at).getTime() < now - dueMsThreshold())
-            .slice(0, 5)
-            .map(wp => ({ progress: wp, word: wordMap[wp.word_id] }))
-            .filter(r => r.word)
-          setReviewWords(due as ReviewWord[])
+        /* Spaced repetition: words the Leitner scheduler says are due now */
+        if (reviewRes.data) setReviewWords(reviewRes.data)
 
+        if (progressRes.data) {
           /* Last accessed lesson */
           const lastLessonId = progressRes.data.lessons
             .filter(l => !l.completed)
@@ -191,23 +174,31 @@ export default function ChildHomePage() {
           <section>
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-bold text-gray-800 text-base">مرور امروز 🔄</h2>
-              <span className="text-xs text-gray-400">{reviewWords.length} کلمه</span>
+              <Link href="/child/review" className="text-amber-700 text-sm font-medium hover:underline">شروع ←</Link>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 snap-x" role="list" aria-label="کلمات برای مرور">
-              {reviewWords.map(({ word }) => (
-                <motion.div
-                  key={word.id}
-                  role="listitem"
-                  className="flex-shrink-0 snap-start bg-white rounded-[1.25rem] px-4 py-3 shadow-sm flex flex-col items-center gap-1 min-w-[80px]"
-                  whileTap={{ scale: 0.94 }}
-                >
-                  {mediaUrl(word.image_url) && (
-                    <img src={mediaUrl(word.image_url)!} alt={word.english} className="w-10 h-10 object-contain" />
-                  )}
-                  <span className="font-bold text-gray-800 text-lg">{word.persian}</span>
-                </motion.div>
-              ))}
-            </div>
+            <Link href="/child/review" aria-label={`مرور ${reviewWords.length} کلمه`}>
+              <motion.div className="bg-white rounded-[1.75rem] p-3 shadow-sm" whileTap={{ scale: 0.98 }}>
+                <div className="flex gap-2 overflow-x-auto pb-1 snap-x" role="list" aria-label="کلمات برای مرور">
+                  {reviewWords.slice(0, 8).map(({ word }) => (
+                    <div
+                      key={word.id}
+                      role="listitem"
+                      className="flex-shrink-0 snap-start bg-amber-50 rounded-[1.25rem] px-4 py-3 flex flex-col items-center gap-1 min-w-[80px]"
+                    >
+                      {mediaUrl(word.image_url) ? (
+                        <img src={mediaUrl(word.image_url)!} alt={word.english} className="w-10 h-10 object-contain" />
+                      ) : (
+                        <span className="text-3xl" aria-hidden="true">{wordEmoji(word.english) ?? '🔤'}</span>
+                      )}
+                      <span className="font-bold text-gray-800 text-lg">{word.persian}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-center text-xs text-amber-600 font-medium mt-2">
+                  {reviewWords.length} کلمه برای مرور — ضربه بزن 🎯
+                </p>
+              </motion.div>
+            </Link>
           </section>
         )}
 
