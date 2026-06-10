@@ -715,16 +715,22 @@ See DEPLOY.md for full step-by-step deployment instructions.
 MVP is fully built and running. All core features are implemented.
 
 ### ✅ Done
-- Auth, onboarding, child profiles
+- Auth, onboarding, child profiles (multiple children per parent)
 - Vocabulary lessons + alphabet module with tap-to-hear
+- Phonics / short-vowel module (the alphabet→reading bridge)
 - Story reader with bilingual toggle and per-page audio
 - Progress tracking (words, lessons, stories, sessions)
+- Real Leitner spaced-repetition engine (boxes + review scheduling)
 - Badge/reward system (5 badges)
 - Parent dashboard + detailed progress report
+- Grandparent share card + weekly progress digest email
+- Neural / recorded Persian audio (recorded preferred, no Arabic TTS fallback)
+- i18n foundation: language-agnostic content model with dual-write (Phases 1–2)
 - Admin panel (port 3001): words, stories, letters, lesson items, file uploads
 - PWA icons and manifest
 - Docker dev (hot reload) + prod (Nginx + SSL)
-- Deployment guide (DEPLOY.md)
+- Deployment guide (DEPLOY.md) + deploy.sh (auto-migrate/seed)
+- Playwright E2E suite (smoke + learning-loop + UI journeys) and ACM CI/CD pipeline (e2e → deploy)
 
 ### 🔜 Next — Content & Beta
 
@@ -740,9 +746,6 @@ MVP is fully built and running. All core features are implemented.
 ### 🔮 V2 Roadmap
 - Speech recognition for pronunciation (OpenAI Whisper)
 - AI story personalization (Claude API)
-- Spaced repetition engine
-- Multi-child profiles per parent
-- Grandparent share card
 - Offline mode (PWA service worker)
 - Physical book + QR code integration
 - Teacher accounts for weekend Persian schools
