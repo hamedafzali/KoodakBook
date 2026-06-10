@@ -50,9 +50,13 @@ stages:
     branches: [main]
     run:
       - "docker compose up -d --build"
+    # Probe the *published* app the way a user hits it. A `url:` check would be
+    # evaluated from the ACM backend's own network namespace (inside its
+    # container), where localhost:3001 isn't the host's published port — so we
+    # use a command probe on the host network instead, which works whether ACM
+    # runs natively or containerized.
     healthcheck:
-      url: "http://localhost:3001/api/lessons"
-      expectStatus: 200
+      command: "docker run --rm --network host busybox wget -q -O- http://localhost:3001/api/lessons"
       retries: 30
       intervalSec: 2
 
