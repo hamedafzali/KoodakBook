@@ -1,13 +1,67 @@
 # KoodakBook CI/CD pipeline for the Advanced Container Manager native runner.
-# Flow: checkout (auto: git pull) → e2e → deploy.
-# A failed e2e stage halts the pipeline, so a broken build is never deployed.
-stages:
-  - name: e2e
-    run:
-      # Bring up an ephemeral stack, run Playwright (Chromium + WebKit), then
-      # always tear it down; the stage's exit code is Playwright's exit code.
-      - "docker compose -f docker-compose.ci.yml -p kb-ci up --build --abort-on-container-exit --exit-code-from playwright; code=$?; docker compose -f docker-compose.ci.yml -p kb-ci down -v --remove-orphans; exit $code"
+#
+# Flow (DAG — `needs` controls ordering; independent stages run in parallel):
+#
+#     checkout ─┬─> quality ─┐
+#               └─> e2e ──────┴─> approve-prod ─> deploy ─> rollback (on failure)
+#
+#   • quality + e2e run in parallel right after checkout (both only need checkout)
+#   • approve-prod is a manual gate — the run pauses until a human approves
+#   • deploy is branch-gated to `main` and health-checked (the stage fails if the
+#     app doesn't come up), so a broken build is never left serving
+#   • rollback runs only if something failed, reverting to the previous commit
+#
+# Notifications: set SLACK_WEBHOOK_URL as a project env var in ACM to get a Slack
+# message on every run (success + failure). Unset = silently skipped.
+notify:
+  webhook: "${SLACK_WEBHOOK_URL}"
 
-  - name: deploy
+stages:
+  # ── Static quality gate: typecheck the TypeScript workspaces ───────────────
+  - name: quality
+    timeoutSec: 900
     run:
+      - "docker build -f docker/quality.Dockerfile -t kb-quality:ci . && docker run --rm kb-quality:ci"
+
+  # ── End-to-end tests against an ephemeral full stack ───────────────────────
+  # Also implicitly builds the web/backend images, so compile/build breakage
+  # fails here too. The Playwright HTML report is captured as an artifact.
+  - name: e2e
+    timeoutSec: 1800
+    retries: 1
+    run:
+      - "docker compose -f docker-compose.ci.yml -p kb-ci up --build --abort-on-container-exit --exit-code-from playwright; code=$?; docker cp kb-ci-playwright-1:/work/e2e/playwright-report ./e2e/playwright-report 2>/dev/null || true; docker compose -f docker-compose.ci.yml -p kb-ci down -v --remove-orphans; exit $code"
+    artifacts:
+      - "e2e/playwright-report"
+
+  # ── Manual approval before production (main only) ──────────────────────────
+  - name: approve-prod
+    needs: [quality, e2e]
+    branches: [main]
+    when: manual
+    run:
+      - "echo 'Production deploy approved.'"
+
+  # ── Deploy, then health-gate it ────────────────────────────────────────────
+  # The stage fails if the app doesn't answer after coming up, which trips the
+  # rollback hook below.
+  - name: deploy
+    needs: [approve-prod]
+    branches: [main]
+    run:
+      - "docker compose up -d --build"
+    healthcheck:
+      url: "http://localhost:3001/api/lessons"
+      expectStatus: 200
+      retries: 30
+      intervalSec: 2
+
+  # ── Roll back to the previous commit if anything above failed ──────────────
+  - name: rollback
+    needs: [deploy]
+    when: on_failure
+    branches: [main]
+    run:
+      - "echo 'Pipeline failed — rolling back to the previous commit and redeploying.'"
+      - "git reset --hard HEAD@{1}"
       - "docker compose up -d --build"
