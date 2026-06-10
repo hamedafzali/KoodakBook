@@ -30,7 +30,7 @@ stages:
     timeoutSec: 1800
     retries: 1
     run:
-      - "docker compose -f docker-compose.ci.yml -p kb-ci up --build --abort-on-container-exit --exit-code-from playwright; code=$?; docker cp kb-ci-playwright-1:/work/e2e/playwright-report ./e2e/playwright-report 2>/dev/null || true; docker compose -f docker-compose.ci.yml -p kb-ci down -v --remove-orphans; exit $code"
+      - "docker compose -f docker-compose.ci.yml -p kb-ci up --build --abort-on-container-exit --exit-code-from playwright; code=$?; rm -rf ./e2e/playwright-report; docker cp kb-ci-playwright-1:/work/e2e/playwright-report ./e2e/playwright-report 2>/dev/null || true; docker compose -f docker-compose.ci.yml -p kb-ci down -v --remove-orphans; exit $code"
     artifacts:
       - "e2e/playwright-report"
 
