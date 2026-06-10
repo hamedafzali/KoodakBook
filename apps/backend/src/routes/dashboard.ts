@@ -27,9 +27,13 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
 
   if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
 
-  // streak: count consecutive days going back from today
+  // streak: count consecutive days going back from today.
+  // node-postgres returns timestamps as JS Date objects, so normalize through
+  // Date() before slicing the YYYY-MM-DD day key (a raw .slice() on a Date throws).
   const sessionDays = [...new Set(
-    (sessions as { started_at: string }[]).map(s => s.started_at.slice(0, 10))
+    (sessions as { started_at: string | Date }[]).map(
+      s => new Date(s.started_at).toISOString().slice(0, 10)
+    )
   )].sort().reverse()
 
   let streak_days = 0

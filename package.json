@@ -9,7 +9,10 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "e2e": "docker compose -f docker-compose.ci.yml -p kb-ci up --build --abort-on-container-exit --exit-code-from playwright; code=$?; docker compose -f docker-compose.ci.yml -p kb-ci down -v --remove-orphans; exit $code",
+    "e2e:ui": "npm --prefix e2e test -- --ui",
+    "e2e:report": "npm --prefix e2e run report"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
