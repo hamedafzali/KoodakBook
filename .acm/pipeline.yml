@@ -66,6 +66,9 @@ stages:
     when: on_failure
     branches: [main]
     run:
-      - "echo 'Pipeline failed — rolling back to the previous commit and redeploying.'"
-      - "git reset --hard HEAD@{1}"
+      # ACM injects ACM_PREVIOUS_SHA (the commit deployed before this run) — a
+      # deterministic rollback target. Fall back to the reflog only if it's
+      # somehow unset.
+      - "echo \"Pipeline failed — rolling back to ${ACM_PREVIOUS_SHA:-HEAD@{1}} and redeploying.\""
+      - "if [ -n \"$ACM_PREVIOUS_SHA\" ]; then git reset --hard \"$ACM_PREVIOUS_SHA\"; else git reset --hard 'HEAD@{1}'; fi"
       - "docker compose up -d --build"
