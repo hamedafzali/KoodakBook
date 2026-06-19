@@ -37,9 +37,14 @@ SQL_FILES = [
     # no audio. Appended last so existing word slugs stay stable.
     os.path.join(ROOT, "supabase", "migrations", "012_curriculum_expansion.sql"),
 ]
-# Story pages are also authored in 004 (the stories that shipped empty).
-STORY_SQL_FILES = SQL_FILES + [
+# Story pages: seed + 003 author most; 004 filled the empty stories; 013
+# rewrote/refilled five of them. 013 MUST be last so its (re-authored) text
+# wins the per-(title, page) de-dupe in parse_story_pages().
+STORY_SQL_FILES = [
+    os.path.join(ROOT, "supabase", "seed.sql"),
+    os.path.join(ROOT, "supabase", "migrations", "003_more_content.sql"),
     os.path.join(ROOT, "supabase", "migrations", "004_fixes.sql"),
+    os.path.join(ROOT, "supabase", "migrations", "013_story_pages_and_fixes.sql"),
 ]
 AUDIO_ROOT = os.path.join(ROOT, "apps", "web", "public", "audio")
 # Emit a NEW migration rather than clobber 005 (already applied everywhere).
@@ -124,12 +129,19 @@ def parse_letters():
 
 
 def parse_story_pages():
-    """Returns list of dicts: title, num, persian, slug — one per story page."""
-    pages, seen = [], set()
+    """Returns list of dicts: title, num, persian, slug — one per story page.
+
+    De-duped by (title, page_number) with LATER files winning, so a story
+    re-authored in a later migration (013) overrides its original text. The
+    slug is deterministic (`<title>-p<num>`) and stable across runs, so audio
+    UPDATEs stay idempotent — but a re-authored page's existing .mp3 must be
+    deleted before regeneration (the synth step skips files that already exist).
+    """
+    by_key: dict = {}
     title_pat = re.compile(r"title_english\s*=\s*'((?:[^']|'')*)'")
     # Matches both page formats:
     #   seed/004:  (N, 'fa', 'en')
-    #   003:       ((select id from s), N, 'fa', 'en')
+    #   003/013:   ((select id from s), N, 'fa', 'en')
     # Captures (page_number, persian); the English column is ignored.
     tuple_pat = re.compile(
         r"\(\s*(?:\(\s*select\s+id\s+from\s+s\s*\)\s*,\s*)?(\d+)\s*,\s*'((?:[^']|'')*)'"
@@ -144,10 +156,13 @@ def parse_story_pages():
                 continue
             title = tm.group(1).replace("''", "'")
             for num, fa in tuple_pat.findall(block):
-                fa = fa.replace("''", "'")
-                slug = uniq(f"{slugify(title)}-p{num}", seen)
-                pages.append({"title": title, "num": int(num), "persian": fa, "slug": slug})
-    return pages
+                n = int(num)
+                by_key[(title, n)] = {
+                    "title": title, "num": n,
+                    "persian": fa.replace("''", "'"),
+                    "slug": f"{slugify(title)}-p{n}",
+                }
+    return [by_key[k] for k in sorted(by_key, key=lambda k: (slugify(k[0]), k[1]))]
 
 
 async def synth(text: str, path: str):
