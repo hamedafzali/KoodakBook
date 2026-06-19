@@ -731,12 +731,20 @@ MVP is fully built and running. All core features are implemented.
 - Docker dev (hot reload) + prod (Nginx + SSL)
 - Deployment guide (DEPLOY.md) + deploy.sh (auto-migrate/seed)
 - Playwright E2E suite (smoke + learning-loop + UI journeys) and ACM CI/CD pipeline (e2e → deploy)
+- Content audit pass (migrations 011–013): fixed transliteration/gloss/register
+  and kinship defects, added 7 Critical categories (opposites, question words,
+  prepositions, clothes, transportation, weather, school) + numbers 11–20,
+  rewrote 5 weak stories to a Hook→…→Recap structure with child interaction.
+  Now ~189 words / 19 categories / 28 lessons / 15 stories / 94 pages.
 
 ### 🔜 Next — Content & Beta
 
 - [ ] Partner with a Persian language teacher to validate curriculum structure
 - [ ] Source or commission original Persian children's stories
 - [ ] Record audio narrations with a native Persian voice actor
+- [ ] **Beta blockers (content production, not data):** word/story images are
+      still ~0; story narration is incomplete; ~80+ words (incl. the new ones)
+      have no audio yet
 - [ ] Upload word images and audio via admin panel
 - [ ] Cross-device testing (iOS Safari, Android Chrome)
 - [ ] RTL layout QA on all screens
