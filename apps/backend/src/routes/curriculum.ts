@@ -31,9 +31,11 @@ router.get('/lessons/:id', async (req, res) => {
 
 router.get('/stories', async (req, res) => {
   const { stage } = req.query
+  // The shared catalogue excludes AI-personalized stories — those surface only
+  // for the child they were generated for (see /api/ai/stories/:child_id).
   const rows = stage
-    ? await query('select * from stories where stage = $1 order by created_at', [stage])
-    : await query('select * from stories order by stage, created_at')
+    ? await query('select * from stories where stage = $1 and not ai_generated order by created_at', [stage])
+    : await query('select * from stories where not ai_generated order by stage, created_at')
   res.json({ data: rows, error: null })
 })
 

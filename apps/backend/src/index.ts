@@ -12,6 +12,7 @@ import badgesRouter   from './routes/badges'
 import dashboardRouter from './routes/dashboard'
 import uploadsRouter  from './routes/uploads'
 import adminRouter    from './routes/admin'
+import aiRouter       from './routes/ai'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -61,6 +62,7 @@ app.use('/api/badges',    badgesRouter)
 app.use('/api/dashboard', dashboardRouter)
 app.use('/api/uploads',   uploadsRouter)
 app.use('/api/admin',     adminRouter)
+app.use('/api/ai',        aiRouter)
 
 app.listen(PORT, async () => {
   console.log(`Backend running on http://localhost:${PORT}`)

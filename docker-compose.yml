@@ -32,6 +32,7 @@ services:
       UPLOADS_DIR:       /app/uploads
       ADMIN_EMAIL:       ${ADMIN_EMAIL:-admin@koodakbook.local}
       ADMIN_PASSWORD:    ${ADMIN_PASSWORD:-changeme}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     volumes:
       - uploads:/app/uploads
     ports:

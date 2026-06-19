@@ -56,6 +56,20 @@ export default function StoryListPage() {
       />
 
       <div className="px-4 pt-5">
+        {/* Generate a personalized story with AI */}
+        <Link
+          href="/child/story/new"
+          aria-label="یک داستان جدید برای من بساز"
+          className="flex items-center gap-3 mb-4 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white rounded-[1.5rem] p-4 shadow-md"
+        >
+          <span className="text-3xl" aria-hidden="true">✨</span>
+          <div className="flex-1 text-right">
+            <p className="font-bold leading-tight">یک داستان برای من بساز</p>
+            <p className="text-xs text-white/85 mt-0.5 persian-text">داستان مخصوص خودت با موضوع دلخواه</p>
+          </div>
+          <span className="text-2xl" aria-hidden="true">←</span>
+        </Link>
+
         {stories.length === 0 ? (
           <EmptyState
             message="هنوز داستانی نیست"
