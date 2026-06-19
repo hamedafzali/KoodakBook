@@ -6,6 +6,7 @@ import { wordEmoji } from '@koodakbook/shared'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakPersian } from '@/lib/speech'
+import { tapMotionFor } from '@/lib/animation'
 
 interface Props {
   word: Word
@@ -18,6 +19,8 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
   const recorded = mediaUrl(word.audio_url)
   const emoji = wordEmoji(word.english)
   const image = mediaUrl(word.image_url)
+  // Data-driven tap motion (Phase 0): driven by the row's animation template.
+  const tap = tapMotionFor(word.animation_template, word.animation_params)
 
   function handleClick() {
     playTap()
@@ -40,9 +43,9 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
     <motion.button
       onClick={handleClick}
       className={`flex flex-col items-center gap-2 bg-white shadow-md w-full min-h-[64px] touch-target ${containerClasses[size]}`}
-      whileTap={{ scale: 0.88 }}
+      whileTap={tap.animated ? { scale: tap.scale } : undefined}
       whileHover={{ scale: 1.03 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+      transition={tap.transition}
       aria-label={`کلمه فارسی: ${word.persian}، به انگلیسی: ${word.english}، ضربه بزن تا بشنوی`}
     >
       {image ? (

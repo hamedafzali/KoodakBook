@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAdmin } from '../middleware/admin'
 import { upsertTranslations, deleteEntityTranslations } from '../lib/translations'
+import { WORD_CATEGORIES, ANIMATION_TEMPLATES, validateAnimationParams } from '@koodakbook/shared'
 
 const router = Router()
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
@@ -62,11 +63,21 @@ const wordSchema = z.object({
   persian: z.string().min(1),
   english: z.string().min(1),
   finglish: z.string().optional(),
-  category: z.enum(['animals','colors','family','food','body','nature','objects']),
+  category: z.enum(WORD_CATEGORIES as unknown as [string, ...string[]]),
   stage: z.number().int().min(1).max(4).default(1),
   audio_url: z.string().nullable().optional(),
   image_url: z.string().nullable().optional(),
+  // ── Animation (Phase 0) — authored here or drafted by the generator ──
+  animation_template: z.enum(ANIMATION_TEMPLATES as unknown as [string, ...string[]]).nullable().optional(),
+  animation_params: z.record(z.unknown()).optional(),
 })
+
+/** Validate the animation template+params against the shared registry rules. */
+function animationError(data: { animation_template?: string | null; animation_params?: Record<string, unknown> }): string | null {
+  if (!data.animation_template) return null
+  const v = validateAnimationParams(data.animation_template, data.animation_params ?? {})
+  return v.ok ? null : v.errors.join('; ')
+}
 
 router.get('/words', requireAdmin, async (_req, res) => {
   const rows = await query('select * from words order by category, persian')
@@ -76,10 +87,13 @@ router.get('/words', requireAdmin, async (_req, res) => {
 router.post('/words', requireAdmin, async (req, res) => {
   const p = wordSchema.safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.message }); return }
-  const { persian, english, finglish, category, stage, audio_url, image_url } = p.data
+  const animErr = animationError(p.data)
+  if (animErr) { res.status(400).json({ data: null, error: animErr }); return }
+  const { persian, english, finglish, category, stage, audio_url, image_url, animation_template, animation_params } = p.data
   const [row] = await query(
-    'insert into words (persian,english,finglish,category,stage,audio_url,image_url) values ($1,$2,$3,$4,$5,$6,$7) returning *',
-    [persian, english, finglish ?? null, category, stage, audio_url ?? null, image_url ?? null]
+    'insert into words (persian,english,finglish,category,stage,audio_url,image_url,animation_template,animation_params) values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *',
+    [persian, english, finglish ?? null, category, stage, audio_url ?? null, image_url ?? null,
+     animation_template ?? null, JSON.stringify(animation_params ?? {})]
   )
   await syncWordTranslations(row)
   res.status(201).json({ data: row, error: null })
@@ -88,10 +102,13 @@ router.post('/words', requireAdmin, async (req, res) => {
 router.patch('/words/:id', requireAdmin, async (req, res) => {
   const p = wordSchema.partial().safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.message }); return }
+  const animErr = animationError(p.data)
+  if (animErr) { res.status(400).json({ data: null, error: animErr }); return }
   const fields = Object.entries(p.data).filter(([, v]) => v !== undefined)
   if (fields.length === 0) { res.status(400).json({ data: null, error: 'No fields to update' }); return }
   const setClause = fields.map(([k], i) => `${k} = $${i + 1}`).join(', ')
-  const values = fields.map(([, v]) => v)
+  // jsonb columns take a serialized value; everything else passes through.
+  const values = fields.map(([k, v]) => (k === 'animation_params' ? JSON.stringify(v) : v))
   const row = await queryOne(`update words set ${setClause} where id = $${values.length + 1} returning *`, [...values, req.params.id])
   if (row) await syncWordTranslations(row)
   res.json({ data: row, error: null })

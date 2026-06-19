@@ -3,9 +3,13 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import FileUpload from '@/components/FileUpload'
 import type { Word } from '@koodakbook/shared'
+import { WORD_CATEGORIES, ANIMATION_TEMPLATES, templateForCategory } from '@koodakbook/shared'
 
-const CATEGORIES = ['animals','colors','family','food','body','nature','objects']
-const EMPTY = { persian: '', english: '', finglish: '', category: 'animals', stage: 1, audio_url: '', image_url: '' }
+const CATEGORIES = WORD_CATEGORIES as readonly string[]
+const EMPTY = {
+  persian: '', english: '', finglish: '', category: 'animals', stage: 1,
+  audio_url: '', image_url: '', animation_template: '', animation_params: '',
+}
 
 export default function AdminWordsPage() {
   const [words, setWords] = useState<Word[]>([])
@@ -22,7 +26,19 @@ export default function AdminWordsPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const payload = { ...form, stage: Number(form.stage), audio_url: form.audio_url || null, image_url: form.image_url || null }
+    let animation_params: unknown = undefined
+    if (form.animation_params.trim()) {
+      try { animation_params = JSON.parse(form.animation_params) }
+      catch { alert('پارامترهای انیمیشن باید JSON معتبر باشند'); return }
+    }
+    const payload = {
+      ...form,
+      stage: Number(form.stage),
+      audio_url: form.audio_url || null,
+      image_url: form.image_url || null,
+      animation_template: form.animation_template || null,
+      animation_params,
+    }
     if (editing) {
       await api.patch(`/api/admin/words/${editing}`, payload)
     } else {
@@ -39,7 +55,13 @@ export default function AdminWordsPage() {
 
   function startEdit(w: Word) {
     setEditing(w.id)
-    setForm({ persian: w.persian, english: w.english, finglish: w.finglish ?? '', category: w.category, stage: w.stage, audio_url: w.audio_url ?? '', image_url: w.image_url ?? '' })
+    setForm({
+      persian: w.persian, english: w.english, finglish: w.finglish ?? '',
+      category: w.category, stage: w.stage, audio_url: w.audio_url ?? '', image_url: w.image_url ?? '',
+      animation_template: w.animation_template ?? '',
+      animation_params: w.animation_params && Object.keys(w.animation_params).length
+        ? JSON.stringify(w.animation_params, null, 2) : '',
+    })
   }
 
   const filtered = filter === 'all' ? words : words.filter(w => w.category === filter)
@@ -81,6 +103,20 @@ export default function AdminWordsPage() {
               {[1,2,3,4].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">قالب انیمیشن</label>
+            <select value={form.animation_template} onChange={e => setForm(f => ({ ...f, animation_template: e.target.value }))}
+              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+              <option value="">— (پیش‌فرض: {templateForCategory(form.category as never)})</option>
+              {ANIMATION_TEMPLATES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">پارامترهای انیمیشن (JSON)</label>
+          <textarea value={form.animation_params} onChange={e => setForm(f => ({ ...f, animation_params: e.target.value }))}
+            rows={3} placeholder='{ "tap_beat": "pop", "squash": 0.85 }'
+            className="ltr w-full border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-400" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FileUpload type="audio" label="فایل صوتی" currentUrl={form.audio_url}

@@ -18,6 +18,13 @@ export const WORD_CATEGORIES = [
   'feelings',
   'actions',
   'greetings',
+  'clothes',
+  'transportation',
+  'weather',
+  'school',
+  'opposites',
+  'questions',
+  'prepositions',
 ] as const
 
 export const BADGE_KEYS = [

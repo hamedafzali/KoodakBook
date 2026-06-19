@@ -1,3 +1,5 @@
+import type { AnimationTemplate, AnimationParams, ImageBrief, ScenePlan, AnimationReview } from './animation'
+
 // ── Auth ──────────────────────────────────────────────────
 export interface User {
   id: string
@@ -28,9 +30,20 @@ export interface Word {
   stage: number
   audio_url: string | null
   image_url: string | null
+  // ── Animation (Phase 0) ──
+  animation_template?: AnimationTemplate | null
+  animation_params?: AnimationParams
+  image_brief?: ImageBrief | null
+  animation_review?: AnimationReview
+  animation_engine_version?: number | null
+  animation_model?: string | null
 }
 
-export type WordCategory = 'animals' | 'colors' | 'family' | 'food' | 'body' | 'nature' | 'objects'
+export type WordCategory =
+  | 'animals' | 'colors' | 'family' | 'food' | 'body' | 'nature' | 'objects'
+  | 'numbers' | 'shapes' | 'feelings' | 'actions' | 'greetings'
+  | 'clothes' | 'transportation' | 'weather' | 'school'
+  | 'opposites' | 'questions' | 'prepositions'
 
 export interface Letter {
   id: string
@@ -41,6 +54,8 @@ export interface Letter {
   order_in_group: number
   audio_url: string | null
   example_word_id: string | null
+  animation_template?: AnimationTemplate | null
+  animation_params?: AnimationParams
 }
 
 export interface Lesson {
@@ -87,6 +102,10 @@ export interface StoryPage {
   text_english: string | null
   image_url: string | null
   audio_url: string | null
+  scene_plan?: ScenePlan | null
+  animation_review?: AnimationReview
+  animation_engine_version?: number | null
+  animation_model?: string | null
 }
 
 export interface StoryPageWord {
@@ -168,6 +187,8 @@ export interface Badge {
   title: string
   description: string | null
   image_url: string | null
+  animation_template?: AnimationTemplate | null
+  animation_params?: AnimationParams
 }
 
 export interface ChildBadge {
