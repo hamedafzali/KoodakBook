@@ -760,8 +760,17 @@ MVP is fully built and running. All core features are implemented.
   read `child_strand_levels` (via `GET /api/placement/:child_id`) and lock/order
   lessons & stories per strand (vocabulary→V, alphabet/phonics→D; stories→F/C,
   unlocked two stages early as audio-supported input). Verified live: a high-V /
-  low-D heritage profile unlocks all vocabulary lessons while alphabet stays
-  locked — differentiation a single `children.level` could not express.
+  low-D heritage profile unlocks vocabulary while the alphabet (the D-strand
+  growth edge) is its next step — differentiation a single `children.level`
+  could not express. Unlock rule: a strand at level L opens content through
+  stage L+1.
+- **v2 strand promotion (code):** `promoteStrands()` runs on lesson/story
+  completion — clearing ≥85% of a strand's unlocked content raises that strand
+  one level (only when the next stage adds content, so thin content settles at
+  "cleared everything available" rather than inflating to 4; floor = placement).
+  Completion screens celebrate "🔓 new content unlocked." Verified live: clearing
+  7/8 alphabet lessons promoted D 1→2 and stopped there. This closes the
+  progression loop: probe → gate → master → promote → unlock.
 
 ### 🔜 Next — Content & Beta
 
