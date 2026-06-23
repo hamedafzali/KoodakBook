@@ -751,6 +751,11 @@ MVP is fully built and running. All core features are implemented.
   as the new primary, so the existing admin upload UI drives the hot-swap with no
   per-handler code. Round-trip verified live: editing a word's audio_url makes
   the resolver serve the new file and demotes the prior take to history.
+- **v2 placement probe (code):** onboarding's self-declared level is replaced by
+  a measured heuristic probe (mig-020, `/api/placement/probe` + `/result`):
+  4 stage-gated, audio-first items (V→D→F→C) built from existing words+letters,
+  adaptive stop-on-first-miss, writing `children.level` + per-strand
+  `child_strand_levels`. Verified end-to-end on the server.
 
 ### 🔜 Next — Content & Beta
 
@@ -876,7 +881,11 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
-- [ ] Adaptive placement probe (replace self-declared level)
+- [x] ~~Adaptive~~ heuristic placement probe (replace self-declared level) —
+      mig-020 + `/api/placement/*`; onboarding routes to a 4-item audio-first
+      probe (V→D→F→C) that sets `children.level` + per-strand `child_strand_levels`.
+      Verified end-to-end (heritage profile captured as high-V / low-D). Upgrade
+      to IRT-adaptive once pilot data calibrates `content_items.difficulty`.
 - [ ] Session engine (Warm-up→Teach→Apply→Stretch→Win) + journey-map child UX
 - [ ] Parent literacy-gain model + predictive milestone + 1 intervention (focus area)
 - [ ] Grandparent read-aloud loop
