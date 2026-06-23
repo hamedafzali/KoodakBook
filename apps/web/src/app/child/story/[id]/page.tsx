@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
+import { motion } from 'framer-motion'
 import StoryReader from '@/components/child/StoryReader'
 import RewardPopup from '@/components/child/RewardPopup'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import Mascot from '@/components/child/Mascot'
 import { pickChild } from '@/lib/activeChild'
-import type { Story, StoryPage, Badge, Child } from '@koodakbook/shared'
+import type { Story, StoryPage, Badge, Child, Promotion } from '@koodakbook/shared'
 
 type FullStory = Story & { pages: StoryPage[] }
 
@@ -24,6 +26,7 @@ export default function StoryPage() {
     if (pref !== null) setShowBilingual(pref === '1')
   }, [])
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
+  const [showUnlock, setShowUnlock] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -46,15 +49,32 @@ export default function StoryPage() {
 
   async function handleComplete() {
     if (!childId || !story) return
-    const res = await api.post<{ new_badges: Badge[] }>(
+    const res = await api.post<{ new_badges: Badge[]; promotions: Promotion[] }>(
       '/api/progress/story',
       { child_id: childId, story_id: story.id, last_page: story.pages.length - 1, completed: true }
     )
     if (res.data?.new_badges?.[0]) setNewBadge(res.data.new_badges[0])
+    else if (res.data?.promotions?.length) {
+      setShowUnlock(true)
+      setTimeout(() => router.push('/child/home'), 2600)
+    }
     else router.push('/child/home')
   }
 
   if (!story) return <LoadingScreen message="در حال بارگذاری داستان..." />
+
+  if (showUnlock) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center child-bg p-6 text-center gap-4">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
+          <Mascot size={120} mood="excited" />
+        </motion.div>
+        <p className="text-3xl">🔓✨</p>
+        <h1 className="text-2xl font-bold text-gray-800">محتوای جدید باز شد!</h1>
+        <p className="text-gray-500 persian-text">داستان‌ها و درس‌های تازه در خانه منتظرت هستند</p>
+      </div>
+    )
+  }
 
   return (
     <>

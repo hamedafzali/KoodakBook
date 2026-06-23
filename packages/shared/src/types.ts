@@ -44,6 +44,13 @@ export interface PlacementProbe {
   questions: ProbeQuestion[]
 }
 
+/** A strand level-up earned by clearing unlocked content (progress-driven). */
+export interface Promotion {
+  strand: Strand
+  from: number
+  to: number
+}
+
 export type CreateChildInput = Pick<Child, 'name' | 'birth_year' | 'level' | 'avatar_url'>
 
 // ── Content ───────────────────────────────────────────────

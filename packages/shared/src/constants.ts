@@ -17,13 +17,14 @@ export function lessonStrand(type: string): Strand {
 }
 
 /**
- * Content unlock rules driven by placement (mig-020 / project.md §11.1).
- * A lesson unlocks once the child's relevant strand reaches its stage; stories
- * are more lenient (audio-supported, input-rich) and unlock two stages early so
- * a beginner still gets read-aloud practice while stage-4 stays gated.
+ * Content unlock rules driven by placement + promotion (mig-020 / §11.1).
+ * A strand at level L opens content up to stage L+1 — your "growth edge" — so a
+ * heritage child at D=1 (can't read) immediately gets the alphabet (stage 2,
+ * the entry to decoding) rather than having it locked. Stages further out stay
+ * gated. Stories unlock a stage earlier still (audio-supported, input-rich).
  */
 export function isLessonUnlocked(lesson: { type: string; stage: number }, lv: StrandLevels): boolean {
-  return lv[lessonStrand(lesson.type)] >= lesson.stage
+  return lv[lessonStrand(lesson.type)] >= lesson.stage - 1
 }
 export function isStoryUnlocked(story: { stage: number }, lv: StrandLevels): boolean {
   return Math.max(lv.F, lv.C) >= story.stage - 2

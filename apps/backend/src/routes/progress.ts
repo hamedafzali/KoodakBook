@@ -4,6 +4,7 @@ import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
 import { checkAndAwardBadges } from './badges'
+import { promoteStrands } from '../lib/strands'
 
 const router = Router()
 
@@ -179,7 +180,8 @@ router.post('/lesson', requireAuth, requireChildOwner, async (req, res) => {
   )
 
   const newBadges = await checkAndAwardBadges(child_id)
-  res.json({ data: row, new_badges: newBadges, error: null })
+  const promotions = await promoteStrands(child_id)
+  res.json({ data: row, new_badges: newBadges, promotions, error: null })
 })
 
 // ── Story progress ────────────────────────────────────────
@@ -209,7 +211,8 @@ router.post('/story', requireAuth, requireChildOwner, async (req, res) => {
   )
 
   const newBadges = await checkAndAwardBadges(child_id)
-  res.json({ data: row, new_badges: newBadges, error: null })
+  const promotions = completed ? await promoteStrands(child_id) : []
+  res.json({ data: row, new_badges: newBadges, promotions, error: null })
 })
 
 // ── Full progress summary ─────────────────────────────────

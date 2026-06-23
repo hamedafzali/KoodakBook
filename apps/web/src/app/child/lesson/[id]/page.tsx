@@ -12,7 +12,7 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import { pickChild } from '@/lib/activeChild'
-import type { Lesson, LessonItem, Badge, Child } from '@koodakbook/shared'
+import type { Lesson, LessonItem, Badge, Child, Promotion } from '@koodakbook/shared'
 
 type LessonWithItems = Lesson & { items: LessonItem[] }
 
@@ -57,6 +57,7 @@ export default function LessonPage() {
   const [correctCount, setCorrectCount] = useState(0)
   const [incorrectCount, setIncorrectCount] = useState(0)
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
+  const [promotions, setPromotions] = useState<Promotion[]>([])
   const [completed, setCompleted] = useState(false)
   const completedFiredRef = useRef(false)
 
@@ -94,10 +95,11 @@ export default function LessonPage() {
   async function handleComplete(correct: number, total: number) {
     if (!childId || !lesson) return
     const score = total > 0 ? Math.round((correct / total) * 100) : 100
-    const res = await api.post<{ new_badges: Badge[] }>(
+    const res = await api.post<{ new_badges: Badge[]; promotions: Promotion[] }>(
       '/api/progress/lesson',
       { child_id: childId, lesson_id: lesson.id, score }
     )
+    if (res.data?.promotions?.length) setPromotions(res.data.promotions)
     if (res.data?.new_badges?.[0]) setNewBadge(res.data.new_badges[0])
     else setCompleted(true)
   }
@@ -160,6 +162,19 @@ export default function LessonPage() {
             </div>
           </div>
         </motion.div>
+
+        {promotions.length > 0 && (
+          <motion.div
+            className="bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-[1.5rem] shadow-lg p-4 w-full max-w-xs text-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.55, type: 'spring', stiffness: 300, damping: 16 }}
+          >
+            <p className="text-2xl mb-1">🔓✨</p>
+            <p className="font-bold">محتوای جدید باز شد!</p>
+            <p className="text-xs text-white/85 mt-0.5 persian-text">درس‌ها و داستان‌های تازه در خانه منتظرت هستند</p>
+          </motion.div>
+        )}
 
         <motion.button
           onClick={() => router.push('/child/home')}
