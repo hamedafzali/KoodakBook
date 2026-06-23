@@ -63,7 +63,7 @@ export default function SpeakPage() {
       if (res.matched) {
         playSuccess()
         setPhase('correct')
-        if (childId) api.post('/api/progress/word', { child_id: childId, word_id: word.id, status: 'practiced' })
+        if (childId) api.post('/api/progress/word', { child_id: childId, word_id: word.id, status: 'practiced', track: 'productive' })
       } else {
         setPhase('tryagain')
       }

@@ -736,6 +736,12 @@ MVP is fully built and running. All core features are implemented.
   prepositions, clothes, transportation, weather, school) + numbers 11–20,
   rewrote 5 weak stories to a Hook→…→Recap structure with child interaction.
   Now ~189 words / 19 categories / 28 lessons / 15 stories / 94 pages.
+- **v2 Phase-A foundations (code):** receptive/productive Leitner split + mastery
+  state machine (mig-016, additive over 006; `/word` route maintains both tracks,
+  `track:'productive'` from the speak page); content-scaling spine `content_items`
+  + versioned `audio_assets` with provenance (mig-017, additive, backfilled from
+  existing content); parent door moved out of the child grid to a 700ms
+  hold-to-enter corner gate. See §11 for the full v2→v3 plan.
 
 ### 🔜 Next — Content & Beta
 
@@ -757,3 +763,130 @@ MVP is fully built and running. All core features are implemented.
 - Offline mode (PWA service worker)
 - Physical book + QR code integration
 - Teacher accounts for weekend Persian schools
+
+---
+
+## 11. v2 → v3 Evolution Plan
+
+> From "MVP that demos" to "validated, adaptive heritage-literacy system."
+> Designed as a product *system*, not a feature list. Sequenced so the loop is
+> proven on a small, gorgeous slice **before** content is scaled.
+
+### 11.0 Direction
+
+| | v2 — "Complete the Slice" | v3 — "Adaptive Heritage Literacy System" |
+|---|---|---|
+| Thesis | Depth over breadth: make the existing slice illustrated, native-voiced, validated | Scale content + adaptivity + multi-locale + B2B on a proven loop |
+| Content | ~300 items, fully illustrated + native-voiced | 2,000–5,000 items via hybrid AI+human pipeline |
+| Engine | Per-strand mastery + adaptive placement | Full adaptive sequencing + comprehension diagnostics |
+
+**North-star metric (NSM):** number of children who **independently read a Stage-3
+story aloud** — not words learned, not minutes.
+
+**Value reframe:** turn *"my kid understands but can't read Persian"* into
+*"my kid just read me a story"* — and show the parent it's working the whole way.
+
+### 11.1 Learning System Architecture
+
+**Braided strands** replace the single coarse `children.level` (1–4):
+
+```
+P  Phonological Awareness  → unlocks D
+D  Decoding (script)       → unlocks F (per grapheme set)
+V  Vocabulary (receptive + productive)   → feeds F & C
+F  Fluency                 → unlocks C
+C  Comprehension           → NSM
+```
+
+Controllable-text invariant: **a story only contains graphemes the child has
+decoded (D) and words ≥80% receptively known (V).** This makes both the learner
+experience and the content generator tractable.
+
+**Spaced repetition upgrade** (extends Leitner mig-006):
+- Split **receptive** (`box_receptive`) vs **productive** (`box_productive`) memory.
+- Mastery state machine: `introduced → practicing → mastered → consolidated`,
+  with promotion/demotion rules. Productive track *enriches* mastery, never *gates*
+  it (ASR is unreliable on Persian/iOS — the loop must never stall on tech limits).
+
+**Adaptive placement** replaces self-declared level: parent cold-start prior →
+≤90s audio-first adaptive probe → continuous per-strand recalibration.
+
+**Unlock is mastery-driven, not completion-driven** (you cannot click through).
+
+### 11.2 Content Scaling (200 → 2,000–5,000)
+
+Principle: **AI proposes, native speaker + pedagogue dispose.** The existing
+`animation_review` (pending→approved/rejected) + `animation_model`/`engine_version`
+columns (mig-014) are already the audit trail for exactly this.
+
+- **Typed content spine** (`content_items`): kind, strand, difficulty vector,
+  graphemes/phonemes, frequency_rank, cultural_tags, prereq DAG. Localized text
+  stays in `content_translations` (mig-009); audio moves to versioned `audio_assets`.
+- **Illustration system:** flat-vector + gouache texture, token-driven palette,
+  recurring cast library, `image_brief` schema + conformance check, cultural flags
+  (Persian-diaspora identity, no nationalist/religious iconography).
+- **Story generator** constrained by the learner model: controlled vocabulary +
+  controlled script + house Hook→…→Recap structure → linter → native polish.
+- **Audio split rule:** native human for anything judged by ear or imitated
+  (stories, core 500 words, letters, phonics); TTS for long-tail + AI-personalized
+  stories. `audio_assets` stores provenance and supports hot-swap (TTS → native).
+
+### 11.3 Retention (constrained: ages 3–12, not over-gamified, outcome-aligned)
+
+- **Forgiving streaks:** count days a *learning goal* was met; miss → streak
+  *pauses* (practice-debt), never resets. Parent-pausable (travel mode).
+- **Mastery-gated rewards:** a collectible unlocks only when a category reaches
+  ≥85% mastered — rewards signal learning, not engagement-bait.
+- **Grandparent read-aloud loop** is the real moat: child reads → "record for
+  Grandma?" → share → grandparent reacts → parent re-engages → renews.
+
+### 11.4 Monetization (reads `users.plan` / `plan_expires_at`, mig-008)
+
+Free tier must deliver **one genuine "my kid read to me" moment** (the proof that
+converts); gate *scale*, not the aha. Triggers fire on emotional highs (post-NSM
+unlock), never on frustration walls. Annual-default pricing anchored to heritage
+value; grandparent **gift** tier via `plan_expires_at`. B2B: seat-licensed school
+plan reusing `content_items`.
+
+### 11.5 Validation (non-negotiable gate before scaling)
+
+10-family, 6-week design-partner pilot. Pre/post decoding + receptive-vocab probes.
+**Gates to scale:** activation (first read-aloud) ≥60%, W4 retention ≥40%,
+meaningful literacy gain, session completion ≥70%, WTP ≥40%.
+**Do NOT build until validated:** 2k-item scaling, multi-locale, native mobile app,
+Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
+
+### 11.6 Phased Execution (ranked by impact × risk-reduction ÷ effort)
+
+**Phase A — 0–30 days · "Make the slice real" (fixes)**
+- [ ] Commission + integrate illustrations for core ~150 words + 5 story covers *(content production)*
+- [ ] Record native voice for those 150 words + 5 stories; wire `audio_assets` swap *(content production)*
+- [x] Move parent door out of the child grid → discreet hold-to-enter corner gate *(code)*
+- [x] Mastery state machine + receptive/productive Leitner split — schema + route wiring *(code, mig-016)*
+- [x] Content-scaling foundation: `content_items` spine + versioned `audio_assets` *(code, mig-017)*
+- **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
+
+**Phase B — 30–90 days · "Prove the engine" (system + pilot)**
+- [ ] Adaptive placement probe (replace self-declared level)
+- [ ] Session engine (Warm-up→Teach→Apply→Stretch→Win) + journey-map child UX
+- [ ] Parent literacy-gain model + predictive milestone + 1 intervention (focus area)
+- [ ] Grandparent read-aloud loop
+- [ ] One conversion trigger on `users.plan` (post-NSM unlock)
+- [ ] **Run the 10-family pilot → metrics gate**
+- **Gate:** pilot clears activation + literacy-gain thresholds.
+
+**Phase C — 90–180 days · "Scale" (only if Phase B gate cleared)**
+- [ ] Hybrid content pipeline (AI-draft → native-review queue over `content_items`)
+- [ ] Story generator with controlled-vocabulary constraints
+- [ ] Scale to ~1,000 items (illustration + TTS long-tail + batched native for core)
+- [ ] Full freemium packaging + annual/gift pricing + billing
+- [ ] Co-read / record-voice premium + print PDF companion
+- [ ] B2B school pilot (seat licensing) — after teacher curriculum validation
+
+### 11.7 Standing tradeoffs
+1. Depth-first delays a content-rich demo — but a wide emoji library is what's
+   failing now; one gorgeous slice converts *and* validates.
+2. Mastery-gating feels slower to a click-happy child — but it's the line between
+   an *activity* and a *literacy system*; the NSM depends on real decoding.
+3. Native voice + illustration are slow/costly — so make them the scarce,
+   human-reviewed end of an AI-saturated pipeline, spent only on the validated core.

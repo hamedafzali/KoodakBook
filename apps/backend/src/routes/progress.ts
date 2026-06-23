@@ -51,13 +51,17 @@ const wordProgressSchema = z.object({
   // Leitner outcome of this interaction. Omitted = treated as a correct rep
   // (so existing lesson/speak callers keep working unchanged).
   result: z.enum(['correct', 'incorrect']).optional(),
+  // Which memory track this interaction exercises (mig-016). 'productive' =
+  // the child SAID/RECALLED the word (speak page); 'receptive' (default) =
+  // hear→recognise (lessons, review). Omitted = receptive, backward-compatible.
+  track: z.enum(['receptive', 'productive']).optional(),
 })
 
 router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
   const parsed = wordProgressSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
 
-  const { child_id, word_id, status, result } = parsed.data
+  const { child_id, word_id, status, result, track } = parsed.data
   const correct = result !== 'incorrect'
 
   // Leitner: a correct rep promotes the word one box (max 5) and schedules the
@@ -90,6 +94,44 @@ router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
      returning *`,
     [child_id, word_id, status, correct]
   )
+
+  // ── Parallel SR-split maintenance (mig-016) ──────────────
+  // Additive: legacy box/due_at/status above stay authoritative for current
+  // readers. Here we keep the new receptive/productive tracks + mastery state
+  // in sync so the cutover (project.md §11.1) has truthful data to read.
+  if (track === 'productive') {
+    // The child produced the word. Advance the productive Leitner box on its own
+    // schedule (day intervals per destination box: 1,2,4,7,16). Mastery never
+    // gates on this track — it only bumps practicing upward, never downgrades.
+    await query(
+      `update child_word_progress set
+         box_productive = case when $3 then least(coalesce(box_productive, 0) + 1, 5) else 1 end,
+         due_productive = now() + (case
+           when not $3 then interval '1 day'
+           when least(coalesce(box_productive, 0) + 1, 5) <= 1 then interval '1 day'
+           when least(coalesce(box_productive, 0) + 1, 5) = 2 then interval '2 days'
+           when least(coalesce(box_productive, 0) + 1, 5) = 3 then interval '4 days'
+           when least(coalesce(box_productive, 0) + 1, 5) = 4 then interval '7 days'
+           else interval '16 days' end),
+         mastery = case when mastery in ('mastered', 'consolidated') then mastery else 'practicing' end
+       where child_id = $1 and word_id = $2`,
+      [child_id, word_id, correct]
+    )
+  } else {
+    // Receptive track mirrors the legacy single track we just wrote. mastery is
+    // derived from the (monotonic) legacy status, so it never downgrades.
+    await query(
+      `update child_word_progress set
+         box_receptive = box,
+         due_receptive = due_at,
+         mastery = case status
+           when 'mastered'  then 'mastered'
+           when 'practiced' then 'practicing'
+           else 'introduced' end
+       where child_id = $1 and word_id = $2`,
+      [child_id, word_id]
+    )
+  }
 
   const newBadges = await checkAndAwardBadges(child_id)
   res.json({ data: row, new_badges: newBadges, error: null })
