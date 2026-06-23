@@ -771,6 +771,13 @@ MVP is fully built and running. All core features are implemented.
   Completion screens celebrate "🔓 new content unlocked." Verified live: clearing
   7/8 alphabet lessons promoted D 1→2 and stopped there. This closes the
   progression loop: probe → gate → master → promote → unlock.
+- **v2 pilot instrumentation (code):** `placement_history` snapshots (mig-021,
+  written on every probe result) make pre/post literacy gain measurable;
+  `GET /api/admin/pilot-metrics` derives the §11.5 funnel from existing tables
+  (activation = completed a stage-3 story; weekly retention W1–4 with eligibility
+  windows; engagement; avg level gain); the admin "پایلوت" page renders it with
+  the target gates (activation ≥60%, W4 retention ≥40%) colored pass/fail.
+  Verified live (endpoint 200 + correct funnel, admin page 200).
 
 ### 🔜 Next — Content & Beta
 
@@ -896,6 +903,10 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
+- [x] Pilot instrumentation — `GET /api/admin/pilot-metrics` + admin "پایلوت"
+      page render the §11.5 funnel (activation/NSM, weekly retention, engagement,
+      literacy gain) from existing tables + `placement_history` snapshots
+      (mig-021). Verified live. *Still needed: recruit the 10 families + run it.*
 - [x] ~~Adaptive~~ heuristic placement probe (replace self-declared level) —
       mig-020 + `/api/placement/*`; onboarding routes to a 4-item audio-first
       probe (V→D→F→C) that sets `children.level` + per-strand `child_strand_levels`.
