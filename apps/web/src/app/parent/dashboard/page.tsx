@@ -86,7 +86,7 @@ export default function ParentDashboardPage() {
     )
   }
 
-  const { child, streak_days, words_learned, stories_completed, lessons_completed, recent_badges, recent_sessions, xp } = summary
+  const { child, streak_days, words_learned, stories_completed, lessons_completed, recent_badges, recent_sessions, xp, mastery_breakdown } = summary
   const heatmap = buildWeekHeatmap(recent_sessions)
   const todayMin = heatmap[heatmap.length - 1]?.totalMin ?? 0
   const goalMin = typeof window !== 'undefined' ? parseInt(localStorage.getItem('koodakbook_daily_goal_min') ?? '10') : 10
@@ -232,6 +232,40 @@ export default function ParentDashboardPage() {
             <StatCard emoji="📖" value={stories_completed} label="داستان خوانده"   color="bg-green-50 border-green-200" />
             <StatCard emoji="✅" value={lessons_completed}  label="درس تمام شده"   color="bg-purple-50 border-purple-200" />
           </section>
+
+          {/* ── Word mastery breakdown (mig-016) ── */}
+          {mastery_breakdown && (() => {
+            const total = mastery_breakdown.introduced + mastery_breakdown.practicing + mastery_breakdown.mastered + mastery_breakdown.consolidated
+            if (total === 0) return null
+            const segs = [
+              { key: 'consolidated', label: 'تثبیت‌شده',   count: mastery_breakdown.consolidated, bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
+              { key: 'mastered',     label: 'یاد گرفته',    count: mastery_breakdown.mastered,     bar: 'bg-green-500',   dot: 'bg-green-500' },
+              { key: 'practicing',   label: 'در حال تمرین', count: mastery_breakdown.practicing,   bar: 'bg-amber-400',   dot: 'bg-amber-400' },
+              { key: 'introduced',   label: 'معرفی شده',    count: mastery_breakdown.introduced,   bar: 'bg-slate-300',   dot: 'bg-slate-300' },
+            ]
+            return (
+              <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="mastery-title">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 id="mastery-title" className="font-bold text-slate-700 text-sm">تسلط بر کلمه‌ها</h2>
+                  <span className="text-xs text-slate-400">{total} کلمه</span>
+                </div>
+                <div className="flex h-3 rounded-full overflow-hidden mb-3" role="img" aria-label="نمودار تسلط بر کلمه‌ها">
+                  {segs.filter(s => s.count > 0).map(s => (
+                    <div key={s.key} className={s.bar} style={{ width: `${(s.count / total) * 100}%` }} title={`${s.label}: ${s.count}`} />
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                  {segs.map(s => (
+                    <div key={s.key} className="flex items-center gap-2 text-xs">
+                      <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} aria-hidden="true" />
+                      <span className="text-slate-600">{s.label}</span>
+                      <span className="text-slate-400 font-medium ms-auto">{s.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
+          })()}
 
           {/* ── Recent badges ── */}
           {recent_badges.length > 0 && (

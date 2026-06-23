@@ -119,17 +119,38 @@ export interface StoryPageWord {
 // ── Progress ──────────────────────────────────────────────
 export type WordStatus = 'introduced' | 'practiced' | 'mastered'
 
+/**
+ * Mastery state machine (mig-016). Supersedes the 3-state legacy `status`:
+ * introduced → practicing → mastered → consolidated. Productive recall (speak)
+ * enriches mastery but never gates it. See project.md §11.1.
+ */
+export type WordMastery = 'introduced' | 'practicing' | 'mastered' | 'consolidated'
+
 export interface ChildWordProgress {
   id: string
   child_id: string
   word_id: string
   status: WordStatus
+  /** New 4-state model (mig-016). Optional during the reader cutover. */
+  mastery?: WordMastery
   introduced_at: string
   mastered_at: string | null
   replay_count: number
   box?: number
   due_at?: string | null
   last_reviewed_at?: string | null
+  /** Parallel Leitner tracks (mig-016): receptive = hear→recognise, productive = say/recall. */
+  box_receptive?: number
+  box_productive?: number | null
+  due_receptive?: string | null
+  due_productive?: string | null
+}
+
+export interface MasteryBreakdown {
+  introduced: number
+  practicing: number
+  mastered: number
+  consolidated: number
 }
 
 /** A word the spaced-repetition scheduler says is due now. */
@@ -207,6 +228,8 @@ export interface DashboardSummary {
   stories_completed: number
   lessons_completed: number
   xp: number
+  /** Words bucketed by the mastery state machine (mig-016). */
+  mastery_breakdown: MasteryBreakdown
   recent_sessions: ChildSession[]
   recent_badges: ChildBadge[]
 }

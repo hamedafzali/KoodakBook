@@ -140,7 +140,9 @@ router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
 // ── Words due for spaced-repetition review ─────────────────
 router.get('/:child_id/review', requireAuth, requireChildOwner, async (req, res) => {
   const rows = await query(
-    `select cwp.word_id, cwp.box, cwp.due_at, row_to_json(w.*) as word
+    // word.audio_url is resolved from the primary audio_asset (native > tts, mig-018).
+    `select cwp.word_id, cwp.box, cwp.due_at,
+       to_jsonb(w) || jsonb_build_object('audio_url', coalesce(primary_audio('word', w.id), w.audio_url)) as word
      from child_word_progress cwp
      join words w on w.id = cwp.word_id
      where cwp.child_id = $1

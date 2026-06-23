@@ -14,7 +14,7 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
       'select started_at, duration_sec from child_sessions where child_id = $1 order by started_at desc limit 30',
       [child_id]
     ),
-    query('select status from child_word_progress where child_id = $1', [child_id]),
+    query('select mastery from child_word_progress where child_id = $1', [child_id]),
     query('select completed from child_story_progress where child_id = $1', [child_id]),
     query('select completed from child_lesson_progress where child_id = $1', [child_id]),
     query(
@@ -48,8 +48,14 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
     } else break
   }
 
-  const words_learned    = (wordProgress    as { status: string }[]).filter(w => w.status !== 'introduced').length
-  const mastered_words   = (wordProgress    as { status: string }[]).filter(w => w.status === 'mastered').length
+  // Bucket words by the mastery state machine (mig-016). 'mastered' counts both
+  // mastered and consolidated; 'words_learned' is everything past 'introduced'.
+  const mastery_breakdown = { introduced: 0, practicing: 0, mastered: 0, consolidated: 0 }
+  for (const w of wordProgress as { mastery: keyof typeof mastery_breakdown }[]) {
+    if (w.mastery in mastery_breakdown) mastery_breakdown[w.mastery]++
+  }
+  const words_learned     = mastery_breakdown.practicing + mastery_breakdown.mastered + mastery_breakdown.consolidated
+  const mastered_words    = mastery_breakdown.mastered + mastery_breakdown.consolidated
   const stories_completed = (storyProgress  as { completed: boolean }[]).filter(s => s.completed).length
   const lessons_completed = (lessonProgress as { completed: boolean }[]).filter(l => l.completed).length
 
@@ -69,6 +75,7 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
       stories_completed,
       lessons_completed,
       xp,
+      mastery_breakdown,
       recent_sessions: sessions.slice(0, 5),
       recent_badges: badges,
     },

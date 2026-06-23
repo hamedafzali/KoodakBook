@@ -3,6 +3,15 @@ import { query, queryOne } from '../lib/db'
 
 const router = Router()
 
+// Resolve a row to JSON with its audio_url overridden by the primary
+// audio_asset (a native take supersedes the TTS bootstrap — mig-017/018).
+// Returns a jsonb expression; callers select it `as obj` and unwrap, or embed
+// it. No-op until a native audio_asset row exists for the entity.
+const withAudio = (alias: string, entity: 'word' | 'letter' | 'story' | 'story_page') =>
+  `to_jsonb(${alias}) || jsonb_build_object('audio_url', coalesce(primary_audio('${entity}', ${alias}.id), ${alias}.audio_url))`
+
+type Obj = { obj: Record<string, unknown> }
+
 router.get('/lessons', async (req, res) => {
   const { stage } = req.query
   const rows = stage
@@ -17,8 +26,8 @@ router.get('/lessons/:id', async (req, res) => {
 
   const items = await query(
     `select li.*,
-       row_to_json(w.*) as word,
-       row_to_json(l.*) as letter
+       case when w.id is not null then ${withAudio('w', 'word')}   else null end as word,
+       case when l.id is not null then ${withAudio('l', 'letter')} else null end as letter
      from lesson_items li
      left join words   w on w.id = li.word_id
      left join letters l on l.id = li.letter_id
@@ -34,21 +43,23 @@ router.get('/stories', async (req, res) => {
   // The shared catalogue excludes AI-personalized stories — those surface only
   // for the child they were generated for (see /api/ai/stories/:child_id).
   const rows = stage
-    ? await query('select * from stories where stage = $1 and not ai_generated order by created_at', [stage])
-    : await query('select * from stories where not ai_generated order by stage, created_at')
-  res.json({ data: rows, error: null })
+    ? await query<Obj>(`select ${withAudio('s', 'story')} as obj from stories s where s.stage = $1 and not s.ai_generated order by s.created_at`, [stage])
+    : await query<Obj>(`select ${withAudio('s', 'story')} as obj from stories s where not s.ai_generated order by s.stage, s.created_at`)
+  res.json({ data: rows.map(r => r.obj), error: null })
 })
 
 router.get('/stories/:id', async (req, res) => {
-  const story = await queryOne('select * from stories where id = $1', [req.params.id])
+  const story = await queryOne<Obj>(`select ${withAudio('s', 'story')} as obj from stories s where s.id = $1`, [req.params.id])
   if (!story) { res.status(404).json({ data: null, error: 'Story not found' }); return }
 
-  const pages = await query(
-    `select sp.*,
-       coalesce(
-         json_agg(json_build_object('id', spw.id, 'position', spw.position, 'word', row_to_json(w.*)))
-         filter (where spw.id is not null), '[]'
-       ) as words
+  const pages = await query<Obj>(
+    `select to_jsonb(sp) || jsonb_build_object(
+         'audio_url', coalesce(primary_audio('story_page', sp.id), sp.audio_url),
+         'words', coalesce(
+           json_agg(json_build_object('id', spw.id, 'position', spw.position, 'word', ${withAudio('w', 'word')}))
+             filter (where spw.id is not null), '[]'
+         )
+       ) as obj
      from story_pages sp
      left join story_page_words spw on spw.page_id = sp.id
      left join words w on w.id = spw.word_id
@@ -57,36 +68,39 @@ router.get('/stories/:id', async (req, res) => {
      order by sp.page_number`,
     [req.params.id]
   )
-  res.json({ data: { ...story, pages }, error: null })
+  res.json({ data: { ...story.obj, pages: pages.map(r => r.obj) }, error: null })
 })
 
 router.get('/words', async (req, res) => {
   const { category, stage } = req.query
-  let sql = 'select * from words'
+  let sql = `select ${withAudio('w', 'word')} as obj from words w`
   const params: unknown[] = []
   const conditions: string[] = []
-  if (category) { conditions.push(`category = $${params.push(category)}`); }
-  if (stage)    { conditions.push(`stage = $${params.push(stage)}`); }
+  if (category) { conditions.push(`w.category = $${params.push(category)}`); }
+  if (stage)    { conditions.push(`w.stage = $${params.push(stage)}`); }
   if (conditions.length) sql += ' where ' + conditions.join(' and ')
-  sql += ' order by category, persian'
-  const rows = await query(sql, params)
-  res.json({ data: rows, error: null })
+  sql += ' order by w.category, w.persian'
+  const rows = await query<Obj>(sql, params)
+  res.json({ data: rows.map(r => r.obj), error: null })
 })
 
 router.get('/words/:id', async (req, res) => {
-  const word = await queryOne('select * from words where id = $1', [req.params.id])
+  const word = await queryOne<Obj>(`select ${withAudio('w', 'word')} as obj from words w where w.id = $1`, [req.params.id])
   if (!word) { res.status(404).json({ data: null, error: 'Word not found' }); return }
-  res.json({ data: word, error: null })
+  res.json({ data: word.obj, error: null })
 })
 
 router.get('/letters', async (req, res) => {
-  const rows = await query(
-    `select l.*, row_to_json(w.*) as example_word
+  const rows = await query<Obj>(
+    `select to_jsonb(l) || jsonb_build_object(
+         'audio_url', coalesce(primary_audio('letter', l.id), l.audio_url),
+         'example_word', case when w.id is not null then ${withAudio('w', 'word')} else null end
+       ) as obj
      from letters l
      left join words w on w.id = l.example_word_id
      order by l.group, l.order_in_group`
   )
-  res.json({ data: rows, error: null })
+  res.json({ data: rows.map(r => r.obj), error: null })
 })
 
 export default router

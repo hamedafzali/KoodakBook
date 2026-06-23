@@ -22,15 +22,29 @@ interface EnrichedProgress {
   recent_sessions: ChildSession[]
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  introduced: 'bg-gray-100 text-gray-500',
-  practiced:  'bg-amber-100 text-amber-700',
-  mastered:   'bg-green-100 text-green-700',
+// Mastery state machine (mig-016) — 4 states, ordered strongest → weakest.
+const MASTERY_ORDER = ['consolidated', 'mastered', 'practicing', 'introduced'] as const
+type MasteryKey = typeof MASTERY_ORDER[number]
+
+const MASTERY_COLOR: Record<MasteryKey, string> = {
+  consolidated: 'bg-emerald-100 text-emerald-700',
+  mastered:     'bg-green-100 text-green-700',
+  practicing:   'bg-amber-100 text-amber-700',
+  introduced:   'bg-gray-100 text-gray-500',
 }
-const STATUS_LABEL: Record<string, string> = {
-  introduced: 'معرفی شده',
-  practiced:  'تمرین شده',
-  mastered:   'یاد گرفته',
+const MASTERY_LABEL: Record<MasteryKey, string> = {
+  consolidated: 'تثبیت‌شده',
+  mastered:     'یاد گرفته',
+  practicing:   'در حال تمرین',
+  introduced:   'معرفی شده',
+}
+
+// Fall back to the legacy 3-state status for any row not yet migrated.
+function effectiveMastery(w: { mastery?: string; status: string }): MasteryKey {
+  if (w.mastery && w.mastery in MASTERY_COLOR) return w.mastery as MasteryKey
+  if (w.status === 'mastered') return 'mastered'
+  if (w.status === 'practiced') return 'practicing'
+  return 'introduced'
 }
 
 type TabKey = 'words' | 'lessons' | 'stories' | 'sessions'
@@ -90,11 +104,13 @@ export default function ParentProgressPage() {
     </div>
   )
 
-  const wordsByStatus = {
-    mastered:   progress?.words.filter(w => w.status === 'mastered')   ?? [],
-    practiced:  progress?.words.filter(w => w.status === 'practiced')  ?? [],
-    introduced: progress?.words.filter(w => w.status === 'introduced') ?? [],
+  const wordsByMastery: Record<MasteryKey, EnrichedProgress['words']> = {
+    consolidated: progress?.words.filter(w => effectiveMastery(w) === 'consolidated') ?? [],
+    mastered:     progress?.words.filter(w => effectiveMastery(w) === 'mastered')     ?? [],
+    practicing:   progress?.words.filter(w => effectiveMastery(w) === 'practicing')   ?? [],
+    introduced:   progress?.words.filter(w => effectiveMastery(w) === 'introduced')   ?? [],
   }
+  const learnedCount = wordsByMastery.consolidated.length + wordsByMastery.mastered.length
 
   const TABS: { key: TabKey; label: string; count: number }[] = [
     { key: 'words',    label: 'کلمات',    count: progress?.words.length ?? 0 },
@@ -127,7 +143,7 @@ export default function ParentProgressPage() {
         {/* Summary stats */}
         <div className="grid grid-cols-3 gap-3 px-4 pt-4">
           <div className="bg-green-50 rounded-[1.25rem] p-4 text-center">
-            <p className="text-2xl font-bold text-green-700">{wordsByStatus.mastered.length}</p>
+            <p className="text-2xl font-bold text-green-700">{learnedCount}</p>
             <p className="text-xs text-green-600 mt-0.5">کلمه یاد گرفته</p>
           </div>
           <div className="bg-amber-50 rounded-[1.25rem] p-4 text-center">
@@ -178,16 +194,16 @@ export default function ParentProgressPage() {
               {(progress?.words.length ?? 0) === 0 && (
                 <p className="text-center text-slate-400 py-8 persian-text">هنوز کلمه‌ای یاد نگرفته</p>
               )}
-              {(['mastered', 'practiced', 'introduced'] as const).map(status =>
-                wordsByStatus[status].length > 0 && (
-                  <section key={status} aria-labelledby={`status-${status}`}>
-                    <h3 id={`status-${status}`} className="text-sm font-bold text-slate-600 mb-2 flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${STATUS_COLOR[status]}`}>{STATUS_LABEL[status]}</span>
-                      <span className="text-slate-400">{wordsByStatus[status].length} کلمه</span>
+              {MASTERY_ORDER.map(level =>
+                wordsByMastery[level].length > 0 && (
+                  <section key={level} aria-labelledby={`mastery-${level}`}>
+                    <h3 id={`mastery-${level}`} className="text-sm font-bold text-slate-600 mb-2 flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${MASTERY_COLOR[level]}`}>{MASTERY_LABEL[level]}</span>
+                      <span className="text-slate-400">{wordsByMastery[level].length} کلمه</span>
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {wordsByStatus[status].map(w => (
-                        <div key={w.id} className={`px-3 py-1.5 rounded-xl text-sm font-medium ${STATUS_COLOR[status]}`}>
+                      {wordsByMastery[level].map(w => (
+                        <div key={w.id} className={`px-3 py-1.5 rounded-xl text-sm font-medium ${MASTERY_COLOR[level]}`}>
                           {w.word?.persian ?? '—'}
                         </div>
                       ))}
