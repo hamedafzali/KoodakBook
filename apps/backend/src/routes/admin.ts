@@ -307,6 +307,97 @@ router.get('/stats', requireAdmin, async (_req, res) => {
   })
 })
 
+// ── Pilot metrics (§11.5 funnel) ─────────────────────────
+// Derived from existing tables (no event pipeline). Aggregates the cohort so a
+// 10-family beta produces real signal: activation (NSM proxy), weekly retention,
+// engagement, and literacy gain from placement_history snapshots.
+router.get('/pilot-metrics', requireAdmin, async (_req, res) => {
+  const DAY = 86_400_000
+  const now = Date.now()
+
+  const [children, sessions, activatedRows, lessonsDone, storiesDone, wordsMastered, history] = await Promise.all([
+    query<{ id: string; parent_id: string; created_at: string; placement_done: boolean }>(
+      'select id, parent_id, created_at, placement_done from children'),
+    query<{ child_id: string; started_at: string; duration_sec: number | null }>(
+      'select child_id, started_at, duration_sec from child_sessions'),
+    // NSM proxy: the child completed a "real" story (stage ≥ 3)
+    query<{ child_id: string }>(
+      `select distinct csp.child_id from child_story_progress csp
+       join stories s on s.id = csp.story_id where csp.completed and s.stage >= 3`),
+    query<{ child_id: string; c: string }>(
+      'select child_id, count(*) c from child_lesson_progress where completed group by child_id'),
+    query<{ child_id: string; c: string }>(
+      'select child_id, count(*) c from child_story_progress where completed group by child_id'),
+    query<{ child_id: string; c: string }>(
+      `select child_id, count(*) c from child_word_progress
+       where mastery in ('mastered','consolidated') group by child_id`),
+    query<{ child_id: string; level: number; taken_at: string }>(
+      'select child_id, level, taken_at from placement_history order by child_id, taken_at'),
+  ])
+
+  const n = children.length
+  const families = new Set(children.map(c => c.parent_id)).size
+  const activated = new Set(activatedRows.map(r => r.child_id))
+
+  // Weekly retention: a child is "eligible" for week w once it has aged into it;
+  // "active" if it has a session in that week's window since signup.
+  const sessByChild = new Map<string, number[]>()
+  for (const s of sessions) {
+    const arr = sessByChild.get(s.child_id) ?? []
+    arr.push(new Date(s.started_at).getTime())
+    sessByChild.set(s.child_id, arr)
+  }
+  const retention = [1, 2, 3, 4].map(week => {
+    let eligible = 0, active = 0
+    for (const c of children) {
+      const created = new Date(c.created_at).getTime()
+      const winStart = created + (week - 1) * 7 * DAY
+      const winEnd = created + week * 7 * DAY
+      if (now < winStart) continue            // hasn't reached this week yet
+      eligible++
+      if ((sessByChild.get(c.id) ?? []).some(t => t >= winStart && t < winEnd)) active++
+    }
+    return { week, eligible, active, rate: eligible ? +(active / eligible).toFixed(2) : null }
+  })
+
+  const sum = (rows: { child_id: string; c: string }[]) => rows.reduce((a, r) => a + parseInt(r.c), 0)
+  const totalSessions = sessions.length
+  const totalMin = Math.round(sessions.reduce((a, s) => a + (s.duration_sec ?? 0), 0) / 60)
+  const activeLast7 = new Set(sessions.filter(s => new Date(s.started_at).getTime() >= now - 7 * DAY).map(s => s.child_id)).size
+
+  // Literacy gain: latest − first placement level for children with ≥2 snapshots.
+  const histByChild = new Map<string, number[]>()
+  for (const h of history) {
+    const arr = histByChild.get(h.child_id) ?? []
+    arr.push(h.level)
+    histByChild.set(h.child_id, arr)
+  }
+  let gainChildren = 0, gainSum = 0
+  for (const levels of histByChild.values()) {
+    if (levels.length >= 2) { gainChildren++; gainSum += levels[levels.length - 1] - levels[0] }
+  }
+
+  res.json({
+    data: {
+      families,
+      children: n,
+      placement_done: children.filter(c => c.placement_done).length,
+      activation: { count: activated.size, rate: n ? +(activated.size / n).toFixed(2) : null },
+      retention,
+      engagement: {
+        avg_words_mastered:    n ? +(sum(wordsMastered) / n).toFixed(1) : 0,
+        avg_lessons_completed: n ? +(sum(lessonsDone) / n).toFixed(1) : 0,
+        avg_stories_completed: n ? +(sum(storiesDone) / n).toFixed(1) : 0,
+        avg_session_min:       totalSessions ? +(totalMin / totalSessions).toFixed(1) : 0,
+        total_sessions:        totalSessions,
+        active_last_7d:        activeLast7,
+      },
+      literacy_gain: { measured_children: gainChildren, avg_level_gain: gainChildren ? +(gainSum / gainChildren).toFixed(2) : null },
+    },
+    error: null,
+  })
+})
+
 // ── Weekly digest ────────────────────────────────────────
 // Trigger the weekly parent digest on demand. Schedule it (e.g. weekly cron)
 // to hit this endpoint, or run apps/backend/src/scripts/sendDigests.ts directly.

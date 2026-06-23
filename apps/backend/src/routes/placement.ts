@@ -164,6 +164,12 @@ router.post('/result', requireAuth, requireChildOwner, async (req, res) => {
     )
   }
 
+  // Append a snapshot so pilot literacy-gain (pre vs post) is measurable (mig-021).
+  await query(
+    `insert into placement_history (child_id, level, strand_levels) values ($1, $2, $3)`,
+    [child_id, level, JSON.stringify(strands)]
+  )
+
   res.json({ data: child, error: null })
 })
 
