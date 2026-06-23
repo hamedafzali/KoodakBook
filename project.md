@@ -742,6 +742,11 @@ MVP is fully built and running. All core features are implemented.
   + versioned `audio_assets` with provenance (mig-017, additive, backfilled from
   existing content); parent door moved out of the child grid to a 700ms
   hold-to-enter corner gate. See §11 for the full v2→v3 plan.
+- **v2 reader cutover (code):** parent dashboard + progress now surface the
+  4-state mastery model (consolidated/mastered/practicing/introduced) with a
+  segmented breakdown; curriculum + review endpoints resolve each entity's
+  `audio_url` from the primary `audio_asset` via `primary_audio()` (mig-018),
+  so a native recording hot-swaps the TTS bootstrap with no further code change.
 
 ### 🔜 Next — Content & Beta
 
