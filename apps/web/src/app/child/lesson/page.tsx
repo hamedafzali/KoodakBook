@@ -9,15 +9,15 @@ import BottomNav from '@/components/child/BottomNav'
 import PageHeader from '@/components/child/PageHeader'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import EmptyState from '@/components/child/EmptyState'
-import { LESSON_TYPE_EMOJI, LESSON_TYPE_LABEL } from '@koodakbook/shared'
+import { LESSON_TYPE_EMOJI, LESSON_TYPE_LABEL, isLessonUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
 import { pickChild } from '@/lib/activeChild'
-import type { Lesson, Child } from '@koodakbook/shared'
+import type { Lesson, Child, StrandLevels } from '@koodakbook/shared'
 
 export default function LessonListPage() {
   const router = useRouter()
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [progress, setProgress] = useState<Record<string, boolean>>({})
-  const [childLevel, setChildLevel] = useState<number>(4)
+  const [strandLevels, setStrandLevels] = useState<StrandLevels>(ALL_UNLOCKED)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -30,15 +30,16 @@ export default function LessonListPage() {
       if (lessonsRes.data) setLessons(lessonsRes.data)
       const child = pickChild(childRes.data ?? [])
       if (child) {
-        setChildLevel(child.level ?? 4)
-        const progRes = await api.get<{ lessons: { lesson_id: string; completed: boolean }[] }>(
-          `/api/progress/${child.id}`
-        )
+        const [progRes, placeRes] = await Promise.all([
+          api.get<{ lessons: { lesson_id: string; completed: boolean }[] }>(`/api/progress/${child.id}`),
+          api.get<{ strand_levels: StrandLevels }>(`/api/placement/${child.id}`),
+        ])
         if (progRes.data) {
           const map: Record<string, boolean> = {}
           progRes.data.lessons.forEach(l => { map[l.lesson_id] = l.completed })
           setProgress(map)
         }
+        if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
       }
       setLoading(false)
     }
@@ -77,7 +78,7 @@ export default function LessonListPage() {
             <div className="space-y-2" role="list" aria-label={`درس‌های ${LESSON_TYPE_LABEL[type] ?? type}`}>
               {items.map(lesson => {
                 const done = progress[lesson.id]
-                const locked = lesson.stage > childLevel
+                const locked = !isLessonUnlocked(lesson, strandLevels)
                 return (
                   <motion.div
                     key={lesson.id}

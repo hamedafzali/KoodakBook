@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { query } from '../lib/db'
+import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
 
 const router = Router()
+
+const STRANDS = ['P', 'D', 'V', 'F', 'C'] as const
 
 // ── Probe item shapes ─────────────────────────────────────
 interface WordRow   { id: string; persian: string; english: string; audio_url: string | null }
@@ -163,6 +165,26 @@ router.post('/result', requireAuth, requireChildOwner, async (req, res) => {
   }
 
   res.json({ data: child, error: null })
+})
+
+// ── GET /api/placement/:child_id ──────────────────────────
+// Per-strand levels for the child, used to gate/order content. Strands without
+// a placement row fall back to children.level so pre-placement children behave
+// as before (uniform level across strands).
+router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
+  const child = await queryOne<{ level: number }>(
+    'select level from children where id = $1', [req.params.child_id]
+  )
+  if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
+
+  const rows = await query<{ strand: string; level: number }>(
+    'select strand, level from child_strand_levels where child_id = $1', [req.params.child_id]
+  )
+  const strand_levels: Record<string, number> = {}
+  for (const s of STRANDS) strand_levels[s] = child.level
+  for (const r of rows) strand_levels[r.strand] = r.level
+
+  res.json({ data: { level: child.level, strand_levels }, error: null })
 })
 
 export default router

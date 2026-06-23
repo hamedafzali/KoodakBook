@@ -12,8 +12,8 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import EmptyState from '@/components/child/EmptyState'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
-import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel, wordEmoji } from '@koodakbook/shared'
-import type { Lesson, Story, Child, DashboardSummary, ReviewItem } from '@koodakbook/shared'
+import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel, wordEmoji, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
+import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels } from '@koodakbook/shared'
 
 const container = {
   hidden: { opacity: 0 },
@@ -72,6 +72,7 @@ export default function ChildHomePage() {
   const [stories, setStories] = useState<Story[]>([])
   const [stats, setStats] = useState({ words: 0, streak: 0, xp: 0 })
   const [reviewWords, setReviewWords] = useState<ReviewItem[]>([])
+  const [strandLevels, setStrandLevels] = useState<StrandLevels>(ALL_UNLOCKED)
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
   const [showTutorial, setShowTutorial] = useState(false)
@@ -91,12 +92,14 @@ export default function ChildHomePage() {
       const c = pickChild(childRes.data ?? [])
       if (c) {
         setChild(c)
-        const [dashRes, reviewRes, progressRes] = await Promise.all([
+        const [dashRes, reviewRes, progressRes, placeRes] = await Promise.all([
           api.get<DashboardSummary>(`/api/dashboard/${c.id}`),
           api.get<ReviewItem[]>(`/api/progress/${c.id}/review`),
           api.get<{ lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
+          api.get<{ strand_levels: StrandLevels }>(`/api/placement/${c.id}`),
         ])
         if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
+        if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
 
         /* Spaced repetition: words the Leitner scheduler says are due now */
         if (reviewRes.data) setReviewWords(reviewRes.data)
@@ -119,11 +122,21 @@ export default function ChildHomePage() {
           }
         }
       }
-      if (lessonsRes.data) setLessons(lessonsRes.data.slice(0, 4))
-      if (storiesRes.data) setStories(storiesRes.data.slice(0, 4))
+      if (lessonsRes.data) setLessons(lessonsRes.data)
+      if (storiesRes.data) setStories(storiesRes.data)
     }
     load()
   }, [router])
+
+  // Order by placement: unlocked first, then by stage; show the top few.
+  const lessonView = [...lessons]
+    .map(l => ({ l, locked: !isLessonUnlocked(l, strandLevels) }))
+    .sort((a, b) => Number(a.locked) - Number(b.locked) || a.l.stage - b.l.stage)
+    .slice(0, 4)
+  const storyView = [...stories]
+    .map(s => ({ s, locked: !isStoryUnlocked(s, strandLevels) }))
+    .sort((a, b) => Number(a.locked) - Number(b.locked) || a.s.stage - b.s.stage)
+    .slice(0, 4)
 
   return (
     <div className="min-h-screen child-bg pb-nav">
@@ -252,20 +265,31 @@ export default function ChildHomePage() {
             <EmptyState message="هنوز درسی نیست" subMessage="به زودی اضافه می‌شود!" />
           ) : (
             <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
-              {lessons.map((lesson, idx) => (
+              {lessonView.map(({ l: lesson, locked }, idx) => (
                 <motion.div key={lesson.id} variants={item}>
-                  <Link href={`/child/lesson/${lesson.id}`}>
-                    <motion.div
-                      className={`bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} rounded-[1.75rem] p-4 text-white shadow-md`}
-                      whileHover={{ scale: 1.03, y: -2 }}
-                      whileTap={{ scale: 0.96 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  {locked ? (
+                    <div
+                      className="rounded-[1.75rem] p-4 bg-white/60 shadow-sm cursor-not-allowed select-none"
+                      aria-label={`${lesson.title} — قفل شده، به زودی`}
                     >
-                      <span className="text-3xl" aria-hidden="true">{LESSON_TYPE_EMOJI[lesson.type] ?? '📖'}</span>
-                      <p className="font-bold mt-2 text-sm leading-tight">{lesson.title}</p>
-                      <p className="text-xs opacity-80 mt-0.5">مرحله {lesson.stage}</p>
-                    </motion.div>
-                  </Link>
+                      <span className="text-3xl" aria-hidden="true">🔒</span>
+                      <p className="font-bold mt-2 text-sm leading-tight text-gray-500">{lesson.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">به زودی</p>
+                    </div>
+                  ) : (
+                    <Link href={`/child/lesson/${lesson.id}`}>
+                      <motion.div
+                        className={`bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} rounded-[1.75rem] p-4 text-white shadow-md`}
+                        whileHover={{ scale: 1.03, y: -2 }}
+                        whileTap={{ scale: 0.96 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                      >
+                        <span className="text-3xl" aria-hidden="true">{LESSON_TYPE_EMOJI[lesson.type] ?? '📖'}</span>
+                        <p className="font-bold mt-2 text-sm leading-tight">{lesson.title}</p>
+                        <p className="text-xs opacity-80 mt-0.5">مرحله {lesson.stage}</p>
+                      </motion.div>
+                    </Link>
+                  )}
                 </motion.div>
               ))}
             </motion.div>
@@ -288,36 +312,53 @@ export default function ChildHomePage() {
               role="list"
               aria-label="داستان‌ها"
             >
-              {stories.map((story, idx) => (
-                <Link
-                  key={story.id}
-                  href={`/child/story/${story.id}`}
-                  role="listitem"
-                  className="flex-shrink-0 snap-start"
-                  aria-label={story.title_persian}
-                >
-                  <motion.div
-                    className="w-36 bg-white rounded-[1.75rem] overflow-hidden shadow-md"
-                    whileHover={{ scale: 1.04, y: -3 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              {storyView.map(({ s: story, locked }, idx) => (
+                locked ? (
+                  <div
+                    key={story.id}
+                    role="listitem"
+                    className="flex-shrink-0"
+                    aria-label={`${story.title_persian} — قفل شده، به زودی`}
                   >
-                    {mediaUrl(story.cover_url) ? (
-                      <img
-                        src={mediaUrl(story.cover_url)!}
-                        alt={story.title_persian}
-                        className="w-full h-28 object-cover"
-                      />
-                    ) : (
-                      <div className={`w-full h-28 bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} flex items-center justify-center text-5xl`} aria-hidden="true">
-                        📖
+                    <div className="w-36 bg-white/60 rounded-[1.75rem] overflow-hidden shadow-sm cursor-not-allowed select-none">
+                      <div className="w-full h-28 bg-gray-100 flex items-center justify-center text-5xl" aria-hidden="true">🔒</div>
+                      <div className="p-3">
+                        <p className="font-bold text-gray-400 text-sm leading-tight">{story.title_persian}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">به زودی</p>
                       </div>
-                    )}
-                    <div className="p-3">
-                      <p className="font-bold text-gray-800 text-sm leading-tight">{story.title_persian}</p>
                     </div>
-                  </motion.div>
-                </Link>
+                  </div>
+                ) : (
+                  <Link
+                    key={story.id}
+                    href={`/child/story/${story.id}`}
+                    role="listitem"
+                    className="flex-shrink-0 snap-start"
+                    aria-label={story.title_persian}
+                  >
+                    <motion.div
+                      className="w-36 bg-white rounded-[1.75rem] overflow-hidden shadow-md"
+                      whileHover={{ scale: 1.04, y: -3 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    >
+                      {mediaUrl(story.cover_url) ? (
+                        <img
+                          src={mediaUrl(story.cover_url)!}
+                          alt={story.title_persian}
+                          className="w-full h-28 object-cover"
+                        />
+                      ) : (
+                        <div className={`w-full h-28 bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} flex items-center justify-center text-5xl`} aria-hidden="true">
+                          📖
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <p className="font-bold text-gray-800 text-sm leading-tight">{story.title_persian}</p>
+                      </div>
+                    </motion.div>
+                  </Link>
+                )
               ))}
             </div>
           )}

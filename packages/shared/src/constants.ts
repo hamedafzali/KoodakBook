@@ -1,3 +1,34 @@
+import type { Strand } from './types'
+
+/** A child's measured level per learning strand (mig-020). */
+export type StrandLevels = Record<Strand, number>
+
+/** Permissive default (nothing locked) used before placement data loads. */
+export const ALL_UNLOCKED: StrandLevels = { P: 9, D: 9, V: 9, F: 9, C: 9 }
+
+/** The strand a lesson primarily trains (maps lesson.type → strand). */
+export function lessonStrand(type: string): Strand {
+  switch (type) {
+    case 'vocabulary': return 'V'
+    case 'phonics':    return 'D'  // short vowels — decoding bridge
+    case 'alphabet':   return 'D'
+    default:           return 'V'
+  }
+}
+
+/**
+ * Content unlock rules driven by placement (mig-020 / project.md §11.1).
+ * A lesson unlocks once the child's relevant strand reaches its stage; stories
+ * are more lenient (audio-supported, input-rich) and unlock two stages early so
+ * a beginner still gets read-aloud practice while stage-4 stays gated.
+ */
+export function isLessonUnlocked(lesson: { type: string; stage: number }, lv: StrandLevels): boolean {
+  return lv[lessonStrand(lesson.type)] >= lesson.stage
+}
+export function isStoryUnlocked(story: { stage: number }, lv: StrandLevels): boolean {
+  return Math.max(lv.F, lv.C) >= story.stage - 2
+}
+
 export const CURRICULUM_STAGES = {
   1: { label: 'Phonemic Awareness', age: '3–5', description: 'Audio and visuals, no reading yet' },
   2: { label: 'Script Introduction', age: '5–7', description: 'Alphabet and letter recognition' },
