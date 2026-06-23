@@ -756,6 +756,12 @@ MVP is fully built and running. All core features are implemented.
   4 stage-gated, audio-first items (V→D→F→C) built from existing words+letters,
   adaptive stop-on-first-miss, writing `children.level` + per-strand
   `child_strand_levels`. Verified end-to-end on the server.
+- **v2 per-strand content gating (code):** the child home and lesson list now
+  read `child_strand_levels` (via `GET /api/placement/:child_id`) and lock/order
+  lessons & stories per strand (vocabulary→V, alphabet/phonics→D; stories→F/C,
+  unlocked two stages early as audio-supported input). Verified live: a high-V /
+  low-D heritage profile unlocks all vocabulary lessons while alphabet stays
+  locked — differentiation a single `children.level` could not express.
 
 ### 🔜 Next — Content & Beta
 
