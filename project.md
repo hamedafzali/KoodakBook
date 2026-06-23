@@ -747,6 +747,10 @@ MVP is fully built and running. All core features are implemented.
   segmented breakdown; curriculum + review endpoints resolve each entity's
   `audio_url` from the primary `audio_asset` via `primary_audio()` (mig-018),
   so a native recording hot-swaps the TTS bootstrap with no further code change.
+  A trigger (mig-019) mirrors any `*.audio_url` insert/update into `audio_assets`
+  as the new primary, so the existing admin upload UI drives the hot-swap with no
+  per-handler code. Round-trip verified live: editing a word's audio_url makes
+  the resolver serve the new file and demotes the prior take to history.
 
 ### 🔜 Next — Content & Beta
 
