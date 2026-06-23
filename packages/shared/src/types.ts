@@ -16,6 +16,32 @@ export interface Child {
   level: 1 | 2 | 3 | 4
   avatar_url: string | null
   created_at: string
+  /** Set once the placement probe has run (mig-020). */
+  placement_done?: boolean
+}
+
+// ── Placement probe (mig-020) ─────────────────────────────
+export type Strand = 'P' | 'D' | 'V' | 'F' | 'C'
+
+export interface ProbeChoice {
+  id: string
+  kind: 'word' | 'letter'
+  persian: string
+  english?: string
+  character?: string
+}
+export interface ProbeQuestion {
+  strand: Strand
+  stage: number
+  mode: 'listen' | 'read'
+  prompt: string
+  audio_url?: string | null
+  show_text?: string | null
+  choices: ProbeChoice[]
+  correct_id: string
+}
+export interface PlacementProbe {
+  questions: ProbeQuestion[]
 }
 
 export type CreateChildInput = Pick<Child, 'name' | 'birth_year' | 'level' | 'avatar_url'>

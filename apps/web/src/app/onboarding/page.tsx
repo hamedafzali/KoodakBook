@@ -4,19 +4,14 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
+import { setActiveChildId } from '@/lib/activeChild'
 import Mascot from '@/components/child/Mascot'
-
-const LEVELS = [
-  { value: 1, label: 'هنوز فارسی بلد نیست', sublabel: 'تازه‌کار', emoji: '🌱' },
-  { value: 2, label: 'چند کلمه فارسی می‌داند', sublabel: 'مبتدی', emoji: '🌿' },
-  { value: 3, label: 'می‌تواند کمی بخواند', sublabel: 'متوسط', emoji: '🌳' },
-]
+import type { Child } from '@koodakbook/shared'
 
 export default function OnboardingPage() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [birthYear, setBirthYear] = useState('')
-  const [level, setLevel] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -26,14 +21,16 @@ export default function OnboardingPage() {
     setLoading(true)
     setError(null)
 
-    const res = await api.post('/api/children', {
+    // level starts at 1; the placement probe measures and updates it next.
+    const res = await api.post<Child>('/api/children', {
       name,
       birth_year: birthYear ? parseInt(birthYear) : null,
-      level,
+      level: 1,
     })
 
-    if (res.error) { setError(res.error); setLoading(false); return }
-    router.push('/child/home')
+    if (res.error || !res.data) { setError(res.error ?? 'خطا'); setLoading(false); return }
+    setActiveChildId(res.data.id)
+    router.push('/onboarding/placement')
   }
 
   return (
@@ -88,46 +85,12 @@ export default function OnboardingPage() {
             />
           </div>
 
-          <fieldset>
-            <legend className="block text-sm font-medium text-gray-700 mb-2">
-              سطح فارسی کودک
-            </legend>
-            <div className="space-y-2" role="radiogroup" aria-label="سطح فارسی کودک">
-              {LEVELS.map(l => (
-                <motion.button
-                  key={l.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={level === l.value}
-                  onClick={() => setLevel(l.value)}
-                  whileTap={{ scale: 0.97 }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-[0.875rem] border-2 text-sm transition-colors min-h-[56px] ${
-                    level === l.value
-                      ? 'border-amber-500 bg-amber-50'
-                      : 'border-gray-200 hover:border-amber-300'
-                  }`}
-                >
-                  <span className="text-2xl" aria-hidden="true">{l.emoji}</span>
-                  <div className="text-right flex-1">
-                    <span className={`block font-medium ${level === l.value ? 'text-amber-800' : 'text-gray-700'}`}>
-                      {l.label}
-                    </span>
-                    <span className="text-xs text-gray-400">{l.sublabel}</span>
-                  </div>
-                  {level === l.value && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="text-amber-500 text-lg flex-shrink-0"
-                      aria-hidden="true"
-                    >
-                      ✓
-                    </motion.span>
-                  )}
-                </motion.button>
-              ))}
-            </div>
-          </fieldset>
+          <div className="bg-amber-50 rounded-[0.875rem] p-3 flex items-center gap-2.5">
+            <span className="text-2xl" aria-hidden="true">🎮</span>
+            <p className="text-xs text-amber-800 persian-text leading-relaxed">
+              بعد از این، یک بازی کوتاه و آسان انجام می‌دهیم تا بفهمیم از کجا شروع کنیم.
+            </p>
+          </div>
 
           <AnimatePresence>
             {error && (
@@ -149,7 +112,7 @@ export default function OnboardingPage() {
             whileTap={{ scale: 0.97 }}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 text-lg min-h-[52px]"
           >
-            {loading ? 'در حال ذخیره...' : 'شروع کنیم! 🚀'}
+            {loading ? 'در حال ذخیره...' : 'بریم بازی کنیم! 🚀'}
           </motion.button>
         </form>
       </div>

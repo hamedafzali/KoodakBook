@@ -1,0 +1,168 @@
+import { Router } from 'express'
+import { z } from 'zod'
+import { query } from '../lib/db'
+import { requireAuth } from '../middleware/auth'
+import { requireChildOwner } from '../middleware/childOwner'
+
+const router = Router()
+
+// ── Probe item shapes ─────────────────────────────────────
+interface WordRow   { id: string; persian: string; english: string; audio_url: string | null }
+interface LetterRow { id: string; character: string; name_persian: string; audio_url: string | null }
+
+interface ProbeChoice {
+  id: string
+  kind: 'word' | 'letter'
+  persian: string
+  english?: string
+  character?: string
+}
+interface ProbeQuestion {
+  strand: 'V' | 'D' | 'F' | 'C'
+  stage: number
+  mode: 'listen' | 'read'   // listen = play audio then pick; read = read the shown word then pick
+  prompt: string
+  audio_url?: string | null
+  show_text?: string | null
+  choices: ProbeChoice[]
+  correct_id: string
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+const wordChoice = (w: WordRow): ProbeChoice => ({ id: w.id, kind: 'word', persian: w.persian, english: w.english })
+const letterChoice = (l: LetterRow): ProbeChoice => ({ id: l.id, kind: 'letter', persian: l.name_persian, character: l.character })
+
+// ── GET /api/placement/probe ──────────────────────────────
+// A 4-item, stage-gated heuristic probe (V→D→F→C) built from existing content.
+// The client presents items in order and stops at the first miss (each item is
+// harder than the last), then computes a per-strand placement. Difficulty is
+// heuristic (stage + word length) until pilot data calibrates content_items.
+router.get('/probe', requireAuth, async (_req, res) => {
+  const words = await query<WordRow>(
+    `select id, persian, english, audio_url from words
+     where audio_url is not null and audio_url <> '' and stage = 1`
+  )
+  const letters = await query<LetterRow>(
+    `select id, character, name_persian, audio_url from letters
+     where audio_url is not null and audio_url <> ''`
+  )
+
+  if (words.length < 3 || letters.length < 3) {
+    res.status(503).json({ data: null, error: 'Not enough content to build a placement probe' })
+    return
+  }
+
+  const pool = shuffle(words)
+  const take = (n: number, exclude: Set<string>) => {
+    const out: WordRow[] = []
+    for (const w of pool) {
+      if (out.length === n) break
+      if (!exclude.has(w.id)) { out.push(w); exclude.add(w.id) }
+    }
+    return out
+  }
+
+  const questions: ProbeQuestion[] = []
+  const used = new Set<string>()
+
+  // Q1 — Vocabulary (stage 1): hear a common word, pick its picture.
+  {
+    const [correct, d1, d2] = take(3, used)
+    questions.push({
+      strand: 'V', stage: 1, mode: 'listen',
+      prompt: 'گوش کن. این کدام است؟',
+      audio_url: correct.audio_url,
+      choices: shuffle([correct, d1, d2].map(wordChoice)),
+      correct_id: correct.id,
+    })
+  }
+
+  // Q2 — Decoding (stage 2): hear a letter sound, pick the letter.
+  {
+    const [correct, d1, d2] = shuffle(letters).slice(0, 3)
+    questions.push({
+      strand: 'D', stage: 2, mode: 'listen',
+      prompt: 'این صدا برای کدام حرف است؟',
+      audio_url: correct.audio_url,
+      choices: shuffle([correct, d1, d2].map(letterChoice)),
+      correct_id: correct.id,
+    })
+  }
+
+  // Q3 — Fluency (stage 3): READ a written word (no audio), pick its picture.
+  {
+    const [correct, d1, d2] = take(3, used)
+    questions.push({
+      strand: 'F', stage: 3, mode: 'read',
+      prompt: 'این کلمه را بخوان و عکسش را پیدا کن.',
+      show_text: correct.persian,
+      choices: shuffle([correct, d1, d2].map(wordChoice)),
+      correct_id: correct.id,
+    })
+  }
+
+  // Q4 — Comprehension/fluency (stage 4): a HARDER word (longest available), read it.
+  {
+    const remaining = pool.filter(w => !used.has(w.id))
+    const hard = [...remaining].sort((a, b) => b.persian.length - a.persian.length)[0] ?? remaining[0]
+    used.add(hard.id)
+    const [d1, d2] = take(2, used)
+    questions.push({
+      strand: 'C', stage: 4, mode: 'read',
+      prompt: 'این کلمه‌ی سخت‌تر را بخوان.',
+      show_text: hard.persian,
+      choices: shuffle([hard, d1, d2].map(wordChoice)),
+      correct_id: hard.id,
+    })
+  }
+
+  res.json({ data: { questions }, error: null })
+})
+
+// ── POST /api/placement/result ────────────────────────────
+const resultSchema = z.object({
+  child_id: z.string().uuid(),
+  level: z.number().int().min(1).max(4),
+  strands: z.object({
+    V: z.number().int().min(1).max(4),
+    D: z.number().int().min(1).max(4),
+    F: z.number().int().min(1).max(4),
+    C: z.number().int().min(1).max(4),
+  }),
+})
+
+router.post('/result', requireAuth, requireChildOwner, async (req, res) => {
+  const parsed = resultSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
+  const { child_id, level, strands } = parsed.data
+  const userId = res.locals.userId
+
+  const [child] = await query(
+    `update children set level = $1, placement_done = true
+     where id = $2 and parent_id = $3 returning *`,
+    [level, child_id, userId]
+  )
+  if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
+
+  for (const [strand, lvl] of Object.entries(strands)) {
+    await query(
+      `insert into child_strand_levels (child_id, strand, level, source, updated_at)
+       values ($1, $2, $3, 'placement', now())
+       on conflict (child_id, strand) do update
+         set level = excluded.level, source = 'placement', updated_at = now()`,
+      [child_id, strand, lvl]
+    )
+  }
+
+  res.json({ data: child, error: null })
+})
+
+export default router
