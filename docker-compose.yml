@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB:       koodakbook
       POSTGRES_USER:     koodakbook
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,14 +24,14 @@ services:
     restart: unless-stopped
     environment:
       PORT:              4000
-      DATABASE_URL:      postgres://koodakbook:${DB_PASSWORD:-changeme}@db:5432/koodakbook
+      DATABASE_URL:      postgres://koodakbook:${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/koodakbook
       JWT_SECRET:        ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN:    30d
       WEB_URL:           ${WEB_URL:-http://localhost:3001}
       ADMIN_URL:         ${ADMIN_URL:-http://localhost:3002}
       UPLOADS_DIR:       /app/uploads
-      ADMIN_EMAIL:       ${ADMIN_EMAIL:-admin@koodakbook.local}
-      ADMIN_PASSWORD:    ${ADMIN_PASSWORD:-changeme}
+      ADMIN_EMAIL:       ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
+      ADMIN_PASSWORD:    ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     volumes:
       - uploads:/app/uploads
