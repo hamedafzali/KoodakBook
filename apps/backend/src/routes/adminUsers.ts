@@ -102,13 +102,16 @@ router.get('/children/:id', requireAdmin, requirePermission('users.read'), async
 
 // ── Change plan / entitlement ────────────────────────────
 const planSchema = z.object({
-  plan: z.enum(['free', 'premium']),
+  plan: z.string().min(1),
   plan_expires_at: z.string().datetime().nullable().optional(),
 })
 router.patch('/users/:id/plan', requireAdmin, requirePermission('users.plan'), async (req, res) => {
   const parsed = planSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
   const { plan, plan_expires_at } = parsed.data
+  // Validate the plan exists (plans system, mig-024).
+  const exists = await queryOne('select 1 from plans where key = $1 and is_active', [plan])
+  if (!exists) { res.status(400).json({ data: null, error: 'Unknown or inactive plan' }); return }
   const row = await queryOne(
     `update users set plan = $1, plan_expires_at = $2 where id = $3
      returning id, email, plan, plan_expires_at`,

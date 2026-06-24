@@ -8,8 +8,9 @@ interface ChildRow {
   id: string; name: string; birth_year: number | null; level: number; placement_done: boolean
   created_at: string; words_mastered: number; lessons_done: number; stories_done: number; last_active: string | null
 }
-interface Parent { id: string; email: string; plan: 'free' | 'premium'; plan_expires_at: string | null; created_at: string }
+interface Parent { id: string; email: string; plan: string; plan_expires_at: string | null; created_at: string }
 interface FamilyResp { user: Parent; children: ChildRow[] }
+interface PlanOpt { key: string; name: string; is_active: boolean }
 
 const fa = (d: string | null) => (d ? new Date(d).toLocaleDateString('fa-IR') : '—')
 
@@ -17,7 +18,8 @@ export default function FamilyPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [data, setData] = useState<FamilyResp | null>(null)
-  const [plan, setPlan] = useState<'free' | 'premium'>('free')
+  const [plan, setPlan] = useState<string>('free')
+  const [planOpts, setPlanOpts] = useState<PlanOpt[]>([])
   const [msg, setMsg] = useState<string | null>(null)
   const [temp, setTemp] = useState<string | null>(null)
 
@@ -26,6 +28,7 @@ export default function FamilyPage() {
     if (r.data) { setData(r.data); setPlan(r.data.user.plan) }
   }, [id])
   useEffect(() => { load() }, [load])
+  useEffect(() => { api.get<PlanOpt[]>('/api/admin/plans').then(r => { if (r.data) setPlanOpts(r.data.filter(p => p.is_active)) }) }, [])
 
   async function savePlan() {
     setMsg(null)
@@ -60,10 +63,10 @@ export default function FamilyPage() {
         <div className="flex flex-wrap items-end gap-3 mt-4">
           <div>
             <label className="block text-xs text-gray-500 mb-1">پلن</label>
-            <select value={plan} onChange={e => setPlan(e.target.value as 'free' | 'premium')}
+            <select value={plan} onChange={e => setPlan(e.target.value)}
               className="border border-gray-300 rounded-xl px-3 py-2 text-sm">
-              <option value="free">free</option>
-              <option value="premium">premium</option>
+              {planOpts.map(p => <option key={p.key} value={p.key}>{p.name} ({p.key})</option>)}
+              {planOpts.length === 0 && <option value={plan}>{plan}</option>}
             </select>
           </div>
           <button onClick={savePlan} className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-sm">ذخیره پلن</button>

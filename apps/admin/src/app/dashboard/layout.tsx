@@ -9,6 +9,7 @@ const NAV: { href: string; label: string; emoji: string; perm?: string }[] = [
   { href: '/dashboard',         label: 'داشبورد',  emoji: '📊' },
   { href: '/dashboard/users',   label: 'کاربران',  emoji: '👨‍👩‍👧', perm: 'users.read' },
   { href: '/dashboard/team',    label: 'تیم و دسترسی', emoji: '🔐', perm: 'admin.manage' },
+  { href: '/dashboard/plans',   label: 'پلن‌ها',    emoji: '💳', perm: 'plans.manage' },
   { href: '/dashboard/pilot',   label: 'پایلوت',   emoji: '🧪', perm: 'analytics.view' },
   { href: '/dashboard/audit',   label: 'فعالیت‌ها', emoji: '📜', perm: 'audit.read' },
   { href: '/dashboard/lessons', label: 'درس‌ها',   emoji: '🗂️', perm: 'content.read' },
