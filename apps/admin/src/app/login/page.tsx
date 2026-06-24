@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { setToken } from '@/lib/auth'
+import { Button } from '@/components/ui'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,40 +14,30 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
-
+    setLoading(true); setError(null)
     const res = await api.post<{ token: string }>('/api/auth/login', { email, password })
     if (res.error || !res.data) { setError('ایمیل یا رمز عبور اشتباه است'); setLoading(false); return }
-
-    // verify admin access
-    const token = res.data.token
-    setToken(token)
+    setToken(res.data.token)
     const check = await api.get<{ admin: boolean }>('/api/admin/me')
-    if (check.error || !check.data?.admin) {
-      setError('این حساب دسترسی ادمین ندارد')
-      setLoading(false)
-      return
-    }
-
+    if (check.error || !check.data?.admin) { setError('این حساب دسترسی ادمین ندارد'); setLoading(false); return }
     router.push('/dashboard')
   }
 
+  const inp = 'ltr w-full border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400'
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
-        <h1 className="text-xl font-bold text-center text-amber-600 mb-1">KoodakBook</h1>
-        <p className="text-center text-gray-400 text-sm mb-6">پنل مدیریت</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" required placeholder="ایمیل" value={email} onChange={e => setEmail(e.target.value)}
-            className="ltr w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
-          <input type="password" required placeholder="رمز عبور" value={password} onChange={e => setPassword(e.target.value)}
-            className="ltr w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-slate-100 p-4" dir="rtl">
+      <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm border border-slate-100">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white font-bold text-xl flex items-center justify-center mx-auto mb-3">ک</div>
+          <h1 className="text-lg font-bold text-slate-800">KoodakBook</h1>
+          <p className="text-slate-400 text-sm">پنل مدیریت</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input type="email" required placeholder="ایمیل" value={email} onChange={e => setEmail(e.target.value)} className={inp} />
+          <input type="password" required placeholder="رمز عبور" value={password} onChange={e => setPassword(e.target.value)} className={inp} />
           {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button type="submit" disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition disabled:opacity-50">
-            {loading ? '...' : 'ورود'}
-          </button>
+          <Button type="submit" disabled={loading} className="w-full py-3">{loading ? '...' : 'ورود'}</Button>
         </form>
       </div>
     </div>
