@@ -7,7 +7,9 @@ import { api } from '@/lib/api'
 
 const NAV = [
   { href: '/dashboard',         label: 'داشبورد',  emoji: '📊' },
+  { href: '/dashboard/users',   label: 'کاربران',  emoji: '👨‍👩‍👧' },
   { href: '/dashboard/pilot',   label: 'پایلوت',   emoji: '🧪' },
+  { href: '/dashboard/audit',   label: 'فعالیت‌ها', emoji: '📜' },
   { href: '/dashboard/lessons', label: 'درس‌ها',   emoji: '🗂️' },
   { href: '/dashboard/stories', label: 'داستان‌ها', emoji: '📖' },
   { href: '/dashboard/words',   label: 'کلمات',    emoji: '📝' },

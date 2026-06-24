@@ -15,6 +15,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
       res.status(403).json({ data: null, error: 'Forbidden' }); return
     }
     res.locals.userId = payload.sub
+    res.locals.adminEmail = user.email
     next()
   } catch {
     res.status(401).json({ data: null, error: 'Invalid token' })
