@@ -784,13 +784,15 @@ MVP is fully built and running. All core features are implemented.
 - [ ] Partner with a Persian language teacher to validate curriculum structure
 - [ ] Source or commission original Persian children's stories
 - [ ] Record audio narrations with a native Persian voice actor
-- [ ] **Beta blockers (content production, not data):** word/story images are
-      still ~0; story narration is incomplete; ~80+ words (incl. the new ones)
-      have no audio yet
-- [ ] Upload word images and audio via admin panel
+- [ ] **Beta blocker (content production, not data):** word/story images are
+      still ~0 (everything renders via emoji fallback). Audio now exists for all
+      words/letters/pages but is **neural TTS, not native voice** — the
+      `audio_assets` hot-swap path (mig-017/019) is built and waiting for native
+      takes, which supersede the TTS automatically on upload.
+- [ ] Upload word **images** via admin panel (audio is wired; native audio swaps in via `audio_assets`)
 - [ ] Cross-device testing (iOS Safari, Android Chrome)
 - [ ] RTL layout QA on all screens
-- [ ] Deploy to production server
+- [x] Deploy to production server — running on the LAN server via ACM (web/backend/admin/db)
 - [ ] Recruit first 10 diaspora families for beta testing
 
 ### 🔮 V2 Roadmap
