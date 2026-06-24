@@ -907,6 +907,9 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       page render the §11.5 funnel (activation/NSM, weekly retention, engagement,
       literacy gain) from existing tables + `placement_history` snapshots
       (mig-021). Verified live. *Still needed: recruit the 10 families + run it.*
+- [x] Pilot run-book (`docs/pilot-runbook.md`) — recruitment screener, pre/post
+      probe protocol, weekly check-in scripts, tracking sheet, and the go/no-go
+      decision rule against the §11.5 gates. The validation is now runnable.
 - [x] ~~Adaptive~~ heuristic placement probe (replace self-declared level) —
       mig-020 + `/api/placement/*`; onboarding routes to a 4-item audio-first
       probe (V→D→F→C) that sets `children.level` + per-strand `child_strand_levels`.
