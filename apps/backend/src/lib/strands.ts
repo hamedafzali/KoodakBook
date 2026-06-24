@@ -23,6 +23,17 @@ const THRESHOLD = 0.85
  * a strand has no higher content, in which case it settles at the cap.
  */
 export async function promoteStrands(childId: string): Promise<Promotion[]> {
+  try {
+    return await computePromotions(childId)
+  } catch (err) {
+    // A promotion bug must never break the child's completion flow — the lesson
+    // is already recorded by the caller. Degrade to "no promotion this time".
+    console.error('promoteStrands failed for', childId, err)
+    return []
+  }
+}
+
+async function computePromotions(childId: string): Promise<Promotion[]> {
   const child = await queryOne<{ level: number }>('select level from children where id = $1', [childId])
   if (!child) return []
 

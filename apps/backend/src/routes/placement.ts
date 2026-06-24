@@ -57,7 +57,11 @@ router.get('/probe', requireAuth, async (_req, res) => {
      where audio_url is not null and audio_url <> ''`
   )
 
-  if (words.length < 3 || letters.length < 3) {
+  // Q1, Q3 and Q4 each consume 3 distinct stage-1 words (9 total, all needing
+  // audio); Q2 needs 3 letters. Below that, bail cleanly — the client skips the
+  // probe and keeps the default level — rather than building a broken question
+  // with undefined distractors.
+  if (words.length < 9 || letters.length < 3) {
     res.status(503).json({ data: null, error: 'Not enough content to build a placement probe' })
     return
   }
