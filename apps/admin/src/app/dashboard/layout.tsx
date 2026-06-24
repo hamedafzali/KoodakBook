@@ -5,29 +5,35 @@ import Link from 'next/link'
 import { isLoggedIn, clearToken } from '@/lib/auth'
 import { api } from '@/lib/api'
 
-const NAV = [
+const NAV: { href: string; label: string; emoji: string; perm?: string }[] = [
   { href: '/dashboard',         label: 'داشبورد',  emoji: '📊' },
-  { href: '/dashboard/users',   label: 'کاربران',  emoji: '👨‍👩‍👧' },
-  { href: '/dashboard/pilot',   label: 'پایلوت',   emoji: '🧪' },
-  { href: '/dashboard/audit',   label: 'فعالیت‌ها', emoji: '📜' },
-  { href: '/dashboard/lessons', label: 'درس‌ها',   emoji: '🗂️' },
-  { href: '/dashboard/stories', label: 'داستان‌ها', emoji: '📖' },
-  { href: '/dashboard/words',   label: 'کلمات',    emoji: '📝' },
-  { href: '/dashboard/letters', label: 'حروف',     emoji: '🔤' },
+  { href: '/dashboard/users',   label: 'کاربران',  emoji: '👨‍👩‍👧', perm: 'users.read' },
+  { href: '/dashboard/team',    label: 'تیم و دسترسی', emoji: '🔐', perm: 'admin.manage' },
+  { href: '/dashboard/pilot',   label: 'پایلوت',   emoji: '🧪', perm: 'analytics.view' },
+  { href: '/dashboard/audit',   label: 'فعالیت‌ها', emoji: '📜', perm: 'audit.read' },
+  { href: '/dashboard/lessons', label: 'درس‌ها',   emoji: '🗂️', perm: 'content.read' },
+  { href: '/dashboard/stories', label: 'داستان‌ها', emoji: '📖', perm: 'content.read' },
+  { href: '/dashboard/words',   label: 'کلمات',    emoji: '📝', perm: 'content.read' },
+  { href: '/dashboard/letters', label: 'حروف',     emoji: '🔤', perm: 'content.read' },
 ]
+
+const hasPerm = (perms: string[], p: string) => perms.includes('*') || perms.includes(p)
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [authorized, setAuthorized] = useState(false)
+  const [perms, setPerms] = useState<string[]>([])
 
   useEffect(() => {
     if (!isLoggedIn()) { router.replace('/login'); return }
-    api.get<{ admin: boolean }>('/api/admin/me').then(res => {
+    api.get<{ admin: boolean; permissions: string[] }>('/api/admin/me').then(res => {
       if (res.error || !res.data?.admin) router.replace('/login')
-      else setAuthorized(true)
+      else { setPerms(res.data.permissions ?? []); setAuthorized(true) }
     })
   }, [router])
+
+  const visibleNav = NAV.filter(i => !i.perm || hasPerm(perms, i.perm))
 
   if (!authorized) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -43,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-xs text-gray-400">پنل مدیریت</p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          {NAV.map(item => (
+          {visibleNav.map(item => (
             <Link key={item.href} href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
                 pathname === item.href ? 'bg-amber-50 text-amber-700' : 'text-gray-600 hover:bg-gray-50'

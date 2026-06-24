@@ -14,6 +14,7 @@ import placementRouter from './routes/placement'
 import uploadsRouter  from './routes/uploads'
 import adminRouter    from './routes/admin'
 import adminUsersRouter from './routes/adminUsers'
+import adminTeamRouter from './routes/adminTeam'
 import aiRouter       from './routes/ai'
 
 const app = express()
@@ -66,6 +67,7 @@ app.use('/api/placement', placementRouter)
 app.use('/api/uploads',   uploadsRouter)
 app.use('/api/admin',     adminRouter)
 app.use('/api/admin',     adminUsersRouter)
+app.use('/api/admin',     adminTeamRouter)
 app.use('/api/ai',        aiRouter)
 
 app.listen(PORT, async () => {

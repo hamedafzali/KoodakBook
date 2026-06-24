@@ -11,6 +11,7 @@ export async function seedAdmin() {
     'select id, password_hash from users where email = $1', [email]
   )
 
+  let ownerId = existing?.id
   if (existing) {
     // ADMIN_PASSWORD is the source of truth — re-sync it if it changed so that
     // updating the env actually takes effect (was create-only before, which
@@ -21,13 +22,23 @@ export async function seedAdmin() {
       await query('update users set password_hash = $1 where id = $2', [password_hash, existing.id])
       console.log(`Admin password re-synced from env: ${email}`)
     }
-    return
+  } else {
+    const password_hash = await bcrypt.hash(password, 12)
+    const [created] = await query<{ id: string }>(
+      'insert into users (email, password_hash) values ($1, $2) returning id',
+      [email, password_hash]
+    )
+    ownerId = created?.id
+    console.log(`Admin account created: ${email}`)
   }
 
-  const password_hash = await bcrypt.hash(password, 12)
-  await query(
-    'insert into users (email, password_hash) values ($1, $2)',
-    [email, password_hash]
-  )
-  console.log(`Admin account created: ${email}`)
+  // Grant the owner the superadmin role (RBAC, mig-023). Idempotent.
+  if (ownerId) {
+    await query(
+      `insert into user_roles (user_id, role_id)
+       select $1, r.id from roles r where r.key = 'superadmin'
+       on conflict do nothing`,
+      [ownerId]
+    ).catch(() => { /* roles table may not exist yet on very first boot before mig-023 */ })
+  }
 }

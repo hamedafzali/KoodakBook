@@ -47,7 +47,10 @@ const syncPageTranslations = (p: Row) => upsertTranslations('story_page', String
 
 // ── Identity check ───────────────────────────────────────
 router.get('/me', requireAdmin, (_req, res) => {
-  res.json({ data: { admin: true }, error: null })
+  res.json({
+    data: { admin: true, email: res.locals.adminEmail, permissions: res.locals.adminPermissions ?? [] },
+    error: null,
+  })
 })
 
 // ── File upload ───────────────────────────────────────────

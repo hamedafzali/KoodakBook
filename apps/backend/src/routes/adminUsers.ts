@@ -2,13 +2,17 @@ import { Router } from 'express'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { query, queryOne } from '../lib/db'
-import { requireAdmin } from '../middleware/admin'
+import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
 
 const router = Router()
 
+// Families exclude admin accounts (the owner + anyone holding a role).
+const NOT_ADMIN = `u.email <> $5 and not exists (select 1 from user_roles ur where ur.user_id = u.id)`
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@koodakbook.com'
+
 // ── List parents (search + paginate) ─────────────────────
-router.get('/users', requireAdmin, async (req, res) => {
+router.get('/users', requireAdmin, requirePermission('users.read'), async (req, res) => {
   const q = (req.query.q as string | undefined)?.trim() ?? ''
   const limit = Math.min(parseInt((req.query.limit as string) ?? '50'), 200)
   const offset = Math.max(parseInt((req.query.offset as string) ?? '0'), 0)
@@ -20,19 +24,20 @@ router.get('/users', requireAdmin, async (req, res) => {
        (select max(s.started_at) from child_sessions s
           join children c on c.id = s.child_id where c.parent_id = u.id) as last_active
      from users u
-     where ($1 = '' or u.email ilike $2)
+     where ($1 = '' or u.email ilike $2) and ${NOT_ADMIN}
      order by u.created_at desc
      limit $3 offset $4`,
-    [q, like, limit, offset],
+    [q, like, limit, offset, ADMIN_EMAIL],
   )
   const total = await queryOne<{ count: string }>(
-    `select count(*) from users u where ($1 = '' or u.email ilike $2)`, [q, like],
+    `select count(*) from users u where ($1 = '' or u.email ilike $2) and ${NOT_ADMIN.replace('$5', '$3')}`,
+    [q, like, ADMIN_EMAIL],
   )
   res.json({ data: { users: rows, total: parseInt(total?.count ?? '0'), limit, offset }, error: null })
 })
 
 // ── Family detail: parent + children + quick stats ───────
-router.get('/users/:id', requireAdmin, async (req, res) => {
+router.get('/users/:id', requireAdmin, requirePermission('users.read'), async (req, res) => {
   const user = await queryOne(
     'select id, email, plan, plan_expires_at, created_at from users where id = $1', [req.params.id],
   )
@@ -52,7 +57,7 @@ router.get('/users/:id', requireAdmin, async (req, res) => {
 })
 
 // ── Child drill-down: full learning picture ──────────────
-router.get('/children/:id', requireAdmin, async (req, res) => {
+router.get('/children/:id', requireAdmin, requirePermission('users.read'), async (req, res) => {
   const child = await queryOne(
     'select id, parent_id, name, birth_year, level, placement_done, created_at from children where id = $1',
     [req.params.id],
@@ -100,7 +105,7 @@ const planSchema = z.object({
   plan: z.enum(['free', 'premium']),
   plan_expires_at: z.string().datetime().nullable().optional(),
 })
-router.patch('/users/:id/plan', requireAdmin, async (req, res) => {
+router.patch('/users/:id/plan', requireAdmin, requirePermission('users.plan'), async (req, res) => {
   const parsed = planSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
   const { plan, plan_expires_at } = parsed.data
@@ -115,7 +120,7 @@ router.patch('/users/:id/plan', requireAdmin, async (req, res) => {
 })
 
 // ── Reset a parent's password (returns a one-time temp password) ──
-router.post('/users/:id/reset-password', requireAdmin, async (req, res) => {
+router.post('/users/:id/reset-password', requireAdmin, requirePermission('users.reset_password'), async (req, res) => {
   const user = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
   if (!user) { res.status(404).json({ data: null, error: 'User not found' }); return }
   // Generate a readable temp password; admin hands it to the parent, who changes it.
@@ -127,7 +132,7 @@ router.post('/users/:id/reset-password', requireAdmin, async (req, res) => {
 })
 
 // ── Delete a family (cascades to children + all progress) ──
-router.delete('/users/:id', requireAdmin, async (req, res) => {
+router.delete('/users/:id', requireAdmin, requirePermission('users.delete'), async (req, res) => {
   const user = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
   if (!user) { res.status(404).json({ data: null, error: 'User not found' }); return }
   // Never let an admin delete the admin account out from under itself.
@@ -140,7 +145,7 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
 })
 
 // ── Audit log viewer ─────────────────────────────────────
-router.get('/audit', requireAdmin, async (req, res) => {
+router.get('/audit', requireAdmin, requirePermission('audit.read'), async (req, res) => {
   const limit = Math.min(parseInt((req.query.limit as string) ?? '100'), 500)
   const rows = await query(
     `select admin_email, action, target_type, target_id, detail, created_at
