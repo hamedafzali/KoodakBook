@@ -35,11 +35,15 @@ router.post('/login', async (req, res) => {
   if (!parsed.success) { res.status(400).json({ data: null, error: 'Invalid email or password' }); return }
 
   const { email, password } = parsed.data
-  const user = await queryOne<{ id: string; password_hash: string }>(
-    'select id, password_hash from users where email = $1',
+  const user = await queryOne<{ id: string; password_hash: string; status: string }>(
+    'select id, password_hash, status from users where email = $1',
     [email]
   )
 
+  if (user?.status === 'suspended') {
+    res.status(403).json({ data: null, error: 'This account is suspended' })
+    return
+  }
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     res.status(401).json({ data: null, error: 'Invalid email or password' })
     return

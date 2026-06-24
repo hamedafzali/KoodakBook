@@ -39,7 +39,7 @@ router.get('/users', requireAdmin, requirePermission('users.read'), async (req, 
 // ── Family detail: parent + children + quick stats ───────
 router.get('/users/:id', requireAdmin, requirePermission('users.read'), async (req, res) => {
   const user = await queryOne(
-    'select id, email, plan, plan_expires_at, created_at from users where id = $1', [req.params.id],
+    'select id, email, plan, plan_expires_at, status, created_at from users where id = $1', [req.params.id],
   )
   if (!user) { res.status(404).json({ data: null, error: 'User not found' }); return }
 
@@ -145,6 +145,57 @@ router.delete('/users/:id', requireAdmin, requirePermission('users.delete'), asy
   await query('delete from users where id = $1', [req.params.id])
   await logAudit(res.locals.adminEmail, 'user.delete', 'user', String(req.params.id), { email: user.email })
   res.json({ data: { ok: true }, error: null })
+})
+
+// ── Suspend / reactivate (Phase 3) ───────────────────────
+router.post('/users/:id/suspend', requireAdmin, requirePermission('users.suspend'), async (req, res) => {
+  const u = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
+  if (!u) { res.status(404).json({ data: null, error: 'User not found' }); return }
+  if (u.email === ADMIN_EMAIL) { res.status(400).json({ data: null, error: 'Cannot suspend the admin account' }); return }
+  await query('update users set status = $1 where id = $2', ['suspended', req.params.id])
+  await logAudit(res.locals.adminEmail, 'user.suspend', 'user', String(req.params.id), { email: u.email })
+  res.json({ data: { ok: true }, error: null })
+})
+router.post('/users/:id/reactivate', requireAdmin, requirePermission('users.suspend'), async (req, res) => {
+  await query('update users set status = $1 where id = $2', ['active', req.params.id])
+  await logAudit(res.locals.adminEmail, 'user.reactivate', 'user', String(req.params.id), {})
+  res.json({ data: { ok: true }, error: null })
+})
+
+// ── Support notes ────────────────────────────────────────
+router.get('/users/:id/notes', requireAdmin, requirePermission('users.read'), async (req, res) => {
+  const rows = await query('select admin_email, note, created_at from support_notes where user_id = $1 order by created_at desc', [req.params.id])
+  res.json({ data: rows, error: null })
+})
+router.post('/users/:id/notes', requireAdmin, requirePermission('users.read'), async (req, res) => {
+  const note = (req.body?.note as string | undefined)?.trim()
+  if (!note) { res.status(400).json({ data: null, error: 'note required' }); return }
+  await query('insert into support_notes (user_id, admin_email, note) values ($1,$2,$3)', [req.params.id, res.locals.adminEmail, note])
+  res.json({ data: { ok: true }, error: null })
+})
+
+// ── Activity timeline (audit entries about this user) ────
+router.get('/users/:id/activity', requireAdmin, requirePermission('users.read'), async (req, res) => {
+  const rows = await query(
+    `select action, detail, created_at, admin_email from audit_log
+     where target_type = 'user' and target_id = $1 order by created_at desc limit 50`, [req.params.id])
+  res.json({ data: rows, error: null })
+})
+
+// ── Export a family's data (GDPR) ────────────────────────
+router.get('/users/:id/export', requireAdmin, requirePermission('users.export'), async (req, res) => {
+  const id = req.params.id
+  const user = await queryOne('select id, email, plan, plan_expires_at, status, created_at from users where id = $1', [id])
+  if (!user) { res.status(404).json({ data: null, error: 'User not found' }); return }
+  const [children, words, lessons, stories, sessions] = await Promise.all([
+    query('select * from children where parent_id = $1', [id]),
+    query('select cwp.* from child_word_progress cwp join children c on c.id = cwp.child_id where c.parent_id = $1', [id]),
+    query('select clp.* from child_lesson_progress clp join children c on c.id = clp.child_id where c.parent_id = $1', [id]),
+    query('select csp.* from child_story_progress csp join children c on c.id = csp.child_id where c.parent_id = $1', [id]),
+    query('select cs.* from child_sessions cs join children c on c.id = cs.child_id where c.parent_id = $1', [id]),
+  ])
+  await logAudit(res.locals.adminEmail, 'user.export', 'user', String(id), {})
+  res.json({ data: { user, children, word_progress: words, lesson_progress: lessons, story_progress: stories, sessions }, error: null })
 })
 
 // ── Audit log viewer ─────────────────────────────────────
