@@ -98,28 +98,49 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3 border-2 border-amber-200">
-      <div className="grid grid-cols-2 gap-2">
-        <input className={inp} placeholder="کلید (key)" dir="ltr" value={f.key} disabled={!!plan} onChange={e => setF({ ...f, key: e.target.value })} />
-        <input className={inp} placeholder="نام" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
-        <input className={inp} type="number" placeholder="قیمت (سنت)" value={f.price_cents} onChange={e => setF({ ...f, price_cents: +e.target.value })} />
-        <select className={inp} value={f.interval} onChange={e => setF({ ...f, interval: e.target.value as 'month' | 'year' | 'none' })}>
-          <option value="month">ماهانه</option><option value="year">سالانه</option><option value="none">بدون دوره</option>
-        </select>
-        <input className={inp} type="number" placeholder="روز آزمایشی" value={f.trial_days} onChange={e => setF({ ...f, trial_days: +e.target.value })} />
-        <input className={inp} placeholder="ارز" dir="ltr" value={f.currency} onChange={e => setF({ ...f, currency: e.target.value })} />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="کلید (شناسه یکتا)" hint={plan ? 'غیرقابل تغییر' : 'مثلاً premium_year'}>
+          <input className={inp} placeholder="premium_year" dir="ltr" value={f.key} disabled={!!plan} onChange={e => setF({ ...f, key: e.target.value })} />
+        </Field>
+        <Field label="نام نمایشی">
+          <input className={inp} placeholder="پرمیوم" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} />
+        </Field>
+        <Field label="قیمت (به سنت)" hint="۹۹۹ = ۹٫۹۹">
+          <input className={inp} type="number" value={f.price_cents} onChange={e => setF({ ...f, price_cents: +e.target.value })} />
+        </Field>
+        <Field label="دوره">
+          <select className={inp} value={f.interval} onChange={e => setF({ ...f, interval: e.target.value as 'month' | 'year' | 'none' })}>
+            <option value="month">ماهانه</option><option value="year">سالانه</option><option value="none">بدون دوره</option>
+          </select>
+        </Field>
+        <Field label="روزهای آزمایشی رایگان">
+          <input className={inp} type="number" value={f.trial_days} onChange={e => setF({ ...f, trial_days: +e.target.value })} />
+        </Field>
+        <Field label="واحد پول">
+          <input className={inp} dir="ltr" value={f.currency} onChange={e => setF({ ...f, currency: e.target.value })} />
+        </Field>
       </div>
+      <Field label="توضیحات">
+        <input className={inp} placeholder="توضیح کوتاه پلن" value={f.description} onChange={e => setF({ ...f, description: e.target.value })} />
+      </Field>
       <div className="flex gap-4 text-sm">
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={f.is_active} onChange={e => setF({ ...f, is_active: e.target.checked })} /> فعال</label>
-        <label className="flex items-center gap-1.5"><input type="checkbox" checked={f.is_default} onChange={e => setF({ ...f, is_default: e.target.checked })} /> پیش‌فرض</label>
+        <label className="flex items-center gap-1.5"><input type="checkbox" checked={f.is_default} onChange={e => setF({ ...f, is_default: e.target.checked })} /> پلن پیش‌فرض</label>
       </div>
 
       <div>
-        <p className="text-xs text-gray-500 mb-1">ویژگی‌ها / محدودیت‌ها</p>
+        <p className="text-sm font-medium text-gray-700 mb-1">ویژگی‌ها / محدودیت‌ها</p>
+        <p className="text-xs text-gray-400 mb-2">هر ویژگی یک کلید و یک مقدار دارد (مثلاً <span className="ltr">max_children = 5</span>).</p>
+        {feats.length > 0 && (
+          <div className="flex gap-2 mb-1 text-xs text-gray-400">
+            <span className="flex-1">کلید ویژگی</span><span className="flex-1">مقدار</span><span className="w-7" />
+          </div>
+        )}
         {feats.map(([k, v], i) => (
           <div key={i} className="flex gap-2 mb-1.5">
-            <input className={inp} placeholder="کلید" dir="ltr" value={k} onChange={e => { const c = [...feats]; c[i] = [e.target.value, v]; setFeats(c) }} />
-            <input className={inp} placeholder="مقدار" dir="ltr" value={v} onChange={e => { const c = [...feats]; c[i] = [k, e.target.value]; setFeats(c) }} />
-            <button onClick={() => setFeats(feats.filter((_, j) => j !== i))} className="text-red-400 px-2">✕</button>
+            <input className={inp} placeholder="max_children" dir="ltr" value={k} onChange={e => { const c = [...feats]; c[i] = [e.target.value, v]; setFeats(c) }} />
+            <input className={inp} placeholder="5 / true" dir="ltr" value={v} onChange={e => { const c = [...feats]; c[i] = [k, e.target.value]; setFeats(c) }} />
+            <button onClick={() => setFeats(feats.filter((_, j) => j !== i))} className="text-red-400 px-2" aria-label="حذف ویژگی">✕</button>
           </div>
         ))}
         <button onClick={() => setFeats([...feats, ['', '']])} className="text-xs text-amber-700 hover:underline">+ افزودن ویژگی</button>
@@ -131,5 +152,16 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
         {onCancel && <button onClick={onCancel} className="text-gray-500 px-4 py-2 text-sm">انصراف</button>}
       </div>
     </div>
+  )
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-medium text-gray-600 mb-1">
+        {label}{hint && <span className="text-gray-400 font-normal"> · {hint}</span>}
+      </span>
+      {children}
+    </label>
   )
 }
