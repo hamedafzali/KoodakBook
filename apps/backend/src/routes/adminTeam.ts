@@ -34,8 +34,10 @@ router.get('/admins', requireAdmin, requirePermission('admin.manage'), async (_r
      from users u
      join user_roles ur on ur.user_id = u.id
      join roles r on r.id = ur.role_id
+     where u.email <> $1
      group by u.id, u.email, u.created_at
      order by u.created_at`,
+    [ADMIN_EMAIL],
   )
   res.json({ data: { owner_email: ADMIN_EMAIL, admins: rows }, error: null })
 })
