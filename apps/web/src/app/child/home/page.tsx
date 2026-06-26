@@ -179,7 +179,33 @@ export default function ChildHomePage() {
         </div>
       </div>
 
-      <div className="px-4 pt-5 space-y-6">
+      <div className="px-4 lg:px-8 pt-5 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+
+        {/* ── Left column: companion + continue + review ── */}
+        <div className="space-y-6 lg:col-span-4">
+
+        {/* Desktop companion (lg-only) — anchors the left column even before a
+            child has any progress, so the two-column home never looks lopsided. */}
+        <aside className="hidden lg:block bg-white rounded-lg p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Mascot size={56} mood={stats.streak > 0 ? 'happy' : 'idle'} />
+            <div className="min-w-0">
+              <p className="font-bold text-gray-800 truncate">{child?.name ?? 'کودک عزیز'}</p>
+              <p className="text-sm text-amber-600 font-medium">{resolveLevel(stats.xp).label}</p>
+            </div>
+          </div>
+          <div
+            className="mt-4 h-2.5 bg-amber-100 rounded-full overflow-hidden"
+            role="progressbar" aria-valuenow={resolveLevel(stats.xp).pct} aria-valuemin={0} aria-valuemax={100}
+            aria-label="پیشرفت سطح"
+          >
+            <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" style={{ width: `${resolveLevel(stats.xp).pct}%` }} />
+          </div>
+          <div className="flex gap-3 mt-3 text-xs text-gray-600">
+            <span className="flex items-center gap-1">🔥 {stats.streak} روز</span>
+            <span className="flex items-center gap-1">⭐ {stats.words} کلمه</span>
+          </div>
+        </aside>
 
         {/* ── Continue where you left off ── */}
         {(lastLesson || lastStory) && (
@@ -253,6 +279,11 @@ export default function ChildHomePage() {
           </section>
         )}
 
+        </div>{/* ── left column end ── */}
+
+        {/* ── Right column: lessons / stories / practice ── */}
+        <div className="space-y-6 mt-6 lg:mt-0 lg:col-span-8">
+
         {/* ── Lessons ── */}
         <section>
           <div className="flex items-center justify-between mb-3">
@@ -264,7 +295,7 @@ export default function ChildHomePage() {
           {lessons.length === 0 ? (
             <EmptyState message="هنوز درسی نیست" subMessage="به زودی اضافه می‌شود!" />
           ) : (
-            <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
+            <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {lessonView.map(({ l: lesson, locked }, idx) => (
                 <motion.div key={lesson.id} variants={item}>
                   {locked ? (
@@ -418,7 +449,8 @@ export default function ChildHomePage() {
             </Link>
           </div>
         </section>
-      </div>
+        </div>{/* ── right column end ── */}
+      </div>{/* ── two-column grid end ── */}
 
       <BottomNav />
     </div>

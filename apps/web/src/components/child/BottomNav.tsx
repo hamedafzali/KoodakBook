@@ -16,7 +16,7 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="منوی اصلی"
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[540px] bg-white/95 backdrop-blur-md border-t border-amber-100 flex justify-around py-2 px-2"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[540px] bg-white/95 backdrop-blur-md border-t border-amber-100 flex justify-around py-2 px-2 lg:hidden"
       style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}
     >
       {NAV_ITEMS.map(nav => {
