@@ -1,5 +1,12 @@
 'use client'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, ReactNode } from 'react'
+
+/* ── Centralized style tokens (single source of truth) ──── */
+export const ui = {
+  input: 'w-full border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 disabled:bg-slate-50 disabled:text-slate-400',
+  label: 'block text-xs font-medium text-slate-600 mb-1',
+  card: 'bg-white rounded-2xl border border-slate-200/70 shadow-sm',
+}
 
 /* ── Button ─────────────────────────────────────────────── */
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost'
@@ -70,6 +77,34 @@ export function Spinner({ label = 'در حال بارگذاری...' }: { label?:
 }
 export function EmptyState({ children }: { children: ReactNode }) {
   return <p className="text-center text-slate-400 text-sm py-8">{children}</p>
+}
+
+/* ── Form primitives ────────────────────────────────────── */
+export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className={ui.label}>{label}{hint && <span className="text-slate-400 font-normal"> · {hint}</span>}</span>
+      {children}
+    </label>
+  )
+}
+
+export function Input({ className = '', ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...rest} className={`${ui.input} ${className}`} />
+}
+
+export function Select({ className = '', children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...rest} className={`${ui.input} ${className}`}>{children}</select>
+}
+
+export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${checked ? 'bg-amber-500' : 'bg-slate-300'}`}>
+      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${checked ? 'right-1' : 'right-6'}`} />
+    </button>
+  )
 }
 
 /* ── Stat tile ──────────────────────────────────────────── */

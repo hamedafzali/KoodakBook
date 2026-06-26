@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
 import { PLAN_FEATURES, featureLabel } from '@koodakbook/shared'
+import { Field, Toggle, ui } from '@/components/ui'
 
 interface Plan {
   id: string; key: string; name: string; description: string | null
@@ -107,7 +108,7 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
     if (r.error) { setErr(r.error); return }
     onSaved()
   }
-  const inp = 'border border-gray-300 rounded-xl px-3 py-2 text-sm w-full'
+  const inp = ui.input
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3 border-2 border-amber-200">
@@ -154,11 +155,7 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
                   <p className="text-xs text-gray-400">{d.description}</p>
                 </div>
                 {d.type === 'boolean' ? (
-                  <button type="button" role="switch" aria-checked={val === 'true'} aria-label={d.label}
-                    onClick={() => setFeat(d.key, val === 'true' ? 'false' : 'true')}
-                    className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${val === 'true' ? 'bg-amber-500' : 'bg-gray-300'}`}>
-                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${val === 'true' ? 'right-1' : 'right-6'}`} />
-                  </button>
+                  <Toggle checked={val === 'true'} onChange={on => setFeat(d.key, on ? 'true' : 'false')} label={d.label} />
                 ) : (
                   <input type="number" value={val} onChange={e => setFeat(d.key, e.target.value)}
                     className="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center flex-shrink-0" />
@@ -196,13 +193,3 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
   )
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="block text-xs font-medium text-gray-600 mb-1">
-        {label}{hint && <span className="text-gray-400 font-normal"> · {hint}</span>}
-      </span>
-      {children}
-    </label>
-  )
-}

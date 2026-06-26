@@ -4,7 +4,7 @@ import { api } from '@/lib/api'
 import FileUpload from '@/components/FileUpload'
 import type { Word } from '@koodakbook/shared'
 import { WORD_CATEGORIES, ANIMATION_TEMPLATES, templateForCategory, TEMPLATE_REGISTRY } from '@koodakbook/shared'
-import { PageHeader, Button } from '@/components/ui'
+import { PageHeader, Button, ui } from '@/components/ui'
 
 const CATEGORIES = WORD_CATEGORIES as readonly string[]
 const EMPTY = {
@@ -78,36 +78,36 @@ export default function AdminWordsPage() {
           <div>
             <label className="text-xs text-gray-500 block mb-1">فارسی *</label>
             <input required value={form.persian} onChange={e => setForm(f => ({ ...f, persian: e.target.value }))}
-              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              className={ui.input} />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">English *</label>
             <input required value={form.english} onChange={e => setForm(f => ({ ...f, english: e.target.value }))}
-              className="ltr w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              className={`ltr ${ui.input}`} />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">Finglish</label>
             <input value={form.finglish} onChange={e => setForm(f => ({ ...f, finglish: e.target.value }))}
-              className="ltr w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              className={`ltr ${ui.input}`} />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">دسته‌بندی *</label>
             <select required value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+              className={ui.input}>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">مرحله</label>
             <select value={form.stage} onChange={e => setForm(f => ({ ...f, stage: Number(e.target.value) }))}
-              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+              className={ui.input}>
               {[1,2,3,4].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">قالب انیمیشن</label>
             <select value={form.animation_template} onChange={e => setForm(f => ({ ...f, animation_template: e.target.value }))}
-              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+              className={ui.input}>
               <option value="">— (پیش‌فرض: {templateForCategory(form.category as never)})</option>
               {ANIMATION_TEMPLATES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>

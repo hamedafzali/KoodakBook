@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import FileUpload from '@/components/FileUpload'
 import type { Story, StoryPage } from '@koodakbook/shared'
-import { PageHeader, Button } from '@/components/ui'
+import { PageHeader, Button, ui } from '@/components/ui'
 
 const EMPTY_STORY = { title_persian: '', title_english: '', stage: 3, age_min: '', age_max: '', cover_url: '', audio_url: '' }
 const EMPTY_PAGE = { page_number: 1, text_persian: '', text_english: '', image_url: '', audio_url: '' }
@@ -79,29 +79,29 @@ export default function AdminStoriesPage() {
           <div>
             <label className="text-xs text-gray-500 block mb-1">عنوان فارسی *</label>
             <input required value={storyForm.title_persian} onChange={e => setStoryForm(f => ({ ...f, title_persian: e.target.value }))}
-              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              className={ui.input} />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">English Title *</label>
             <input required value={storyForm.title_english} onChange={e => setStoryForm(f => ({ ...f, title_english: e.target.value }))}
-              className="ltr w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              className={`ltr ${ui.input}`} />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">مرحله</label>
             <select value={storyForm.stage} onChange={e => setStoryForm(f => ({ ...f, stage: Number(e.target.value) }))}
-              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+              className={ui.input}>
               {[1,2,3,4].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">سن از</label>
             <input type="number" value={storyForm.age_min} onChange={e => setStoryForm(f => ({ ...f, age_min: e.target.value }))}
-              className="ltr w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="3" />
+              className={`ltr ${ui.input}`} placeholder="3" />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">سن تا</label>
             <input type="number" value={storyForm.age_max} onChange={e => setStoryForm(f => ({ ...f, age_max: e.target.value }))}
-              className="ltr w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="8" />
+              className={`ltr ${ui.input}`} placeholder="8" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -149,18 +149,18 @@ export default function AdminStoriesPage() {
               <div>
                 <label className="text-xs text-gray-500 block mb-1">شماره صفحه *</label>
                 <input type="number" required min={1} value={pageForm.page_number} onChange={e => setPageForm(f => ({ ...f, page_number: Number(e.target.value) }))}
-                  className="ltr w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  className={`ltr ${ui.input}`} />
               </div>
             </div>
             <div>
               <label className="text-xs text-gray-500 block mb-1">متن فارسی *</label>
               <textarea required value={pageForm.text_persian} onChange={e => setPageForm(f => ({ ...f, text_persian: e.target.value }))} rows={2}
-                className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                className={`${ui.input} resize-none`} />
             </div>
             <div>
               <label className="text-xs text-gray-500 block mb-1">ترجمه انگلیسی</label>
               <textarea value={pageForm.text_english} onChange={e => setPageForm(f => ({ ...f, text_english: e.target.value }))} rows={2}
-                className="ltr w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                className={`ltr ${ui.input} resize-none`} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FileUpload type="images" label="تصویر صفحه" currentUrl={pageForm.image_url}
