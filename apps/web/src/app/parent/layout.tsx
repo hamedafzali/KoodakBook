@@ -10,9 +10,11 @@ import ParentNav from '@/components/parent/ParentNav'
 export default function ParentLayout({ children }: { children: React.ReactNode }) {
   return (
     <ParentGate>
-      <div className="min-h-screen w-full flex justify-center bg-slate-200">
-        <aside className="hidden lg:block self-stretch"><ParentNav /></aside>
-        <div className="w-full max-w-[860px] min-h-screen bg-slate-50 lg:shadow-xl">{children}</div>
+      <div className="min-h-screen w-full flex bg-slate-100">
+        <aside className="hidden lg:block self-stretch border-e border-slate-200"><ParentNav /></aside>
+        {/* Fluid main region — pages own their measure via the Container layer,
+            so reading pages stay a comfortable column while the dashboard fills width. */}
+        <main className="flex-1 min-w-0">{children}</main>
       </div>
     </ParentGate>
   )

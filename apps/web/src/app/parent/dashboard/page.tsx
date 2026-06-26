@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild, setActiveChildId } from '@/lib/activeChild'
+import { containerWidths } from '@/components/shared/layout'
 import { resolveLevel } from '@koodakbook/shared'
 import type { DashboardSummary, Child, ChildSession } from '@koodakbook/shared'
 
@@ -92,10 +93,10 @@ export default function ParentDashboardPage() {
   const lvl = resolveLevel(xp ?? 0)
 
   return (
-      <div className="min-h-screen bg-slate-50 pb-20">
+      <div className={`min-h-screen bg-slate-50 pb-20 ${containerWidths.wide}`}>
 
         {/* Header */}
-        <div className="bg-white border-b border-slate-200 px-5 py-4">
+        <div className="bg-white border-b border-slate-200 px-5 py-4 lg:rounded-b-none">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-bold text-xl text-slate-800">داشبورد والدین</h1>
@@ -139,7 +140,7 @@ export default function ParentDashboardPage() {
           )}
         </div>
 
-        <div className="px-4 pt-5 space-y-5">
+        <div className="px-4 lg:px-6 pt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3 lg:items-start">
 
           {/* ── Level / XP ── */}
           <section className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-md p-4 shadow-sm text-white" aria-labelledby="level-title">
@@ -297,14 +298,14 @@ export default function ParentDashboardPage() {
 
           <Link
             href="/parent/progress"
-            className="flex items-center justify-center w-full bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-md transition-colors min-h-[56px]"
+            className="flex items-center justify-center w-full bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-md transition-colors min-h-[56px] lg:col-span-2 xl:col-span-3"
           >
             گزارش کامل پیشرفت 📊
           </Link>
 
           <Link
             href="/child/home"
-            className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-md transition-colors text-lg min-h-[56px]"
+            className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-md transition-colors text-lg min-h-[56px] lg:col-span-2 xl:col-span-3"
           >
             رفتن به حالت کودک 👶
           </Link>

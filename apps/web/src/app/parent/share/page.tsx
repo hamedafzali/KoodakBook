@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import type { DashboardSummary, Child } from '@koodakbook/shared'
+import { containerWidths } from '@/components/shared/layout'
 
 /* Portrait card sized for WhatsApp / status sharing. */
 const W = 1080
@@ -202,7 +203,7 @@ export default function SharePage() {
   )
 
   return (
-      <div className="min-h-screen bg-slate-50 pb-20">
+      <div className={`min-h-screen bg-slate-50 pb-20 ${containerWidths.app}`}>
         {/* Header */}
         <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
           <Link

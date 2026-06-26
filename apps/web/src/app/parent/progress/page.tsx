@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import type { Child, ChildWordProgress, ChildLessonProgress, ChildStoryProgress, ChildSession, Word, Lesson, Story } from '@koodakbook/shared'
+import { containerWidths } from '@/components/shared/layout'
 
 interface RawProgress {
   words:           ChildWordProgress[]
@@ -119,7 +120,7 @@ export default function ParentProgressPage() {
   ]
 
   return (
-      <div className="min-h-screen bg-slate-50">
+      <div className={`min-h-screen bg-slate-50 ${containerWidths.app}`}>
 
         {/* Header */}
         <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">

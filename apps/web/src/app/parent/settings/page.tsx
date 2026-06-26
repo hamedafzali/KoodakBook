@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
 import { getActiveChildId, setActiveChildId } from '@/lib/activeChild'
 import type { Child } from '@koodakbook/shared'
+import { containerWidths } from '@/components/shared/layout'
 
 const GOAL_KEY = 'koodakbook_daily_goal_min'
 const TRANSLATION_KEY = 'koodakbook_show_translation'
@@ -69,7 +70,7 @@ export default function SettingsPage() {
   }
 
   return (
-      <div className="min-h-screen bg-slate-50">
+      <div className={`min-h-screen bg-slate-50 ${containerWidths.app}`}>
 
         {/* Header */}
         <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
