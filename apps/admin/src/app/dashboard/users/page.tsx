@@ -1,7 +1,10 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { PageHeader, Badge, Spinner } from '@/components/ui'
+import { DataTable, type Column } from '@/components/DataTable'
 
 interface ParentRow {
   id: string
@@ -15,8 +18,10 @@ interface ParentRow {
 interface UsersResp { users: ParentRow[]; total: number; limit: number; offset: number }
 
 const fa = (d: string | null) => (d ? new Date(d).toLocaleDateString('fa-IR') : '—')
+const ts = (d: string | null) => (d ? new Date(d).getTime() : 0)
 
 export default function UsersPage() {
+  const router = useRouter()
   const [data, setData] = useState<UsersResp | null>(null)
   const [q, setQ] = useState('')
   const [loading, setLoading] = useState(true)
@@ -27,61 +32,34 @@ export default function UsersPage() {
     if (r.data) setData(r.data)
     setLoading(false)
   }, [])
-
   useEffect(() => { load('') }, [load])
+
+  const columns: Column<ParentRow>[] = [
+    { key: 'email', header: 'ایمیل', sortValue: u => u.email,
+      render: u => <Link href={`/dashboard/users/${u.id}`} onClick={e => e.stopPropagation()} className="text-amber-700 hover:underline ltr inline-block">{u.email}</Link> },
+    { key: 'plan', header: 'پلن', align: 'center', sortValue: u => u.plan,
+      render: u => <Badge tone={u.plan === 'premium' ? 'violet' : 'gray'}>{u.plan}</Badge> },
+    { key: 'children_count', header: 'کودکان', align: 'center', sortValue: u => u.children_count,
+      render: u => <span className="text-slate-700">{u.children_count}</span> },
+    { key: 'last_active', header: 'آخرین فعالیت', align: 'center', sortValue: u => ts(u.last_active),
+      render: u => <span className="text-slate-500">{fa(u.last_active)}</span> },
+    { key: 'created_at', header: 'عضویت', align: 'center', sortValue: u => ts(u.created_at),
+      render: u => <span className="text-slate-500">{fa(u.created_at)}</span> },
+  ]
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold text-gray-800">کاربران {data ? `(${data.total})` : ''}</h2>
-        <Link href="/dashboard/audit" className="text-sm text-amber-700 hover:underline">گزارش فعالیت‌ها ←</Link>
-      </div>
+      <PageHeader title={`کاربران${data ? ` (${data.total})` : ''}`} subtitle="خانواده‌های ثبت‌نام‌شده"
+        actions={<Link href="/dashboard/audit" className="text-sm text-amber-700 hover:underline">گزارش فعالیت‌ها ←</Link>} />
 
       <form onSubmit={e => { e.preventDefault(); load(q) }} className="mb-4 flex gap-2">
-        <input
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          placeholder="جستجوی ایمیل…"
-          dir="ltr"
-          className="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-        />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="جستجوی ایمیل…" dir="ltr"
+          className="flex-1 border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
         <button className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 rounded-xl text-sm">جستجو</button>
       </form>
 
-      {loading ? (
-        <p className="text-gray-400">در حال بارگذاری...</p>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs">
-              <tr>
-                <th className="text-right px-4 py-3 font-medium">ایمیل</th>
-                <th className="px-3 py-3 font-medium">پلن</th>
-                <th className="px-3 py-3 font-medium">کودکان</th>
-                <th className="px-3 py-3 font-medium">آخرین فعالیت</th>
-                <th className="px-3 py-3 font-medium">عضویت</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.users.map(u => (
-                <tr key={u.id} className="border-t border-gray-100 hover:bg-amber-50/40">
-                  <td className="px-4 py-3">
-                    <Link href={`/dashboard/users/${u.id}`} className="text-amber-700 hover:underline ltr inline-block">{u.email}</Link>
-                  </td>
-                  <td className="px-3 py-3 text-center">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${u.plan === 'premium' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500'}`}>{u.plan}</span>
-                  </td>
-                  <td className="px-3 py-3 text-center text-gray-700">{u.children_count}</td>
-                  <td className="px-3 py-3 text-center text-gray-500">{fa(u.last_active)}</td>
-                  <td className="px-3 py-3 text-center text-gray-500">{fa(u.created_at)}</td>
-                </tr>
-              ))}
-              {data?.users.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">کاربری یافت نشد</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      {loading ? <Spinner /> : (
+        <DataTable rows={data?.users ?? []} columns={columns} onRowClick={u => router.push(`/dashboard/users/${u.id}`)} empty="کاربری یافت نشد" />
       )}
     </div>
   )
