@@ -94,14 +94,14 @@ export default function Tutorial({ childName, onClose }: Props) {
         <div className="flex gap-2">
           <motion.button
             onClick={finish}
-            className="flex-1 py-3 rounded-[1.25rem] text-gray-400 font-medium text-sm min-h-[48px]"
+            className="flex-1 py-3 rounded-md text-gray-400 font-medium text-sm min-h-[48px]"
             whileTap={{ scale: 0.96 }}
           >
             رد کردن
           </motion.button>
           <motion.button
             onClick={() => { speakPersian(current.body); next() }}
-            className="flex-[2] py-3 rounded-[1.25rem] bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold shadow-md min-h-[48px]"
+            className="flex-[2] py-3 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold shadow-md min-h-[48px]"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.96 }}
           >

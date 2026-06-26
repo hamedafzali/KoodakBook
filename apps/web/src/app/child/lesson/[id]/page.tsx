@@ -140,7 +140,7 @@ export default function LessonPage() {
 
         {/* Score card */}
         <motion.div
-          className="bg-white rounded-[1.75rem] shadow-lg p-5 w-full max-w-xs text-center"
+          className="bg-white rounded-lg shadow-lg p-5 w-full max-w-xs text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
@@ -178,7 +178,7 @@ export default function LessonPage() {
 
         <motion.button
           onClick={() => router.push('/child/home')}
-          className="w-full max-w-xs bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-4 rounded-[1.25rem] text-lg shadow-md touch-target"
+          className="w-full max-w-xs bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-4 rounded-md text-lg shadow-md touch-target"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}

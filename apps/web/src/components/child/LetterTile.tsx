@@ -37,7 +37,7 @@ export default function LetterTile({ letter, onClick }: Props) {
   return (
     <motion.button
       onClick={handleClick}
-      className={`flex flex-col items-center gap-1 p-5 rounded-[1.25rem] border-2 shadow-sm w-full min-h-[100px] touch-target ${color}`}
+      className={`flex flex-col items-center gap-1 p-5 rounded-md border-2 shadow-sm w-full min-h-[100px] touch-target ${color}`}
       whileTap={{ scale: 0.85, rotate: [-2, 2, -1, 0] }}
       whileHover={{ scale: 1.05, y: -2 }}
       transition={{ type: 'spring', stiffness: 400, damping: 15 }}

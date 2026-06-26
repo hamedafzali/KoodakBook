@@ -75,7 +75,7 @@ export default function ParentDashboardPage() {
           <p className="text-gray-600 font-medium text-center persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
           <Link
             href="/onboarding"
-            className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-[1.25rem] transition-colors min-h-[48px] flex items-center"
+            className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-md transition-colors min-h-[48px] flex items-center"
           >
             ایجاد پروفایل
           </Link>
@@ -142,7 +142,7 @@ export default function ParentDashboardPage() {
         <div className="px-4 pt-5 space-y-5">
 
           {/* ── Level / XP ── */}
-          <section className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-[1.25rem] p-4 shadow-sm text-white" aria-labelledby="level-title">
+          <section className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-md p-4 shadow-sm text-white" aria-labelledby="level-title">
             <div className="flex items-center justify-between mb-2">
               <h2 id="level-title" className="font-bold text-sm">سطح: {lvl.label}</h2>
               <span className="text-sm font-bold">{xp ?? 0} XP</span>
@@ -168,7 +168,7 @@ export default function ParentDashboardPage() {
           </section>
 
           {/* ── Daily goal ── */}
-          <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="goal-title">
+          <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="goal-title">
             <div className="flex items-center justify-between mb-2">
               <h2 id="goal-title" className="font-bold text-slate-700 text-sm">هدف امروز</h2>
               <span className={`text-sm font-bold ${goalMet ? 'text-green-600' : 'text-amber-600'}`}>
@@ -193,7 +193,7 @@ export default function ParentDashboardPage() {
           </section>
 
           {/* ── 7-Day Activity Heatmap ── */}
-          <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="heatmap-title">
+          <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="heatmap-title">
             <h2 id="heatmap-title" className="font-bold text-slate-700 text-sm mb-3">فعالیت ۷ روز اخیر</h2>
             <div className="flex gap-2 justify-between">
               {heatmap.map((day, i) => (
@@ -240,7 +240,7 @@ export default function ParentDashboardPage() {
               { key: 'introduced',   label: 'معرفی شده',    count: mastery_breakdown.introduced,   bar: 'bg-slate-300',   dot: 'bg-slate-300' },
             ]
             return (
-              <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="mastery-title">
+              <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="mastery-title">
                 <div className="flex items-center justify-between mb-3">
                   <h2 id="mastery-title" className="font-bold text-slate-700 text-sm">تسلط بر کلمه‌ها</h2>
                   <span className="text-xs text-slate-400">{total} کلمه</span>
@@ -265,7 +265,7 @@ export default function ParentDashboardPage() {
 
           {/* ── Recent badges ── */}
           {recent_badges.length > 0 && (
-            <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="badges-title">
+            <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="badges-title">
               <h2 id="badges-title" className="font-bold text-slate-700 mb-3 text-sm">جوایز اخیر</h2>
               <div className="flex gap-3 flex-wrap">
                 {recent_badges.map(cb => (
@@ -280,7 +280,7 @@ export default function ParentDashboardPage() {
 
           {/* ── Recent sessions ── */}
           {recent_sessions.length > 0 && (
-            <section className="bg-white rounded-[1.25rem] p-4 shadow-sm" aria-labelledby="sessions-title">
+            <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="sessions-title">
               <h2 id="sessions-title" className="font-bold text-slate-700 mb-3 text-sm">جلسات اخیر</h2>
               <div className="space-y-2">
                 {recent_sessions.slice(0, 5).map((s, i) => (
@@ -297,14 +297,14 @@ export default function ParentDashboardPage() {
 
           <Link
             href="/parent/progress"
-            className="flex items-center justify-center w-full bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-[1.25rem] transition-colors min-h-[56px]"
+            className="flex items-center justify-center w-full bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-md transition-colors min-h-[56px]"
           >
             گزارش کامل پیشرفت 📊
           </Link>
 
           <Link
             href="/child/home"
-            className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-[1.25rem] transition-colors text-lg min-h-[56px]"
+            className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-md transition-colors text-lg min-h-[56px]"
           >
             رفتن به حالت کودک 👶
           </Link>
@@ -315,7 +315,7 @@ export default function ParentDashboardPage() {
 
 function StatCard({ emoji, value, label, color }: { emoji: string; value: number; label: string; color: string }) {
   return (
-    <div className={`rounded-[1.25rem] border p-4 flex flex-col gap-1 ${color}`}>
+    <div className={`rounded-md border p-4 flex flex-col gap-1 ${color}`}>
       <span className="text-3xl" aria-hidden="true">{emoji}</span>
       <span className="text-3xl font-bold text-slate-800">{value}</span>
       <span className="text-xs text-slate-600">{label}</span>

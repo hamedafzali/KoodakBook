@@ -92,7 +92,7 @@ export default function SpeakPage() {
         {/* Word card */}
         <button
           onClick={() => { playTap(); speakOrPlay(word.audio_url, word.persian) }}
-          className="w-full max-w-sm bg-white rounded-[1.75rem] shadow-md p-6 flex flex-col items-center gap-2 touch-target"
+          className="w-full max-w-sm bg-white rounded-lg shadow-md p-6 flex flex-col items-center gap-2 touch-target"
           aria-label={`بشنو: ${word.persian}`}
         >
           {emoji && <span className="text-7xl leading-none" aria-hidden="true">{emoji}</span>}
@@ -141,7 +141,7 @@ export default function SpeakPage() {
         <motion.button
           onClick={nextWord}
           whileTap={{ scale: 0.95 }}
-          className="w-full max-w-sm py-4 rounded-[1.25rem] bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px]"
+          className="w-full max-w-sm py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px]"
         >
           کلمه بعدی ←
         </motion.button>

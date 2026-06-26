@@ -31,9 +31,9 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
   }
 
   const containerClasses = {
-    sm: 'p-3 rounded-[1.25rem]',
-    md: 'p-4 rounded-[1.25rem]',
-    lg: 'p-6 rounded-[1.75rem]',
+    sm: 'p-3 rounded-md',
+    md: 'p-4 rounded-md',
+    lg: 'p-6 rounded-lg',
   }
   const wordTextSizes = { sm: 'text-2xl', md: 'text-4xl', lg: 'text-5xl' }
   const imgSizes      = { sm: 'w-16 h-16', md: 'w-32 h-32', lg: 'w-56 h-56 mt-2' }

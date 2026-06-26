@@ -142,7 +142,7 @@ export default function PlacementPage() {
             🔊
           </button>
         ) : (
-          <div className="bg-white rounded-[1.75rem] shadow-lg px-10 py-8">
+          <div className="bg-white rounded-lg shadow-lg px-10 py-8">
             <span className="text-6xl font-bold text-gray-800">{q.show_text}</span>
           </div>
         )}

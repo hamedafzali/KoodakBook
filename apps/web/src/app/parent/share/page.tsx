@@ -226,7 +226,7 @@ export default function SharePage() {
             height={H}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-xs rounded-[1.75rem] shadow-lg"
+            className="w-full max-w-xs rounded-lg shadow-lg"
             role="img"
             aria-label={`کارت پیشرفت ${summary.child.name}`}
           />
@@ -235,14 +235,14 @@ export default function SharePage() {
             <motion.button
               onClick={handleShare}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-4 rounded-[1.25rem] bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px] flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px] flex items-center justify-center gap-2"
             >
               📤 به اشتراک بگذار
             </motion.button>
             <motion.button
               onClick={handleDownload}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-3.5 rounded-[1.25rem] border-2 border-slate-200 text-slate-600 font-bold min-h-[52px]"
+              className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold min-h-[52px]"
             >
               💾 ذخیره تصویر
             </motion.button>

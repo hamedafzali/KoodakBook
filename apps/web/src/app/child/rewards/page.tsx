@@ -46,7 +46,7 @@ export default function RewardsPage() {
     <div className="min-h-screen child-bg pb-nav">
       {/* Header */}
       <div
-        className="bg-gradient-to-br from-purple-500 to-violet-600 px-5 pt-10 pb-8 rounded-b-[2.5rem] text-white flex items-end justify-between"
+        className="bg-gradient-to-br from-purple-500 to-violet-600 px-5 pt-10 pb-8 rounded-b-xl text-white flex items-end justify-between"
         role="banner"
       >
         <div>
@@ -127,7 +127,7 @@ function BadgeCard({
       aria-label={`${def.title}: ${isEarned ? 'گرفته شده' : `قفل — ${def.hint}`}`}
     >
       <motion.div
-        className={`rounded-[1.75rem] p-4 flex flex-col items-center gap-2 text-center transition-all ${
+        className={`rounded-lg p-4 flex flex-col items-center gap-2 text-center transition-all ${
           isEarned
             ? 'bg-white shadow-lg border-2 border-amber-200'
             : 'bg-white/60 border-2 border-transparent'

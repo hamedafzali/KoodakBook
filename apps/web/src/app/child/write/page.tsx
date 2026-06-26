@@ -55,7 +55,7 @@ export default function WritePage() {
             onClick={() => { playTap(); setIdx(i => Math.max(0, i - 1)) }}
             disabled={idx === 0}
             whileTap={{ scale: 0.94 }}
-            className="flex-1 py-4 rounded-[1.25rem] border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px]"
+            className="flex-1 py-4 rounded-md border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px]"
           >
             قبلی
           </motion.button>
@@ -63,7 +63,7 @@ export default function WritePage() {
             onClick={() => { playSuccess(); setIdx(i => Math.min(letters.length - 1, i + 1)) }}
             disabled={idx === letters.length - 1}
             whileTap={{ scale: 0.94 }}
-            className="flex-[2] py-4 rounded-[1.25rem] bg-gradient-to-r from-blue-400 to-cyan-500 text-white font-bold text-lg shadow-md disabled:opacity-40 min-h-[56px]"
+            className="flex-[2] py-4 rounded-md bg-gradient-to-r from-blue-400 to-cyan-500 text-white font-bold text-lg shadow-md disabled:opacity-40 min-h-[56px]"
           >
             بعدی ←
           </motion.button>
@@ -147,7 +147,7 @@ function TracingCanvas({ letter }: { letter: string }) {
         ref={canvasRef}
         width={300}
         height={300}
-        className="bg-white rounded-[1.75rem] shadow-md touch-none"
+        className="bg-white rounded-lg shadow-md touch-none"
         style={{ width: 'min(80vw, 300px)', height: 'min(80vw, 300px)' }}
         onPointerDown={start}
         onPointerMove={move}

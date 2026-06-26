@@ -87,7 +87,7 @@ export default function LessonListPage() {
                   >
                     {locked ? (
                       <div
-                        className="flex items-center gap-4 bg-white/50 rounded-[1.25rem] p-4 opacity-60 cursor-not-allowed"
+                        className="flex items-center gap-4 bg-white/50 rounded-md p-4 opacity-60 cursor-not-allowed"
                         aria-label={`${lesson.title} — قفل شده، مرحله ${lesson.stage} لازم است`}
                       >
                         <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0 bg-gray-100">
@@ -102,7 +102,7 @@ export default function LessonListPage() {
                       <Link
                         href={`/child/lesson/${lesson.id}`}
                         aria-label={`${lesson.title}${done ? ' — تمام شده' : ''}`}
-                        className="flex items-center gap-4 bg-white rounded-[1.25rem] p-4 shadow-sm hover:shadow-md transition-shadow"
+                        className="flex items-center gap-4 bg-white rounded-md p-4 shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${done ? 'bg-green-100' : 'bg-amber-100'}`}>
                           {done ? '✅' : LESSON_TYPE_EMOJI[lesson.type]}

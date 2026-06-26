@@ -91,7 +91,7 @@ export default function StoryListPage() {
                   <Link
                     href={`/child/story/${story.id}`}
                     aria-label={`${story.title_persian}${done ? ' — خوانده شده' : ''}${story.age_min ? `، برای ${story.age_min} تا ${story.age_max} سال` : ''}`}
-                    className="block bg-white rounded-[1.75rem] shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
+                    className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
                   >
                     {done && (
                       <div

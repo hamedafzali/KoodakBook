@@ -99,7 +99,7 @@ export default function NewStoryPage() {
               aria-checked={theme === t.key}
               onClick={() => setTheme(t.key)}
               whileTap={{ scale: 0.96 }}
-              className={`flex items-center gap-3 px-4 py-4 rounded-[1.25rem] border-2 text-right transition-colors min-h-[64px] ${
+              className={`flex items-center gap-3 px-4 py-4 rounded-md border-2 text-right transition-colors min-h-[64px] ${
                 theme === t.key ? 'border-purple-500 bg-purple-50' : 'border-gray-200 bg-white hover:border-purple-300'
               }`}
             >
@@ -115,7 +115,7 @@ export default function NewStoryPage() {
           onClick={generate}
           disabled={!child}
           whileTap={{ scale: 0.97 }}
-          className="w-full mt-6 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-bold py-4 rounded-[1.25rem] text-lg shadow-md disabled:opacity-50 touch-target"
+          className="w-full mt-6 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-bold py-4 rounded-md text-lg shadow-md disabled:opacity-50 touch-target"
         >
           بساز! ✨
         </motion.button>

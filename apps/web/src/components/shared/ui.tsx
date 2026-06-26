@@ -2,15 +2,15 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 /* Centralized web style kit (built on the globals.css design tokens). Replaces
- * the inline `bg-white rounded-[1.75rem] shadow-sm` / amber-gradient button
+ * the inline `bg-white rounded-lg shadow-sm` / amber-gradient button
  * strings duplicated across the child + parent pages. */
 export const ui = {
-  card: 'bg-white rounded-[1.75rem] shadow-sm',
+  card: 'bg-white rounded-lg shadow-sm',
   cardLg: 'bg-white rounded-[2rem] shadow-md',
   // Button class tokens — usable on <button> OR <Link> (web mixes both).
-  btn: 'inline-flex items-center justify-center gap-2 font-bold rounded-[1.25rem] py-3 px-5 transition-transform active:scale-95 disabled:opacity-50',
-  btnPrimary: 'inline-flex items-center justify-center gap-2 font-bold rounded-[1.25rem] py-3 px-5 transition-transform active:scale-95 disabled:opacity-50 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-md',
-  btnSecondary: 'inline-flex items-center justify-center gap-2 font-bold rounded-[1.25rem] py-3 px-5 transition-transform active:scale-95 disabled:opacity-50 bg-white border-2 border-slate-200 text-slate-700',
+  btn: 'inline-flex items-center justify-center gap-2 font-bold rounded-md py-3 px-5 transition-transform active:scale-95 disabled:opacity-50',
+  btnPrimary: 'inline-flex items-center justify-center gap-2 font-bold rounded-md py-3 px-5 transition-transform active:scale-95 disabled:opacity-50 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-md',
+  btnSecondary: 'inline-flex items-center justify-center gap-2 font-bold rounded-md py-3 px-5 transition-transform active:scale-95 disabled:opacity-50 bg-white border-2 border-slate-200 text-slate-700',
 }
 
 export function Card({ className = '', children }: { className?: string; children: ReactNode }) {
@@ -26,7 +26,7 @@ export function Button({ variant = 'primary', className = '', children, ...rest 
   ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
   return (
     <button {...rest}
-      className={`inline-flex items-center justify-center gap-2 font-bold rounded-[1.25rem] py-3 px-5 text-base transition-transform active:scale-95 disabled:opacity-50 ${VARIANT[variant]} ${className}`}>
+      className={`inline-flex items-center justify-center gap-2 font-bold rounded-md py-3 px-5 text-base transition-transform active:scale-95 disabled:opacity-50 ${VARIANT[variant]} ${className}`}>
       {children}
     </button>
   )

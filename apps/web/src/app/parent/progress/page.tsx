@@ -140,15 +140,15 @@ export default function ParentProgressPage() {
 
         {/* Summary stats */}
         <div className="grid grid-cols-3 gap-3 px-4 pt-4">
-          <div className="bg-green-50 rounded-[1.25rem] p-4 text-center">
+          <div className="bg-green-50 rounded-md p-4 text-center">
             <p className="text-2xl font-bold text-green-700">{learnedCount}</p>
             <p className="text-xs text-green-600 mt-0.5">کلمه یاد گرفته</p>
           </div>
-          <div className="bg-amber-50 rounded-[1.25rem] p-4 text-center">
+          <div className="bg-amber-50 rounded-md p-4 text-center">
             <p className="text-2xl font-bold text-amber-700">{progress?.lessons.filter(l => l.completed).length ?? 0}</p>
             <p className="text-xs text-amber-600 mt-0.5">درس تمام شده</p>
           </div>
-          <div className="bg-blue-50 rounded-[1.25rem] p-4 text-center">
+          <div className="bg-blue-50 rounded-md p-4 text-center">
             <p className="text-2xl font-bold text-blue-700">{progress?.stories.filter(s => s.completed).length ?? 0}</p>
             <p className="text-xs text-blue-600 mt-0.5">داستان خوانده</p>
           </div>
@@ -224,7 +224,7 @@ export default function ParentProgressPage() {
                 <p className="text-center text-slate-400 py-8 persian-text">هنوز درسی شروع نشده</p>
               )}
               {progress?.lessons.map(l => (
-                <div key={l.id} className="bg-white rounded-[1.25rem] p-4 flex items-center gap-4 shadow-sm">
+                <div key={l.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-sm">
                   <span className="text-2xl" aria-hidden="true">{l.completed ? '✅' : '⏳'}</span>
                   <div className="flex-1">
                     <p className="font-medium text-slate-800">{l.lesson?.title ?? '—'}</p>
@@ -252,7 +252,7 @@ export default function ParentProgressPage() {
                 <p className="text-center text-slate-400 py-8 persian-text">هنوز داستانی خوانده نشده</p>
               )}
               {progress?.stories.map(s => (
-                <div key={s.id} className="bg-white rounded-[1.25rem] p-4 flex items-center gap-4 shadow-sm">
+                <div key={s.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-sm">
                   <span className="text-2xl" aria-hidden="true">{s.completed ? '📖' : '📄'}</span>
                   <div className="flex-1">
                     <p className="font-medium text-slate-800">{s.story?.title_persian ?? '—'}</p>
@@ -279,7 +279,7 @@ export default function ParentProgressPage() {
                 <p className="text-center text-slate-400 py-8 persian-text">هنوز جلسه‌ای ثبت نشده</p>
               )}
               {progress?.recent_sessions.map((s, i) => (
-                <div key={i} className="bg-white rounded-[1.25rem] p-4 flex items-center justify-between shadow-sm">
+                <div key={i} className="bg-white rounded-md p-4 flex items-center justify-between shadow-sm">
                   <div className="flex items-center gap-3">
                     <span className="text-xl" aria-hidden="true">📅</span>
                     <span className="text-slate-700">{new Date(s.started_at).toLocaleDateString('fa-IR')}</span>

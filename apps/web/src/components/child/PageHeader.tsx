@@ -32,7 +32,7 @@ export default function PageHeader({
   }
 
   const base = variant === 'gradient'
-    ? `bg-gradient-to-br ${gradientClass} px-5 pt-10 pb-6 rounded-b-[2.5rem] text-white`
+    ? `bg-gradient-to-br ${gradientClass} px-5 pt-10 pb-6 rounded-b-xl text-white`
     : 'bg-white border-b border-gray-100 px-5 py-4 text-gray-800'
 
   return (

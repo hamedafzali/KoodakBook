@@ -83,7 +83,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
           initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}>
           <motion.button
             onClick={speakPrompt}
-            className="w-full bg-white rounded-[1.75rem] shadow-lg p-6 flex flex-col items-center gap-3 touch-target"
+            className="w-full bg-white rounded-lg shadow-lg p-6 flex flex-col items-center gap-3 touch-target"
             whileTap={{ scale: 0.96 }}
             aria-label={`کلمه فارسی: ${correctWord.persian}. ضربه بزن تا بشنوی`}
           >
@@ -104,7 +104,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
           initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}>
           <motion.button
             onClick={() => { playTap(); speakOrPlay(correctLetter.audio_url, correctLetter.name_persian) }}
-            className="w-full bg-white rounded-[1.75rem] shadow-lg p-8 flex flex-col items-center gap-2 touch-target"
+            className="w-full bg-white rounded-lg shadow-lg p-8 flex flex-col items-center gap-2 touch-target"
             whileTap={{ scale: 0.96 }}
             aria-label={`حرف فارسی: ${correctLetter.name_persian}. ضربه بزن تا بشنوی`}
           >
@@ -126,7 +126,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
     return (
       <motion.div className="flex flex-col items-center gap-5 w-full"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="w-full bg-white rounded-[1.75rem] shadow-md p-4 flex items-center justify-center min-h-[180px]">
+        <div className="w-full bg-white rounded-lg shadow-md p-4 flex items-center justify-center min-h-[180px]">
           {visual?.type === 'img'
             ? <img src={visual.value} alt="این چیست؟" className="w-44 h-44 object-contain rounded-xl" />
             : <span className="text-[8rem] leading-none" aria-hidden="true">{visual?.value ?? '❓'}</span>}
@@ -195,7 +195,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <button
           onClick={() => speakPersian(correctWord.persian)}
-          className="bg-white rounded-[1.75rem] shadow-md px-8 py-5 text-center touch-target"
+          className="bg-white rounded-lg shadow-md px-8 py-5 text-center touch-target"
           aria-label={`کلمه: ${correctWord.persian}. ضربه بزن تا بشنوی`}
         >
           <span className="text-5xl font-bold text-gray-800">{correctWord.persian}</span>
@@ -231,7 +231,7 @@ function NextButton({ onClick }: { onClick: () => void }) {
   return (
     <motion.button
       onClick={onClick}
-      className="w-full py-4 rounded-[1.25rem] bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md touch-target"
+      className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md touch-target"
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.96 }}
     >
@@ -263,7 +263,7 @@ function OptionButton({
     <motion.button
       onClick={onSelect}
       disabled={feedback !== null}
-      className={`min-h-[72px] rounded-[1.25rem] border-2 p-3 flex flex-col items-center justify-center gap-1 transition-colors touch-target ${borderClass}`}
+      className={`min-h-[72px] rounded-md border-2 p-3 flex flex-col items-center justify-center gap-1 transition-colors touch-target ${borderClass}`}
       whileTap={feedback === null ? { scale: 0.93 } : {}}
       animate={revealResult && !isCorrect ? { x: [-5, 5, -4, 4, 0] } : {}}
       transition={{ duration: 0.3 }}

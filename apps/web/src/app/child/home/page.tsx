@@ -188,7 +188,7 @@ export default function ChildHomePage() {
             {lastLesson && (
               <Link href={`/child/lesson/${lastLesson.id}`}>
                 <motion.div
-                  className="bg-white rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3"
+                  className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3"
                   whileTap={{ scale: 0.97 }}
                 >
                   <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-2xl">
@@ -205,7 +205,7 @@ export default function ChildHomePage() {
             {lastStory && !lastLesson && (
               <Link href={`/child/story/${lastStory.id}`}>
                 <motion.div
-                  className="bg-white rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3"
+                  className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3"
                   whileTap={{ scale: 0.97 }}
                 >
                   <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl">📖</div>
@@ -228,13 +228,13 @@ export default function ChildHomePage() {
               <Link href="/child/review" className="text-amber-700 text-sm font-medium hover:underline">شروع ←</Link>
             </div>
             <Link href="/child/review" aria-label={`مرور ${reviewWords.length} کلمه`}>
-              <motion.div className="bg-white rounded-[1.75rem] p-3 shadow-sm" whileTap={{ scale: 0.98 }}>
+              <motion.div className="bg-white rounded-lg p-3 shadow-sm" whileTap={{ scale: 0.98 }}>
                 <div className="flex gap-2 overflow-x-auto pb-1 snap-x" role="list" aria-label="کلمات برای مرور">
                   {reviewWords.slice(0, 8).map(({ word }) => (
                     <div
                       key={word.id}
                       role="listitem"
-                      className="flex-shrink-0 snap-start bg-amber-50 rounded-[1.25rem] px-4 py-3 flex flex-col items-center gap-1 min-w-[80px]"
+                      className="flex-shrink-0 snap-start bg-amber-50 rounded-md px-4 py-3 flex flex-col items-center gap-1 min-w-[80px]"
                     >
                       {mediaUrl(word.image_url) ? (
                         <img src={mediaUrl(word.image_url)!} alt={word.english} className="w-10 h-10 object-contain" />
@@ -269,7 +269,7 @@ export default function ChildHomePage() {
                 <motion.div key={lesson.id} variants={item}>
                   {locked ? (
                     <div
-                      className="rounded-[1.75rem] p-4 bg-white/60 shadow-sm cursor-not-allowed select-none"
+                      className="rounded-lg p-4 bg-white/60 shadow-sm cursor-not-allowed select-none"
                       aria-label={`${lesson.title} — قفل شده، به زودی`}
                     >
                       <span className="text-3xl" aria-hidden="true">🔒</span>
@@ -279,7 +279,7 @@ export default function ChildHomePage() {
                   ) : (
                     <Link href={`/child/lesson/${lesson.id}`}>
                       <motion.div
-                        className={`bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} rounded-[1.75rem] p-4 text-white shadow-md`}
+                        className={`bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} rounded-lg p-4 text-white shadow-md`}
                         whileHover={{ scale: 1.03, y: -2 }}
                         whileTap={{ scale: 0.96 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
@@ -320,7 +320,7 @@ export default function ChildHomePage() {
                     className="flex-shrink-0"
                     aria-label={`${story.title_persian} — قفل شده، به زودی`}
                   >
-                    <div className="w-36 bg-white/60 rounded-[1.75rem] overflow-hidden shadow-sm cursor-not-allowed select-none">
+                    <div className="w-36 bg-white/60 rounded-lg overflow-hidden shadow-sm cursor-not-allowed select-none">
                       <div className="w-full h-28 bg-gray-100 flex items-center justify-center text-5xl" aria-hidden="true">🔒</div>
                       <div className="p-3">
                         <p className="font-bold text-gray-400 text-sm leading-tight">{story.title_persian}</p>
@@ -337,7 +337,7 @@ export default function ChildHomePage() {
                     aria-label={story.title_persian}
                   >
                     <motion.div
-                      className="w-36 bg-white rounded-[1.75rem] overflow-hidden shadow-md"
+                      className="w-36 bg-white rounded-lg overflow-hidden shadow-md"
                       whileHover={{ scale: 1.04, y: -3 }}
                       whileTap={{ scale: 0.96 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 17 }}
@@ -370,7 +370,7 @@ export default function ChildHomePage() {
           <div className="grid grid-cols-2 gap-3">
             <Link href="/child/phonics" aria-label="صداها: زبر زیر پیش">
               <motion.div
-                className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
+                className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="text-3xl" aria-hidden="true">🎵</span>
@@ -382,7 +382,7 @@ export default function ChildHomePage() {
             </Link>
             <Link href="/child/write" aria-label="تمرین نوشتن">
               <motion.div
-                className="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
+                className="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="text-3xl" aria-hidden="true">✏️</span>
@@ -394,7 +394,7 @@ export default function ChildHomePage() {
             </Link>
             <Link href="/child/speak" aria-label="تمرین گفتن">
               <motion.div
-                className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
+                className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="text-3xl" aria-hidden="true">🎤</span>
@@ -406,7 +406,7 @@ export default function ChildHomePage() {
             </Link>
             <Link href="/child/rewards" aria-label="جوایز من">
               <motion.div
-                className="bg-white rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3 min-h-[72px]"
+                className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px]"
                 whileTap={{ scale: 0.96 }}
               >
                 <span className="text-3xl" aria-hidden="true">🏆</span>

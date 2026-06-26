@@ -98,16 +98,16 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
               <img
                 src={mediaUrl(page.image_url)!}
                 alt={`صفحه ${page.page_number} از داستان ${story.title_persian}`}
-                className="rounded-[1.75rem] shadow-lg w-full max-h-64 object-contain"
+                className="rounded-lg shadow-lg w-full max-h-64 object-contain"
               />
             ) : (
-              <div className="w-full h-52 bg-gradient-to-br from-amber-100 to-orange-100 rounded-[1.75rem] shadow-md flex items-center justify-center">
+              <div className="w-full h-52 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg shadow-md flex items-center justify-center">
                 <span className="text-7xl">📖</span>
               </div>
             )}
 
             {/* Story text */}
-            <div className="bg-white rounded-[1.75rem] p-5 shadow-sm">
+            <div className="bg-white rounded-lg p-5 shadow-sm">
               <BilingualText
                 persian={page.text_persian}
                 english={showBilingual ? page.text_english : null}
@@ -143,7 +143,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           disabled={currentPage === 0}
           whileTap={{ scale: 0.93 }}
           aria-label="صفحه قبلی"
-          className="flex-1 py-4 rounded-[1.25rem] border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px] touch-target"
+          className="flex-1 py-4 rounded-md border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px] touch-target"
         >
           صفحه قبل
         </motion.button>
@@ -152,7 +152,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           aria-label={isLast ? 'پایان داستان' : 'صفحه بعدی'}
-          className="flex-[2] py-4 rounded-[1.25rem] bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px] touch-target"
+          className="flex-[2] py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px] touch-target"
         >
           {isLast ? '✅ تمام شد!' : 'بعدی ←'}
         </motion.button>

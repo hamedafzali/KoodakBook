@@ -56,11 +56,11 @@ export default function PhonicsPage() {
         <p className="text-gray-600 persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.96 }}
-            className="w-full py-4 rounded-[1.25rem] bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md">
+            className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md">
             یک بار دیگه 🔁
           </motion.button>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
-            className="w-full py-3.5 rounded-[1.25rem] border-2 border-slate-200 text-slate-600 font-bold">
+            className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold">
             برگشت به خانه 🏠
           </motion.button>
         </div>
@@ -73,7 +73,7 @@ export default function PhonicsPage() {
       <PageHeader title="صداها 🎵" subtitle="زبر، زیر، پیش" gradientClass="from-orange-500 to-amber-500" />
 
       <div className="px-4 pt-5 space-y-7">
-        <div className="bg-white rounded-[1.75rem] p-4 shadow-sm flex items-center gap-3">
+        <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3">
           <Mascot size={64} mood="happy" />
           <p className="text-gray-700 persian-text text-sm flex-1">
             این سه نشانه به حرف‌ها صدا می‌دهند. ضربه بزن و گوش کن!
@@ -123,7 +123,7 @@ export default function PhonicsPage() {
         ))}
 
         <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.97 }}
-          className="w-full py-4 rounded-[1.25rem] bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px]">
+          className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px]">
           بریم تمرین 🎧
         </motion.button>
       </div>
@@ -216,7 +216,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
                 : 'bg-white border-gray-100 text-gray-800'
               return (
                 <motion.button key={opt.slug} onClick={() => choose(opt.slug)} whileTap={{ scale: 0.95 }}
-                  className={`rounded-[1.25rem] border-2 py-6 shadow-sm font-bold text-4xl touch-target ${cls}`}
+                  className={`rounded-md border-2 py-6 shadow-sm font-bold text-4xl touch-target ${cls}`}
                   aria-label={`انتخاب ${opt.text}`}>
                   {opt.text}
                 </motion.button>

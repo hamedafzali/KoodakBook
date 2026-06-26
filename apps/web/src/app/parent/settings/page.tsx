@@ -90,7 +90,7 @@ export default function SettingsPage() {
           {/* Learning settings */}
           <section aria-labelledby="learning-settings-title">
             <h2 id="learning-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">تنظیمات یادگیری</h2>
-            <div className="bg-white rounded-[1.25rem] shadow-sm overflow-hidden">
+            <div className="bg-white rounded-md shadow-sm overflow-hidden">
 
               {/* Daily goal */}
               <div className="px-5 py-4 border-b border-slate-100">
@@ -135,7 +135,7 @@ export default function SettingsPage() {
           {/* Children */}
           <section aria-labelledby="children-title">
             <h2 id="children-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">کودکان</h2>
-            <div className="bg-white rounded-[1.25rem] shadow-sm divide-y divide-slate-100">
+            <div className="bg-white rounded-md shadow-sm divide-y divide-slate-100">
               {children.map(c => (
                 <button
                   key={c.id}
@@ -164,7 +164,7 @@ export default function SettingsPage() {
           {/* Account settings */}
           <section aria-labelledby="account-settings-title">
             <h2 id="account-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">حساب کاربری</h2>
-            <div className="bg-white rounded-[1.25rem] shadow-sm divide-y divide-slate-100">
+            <div className="bg-white rounded-md shadow-sm divide-y divide-slate-100">
               <button
                 onClick={resetParentPin}
                 className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-right min-h-[56px]"
