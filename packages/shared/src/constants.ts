@@ -1,5 +1,27 @@
 import type { Strand } from './types'
 
+/**
+ * Plan entitlement catalog (single source of truth for what plans can unlock).
+ * The admin Plans editor renders this as a friendly form — toggles for flags,
+ * number inputs for limits — so admins never type raw feature keys. The app's
+ * entitlement checks should read against these same keys.
+ */
+export interface FeatureDef {
+  key: string
+  label: string
+  description: string
+  type: 'boolean' | 'number'
+  default: string
+}
+export const PLAN_FEATURES: FeatureDef[] = [
+  { key: 'max_children',       label: 'حداکثر تعداد کودک',            description: 'چند پروفایل کودک می‌توان در این پلن ساخت', type: 'number',  default: '1' },
+  { key: 'full_story_library', label: 'کتابخانه‌ی کامل داستان‌ها',    description: 'دسترسی به همه‌ی داستان‌ها (نه فقط چند داستان رایگان اول)', type: 'boolean', default: 'false' },
+  { key: 'ai_stories',         label: 'داستان‌های شخصی‌سازی‌شده (AI)', description: 'ساخت داستان با نام و علایق خود کودک', type: 'boolean', default: 'false' },
+  { key: 'co_read',            label: 'هم‌خوانی والد و کودک',          description: 'حالت خواندن مشترک با متن بزرگ‌تر', type: 'boolean', default: 'false' },
+  { key: 'record_voice',       label: 'ضبط صدای والد',                description: 'والد می‌تواند صدای خودش را روی داستان ضبط کند', type: 'boolean', default: 'false' },
+]
+export const featureLabel = (key: string) => PLAN_FEATURES.find(f => f.key === key)?.label ?? key
+
 /** A child's measured level per learning strand (mig-020). */
 export type StrandLevels = Record<Strand, number>
 

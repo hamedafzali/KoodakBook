@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
+import { PLAN_FEATURES, featureLabel } from '@koodakbook/shared'
 
 interface Plan {
   id: string; key: string; name: string; description: string | null
@@ -61,9 +62,14 @@ function PlanCard({ plan, onChange }: { plan: Plan; onChange: () => void }) {
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5 mt-3">
-        {Object.entries(plan.features).map(([k, v]) => (
-          <span key={k} className="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded ltr">{k}={v}</span>
+        {Object.entries(plan.features).filter(([, v]) => v !== 'false' && v !== '0').map(([k, v]) => (
+          <span key={k} className="text-[11px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
+            {featureLabel(k)}{v !== 'true' ? `: ${v}` : ''}
+          </span>
         ))}
+        {Object.values(plan.features).every(v => v === 'false' || v === '0') && (
+          <span className="text-[11px] text-gray-400">بدون امکان ویژه</span>
+        )}
       </div>
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-gray-400">{plan.subscribers} مشترک</span>
@@ -83,12 +89,19 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
     interval: plan?.interval ?? 'month', trial_days: plan?.trial_days ?? 0,
     is_active: plan?.is_active ?? true, is_default: plan?.is_default ?? false,
   })
-  const [feats, setFeats] = useState<[string, string][]>(Object.entries(plan?.features ?? {}))
+  const [featVals, setFeatVals] = useState<Record<string, string>>({ ...(plan?.features ?? {}) })
+  const [custom, setCustom] = useState<[string, string][]>(
+    Object.entries(plan?.features ?? {}).filter(([k]) => !PLAN_FEATURES.some(d => d.key === k)),
+  )
+  const [showCustom, setShowCustom] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const setFeat = (k: string, v: string) => setFeatVals(p => ({ ...p, [k]: v }))
 
   async function save() {
     setErr(null)
-    const features = Object.fromEntries(feats.filter(([k]) => k.trim()))
+    const features: Record<string, string> = {}
+    for (const d of PLAN_FEATURES) features[d.key] = featVals[d.key] ?? d.default
+    for (const [k, v] of custom) if (k.trim()) features[k.trim()] = v
     const body = { ...f, price_cents: Number(f.price_cents), trial_days: Number(f.trial_days), features }
     const r = plan ? await api.patch(`/api/admin/plans/${plan.id}`, body) : await api.post('/api/admin/plans', body)
     if (r.error) { setErr(r.error); return }
@@ -129,21 +142,49 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
       </div>
 
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-1">ویژگی‌ها / محدودیت‌ها</p>
-        <p className="text-xs text-gray-400 mb-2">هر ویژگی یک کلید و یک مقدار دارد (مثلاً <span className="ltr">max_children = 5</span>).</p>
-        {feats.length > 0 && (
-          <div className="flex gap-2 mb-1 text-xs text-gray-400">
-            <span className="flex-1">کلید ویژگی</span><span className="flex-1">مقدار</span><span className="w-7" />
+        <p className="text-sm font-medium text-gray-700 mb-0.5">این پلن چه چیزهایی را باز می‌کند؟</p>
+        <p className="text-xs text-gray-400 mb-3">برای هر امکان، روشن/خاموش کن یا مقدارش را تعیین کن.</p>
+        <div className="space-y-2.5">
+          {PLAN_FEATURES.map(d => {
+            const val = featVals[d.key] ?? d.default
+            return (
+              <div key={d.key} className="flex items-center justify-between gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-700">{d.label}</p>
+                  <p className="text-xs text-gray-400">{d.description}</p>
+                </div>
+                {d.type === 'boolean' ? (
+                  <button type="button" role="switch" aria-checked={val === 'true'} aria-label={d.label}
+                    onClick={() => setFeat(d.key, val === 'true' ? 'false' : 'true')}
+                    className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${val === 'true' ? 'bg-amber-500' : 'bg-gray-300'}`}>
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${val === 'true' ? 'right-1' : 'right-6'}`} />
+                  </button>
+                ) : (
+                  <input type="number" value={val} onChange={e => setFeat(d.key, e.target.value)}
+                    className="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center flex-shrink-0" />
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Advanced: custom (non-catalog) features for power users */}
+        <button type="button" onClick={() => setShowCustom(v => !v)} className="text-xs text-gray-400 hover:text-gray-600 mt-3">
+          {showCustom ? '▾' : '▸'} ویژگی سفارشی (پیشرفته)
+        </button>
+        {showCustom && (
+          <div className="mt-2 space-y-1.5">
+            <p className="text-[11px] text-gray-400">فقط برای امکانات تعریف‌نشده در فهرست بالا.</p>
+            {custom.map(([k, v], i) => (
+              <div key={i} className="flex gap-2">
+                <input className={inp} placeholder="کلید" dir="ltr" value={k} onChange={e => { const c = [...custom]; c[i] = [e.target.value, v]; setCustom(c) }} />
+                <input className={inp} placeholder="مقدار" dir="ltr" value={v} onChange={e => { const c = [...custom]; c[i] = [k, e.target.value]; setCustom(c) }} />
+                <button onClick={() => setCustom(custom.filter((_, j) => j !== i))} className="text-red-400 px-2" aria-label="حذف">✕</button>
+              </div>
+            ))}
+            <button onClick={() => setCustom([...custom, ['', '']])} className="text-xs text-amber-700 hover:underline">+ افزودن</button>
           </div>
         )}
-        {feats.map(([k, v], i) => (
-          <div key={i} className="flex gap-2 mb-1.5">
-            <input className={inp} placeholder="max_children" dir="ltr" value={k} onChange={e => { const c = [...feats]; c[i] = [e.target.value, v]; setFeats(c) }} />
-            <input className={inp} placeholder="5 / true" dir="ltr" value={v} onChange={e => { const c = [...feats]; c[i] = [k, e.target.value]; setFeats(c) }} />
-            <button onClick={() => setFeats(feats.filter((_, j) => j !== i))} className="text-red-400 px-2" aria-label="حذف ویژگی">✕</button>
-          </div>
-        ))}
-        <button onClick={() => setFeats([...feats, ['', '']])} className="text-xs text-amber-700 hover:underline">+ افزودن ویژگی</button>
       </div>
 
       {err && <p className="text-sm text-red-500">{err}</p>}
