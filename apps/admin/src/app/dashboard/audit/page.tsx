@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { PageHeader, Badge, Spinner } from '@/components/ui'
+import { DataTable, type Column } from '@/components/DataTable'
 
 interface Entry {
   admin_email: string
@@ -12,9 +14,10 @@ interface Entry {
 }
 
 const ACTION_LABEL: Record<string, string> = {
-  'user.plan_change': 'تغییر پلن',
-  'user.reset_password': 'بازنشانی رمز',
-  'user.delete': 'حذف خانواده',
+  'user.plan_change': 'تغییر پلن', 'user.reset_password': 'بازنشانی رمز', 'user.delete': 'حذف خانواده',
+  'user.suspend': 'تعلیق', 'user.reactivate': 'فعال‌سازی', 'user.export': 'خروجی داده',
+  'admin.create': 'افزودن ادمین', 'admin.set_roles': 'تغییر نقش', 'admin.revoke': 'حذف دسترسی',
+  'plan.create': 'ساخت پلن', 'plan.update': 'ویرایش پلن', 'plan.delete': 'حذف پلن',
 }
 
 export default function AuditPage() {
@@ -24,34 +27,21 @@ export default function AuditPage() {
     api.get<Entry[]>('/api/admin/audit').then(r => { if (r.data) setRows(r.data) })
   }, [])
 
-  if (!rows) return <p className="text-gray-400">در حال بارگذاری...</p>
+  const columns: Column<Entry>[] = [
+    { key: 'created_at', header: 'زمان', sortValue: e => new Date(e.created_at).getTime(),
+      render: e => <span className="text-slate-500 whitespace-nowrap">{new Date(e.created_at).toLocaleString('fa-IR')}</span> },
+    { key: 'admin_email', header: 'ادمین', sortValue: e => e.admin_email,
+      render: e => <span className="text-slate-600 ltr">{e.admin_email}</span> },
+    { key: 'action', header: 'عملیات', sortValue: e => e.action,
+      render: e => <Badge>{ACTION_LABEL[e.action] ?? e.action}</Badge> },
+    { key: 'detail', header: 'جزئیات',
+      render: e => <span className="text-slate-400 text-xs ltr">{JSON.stringify(e.detail)}</span> },
+  ]
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-gray-800 mb-5">گزارش فعالیت ادمین</h2>
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs">
-            <tr>
-              <th className="text-right px-4 py-3 font-medium">زمان</th>
-              <th className="text-right px-4 py-3 font-medium">ادمین</th>
-              <th className="text-right px-4 py-3 font-medium">عملیات</th>
-              <th className="text-right px-4 py-3 font-medium">جزئیات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((e, i) => (
-              <tr key={i} className="border-t border-gray-100">
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{new Date(e.created_at).toLocaleString('fa-IR')}</td>
-                <td className="px-4 py-3 text-gray-600 ltr">{e.admin_email}</td>
-                <td className="px-4 py-3"><span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">{ACTION_LABEL[e.action] ?? e.action}</span></td>
-                <td className="px-4 py-3 text-gray-400 text-xs ltr">{JSON.stringify(e.detail)}</td>
-              </tr>
-            ))}
-            {rows.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">فعالیتی ثبت نشده</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <PageHeader title="گزارش فعالیت ادمین" subtitle="ردگیری همه‌ی عملیات حساس" />
+      {!rows ? <Spinner /> : <DataTable rows={rows.map((r, i) => ({ ...r, id: String(i) }))} columns={columns} empty="فعالیتی ثبت نشده" />}
     </div>
   )
 }

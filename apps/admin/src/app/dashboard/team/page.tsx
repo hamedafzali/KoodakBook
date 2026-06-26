@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
+import { PageHeader, Button, ui } from '@/components/ui'
 
 interface Role { id: string; key: string; name: string; description: string | null; permissions: string[] }
 interface Admin { id: string; email: string; created_at: string; roles: string[] }
@@ -50,7 +51,7 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">تیم و دسترسی</h2>
+      <PageHeader title="تیم و دسترسی" subtitle="ادمین‌ها، نقش‌ها و سطوح دسترسی" />
 
       {/* Current admins */}
       <section>
@@ -86,7 +87,7 @@ export default function TeamPage() {
         <h3 className="font-bold text-gray-700 mb-2 text-sm">افزودن ادمین</h3>
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
           <input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="ایمیل" dir="ltr"
-            className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm" />
+            className={ui.input} />
           <div className="flex flex-wrap gap-2">
             {roles.map(r => (
               <label key={r.key} className={`text-xs px-3 py-1.5 rounded-lg cursor-pointer border ${newRoles.includes(r.key) ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-gray-200 text-gray-500'}`}>
@@ -95,7 +96,7 @@ export default function TeamPage() {
               </label>
             ))}
           </div>
-          <button onClick={createAdmin} className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-2 rounded-xl text-sm">افزودن</button>
+          <Button onClick={createAdmin}>افزودن</Button>
           {msg && <p className="text-sm text-red-500">{msg}</p>}
           {temp && <p className="text-sm bg-amber-50 text-amber-800 rounded-xl p-3">رمز موقت (یک‌بار): <b className="ltr">{temp}</b></p>}
         </div>

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
-import { PageHeader } from '@/components/ui'
+import { PageHeader, ui } from '@/components/ui'
 import type { Lesson, Word, Letter } from '@koodakbook/shared'
 import { LESSON_TYPE_EMOJI } from '@koodakbook/shared'
 
@@ -145,7 +145,7 @@ export default function AdminLessonsPage() {
               <h3 className="text-sm font-bold text-gray-600">افزودن {isVocab ? 'کلمه' : 'حرف'}</h3>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="جستجو..."
-                className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                className={ui.input} />
               <div className="space-y-1.5 max-h-96 overflow-y-auto">
                 {isVocab ? filteredWords.map(w => (
                   <button key={w.id} onClick={() => addWord(w)}
