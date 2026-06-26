@@ -96,7 +96,7 @@ export default function ReviewPage() {
         <motion.button
           onClick={() => router.push('/child/home')}
           whileTap={{ scale: 0.96 }}
-          className="w-full max-w-xs bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-4 rounded-md text-lg shadow-md"
+          className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-md text-lg shadow-md"
         >
           برگشت به خانه 🏠
         </motion.button>
@@ -124,7 +124,7 @@ export default function ReviewPage() {
             <span className="text-sm font-bold text-amber-600">{idx + 1}/{questions.length}</span>
           </div>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" animate={{ width: `${progress}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
+            <motion.div className="h-full bg-brand-gradient rounded-full" animate={{ width: `${progress}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
           </div>
         </div>
       </div>

@@ -141,7 +141,7 @@ export default function SpeakPage() {
         <motion.button
           onClick={nextWord}
           whileTap={{ scale: 0.95 }}
-          className="w-full max-w-sm py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px]"
+          className="w-full max-w-sm py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px]"
         >
           کلمه بعدی ←
         </motion.button>

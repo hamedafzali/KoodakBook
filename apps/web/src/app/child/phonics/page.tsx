@@ -56,7 +56,7 @@ export default function PhonicsPage() {
         <p className="text-gray-600 persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.96 }}
-            className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md">
+            className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md">
             یک بار دیگه 🔁
           </motion.button>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
@@ -123,7 +123,7 @@ export default function PhonicsPage() {
         ))}
 
         <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.97 }}
-          className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px]">
+          className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px]">
           بریم تمرین 🎧
         </motion.button>
       </div>
@@ -190,7 +190,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
           </div>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((idx / questions.length) * 100)}
             className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
+            <motion.div className="h-full bg-brand-gradient rounded-full"
               animate={{ width: `${(idx / questions.length) * 100}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
           </div>
         </div>
@@ -199,7 +199,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
       <div className="flex-1 flex flex-col items-center justify-center p-5 gap-8">
         <motion.button onClick={() => say(q.correct.text, q.correct.slug)} whileTap={{ scale: 0.9 }}
           animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg touch-target"
+          className="w-28 h-28 rounded-full bg-brand-gradient-br flex items-center justify-center shadow-lg touch-target"
           aria-label="دوباره گوش کن">
           <span className="text-4xl">🔊</span>
         </motion.button>

@@ -75,7 +75,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           className="h-1.5 bg-gray-200 rounded-full mt-2 overflow-hidden"
         >
           <motion.div
-            className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
+            className="h-full bg-brand-gradient rounded-full"
             animate={{ width: `${progress}%` }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
           />
@@ -153,7 +153,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           aria-label={isLast ? 'پایان داستان' : 'صفحه بعدی'}
-          className="flex-[2] py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px] touch-target"
+          className="flex-[2] py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px] touch-target"
         >
           {isLast ? '✅ تمام شد!' : 'بعدی ←'}
         </motion.button>

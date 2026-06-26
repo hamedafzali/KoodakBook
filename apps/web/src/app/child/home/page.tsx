@@ -199,7 +199,7 @@ export default function ChildHomePage() {
             role="progressbar" aria-valuenow={resolveLevel(stats.xp).pct} aria-valuemin={0} aria-valuemax={100}
             aria-label="پیشرفت سطح"
           >
-            <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" style={{ width: `${resolveLevel(stats.xp).pct}%` }} />
+            <div className="h-full bg-brand-gradient rounded-full" style={{ width: `${resolveLevel(stats.xp).pct}%` }} />
           </div>
           <div className="flex gap-3 mt-3 text-xs text-gray-600">
             <span className="flex items-center gap-1">🔥 {stats.streak} روز</span>

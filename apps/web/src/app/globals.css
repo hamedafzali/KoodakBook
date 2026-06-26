@@ -13,6 +13,11 @@
   --color-brand-light:   #FEF3C7;
   --color-brand-pale:    #FFFBF0;
 
+  /* Brand gradient — THE single source of truth for the primary action/identity
+     gradient (buttons, progress fills, hero accents). Rebranding = these two. */
+  --color-brand-from:    #FBBF24;   /* amber-400 */
+  --color-brand-to:      #F97316;   /* orange-500 */
+
   /* Child Activity Colors */
   --color-lesson:        #E63946;   /* Pomegranate  — lessons     */
   --color-alphabet:      #1D6FA4;   /* Persian Blue — alphabet    */
@@ -146,10 +151,13 @@ body {
   box-shadow: var(--shadow-1);
 }
 
-/* ── Gradient Backgrounds per Activity ─────────────────────────────────────── */
-.grad-lesson   { background: linear-gradient(135deg, #E63946, #F4695C); }
-.grad-alphabet { background: linear-gradient(135deg, #1D6FA4, #3B9ED0); }
-.grad-story    { background: linear-gradient(135deg, #2A9D5C, #48C78A); }
-.grad-reward   { background: linear-gradient(135deg, #7B4EA0, #A67BC6); }
-.grad-phonics  { background: linear-gradient(135deg, #D4521A, #F07044); }
-.grad-brand    { background: linear-gradient(135deg, #F5A623, #F07044); }
+/* ── Brand Gradient utilities ──────────────────────────────────────────────────
+   Both directions resolve to the same brand colours (--color-brand-from/to), so
+   the primary identity gradient lives in exactly one place. Replaces the
+   `bg-gradient-to-r from-amber-400 to-orange-500` string duplicated across pages. */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(to right, var(--color-brand-from), var(--color-brand-to));
+}
+@utility bg-brand-gradient-br {
+  background-image: linear-gradient(to bottom right, var(--color-brand-from), var(--color-brand-to));
+}

@@ -157,7 +157,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
         {correctWord.audio_url && <audio ref={audioRef} src={mediaUrl(correctWord.audio_url)!} preload="auto" />}
         <motion.button
           onClick={speakPrompt}
-          className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg touch-target"
+          className="w-28 h-28 rounded-full bg-brand-gradient-br flex items-center justify-center shadow-lg touch-target"
           whileTap={{ scale: 0.88 }}
           animate={{ scale: [1, 1.06, 1] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
@@ -231,7 +231,7 @@ function NextButton({ onClick }: { onClick: () => void }) {
   return (
     <motion.button
       onClick={onClick}
-      className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md touch-target"
+      className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md touch-target"
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.96 }}
     >

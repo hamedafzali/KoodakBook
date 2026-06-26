@@ -236,7 +236,7 @@ export default function SharePage() {
             <motion.button
               onClick={handleShare}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-4 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg shadow-md min-h-[56px] flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px] flex items-center justify-center gap-2"
             >
               📤 به اشتراک بگذار
             </motion.button>

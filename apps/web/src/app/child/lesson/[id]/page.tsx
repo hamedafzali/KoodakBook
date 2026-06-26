@@ -178,7 +178,7 @@ export default function LessonPage() {
 
         <motion.button
           onClick={() => router.push('/child/home')}
-          className="w-full max-w-xs bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-4 rounded-md text-lg shadow-md touch-target"
+          className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-md text-lg shadow-md touch-target"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
@@ -230,7 +230,7 @@ export default function LessonPage() {
             className="h-2 bg-gray-200 rounded-full overflow-hidden"
           >
             <motion.div
-              className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
+              className="h-full bg-brand-gradient rounded-full"
               animate={{ width: `${progress}%` }}
               transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             />

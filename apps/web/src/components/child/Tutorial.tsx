@@ -101,7 +101,7 @@ export default function Tutorial({ childName, onClose }: Props) {
           </motion.button>
           <motion.button
             onClick={() => { speakPersian(current.body); next() }}
-            className="flex-[2] py-3 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold shadow-md min-h-[48px]"
+            className="flex-[2] py-3 rounded-md bg-brand-gradient text-white font-bold shadow-md min-h-[48px]"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.96 }}
           >
