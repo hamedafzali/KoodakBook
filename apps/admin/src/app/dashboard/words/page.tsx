@@ -4,6 +4,7 @@ import { api } from '@/lib/api'
 import FileUpload from '@/components/FileUpload'
 import type { Word } from '@koodakbook/shared'
 import { WORD_CATEGORIES, ANIMATION_TEMPLATES, templateForCategory, TEMPLATE_REGISTRY } from '@koodakbook/shared'
+import { PageHeader, Button } from '@/components/ui'
 
 const CATEGORIES = WORD_CATEGORIES as readonly string[]
 const EMPTY = {
@@ -68,7 +69,7 @@ export default function AdminWordsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">مدیریت کلمات</h2>
+      <PageHeader title="مدیریت کلمات" subtitle="افزودن و ویرایش واژگان" />
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
@@ -127,13 +128,8 @@ export default function AdminWordsPage() {
             onUploaded={url => setForm(f => ({ ...f, image_url: url }))} />
         </div>
         <div className="flex gap-2">
-          <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-xl text-sm transition">
-            {editing ? 'ذخیره' : 'افزودن'}
-          </button>
-          {editing && <button type="button" onClick={() => { setEditing(null); setForm({ ...EMPTY }) }}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-xl text-sm transition">
-            انصراف
-          </button>}
+          <Button type="submit">{editing ? 'ذخیره' : 'افزودن'}</Button>
+          {editing && <Button type="button" variant="secondary" onClick={() => { setEditing(null); setForm({ ...EMPTY }) }}>انصراف</Button>}
         </div>
       </form>
 

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { PageHeader } from '@/components/ui'
 import FileUpload from '@/components/FileUpload'
 import type { Letter } from '@koodakbook/shared'
 
@@ -34,8 +35,7 @@ export default function AdminLettersPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">مدیریت حروف الفبا</h2>
-      <p className="text-sm text-gray-500">برای هر حرف می‌توانید فایل صوتی آپلود کنید.</p>
+      <PageHeader title="مدیریت حروف الفبا" subtitle="آپلود صدای هر حرف" />
 
       {Object.entries(grouped).map(([group, items]) => (
         <div key={group} className={`rounded-2xl border p-4 ${GROUP_COLORS[Number(group)] ?? 'bg-gray-50 border-gray-200'}`}>

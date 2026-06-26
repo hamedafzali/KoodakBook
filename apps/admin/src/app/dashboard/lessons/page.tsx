@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { PageHeader } from '@/components/ui'
 import type { Lesson, Word, Letter } from '@koodakbook/shared'
 import { LESSON_TYPE_EMOJI } from '@koodakbook/shared'
 
@@ -83,7 +84,7 @@ export default function AdminLessonsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">مدیریت محتوای درس‌ها</h2>
+      <PageHeader title="مدیریت محتوای درس‌ها" subtitle="تخصیص کلمه/حرف به هر درس" />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Lesson list */}

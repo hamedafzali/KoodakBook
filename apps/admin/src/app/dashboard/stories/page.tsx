@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import FileUpload from '@/components/FileUpload'
 import type { Story, StoryPage } from '@koodakbook/shared'
+import { PageHeader, Button } from '@/components/ui'
 
 const EMPTY_STORY = { title_persian: '', title_english: '', stage: 3, age_min: '', age_max: '', cover_url: '', audio_url: '' }
 const EMPTY_PAGE = { page_number: 1, text_persian: '', text_english: '', image_url: '', audio_url: '' }
@@ -69,7 +70,7 @@ export default function AdminStoriesPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-800">مدیریت داستان‌ها</h2>
+      <PageHeader title="مدیریت داستان‌ها" subtitle="داستان‌ها و صفحاتشان" />
 
       {/* Story form */}
       <form onSubmit={handleStorySubmit} className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
@@ -110,11 +111,8 @@ export default function AdminStoriesPage() {
             onUploaded={url => setStoryForm(f => ({ ...f, audio_url: url }))} />
         </div>
         <div className="flex gap-2">
-          <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-xl text-sm transition">
-            {editingStory ? 'ذخیره' : 'ایجاد داستان'}
-          </button>
-          {editingStory && <button type="button" onClick={() => { setEditingStory(null); setStoryForm({ ...EMPTY_STORY }) }}
-            className="bg-gray-100 text-gray-700 font-medium py-2 px-4 rounded-xl text-sm">انصراف</button>}
+          <Button type="submit">{editingStory ? 'ذخیره' : 'ایجاد داستان'}</Button>
+          {editingStory && <Button type="button" variant="secondary" onClick={() => { setEditingStory(null); setStoryForm({ ...EMPTY_STORY }) }}>انصراف</Button>}
         </div>
       </form>
 
@@ -171,11 +169,8 @@ export default function AdminStoriesPage() {
                 onUploaded={url => setPageForm(f => ({ ...f, audio_url: url }))} />
             </div>
             <div className="flex gap-2">
-              <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-5 rounded-xl text-sm transition">
-                {editingPage ? 'ذخیره' : 'افزودن صفحه'}
-              </button>
-              {editingPage && <button type="button" onClick={() => { setEditingPage(null); setPageForm({ ...EMPTY_PAGE }) }}
-                className="bg-gray-100 text-gray-700 py-2 px-4 rounded-xl text-sm">انصراف</button>}
+              <Button type="submit">{editingPage ? 'ذخیره' : 'افزودن صفحه'}</Button>
+              {editingPage && <Button type="button" variant="secondary" onClick={() => { setEditingPage(null); setPageForm({ ...EMPTY_PAGE }) }}>انصراف</Button>}
             </div>
           </form>
 
