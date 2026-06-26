@@ -7,6 +7,10 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 export const ui = {
   card: 'bg-white rounded-[1.75rem] shadow-sm',
   cardLg: 'bg-white rounded-[2rem] shadow-md',
+  // Button class tokens — usable on <button> OR <Link> (web mixes both).
+  btn: 'inline-flex items-center justify-center gap-2 font-bold rounded-[1.25rem] py-3 px-5 transition-transform active:scale-95 disabled:opacity-50',
+  btnPrimary: 'inline-flex items-center justify-center gap-2 font-bold rounded-[1.25rem] py-3 px-5 transition-transform active:scale-95 disabled:opacity-50 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-md',
+  btnSecondary: 'inline-flex items-center justify-center gap-2 font-bold rounded-[1.25rem] py-3 px-5 transition-transform active:scale-95 disabled:opacity-50 bg-white border-2 border-slate-200 text-slate-700',
 }
 
 export function Card({ className = '', children }: { className?: string; children: ReactNode }) {
