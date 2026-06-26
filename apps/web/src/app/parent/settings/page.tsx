@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
 import { getActiveChildId, setActiveChildId } from '@/lib/activeChild'
-import ParentGate from '@/components/parent/ParentGate'
 import type { Child } from '@koodakbook/shared'
 
 const GOAL_KEY = 'koodakbook_daily_goal_min'
@@ -70,7 +69,6 @@ export default function SettingsPage() {
   }
 
   return (
-    <ParentGate>
       <div className="min-h-screen bg-slate-50">
 
         {/* Header */}
@@ -210,6 +208,5 @@ export default function SettingsPage() {
           <p className="text-center text-xs text-slate-400 pb-8">KoodakBook v0.1.0</p>
         </div>
       </div>
-    </ParentGate>
   )
 }

@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
-import ParentGate from '@/components/parent/ParentGate'
 import { pickChild, setActiveChildId } from '@/lib/activeChild'
 import { resolveLevel } from '@koodakbook/shared'
 import type { DashboardSummary, Child, ChildSession } from '@koodakbook/shared'
@@ -71,7 +70,6 @@ export default function ParentDashboardPage() {
 
   if (!summary) {
     return (
-      <ParentGate>
         <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-slate-50">
           <div className="text-6xl">👶</div>
           <p className="text-gray-600 font-medium text-center persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
@@ -82,7 +80,6 @@ export default function ParentDashboardPage() {
             ایجاد پروفایل
           </Link>
         </div>
-      </ParentGate>
     )
   }
 
@@ -95,7 +92,6 @@ export default function ParentDashboardPage() {
   const lvl = resolveLevel(xp ?? 0)
 
   return (
-    <ParentGate>
       <div className="min-h-screen bg-slate-50 pb-20">
 
         {/* Header */}
@@ -314,7 +310,6 @@ export default function ParentDashboardPage() {
           </Link>
         </div>
       </div>
-    </ParentGate>
   )
 }
 

@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
-import ParentGate from '@/components/parent/ParentGate'
 import { pickChild } from '@/lib/activeChild'
 import type { Child, ChildWordProgress, ChildLessonProgress, ChildStoryProgress, ChildSession, Word, Lesson, Story } from '@koodakbook/shared'
 
@@ -120,7 +119,6 @@ export default function ParentProgressPage() {
   ]
 
   return (
-    <ParentGate>
       <div className="min-h-screen bg-slate-50">
 
         {/* Header */}
@@ -295,6 +293,5 @@ export default function ParentProgressPage() {
           </div>
         </div>
       </div>
-    </ParentGate>
   )
 }

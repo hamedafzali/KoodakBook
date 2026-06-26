@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
-import ParentGate from '@/components/parent/ParentGate'
 import { pickChild } from '@/lib/activeChild'
 import type { DashboardSummary, Child } from '@koodakbook/shared'
 
@@ -195,17 +194,14 @@ export default function SharePage() {
   )
 
   if (!summary) return (
-    <ParentGate>
       <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-slate-50">
         <div className="text-6xl">👶</div>
         <p className="text-gray-600 font-medium text-center persian-text">هنوز پیشرفتی برای اشتراک‌گذاری نیست</p>
         <Link href="/parent/dashboard" className="text-amber-600 font-bold">برگشت به داشبورد</Link>
       </div>
-    </ParentGate>
   )
 
   return (
-    <ParentGate>
       <div className="min-h-screen bg-slate-50 pb-20">
         {/* Header */}
         <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
@@ -254,6 +250,5 @@ export default function SharePage() {
           </div>
         </div>
       </div>
-    </ParentGate>
   )
 }
