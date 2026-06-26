@@ -13,13 +13,17 @@ import ChildRail from '@/components/child/ChildRail'
  *     composition and use the horizontal space.
  * Below lg the rail is hidden and the stage is full-width → mobile is unchanged.
  */
-// Story reader joins this once its two-page spread lands (until then it would
-// merely stretch). Home is the first wide landscape surface.
-const WIDE_ROUTES = ['/child/home']
+// Surfaces that adopt the wide landscape stage. The story *reader* gets the
+// two-page spread; the /new creation form stays a focused column.
+function isWideRoute(p: string) {
+  if (p.startsWith('/child/home')) return true
+  if (p.startsWith('/child/story/') && p !== '/child/story/new') return true
+  return false
+}
 
 export default function ChildLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const wide = WIDE_ROUTES.some(r => pathname.startsWith(r))
+  const wide = isWideRoute(pathname)
   return (
     <div className="min-h-screen w-full flex bg-[#ece2d1]">
       <ChildRail />

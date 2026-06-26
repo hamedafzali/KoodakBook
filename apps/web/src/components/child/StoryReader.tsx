@@ -82,12 +82,13 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
         </div>
       </div>
 
-      {/* Page content */}
-      <div className="flex-1 flex flex-col overflow-y-auto px-4 py-4 gap-4">
+      {/* Page content — stacked on mobile, a two-page spread at lg
+          (RTL: illustration left, text right, vertically centred) */}
+      <div className="flex-1 flex flex-col overflow-y-auto px-4 py-4 gap-4 lg:px-10 lg:py-8 lg:justify-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-4 lg:flex-row-reverse lg:items-center lg:gap-10 lg:w-full lg:max-w-5xl lg:mx-auto"
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 30 }}
@@ -98,16 +99,16 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
               <img
                 src={mediaUrl(page.image_url)!}
                 alt={`صفحه ${page.page_number} از داستان ${story.title_persian}`}
-                className="rounded-lg shadow-lg w-full max-h-64 object-contain"
+                className="rounded-lg shadow-lg w-full max-h-64 object-contain lg:w-1/2 lg:max-h-[64vh] lg:self-center"
               />
             ) : (
-              <div className="w-full h-52 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg shadow-md flex items-center justify-center">
-                <span className="text-7xl">📖</span>
+              <div className="w-full h-52 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg shadow-md flex items-center justify-center lg:w-1/2 lg:h-[64vh]">
+                <span className="text-7xl lg:text-9xl">📖</span>
               </div>
             )}
 
             {/* Story text */}
-            <div className="bg-white rounded-lg p-5 shadow-sm">
+            <div className="bg-white rounded-lg p-5 shadow-sm lg:w-1/2 lg:p-8 lg:self-stretch lg:flex lg:flex-col lg:justify-center">
               <BilingualText
                 persian={page.text_persian}
                 english={showBilingual ? page.text_english : null}
