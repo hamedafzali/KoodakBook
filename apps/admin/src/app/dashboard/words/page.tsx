@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import FileUpload from '@/components/FileUpload'
 import type { Word } from '@koodakbook/shared'
-import { WORD_CATEGORIES, ANIMATION_TEMPLATES, templateForCategory } from '@koodakbook/shared'
+import { WORD_CATEGORIES, ANIMATION_TEMPLATES, templateForCategory, TEMPLATE_REGISTRY } from '@koodakbook/shared'
 
 const CATEGORIES = WORD_CATEGORIES as readonly string[]
 const EMPTY = {
@@ -113,10 +113,12 @@ export default function AdminWordsPage() {
           </div>
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">پارامترهای انیمیشن (JSON)</label>
-          <textarea value={form.animation_params} onChange={e => setForm(f => ({ ...f, animation_params: e.target.value }))}
-            rows={3} placeholder='{ "tap_beat": "pop", "squash": 0.85 }'
-            className="ltr w-full border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-400" />
+          <label className="text-xs text-gray-500 block mb-1">پارامترهای انیمیشن</label>
+          <AnimationParams
+            template={(form.animation_template || templateForCategory(form.category as never)) as string}
+            value={form.animation_params}
+            onChange={json => setForm(f => ({ ...f, animation_params: json }))}
+          />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FileUpload type="audio" label="فایل صوتی" currentUrl={form.audio_url}
@@ -176,6 +178,49 @@ export default function AdminWordsPage() {
         </table>
         {filtered.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">کلمه‌ای یافت نشد</p>}
       </div>
+    </div>
+  )
+}
+
+// Friendly per-param editor (replaces raw JSON). Renders one labeled field per
+// param the selected animation template accepts (from TEMPLATE_REGISTRY).
+const NUMERIC = (n: string) => n.endsWith('_ms') || n.endsWith('_pct') || ['squash', 'count_to', 'density', 'repeat_count', 'stagger_ms'].includes(n)
+const BOOLEAN = (n: string) => ['glow', 'jump', 'tail_swish', 'fill_sweep', 'diacritic_overlay', 'bounce'].includes(n)
+const humanize = (n: string) => n.replace(/_/g, ' ')
+
+function AnimationParams({ template, value, onChange }: { template: string; value: string; onChange: (json: string) => void }) {
+  let obj: Record<string, unknown> = {}
+  try { obj = value ? JSON.parse(value) : {} } catch { obj = {} }
+  const params = (TEMPLATE_REGISTRY as Record<string, { params: string[] }>)[template]?.params ?? []
+
+  function set(k: string, v: unknown) {
+    const next: Record<string, unknown> = { ...obj }
+    if (v === '' || v === undefined || v === null) delete next[k]
+    else next[k] = v
+    onChange(Object.keys(next).length ? JSON.stringify(next) : '')
+  }
+
+  if (params.length === 0) return <p className="text-xs text-gray-400">این قالب پارامتری ندارد.</p>
+  return (
+    <div className="grid grid-cols-2 gap-2 bg-gray-50 rounded-xl p-3">
+      {params.map(p => {
+        const v = obj[p]
+        if (BOOLEAN(p)) return (
+          <label key={p} className="flex items-center justify-between gap-2 bg-white rounded-lg px-3 py-2 text-sm border border-gray-200">
+            <span className="ltr text-gray-600 text-xs">{humanize(p)}</span>
+            <input type="checkbox" checked={v === true} onChange={e => set(p, e.target.checked || undefined)} />
+          </label>
+        )
+        return (
+          <label key={p} className="block">
+            <span className="block text-[11px] text-gray-500 mb-0.5 ltr">{humanize(p)}</span>
+            <input type={NUMERIC(p) ? 'number' : 'text'} step="any"
+              value={v === undefined || v === null ? '' : String(v)}
+              onChange={e => set(p, e.target.value === '' ? undefined : (NUMERIC(p) ? Number(e.target.value) : e.target.value))}
+              className="ltr w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white" />
+          </label>
+        )
+      })}
     </div>
   )
 }
