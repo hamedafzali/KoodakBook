@@ -37,6 +37,16 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex items-center justify-center child-bg p-4">
       <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
 
+        {/* Back to the parent panel — so adding a child (or hitting a plan limit)
+            is never a dead end. */}
+        <button
+          type="button"
+          onClick={() => router.push('/parent/dashboard')}
+          className="flex items-center gap-1 text-sm text-gray-400 hover:text-amber-600 transition-colors mb-3"
+        >
+          <span aria-hidden="true">→</span> بازگشت به پنل والدین
+        </button>
+
         {/* Mascot + heading */}
         <div className="text-center mb-6">
           <motion.div
