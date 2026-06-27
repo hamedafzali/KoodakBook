@@ -34,7 +34,7 @@ services:
       MIGRATIONS_DIR: /app/supabase/migrations
       ADMIN_EMAIL:    admin@koodakbook.com
       ADMIN_PASSWORD: admin123
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_API_KEY:     ${AI_API_KEY:-}
     volumes:
       - .:/app                              # source — live edits reflected immediately
       - backend_node_modules:/app/node_modules   # persists between restarts
