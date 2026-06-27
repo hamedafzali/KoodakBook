@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { setToken } from '@/lib/auth'
+import { onSignIn } from '@/lib/auth'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -20,7 +20,7 @@ export default function SignupPage() {
     const res = await api.post<{ token: string }>('/api/auth/signup', { email, password })
     if (res.error || !res.data) { setError(res.error ?? 'مشکلی پیش آمد'); setLoading(false); return }
 
-    setToken(res.data.token)
+    onSignIn(res.data.token)
     router.push('/onboarding')
   }
 

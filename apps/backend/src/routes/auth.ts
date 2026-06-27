@@ -58,14 +58,83 @@ router.post('/logout', requireAuth, (_req, res) => {
   res.json({ data: { ok: true }, error: null })
 })
 
-// Current account incl. plan — clients use this to gate premium UI.
+// Current account incl. plan — clients use this to gate premium UI, and `has_pin`
+// to decide whether the parent gate should set a new PIN or ask for the existing.
 router.get('/me', requireAuth, async (_req, res) => {
-  const user = await queryOne(
-    'select id, email, plan, plan_expires_at from users where id = $1',
+  const user = await queryOne<{ id: string; email: string; plan: string; plan_expires_at: string | null; parent_pin_hash: string | null }>(
+    'select id, email, plan, plan_expires_at, parent_pin_hash from users where id = $1',
     [res.locals.userId]
   )
   if (!user) { res.status(404).json({ data: null, error: 'Not found' }); return }
-  res.json({ data: user, error: null })
+  const { parent_pin_hash, ...rest } = user
+  res.json({ data: { ...rest, has_pin: !!parent_pin_hash }, error: null })
+})
+
+// ── Parent PIN (account-bound) ───────────────────────────────────────────────
+// The PIN is a *local lock on the parent area only* — never a login. Wrong-PIN /
+// wrong-password use 422/200(ok:false), never 401, so they don't trip the
+// client's "session revoked → log out" handler (which is 401-only).
+const pinSchema = z.object({ pin: z.string().regex(/^\d{4}$/) })
+const LOCK_THRESHOLD = 5
+const LOCK_MINUTES = 15
+
+// First-run set. Refuses if a PIN already exists (use reset to change).
+router.post('/pin/set', requireAuth, async (req, res) => {
+  const parsed = pinSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: 'PIN must be 4 digits' }); return }
+
+  const user = await queryOne<{ parent_pin_hash: string | null }>(
+    'select parent_pin_hash from users where id = $1', [res.locals.userId])
+  if (!user) { res.status(404).json({ data: null, error: 'Not found' }); return }
+  if (user.parent_pin_hash) { res.status(409).json({ data: null, error: 'PIN already set' }); return }
+
+  const hash = await bcrypt.hash(parsed.data.pin, 10)
+  await query('update users set parent_pin_hash = $1, pin_failed_attempts = 0, pin_locked_until = null where id = $2',
+    [hash, res.locals.userId])
+  res.json({ data: { ok: true }, error: null })
+})
+
+// Verify. Always 200; the body says whether it matched / is locked.
+router.post('/pin/verify', requireAuth, async (req, res) => {
+  const parsed = pinSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: 'PIN must be 4 digits' }); return }
+
+  const user = await queryOne<{ parent_pin_hash: string | null; pin_failed_attempts: number; pin_locked_until: string | null }>(
+    'select parent_pin_hash, pin_failed_attempts, pin_locked_until from users where id = $1', [res.locals.userId])
+  if (!user?.parent_pin_hash) { res.status(400).json({ data: null, error: 'No PIN set' }); return }
+
+  if (user.pin_locked_until && new Date(user.pin_locked_until) > new Date()) {
+    res.json({ data: { ok: false, locked: true }, error: null }); return
+  }
+
+  if (await bcrypt.compare(parsed.data.pin, user.parent_pin_hash)) {
+    await query('update users set pin_failed_attempts = 0, pin_locked_until = null where id = $1', [res.locals.userId])
+    res.json({ data: { ok: true }, error: null }); return
+  }
+
+  const attempts = user.pin_failed_attempts + 1
+  const lock = attempts >= LOCK_THRESHOLD
+  await query('update users set pin_failed_attempts = $1, pin_locked_until = $2 where id = $3',
+    [lock ? 0 : attempts, lock ? new Date(Date.now() + LOCK_MINUTES * 60_000) : null, res.locals.userId])
+  res.json({ data: { ok: false, locked: lock }, error: null })
+})
+
+// Forgot PIN → clear it with the account password (a child can't bypass it).
+// After this the account has no PIN, so the gate falls back to first-run set.
+const resetSchema = z.object({ password: z.string().min(6) })
+router.post('/pin/reset', requireAuth, async (req, res) => {
+  const parsed = resetSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: 'Password required' }); return }
+
+  const user = await queryOne<{ password_hash: string }>(
+    'select password_hash from users where id = $1', [res.locals.userId])
+  if (!user) { res.status(404).json({ data: null, error: 'Not found' }); return }
+  if (!(await bcrypt.compare(parsed.data.password, user.password_hash))) {
+    res.status(422).json({ data: null, error: 'Incorrect password' }); return
+  }
+  await query('update users set parent_pin_hash = null, pin_failed_attempts = 0, pin_locked_until = null where id = $1',
+    [res.locals.userId])
+  res.json({ data: { ok: true }, error: null })
 })
 
 export default router

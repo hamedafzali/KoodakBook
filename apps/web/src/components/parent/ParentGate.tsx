@@ -1,30 +1,39 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { api } from '@/lib/api'
+import { markParentUnlocked, isParentUnlocked } from '@/lib/auth'
 
-const PIN_KEY = 'koodakbook_parent_pin'
 const PIN_LENGTH = 4
+
+type State = 'loading' | 'set_pin' | 'enter_pin' | 'reset' | 'unlocked'
 
 interface Props {
   children: React.ReactNode
 }
 
 export default function ParentGate({ children }: Props) {
-  const [state, setState] = useState<'loading' | 'set_pin' | 'enter_pin' | 'unlocked'>('loading')
+  const [state, setState] = useState<State>('loading')
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
   const [step, setStep] = useState<'first' | 'confirm'>('first')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [shake, setShake] = useState(false)
+  const [busy, setBusy] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Decide whether this account needs to set a first-run PIN or enter its
+  // existing one. The PIN now lives on the account (server), not the device.
   useEffect(() => {
-    const stored = localStorage.getItem(PIN_KEY)
-    if (stored) {
-      setState('enter_pin')
-    } else {
-      setState('set_pin')
-    }
+    if (isParentUnlocked()) { setState('unlocked'); return }
+    let alive = true
+    api.get<{ has_pin: boolean }>('/api/auth/me').then(res => {
+      if (!alive) return
+      // No data → the session is dead; the api client has already sent us to /login.
+      if (res.data) setState(res.data.has_pin ? 'enter_pin' : 'set_pin')
+    })
+    return () => { alive = false }
   }, [])
 
   const triggerShake = useCallback(() => {
@@ -32,13 +41,47 @@ export default function ParentGate({ children }: Props) {
     setTimeout(() => setShake(false), 500)
   }, [])
 
+  function unlock() {
+    markParentUnlocked()
+    setState('unlocked')
+  }
+
+  async function verify(entered: string) {
+    setBusy(true)
+    const res = await api.post<{ ok: boolean; locked?: boolean }>('/api/auth/pin/verify', { pin: entered })
+    setBusy(false)
+    if (res.data?.ok) { unlock(); return }
+    triggerShake()
+    setError(res.data?.locked
+      ? 'تلاش‌های زیاد. چند دقیقه دیگر دوباره امتحان کنید'
+      : 'پین اشتباه است. دوباره تلاش کنید')
+    setTimeout(() => setPin(''), 500)
+  }
+
+  async function savePin(p: string, c: string) {
+    if (p !== c) {
+      triggerShake()
+      setError('پین‌ها مطابقت ندارند. دوباره امتحان کنید')
+      setStep('first'); setPin(''); setConfirmPin('')
+      return
+    }
+    setBusy(true)
+    const res = await api.post<{ ok: boolean }>('/api/auth/pin/set', { pin: p })
+    setBusy(false)
+    if (res.data?.ok) { unlock(); return }
+    // A PIN already exists (e.g. set in another tab) → fall back to entering it.
+    setStep('first'); setPin(''); setConfirmPin(''); setError(null)
+    setState('enter_pin')
+  }
+
   function handleDigit(d: string) {
+    if (busy) return
     setError(null)
     if (state === 'enter_pin') {
       const next = pin + d
       if (next.length <= PIN_LENGTH) {
         setPin(next)
-        if (next.length === PIN_LENGTH) checkPin(next)
+        if (next.length === PIN_LENGTH) verify(next)
       }
     } else if (state === 'set_pin') {
       if (step === 'first') {
@@ -58,49 +101,76 @@ export default function ParentGate({ children }: Props) {
   }
 
   function handleDelete() {
+    if (busy) return
     setError(null)
     if (state === 'enter_pin') setPin(p => p.slice(0, -1))
     else if (step === 'first') setPin(p => p.slice(0, -1))
     else setConfirmPin(p => p.slice(0, -1))
   }
 
-  function checkPin(entered: string) {
-    const stored = localStorage.getItem(PIN_KEY)
-    if (entered === stored) {
-      setState('unlocked')
-    } else {
-      triggerShake()
-      setError('پین اشتباه است. دوباره تلاش کنید')
-      setTimeout(() => setPin(''), 500)
-    }
-  }
-
-  function savePin(p: string, c: string) {
-    if (p !== c) {
-      triggerShake()
-      setError('پین‌ها مطابقت ندارند. دوباره امتحان کنید')
-      setStep('first')
-      setPin('')
-      setConfirmPin('')
+  // Forgot PIN → clear it with the account password (a child can't bypass it),
+  // then the account has no PIN so we drop into first-run set.
+  async function submitReset(e: React.FormEvent) {
+    e.preventDefault()
+    setBusy(true); setError(null)
+    const res = await api.post<{ ok: boolean }>('/api/auth/pin/reset', { password })
+    setBusy(false)
+    if (res.data?.ok) {
+      setPassword(''); setPin(''); setConfirmPin(''); setStep('first')
+      setState('set_pin')
       return
     }
-    localStorage.setItem(PIN_KEY, p)
-    setState('unlocked')
-  }
-
-  function resetPin() {
-    localStorage.removeItem(PIN_KEY)
-    setPin('')
-    setConfirmPin('')
-    setStep('first')
-    setError(null)
-    setState('set_pin')
+    triggerShake()
+    setError('رمز عبور اشتباه است')
   }
 
   const currentPin = state === 'enter_pin' ? pin : step === 'first' ? pin : confirmPin
 
   if (state === 'loading') return null
   if (state === 'unlocked') return <>{children}</>
+
+  // ── Reset screen (password) ──
+  if (state === 'reset') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-6">
+        <motion.div
+          ref={containerRef}
+          animate={shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : { x: 0 }}
+          transition={{ duration: 0.4 }}
+          className="bg-white rounded-[2rem] p-8 w-full max-w-xs shadow-2xl text-center"
+        >
+          <div className="text-4xl mb-4">🔑</div>
+          <h1 className="font-bold text-xl text-gray-800 mb-1">بازنشانی پین</h1>
+          <p className="text-sm text-gray-500 mb-6">برای امنیت، رمز عبور حساب را وارد کنید</p>
+          <form onSubmit={submitReset} className="space-y-4">
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setError(null) }}
+              placeholder="رمز عبور"
+              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 min-h-[48px]"
+            />
+            {error && <p role="alert" className="text-red-500 text-sm persian-text">{error}</p>}
+            <button
+              type="submit"
+              disabled={busy || password.length < 6}
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[48px]"
+            >
+              {busy ? '...' : 'تأیید و تنظیم پین جدید'}
+            </button>
+          </form>
+          <button
+            onClick={() => { setState('enter_pin'); setPassword(''); setError(null) }}
+            className="mt-4 text-xs text-gray-400 hover:text-amber-600 transition-colors"
+          >
+            انصراف
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
 
   const titleText = state === 'set_pin'
     ? step === 'first' ? 'پین والدین را تنظیم کنید' : 'پین را تأیید کنید'
@@ -158,8 +228,9 @@ export default function ParentGate({ children }: Props) {
             <motion.button
               key={d}
               onClick={() => handleDigit(String(i + 1))}
+              disabled={busy}
               whileTap={{ scale: 0.88 }}
-              className="h-14 rounded-xl bg-gray-100 hover:bg-amber-50 text-gray-800 font-bold text-xl transition-colors touch-target"
+              className="h-14 rounded-xl bg-gray-100 hover:bg-amber-50 text-gray-800 font-bold text-xl transition-colors touch-target disabled:opacity-50"
               aria-label={`عدد ${d}`}
             >
               {d}
@@ -168,16 +239,18 @@ export default function ParentGate({ children }: Props) {
           <div /> {/* empty cell */}
           <motion.button
             onClick={() => handleDigit('0')}
+            disabled={busy}
             whileTap={{ scale: 0.88 }}
-            className="h-14 rounded-xl bg-gray-100 hover:bg-amber-50 text-gray-800 font-bold text-xl transition-colors touch-target"
+            className="h-14 rounded-xl bg-gray-100 hover:bg-amber-50 text-gray-800 font-bold text-xl transition-colors touch-target disabled:opacity-50"
             aria-label="عدد صفر"
           >
             ۰
           </motion.button>
           <motion.button
             onClick={handleDelete}
+            disabled={busy}
             whileTap={{ scale: 0.88 }}
-            className="h-14 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 font-bold text-lg transition-colors touch-target"
+            className="h-14 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 font-bold text-lg transition-colors touch-target disabled:opacity-50"
             aria-label="پاک کردن آخرین رقم"
           >
             ⌫
@@ -186,10 +259,10 @@ export default function ParentGate({ children }: Props) {
 
         {state === 'enter_pin' && (
           <button
-            onClick={resetPin}
+            onClick={() => { setState('reset'); setPin(''); setError(null) }}
             className="mt-5 text-xs text-gray-400 hover:text-amber-600 transition-colors"
           >
-            پین را فراموش کردید؟ ریست کنید
+            پین را فراموش کردید؟
           </button>
         )}
       </motion.div>
