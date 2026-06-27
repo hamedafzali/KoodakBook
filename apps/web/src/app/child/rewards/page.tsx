@@ -68,12 +68,12 @@ export default function RewardsPage() {
         <Mascot size={90} mood={earned.length > 0 ? 'happy' : 'idle'} className="-mb-4" />
       </div>
 
-      <div className="px-4 pt-5 space-y-6">
+      <div className="px-4 lg:px-8 pt-5 space-y-6">
 
         {/* Outcome badges */}
         <section aria-labelledby="outcome-badges-title">
           <h2 id="outcome-badges-title" className="font-bold text-gray-700 mb-3 text-sm">دستاوردها 🎓</h2>
-          <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
+          <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {outcomeBadges.map(([key, def]) => {
               const isEarned = earnedKeys.has(key as BadgeKey)
               return (
@@ -91,7 +91,7 @@ export default function RewardsPage() {
         {/* Effort badges */}
         <section aria-labelledby="effort-badges-title">
           <h2 id="effort-badges-title" className="font-bold text-gray-700 mb-3 text-sm">تلاش و پشتکار 💪</h2>
-          <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
+          <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {effortBadges.map(([key, def]) => {
               const isEarned = earnedKeys.has(key as BadgeKey)
               return (

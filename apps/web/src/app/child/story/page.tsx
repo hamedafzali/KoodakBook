@@ -55,7 +55,7 @@ export default function StoryListPage() {
         gradientClass="from-green-400 to-emerald-500"
       />
 
-      <div className="px-4 pt-5">
+      <div className="px-4 lg:px-8 pt-5">
         {/* Generate a personalized story with AI */}
         <Link
           href="/child/story/new"
@@ -80,7 +80,7 @@ export default function StoryListPage() {
             variants={container}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
             role="list"
             aria-label="لیست داستان‌ها"
           >

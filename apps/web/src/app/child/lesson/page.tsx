@@ -61,7 +61,7 @@ export default function LessonListPage() {
         gradientClass="from-amber-400 to-orange-500"
       />
 
-      <div className="px-4 pt-5 space-y-6">
+      <div className="px-4 lg:px-8 pt-5 space-y-6">
         {Object.keys(grouped).length === 0 && (
           <EmptyState
             message="هنوز درسی اضافه نشده"
@@ -75,7 +75,7 @@ export default function LessonListPage() {
               <span aria-hidden="true" className="text-xl">{LESSON_TYPE_EMOJI[type]}</span>
               {LESSON_TYPE_LABEL[type] ?? type}
             </h2>
-            <div className="space-y-2" role="list" aria-label={`درس‌های ${LESSON_TYPE_LABEL[type] ?? type}`}>
+            <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3" role="list" aria-label={`درس‌های ${LESSON_TYPE_LABEL[type] ?? type}`}>
               {items.map(lesson => {
                 const done = progress[lesson.id]
                 const locked = !isLessonUnlocked(lesson, strandLevels)
