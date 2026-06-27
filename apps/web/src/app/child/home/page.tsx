@@ -7,7 +7,8 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { mediaUrl } from '@/lib/media'
 import { useChildSession } from '@/lib/useSession'
-import { pickChild } from '@/lib/activeChild'
+import { pickChild, setActiveChildId } from '@/lib/activeChild'
+import { consumeChildPick } from '@/lib/mode'
 import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import EmptyState from '@/components/child/EmptyState'
@@ -76,56 +77,62 @@ export default function ChildHomePage() {
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
   const [showTutorial, setShowTutorial] = useState(false)
+  const [pickList, setPickList] = useState<Child[]>([])   // "who's playing?" — only when a parent switches in with >1 child
+  const [showPicker, setShowPicker] = useState(false)
 
   useChildSession(child?.id ?? null)
 
   useEffect(() => { if (!hasSeenTutorial()) setShowTutorial(true) }, [])
 
+  // Load everything for one chosen child (runs after the child is resolved).
+  async function loadForChild(c: Child) {
+    setChild(c)
+    const [lessonsRes, storiesRes, dashRes, reviewRes, progressRes, placeRes] = await Promise.all([
+      api.get<Lesson[]>('/api/lessons'),
+      api.get<Story[]>('/api/stories'),
+      api.get<DashboardSummary>(`/api/dashboard/${c.id}`),
+      api.get<ReviewItem[]>(`/api/progress/${c.id}/review`),
+      api.get<{ lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
+      api.get<{ strand_levels: StrandLevels }>(`/api/placement/${c.id}`),
+    ])
+    if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
+    if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
+    if (reviewRes.data) setReviewWords(reviewRes.data)   // spaced-repetition words due now
+    if (progressRes.data) {
+      const lastLessonId = progressRes.data.lessons.filter(l => !l.completed).at(-1)?.lesson_id
+      if (lastLessonId && lessonsRes.data) setLastLesson(lessonsRes.data.find(l => l.id === lastLessonId) ?? null)
+      const lastStoryId = progressRes.data.stories.filter(s => !s.completed).at(-1)?.story_id
+      if (lastStoryId && storiesRes.data) setLastStory(storiesRes.data.find(s => s.id === lastStoryId) ?? null)
+    }
+    if (lessonsRes.data) setLessons(lessonsRes.data)
+    if (storiesRes.data) setStories(storiesRes.data)
+  }
+
+  // Resolve a chosen child: remember it, run the placement assessment the first
+  // time (deferred from creation), otherwise load the home.
+  function resolveChild(c: Child) {
+    setActiveChildId(c.id)
+    if (!c.placement_done) { router.replace('/onboarding/placement'); return }
+    setShowPicker(false)
+    loadForChild(c)
+  }
+
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
-    async function load() {
-      const [childRes, lessonsRes, storiesRes] = await Promise.all([
-        api.get<Child[]>('/api/children'),
-        api.get<Lesson[]>('/api/lessons'),
-        api.get<Story[]>('/api/stories'),
-      ])
-      const c = pickChild(childRes.data ?? [])
-      if (c) {
-        setChild(c)
-        const [dashRes, reviewRes, progressRes, placeRes] = await Promise.all([
-          api.get<DashboardSummary>(`/api/dashboard/${c.id}`),
-          api.get<ReviewItem[]>(`/api/progress/${c.id}/review`),
-          api.get<{ lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
-          api.get<{ strand_levels: StrandLevels }>(`/api/placement/${c.id}`),
-        ])
-        if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
-        if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
-
-        /* Spaced repetition: words the Leitner scheduler says are due now */
-        if (reviewRes.data) setReviewWords(reviewRes.data)
-
-        if (progressRes.data) {
-          /* Last accessed lesson */
-          const lastLessonId = progressRes.data.lessons
-            .filter(l => !l.completed)
-            .at(-1)?.lesson_id
-          if (lastLessonId && lessonsRes.data) {
-            setLastLesson(lessonsRes.data.find(l => l.id === lastLessonId) ?? null)
-          }
-
-          /* Last accessed story */
-          const lastStoryId = progressRes.data.stories
-            .filter(s => !s.completed)
-            .at(-1)?.story_id
-          if (lastStoryId && storiesRes.data) {
-            setLastStory(storiesRes.data.find(s => s.id === lastStoryId) ?? null)
-          }
-        }
-      }
-      if (lessonsRes.data) setLessons(lessonsRes.data)
-      if (storiesRes.data) setStories(storiesRes.data)
+    let cancelled = false
+    async function start() {
+      const childRes = await api.get<Child[]>('/api/children')
+      if (cancelled) return
+      const list = childRes.data ?? []
+      if (list.length === 0) { router.replace('/parent/dashboard'); return }
+      // Parent just switched in and there are several kids → ask who's playing.
+      if (consumeChildPick() && list.length > 1) { setPickList(list); setShowPicker(true); return }
+      const c = pickChild(list)
+      if (c) resolveChild(c)
     }
-    load()
+    start()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
   // Order by placement: unlocked first, then by stage; show the top few.
@@ -137,6 +144,33 @@ export default function ChildHomePage() {
     .map(s => ({ s, locked: !isStoryUnlocked(s, strandLevels) }))
     .sort((a, b) => Number(a.locked) - Number(b.locked) || a.s.stage - b.s.stage)
     .slice(0, 4)
+
+  // "Who's playing?" — shown when a parent switches into child mode with >1 child.
+  if (showPicker) {
+    return (
+      <div className="min-h-screen child-bg flex flex-col items-center justify-center p-6 gap-8">
+        <h1 className="text-2xl font-bold text-gray-800 persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
+        <div className="grid grid-cols-2 gap-5 w-full max-w-md">
+          {pickList.map(c => (
+            <motion.button
+              key={c.id}
+              onClick={() => resolveChild(c)}
+              whileTap={{ scale: 0.94 }}
+              className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center gap-3"
+              aria-label={`بازی با ${c.name}`}
+            >
+              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center overflow-hidden text-4xl">
+                {mediaUrl(c.avatar_url) ? (
+                  <img src={mediaUrl(c.avatar_url)!} alt="" className="w-full h-full object-cover" />
+                ) : '🧒'}
+              </div>
+              <span className="font-bold text-gray-800">{c.name}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen child-bg pb-nav">

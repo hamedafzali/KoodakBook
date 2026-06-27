@@ -305,7 +305,7 @@ export default function ParentDashboardPage() {
           </Link>
 
           <button
-            onClick={() => { enterChildMode(); router.push('/child/home') }}
+            onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
             className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-md transition-colors text-lg min-h-[56px] lg:col-span-2 xl:col-span-3"
           >
             رفتن به حالت کودک 👶

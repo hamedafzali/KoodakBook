@@ -36,8 +36,10 @@ export default function OnboardingPage() {
       setLoading(false)
       return
     }
+    // Don't launch the assessment now — it runs the first time this child enters
+    // child mode (child/home redirects to it while placement_done is false).
     setActiveChildId(res.data.id)
-    router.push('/onboarding/placement')
+    router.push('/parent/dashboard')
   }
 
   return (

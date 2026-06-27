@@ -33,7 +33,7 @@ export default function ParentNav() {
         })}
       </div>
       <button
-        onClick={() => { enterChildMode(); router.push('/child/home') }}
+        onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
         className="w-full text-right flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-white/70 mt-6">
         <span>👶</span> حالت کودک
       </button>
