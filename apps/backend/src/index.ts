@@ -18,6 +18,7 @@ import adminUsersRouter from './routes/adminUsers'
 import adminTeamRouter from './routes/adminTeam'
 import adminAnalyticsRouter from './routes/adminAnalytics'
 import adminPlansRouter from './routes/adminPlans'
+import adminAiSettingsRouter from './routes/adminAiSettings'
 import aiRouter       from './routes/ai'
 
 const app = express()
@@ -74,6 +75,7 @@ app.use('/api/admin',     adminUsersRouter)
 app.use('/api/admin',     adminTeamRouter)
 app.use('/api/admin',     adminAnalyticsRouter)
 app.use('/api/admin',     adminPlansRouter)
+app.use('/api/admin',     adminAiSettingsRouter)
 app.use('/api/ai',        aiRouter)
 
 app.listen(PORT, async () => {

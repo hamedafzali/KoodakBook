@@ -32,7 +32,10 @@ services:
       UPLOADS_DIR:       /app/uploads
       ADMIN_EMAIL:       ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
       ADMIN_PASSWORD:    ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # One key for whichever AI provider is selected in the admin panel.
+      # Set AI_API_KEY in ACM to that provider's key (Anthropic / OpenAI /
+      # DeepSeek / Kimi / Qwen / …).
+      AI_API_KEY:         ${AI_API_KEY:-}
     volumes:
       - uploads:/app/uploads
     ports:

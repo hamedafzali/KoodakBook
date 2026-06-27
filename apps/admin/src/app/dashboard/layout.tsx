@@ -26,6 +26,9 @@ const GROUPS: { title: string; items: Item[] }[] = [
     { href: '/dashboard/words', label: 'کلمات', icon: 'pencil', perm: 'content.read' },
     { href: '/dashboard/letters', label: 'حروف', icon: 'type', perm: 'content.read' },
   ] },
+  { title: 'سیستم', items: [
+    { href: '/dashboard/ai', label: 'هوش مصنوعی', icon: 'flask', perm: 'ai.manage' },
+  ] },
 ]
 const has = (perms: string[], p?: string) => !p || perms.includes('*') || perms.includes(p)
 
