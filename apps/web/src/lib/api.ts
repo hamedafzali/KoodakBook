@@ -13,7 +13,9 @@ const BASE = ''
 function sessionRevoked() {
   clearToken()
   if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-    window.location.href = '/login'
+    // ?expired=1 lets the login screen explain the bounce ("your session ended")
+    // instead of silently dumping the user there mid-task.
+    window.location.href = '/login?expired=1'
   }
 }
 

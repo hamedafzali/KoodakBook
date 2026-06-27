@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -11,6 +11,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [expired, setExpired] = useState(false)
+
+  // Set by the api client when a session was revoked (deleted/suspended/expired).
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('expired')) {
+      setExpired(true)
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -31,6 +39,12 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-amber-600 mb-1">KoodakBook</h1>
           <p className="text-gray-500 text-sm">ورود به حساب</p>
         </div>
+
+        {expired && (
+          <p role="status" className="mb-4 text-center text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-[0.875rem] px-3 py-2 persian-text">
+            نشست شما پایان یافت. لطفاً دوباره وارد شوید.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
