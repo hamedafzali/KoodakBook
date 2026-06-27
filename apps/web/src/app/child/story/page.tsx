@@ -20,6 +20,7 @@ const item = { hidden: { opacity: 0, scale: 0.94 }, show: { opacity: 1, scale: 1
 export default function StoryListPage() {
   const router = useRouter()
   const [stories, setStories] = useState<Story[]>([])
+  const [myStories, setMyStories] = useState<Story[]>([])   // child's own AI-generated stories
   const [completed, setCompleted] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
@@ -33,12 +34,14 @@ export default function StoryListPage() {
       if (storiesRes.data) setStories(storiesRes.data)
       const child = pickChild(childRes.data ?? [])
       if (child) {
-        const progRes = await api.get<{ stories: { story_id: string; completed: boolean }[] }>(
-          `/api/progress/${child.id}`
-        )
+        const [progRes, mineRes] = await Promise.all([
+          api.get<{ stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${child.id}`),
+          api.get<Story[]>(`/api/ai/stories/${child.id}`),
+        ])
         if (progRes.data) {
           setCompleted(new Set(progRes.data.stories.filter(s => s.completed).map(s => s.story_id)))
         }
+        if (mineRes.data) setMyStories(mineRes.data)
       }
       setLoading(false)
     }
@@ -69,6 +72,43 @@ export default function StoryListPage() {
           </div>
           <span className="text-2xl" aria-hidden="true">←</span>
         </Link>
+
+        {/* The child's own AI-generated stories (kept out of the main catalogue,
+            so this is the only place they can re-open them). */}
+        {myStories.length > 0 && (
+          <section className="mb-6" aria-label="داستان‌های من">
+            <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های من ✨</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="list">
+              {myStories.map(story => {
+                const done = completed.has(story.id)
+                return (
+                  <Link
+                    key={story.id}
+                    href={`/child/story/${story.id}`}
+                    role="listitem"
+                    aria-label={`${story.title_persian}${done ? ' — خوانده شده' : ''}`}
+                    className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
+                  >
+                    {done && (
+                      <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium" aria-hidden="true">
+                        ✅ خوندم
+                      </div>
+                    )}
+                    <div className="w-full h-32 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-5xl" aria-hidden="true">✨</div>
+                    <div className="p-3">
+                      <p className="font-bold text-gray-800 text-sm leading-tight persian-text">{story.title_persian}</p>
+                      <p className="text-xs text-fuchsia-500 mt-1">داستان من</p>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {myStories.length > 0 && stories.length > 0 && (
+          <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های آماده 📚</h2>
+        )}
 
         {stories.length === 0 ? (
           <EmptyState
