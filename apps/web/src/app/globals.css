@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind v4 auto-detection only scans this app, not the sibling workspace
+   package. Several dynamic class strings live in @koodakbook/shared
+   (ACTIVITY_GRADIENTS, phonics colours, …); without this they're never
+   generated and the cards using them render with no background (white-on-white). */
+@source "../../../../packages/shared/src/**/*.{ts,tsx}";
+
 /* ── Design Tokens ─────────────────────────────────────────────────────────── */
 @theme inline {
   /* Fonts */
