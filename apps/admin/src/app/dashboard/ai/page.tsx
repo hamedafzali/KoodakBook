@@ -18,16 +18,48 @@ interface Settings {
 
 // Preset endpoints. Anything OpenAI-compatible (OpenAI + the Chinese providers +
 // aggregators) works through one adapter — they differ only by base_url + model.
-const PRESETS: { id: string; label: string; provider: Provider; base_url: string; models: string[] }[] = [
-  { id: 'anthropic', label: 'Anthropic (Claude)', provider: 'anthropic', base_url: '', models: ['claude-sonnet-4-6', 'claude-opus-4-8', 'claude-haiku-4-5-20251001'] },
-  { id: 'openai', label: 'OpenAI', provider: 'openai_compatible', base_url: 'https://api.openai.com/v1', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1'] },
-  { id: 'deepseek', label: 'DeepSeek (چین)', provider: 'openai_compatible', base_url: 'https://api.deepseek.com', models: ['deepseek-chat', 'deepseek-reasoner'] },
-  { id: 'moonshot', label: 'Moonshot / Kimi (چین)', provider: 'openai_compatible', base_url: 'https://api.moonshot.cn/v1', models: ['kimi-k2-0711-preview', 'moonshot-v1-32k', 'moonshot-v1-8k'] },
-  { id: 'qwen', label: 'Qwen / DashScope (چین)', provider: 'openai_compatible', base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: ['qwen-plus', 'qwen-max', 'qwen-turbo'] },
-  { id: 'zhipu', label: 'Zhipu / GLM (چین)', provider: 'openai_compatible', base_url: 'https://open.bigmodel.cn/api/paas/v4', models: ['glm-4-plus', 'glm-4'] },
-  { id: 'openrouter', label: 'OpenRouter', provider: 'openai_compatible', base_url: 'https://openrouter.ai/api/v1', models: ['deepseek/deepseek-chat', 'anthropic/claude-3.5-sonnet'] },
-  { id: 'groq', label: 'Groq', provider: 'openai_compatible', base_url: 'https://api.groq.com/openai/v1', models: ['llama-3.3-70b-versatile'] },
-  { id: 'mistral', label: 'Mistral', provider: 'openai_compatible', base_url: 'https://api.mistral.ai/v1', models: ['mistral-large-latest'] },
+// Models carry a friendly label so the operator picks from a list and never has
+// to know/type a model ID; only "custom" falls back to a free-text field.
+type Model = { id: string; label: string }
+const PRESETS: { id: string; label: string; provider: Provider; base_url: string; models: Model[] }[] = [
+  { id: 'anthropic', label: 'Anthropic (Claude)', provider: 'anthropic', base_url: '', models: [
+    { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6 — متعادل (پیشنهادی)' },
+    { id: 'claude-opus-4-8', label: 'Claude Opus 4.8 — قوی‌ترین (گران)' },
+    { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 — سریع و ارزان' },
+  ] },
+  { id: 'openai', label: 'OpenAI', provider: 'openai_compatible', base_url: 'https://api.openai.com/v1', models: [
+    { id: 'gpt-4o', label: 'GPT-4o' },
+    { id: 'gpt-4o-mini', label: 'GPT-4o mini — ارزان' },
+    { id: 'gpt-4.1', label: 'GPT-4.1' },
+  ] },
+  { id: 'deepseek', label: 'DeepSeek (چین)', provider: 'openai_compatible', base_url: 'https://api.deepseek.com', models: [
+    { id: 'deepseek-chat', label: 'DeepSeek Chat (V3)' },
+    { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner (R1)' },
+  ] },
+  { id: 'moonshot', label: 'Moonshot / Kimi (چین)', provider: 'openai_compatible', base_url: 'https://api.moonshot.cn/v1', models: [
+    { id: 'kimi-k2-0711-preview', label: 'Kimi K2' },
+    { id: 'moonshot-v1-32k', label: 'Moonshot v1 (32k)' },
+    { id: 'moonshot-v1-8k', label: 'Moonshot v1 (8k)' },
+  ] },
+  { id: 'qwen', label: 'Qwen / DashScope (چین)', provider: 'openai_compatible', base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: [
+    { id: 'qwen-plus', label: 'Qwen Plus' },
+    { id: 'qwen-max', label: 'Qwen Max — قوی‌تر' },
+    { id: 'qwen-turbo', label: 'Qwen Turbo — ارزان' },
+  ] },
+  { id: 'zhipu', label: 'Zhipu / GLM (چین)', provider: 'openai_compatible', base_url: 'https://open.bigmodel.cn/api/paas/v4', models: [
+    { id: 'glm-4-plus', label: 'GLM-4 Plus' },
+    { id: 'glm-4', label: 'GLM-4' },
+  ] },
+  { id: 'openrouter', label: 'OpenRouter', provider: 'openai_compatible', base_url: 'https://openrouter.ai/api/v1', models: [
+    { id: 'deepseek/deepseek-chat', label: 'DeepSeek Chat' },
+    { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
+  ] },
+  { id: 'groq', label: 'Groq', provider: 'openai_compatible', base_url: 'https://api.groq.com/openai/v1', models: [
+    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
+  ] },
+  { id: 'mistral', label: 'Mistral', provider: 'openai_compatible', base_url: 'https://api.mistral.ai/v1', models: [
+    { id: 'mistral-large-latest', label: 'Mistral Large' },
+  ] },
   { id: 'custom', label: 'سفارشی (OpenAI-compatible)', provider: 'openai_compatible', base_url: '', models: [] },
 ]
 
@@ -62,7 +94,7 @@ export default function AiSettingsPage() {
       ...prev,
       provider: p.provider,
       base_url: p.provider === 'anthropic' ? null : (p.base_url || prev.base_url || ''),
-      model: p.models[0] ?? prev.model,
+      model: p.models[0]?.id ?? prev.model,
     }))
   }
 
@@ -102,17 +134,23 @@ export default function AiSettingsPage() {
           </Select>
         </Field>
 
-        <Field label="مدل" hint="می‌توانید نام دقیق مدل را تایپ کنید">
-          <Input
-            list="model-suggestions"
-            value={s.model}
-            onChange={e => setS({ ...s, model: e.target.value })}
-            placeholder="claude-sonnet-4-6"
-            dir="ltr"
-          />
-          <datalist id="model-suggestions">
-            {activePreset.models.map(m => <option key={m} value={m} />)}
-          </datalist>
+        <Field label="مدل" hint={activePreset.models.length ? 'یکی از مدل‌های این ارائه‌دهنده را انتخاب کنید' : 'نام دقیق مدل را وارد کنید'}>
+          {activePreset.models.length > 0 ? (
+            <Select value={s.model} onChange={e => setS({ ...s, model: e.target.value })} dir="ltr">
+              {/* keep the saved model visible even if it isn't in our list */}
+              {!activePreset.models.some(m => m.id === s.model) && (
+                <option value={s.model}>{s.model} (فعلی)</option>
+              )}
+              {activePreset.models.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </Select>
+          ) : (
+            <Input
+              value={s.model}
+              onChange={e => setS({ ...s, model: e.target.value })}
+              placeholder="model-id"
+              dir="ltr"
+            />
+          )}
         </Field>
 
         {s.provider === 'openai_compatible' && (
