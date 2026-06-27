@@ -99,4 +99,43 @@ router.get('/analytics/overview', requireAdmin, requirePermission('analytics.vie
   })
 })
 
+// ── GET /api/admin/content-readiness ─────────────────────
+// What's missing for production: images (everything renders via emoji until
+// these land) and native audio (TTS bootstrap vs recorded). Attacks the
+// content-production blocker directly.
+router.get('/content-readiness', requireAdmin, requirePermission('content.read'), async (_req, res) => {
+  const c = await queryOne<Record<string, string>>(`select
+    (select count(*) from words) words_total,
+    (select count(*) from words where image_url is not null and image_url <> '') words_image,
+    (select count(*) from words where audio_url is not null and audio_url <> '') words_audio,
+    (select count(distinct entity_id) from audio_assets where entity_type='word' and source='native' and is_primary) words_native,
+    (select count(*) from stories where not ai_generated) stories_total,
+    (select count(*) from stories where not ai_generated and cover_url is not null) stories_cover,
+    (select count(*) from stories where not ai_generated and audio_url is not null) stories_audio,
+    (select count(*) from story_pages) pages_total,
+    (select count(*) from story_pages where image_url is not null) pages_image,
+    (select count(*) from story_pages where audio_url is not null) pages_audio,
+    (select count(*) from letters) letters_total,
+    (select count(*) from letters where audio_url is not null) letters_audio`)
+  const missingImages = await query<{ persian: string; english: string; category: string }>(
+    `select persian, english, category from words where image_url is null or image_url = '' order by category, persian limit 60`)
+  const n = (k: string) => parseInt(c?.[k] ?? '0')
+  res.json({
+    data: {
+      metrics: [
+        { key: 'word_images',  label: 'تصویر واژه‌ها',        have: n('words_image'),   total: n('words_total'),   critical: true },
+        { key: 'word_native',  label: 'صدای ضبط‌شده‌ی واژه‌ها', have: n('words_native'),  total: n('words_total') },
+        { key: 'word_audio',   label: 'صدای واژه‌ها (هر نوع)',  have: n('words_audio'),   total: n('words_total') },
+        { key: 'story_covers', label: 'جلد داستان‌ها',         have: n('stories_cover'), total: n('stories_total'), critical: true },
+        { key: 'story_audio',  label: 'صدای کامل داستان‌ها',    have: n('stories_audio'), total: n('stories_total') },
+        { key: 'page_images',  label: 'تصویر صفحات داستان',     have: n('pages_image'),   total: n('pages_total'),   critical: true },
+        { key: 'page_audio',   label: 'صدای صفحات داستان',      have: n('pages_audio'),   total: n('pages_total') },
+        { key: 'letter_audio', label: 'صدای حروف',             have: n('letters_audio'), total: n('letters_total') },
+      ],
+      missing_images: missingImages,
+    },
+    error: null,
+  })
+})
+
 export default router
