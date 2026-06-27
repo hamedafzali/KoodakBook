@@ -27,6 +27,10 @@ export default function ParentGate({ children }: Props) {
   // Decide whether this account needs to set a first-run PIN or enter its
   // existing one. The PIN now lives on the account (server), not the device.
   useEffect(() => {
+    // "Change PIN" from settings re-locks and lands here in reset mode.
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('pin') === 'reset') {
+      setState('reset'); return
+    }
     if (isParentUnlocked()) { setState('unlocked'); return }
     let alive = true
     api.get<{ has_pin: boolean }>('/api/auth/me').then(res => {

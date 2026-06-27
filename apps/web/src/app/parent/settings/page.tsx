@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
-import { clearToken } from '@/lib/auth'
+import { clearToken, lockParent } from '@/lib/auth'
 import { getActiveChildId, setActiveChildId } from '@/lib/activeChild'
 import type { Child } from '@koodakbook/shared'
 import { containerWidths } from '@/components/shared/layout'
@@ -64,9 +64,11 @@ export default function SettingsPage() {
     router.push('/login')
   }
 
+  // Change PIN: re-lock the parent area and open the gate directly in reset mode
+  // (verify account password → set a new PIN). The PIN now lives on the server.
   function resetParentPin() {
-    localStorage.removeItem('koodakbook_parent_pin')
-    router.push('/parent/dashboard')
+    lockParent()
+    router.push('/parent/dashboard?pin=reset')
   }
 
   return (
@@ -156,6 +158,22 @@ export default function SettingsPage() {
               >
                 <span className="font-medium text-sm">+ افزودن کودک</span>
                 <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+            </div>
+          </section>
+
+          {/* Subscription */}
+          <section aria-labelledby="plan-section-title">
+            <h2 id="plan-section-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">اشتراک</h2>
+            <div className="bg-white rounded-md shadow-sm">
+              <Link
+                href="/parent/plan"
+                className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px]"
+              >
+                <span className="font-medium text-slate-800 text-sm">پلن و اشتراک</span>
+                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
               </Link>

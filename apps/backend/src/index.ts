@@ -6,6 +6,7 @@ import cors from 'cors'
 import path from 'path'
 import authRouter     from './routes/auth'
 import childrenRouter from './routes/children'
+import plansRouter    from './routes/plans'
 import curriculumRouter from './routes/curriculum'
 import progressRouter from './routes/progress'
 import badgesRouter   from './routes/badges'
@@ -61,6 +62,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }))
 
 app.use('/api/auth',      authRouter)
 app.use('/api/children',  childrenRouter)
+app.use('/api/plans',     plansRouter)
 app.use('/api',           curriculumRouter)
 app.use('/api/progress',  progressRouter)
 app.use('/api/badges',    badgesRouter)

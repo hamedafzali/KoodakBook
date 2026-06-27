@@ -13,6 +13,7 @@ export default function OnboardingPage() {
   const [name, setName] = useState('')
   const [birthYear, setBirthYear] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [limitReached, setLimitReached] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -28,7 +29,13 @@ export default function OnboardingPage() {
       level: 1,
     })
 
-    if (res.error || !res.data) { setError(res.error ?? 'خطا'); setLoading(false); return }
+    if (res.error || !res.data) {
+      setError(res.error ?? 'خطا')
+      // Plan child-limit reached → offer the plans page instead of a dead end.
+      setLimitReached(!!res.error && res.error.includes('حداکثر'))
+      setLoading(false)
+      return
+    }
     setActiveChildId(res.data.id)
     router.push('/onboarding/placement')
   }
@@ -104,15 +111,24 @@ export default function OnboardingPage() {
 
           <AnimatePresence>
             {error && (
-              <motion.p
+              <motion.div
                 role="alert"
-                className="text-red-500 text-sm persian-text"
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
+                className="space-y-2"
               >
-                {error}
-              </motion.p>
+                <p className="text-red-500 text-sm persian-text">{error}</p>
+                {limitReached && (
+                  <button
+                    type="button"
+                    onClick={() => router.push('/parent/plan')}
+                    className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-2.5 rounded-[0.875rem] transition-colors text-sm min-h-[44px]"
+                  >
+                    مشاهده پلن‌ها و ارتقا ✨
+                  </button>
+                )}
+              </motion.div>
             )}
           </AnimatePresence>
 
