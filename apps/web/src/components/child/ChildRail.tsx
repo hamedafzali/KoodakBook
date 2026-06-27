@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
+import ParentDoorNav from './ParentDoorNav'
 
 /* Desktop (lg+) vertical nav rail — the pointer/keyboard counterpart to the
  * touch BottomNav (which hides at lg). Same destinations, same active styling,
@@ -40,6 +41,9 @@ export default function ChildRail() {
           </Link>
         )
       })}
+      <div className="mt-auto pt-4 border-t border-amber-100 w-16 flex justify-center">
+        <ParentDoorNav variant="rail" />
+      </div>
     </nav>
   )
 }

@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
+import ParentDoorNav from './ParentDoorNav'
 
 const NAV_ITEMS = [
   { href: '/child/home',    emoji: '🏠', label: 'خانه',    ariaLabel: 'صفحه اصلی' },
@@ -51,6 +52,7 @@ export default function BottomNav() {
           </Link>
         )
       })}
+      <ParentDoorNav variant="bar" />
     </nav>
   )
 }

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -27,43 +27,6 @@ function greeting() {
   if (h < 12) return 'صبح بخیر'
   if (h < 17) return 'ظهر بخیر'
   return 'شب بخیر'
-}
-
-/**
- * Discreet, child-resistant door to the parent area. A 700ms hold (not a tap)
- * is required so a pre-reader cannot wander in by accident — the parent pages
- * themselves are still PIN-gated by ParentGate. Replaces the old parent tile
- * that sat inside the child activity grid (context-bleed, project.md §11).
- */
-function ParentDoor() {
-  const router = useRouter()
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [holding, setHolding] = useState(false)
-
-  function start() {
-    setHolding(true)
-    timer.current = setTimeout(() => router.push('/parent/dashboard'), 700)
-  }
-  function cancel() {
-    setHolding(false)
-    if (timer.current) { clearTimeout(timer.current); timer.current = null }
-  }
-
-  return (
-    <motion.button
-      onPointerDown={start}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onContextMenu={(e) => e.preventDefault()}
-      aria-label="ورود والدین — نگه دارید"
-      title="برای ورود والدین نگه دارید"
-      className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center touch-target select-none"
-      animate={{ scale: holding ? 1.25 : 1, opacity: holding ? 1 : 0.7 }}
-      transition={{ duration: 0.7, ease: 'linear' }}
-    >
-      <span className="text-lg" aria-hidden="true">👨‍👩‍👧</span>
-    </motion.button>
-  )
 }
 
 export default function ChildHomePage() {
@@ -183,7 +146,6 @@ export default function ChildHomePage() {
 
       {/* ── Hero ── */}
       <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 pt-10 pb-16 px-5 rounded-b-[3rem] overflow-hidden">
-        <ParentDoor />
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
 
