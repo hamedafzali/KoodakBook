@@ -26,6 +26,24 @@ router.post('/', requireAuth, async (req, res) => {
   const parsed = createChildSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
 
+  // Enforce the account's plan child limit (free = 1, premium = 5) server-side —
+  // the catalog value alone never stopped a second profile from being created.
+  const limitRow = await queryOne<{ value: string }>(
+    `select pf.value from users u
+       join plans p on p.key = u.plan
+       join plan_features pf on pf.plan_id = p.id and pf.feature_key = 'max_children'
+      where u.id = $1`, [userId])
+  const maxChildren = parseInt(limitRow?.value ?? '1', 10) || 1
+  const countRow = await queryOne<{ n: number }>(
+    'select count(*)::int as n from children where parent_id = $1', [userId])
+  if ((countRow?.n ?? 0) >= maxChildren) {
+    res.status(403).json({
+      data: null,
+      error: `در پلن فعلی حداکثر ${maxChildren} پروفایل کودک می‌توانید بسازید. برای کودک بیشتر، پلن را ارتقا دهید.`,
+    })
+    return
+  }
+
   const { name, birth_year, level, avatar_url } = parsed.data
   const [child] = await query(
     `insert into children (parent_id, name, birth_year, level, avatar_url)
