@@ -109,9 +109,11 @@ export default function ChildHomePage() {
     .slice(0, 4)
 
   // "Who's playing?" — shown when a parent switches into child mode with >1 child.
+  // Full-screen overlay (z-50) so it covers the nav/rail: no child page is
+  // reachable until someone is chosen, and there's an explicit way back.
   if (showPicker) {
     return (
-      <div className="min-h-screen child-bg flex flex-col items-center justify-center p-6 gap-8">
+      <div className="fixed inset-0 z-50 child-bg flex flex-col items-center justify-center p-6 gap-8">
         <h1 className="text-2xl font-bold text-gray-800 persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
@@ -131,6 +133,13 @@ export default function ChildHomePage() {
             </motion.button>
           ))}
         </div>
+        {/* Way back to the parent area (PIN-gated, since the device was handed over). */}
+        <button
+          onClick={() => router.push('/parent/dashboard')}
+          className="text-sm text-gray-500 hover:text-amber-700 transition-colors persian-text mt-2"
+        >
+          → بازگشت به پنل والدین
+        </button>
       </div>
     )
   }
