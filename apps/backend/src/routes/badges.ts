@@ -52,8 +52,10 @@ export async function checkAndAwardBadges(child_id: string): Promise<{ key: stri
       ),
     ])
 
-  // Distinct session days (most recent 30)
-  const days = new Set(sessionRows.map(r => r.started_at.slice(0, 10)))
+  // Distinct session days (most recent 30). started_at comes back from pg as a
+  // Date — normalise via Date() before slicing the YYYY-MM-DD key (a raw .slice()
+  // on a Date throws, which 500'd story/lesson/word completion).
+  const days = new Set(sessionRows.map(r => new Date(r.started_at).toISOString().slice(0, 10)))
   const hasStreak7 = days.size >= 7
   const hasStreak3 = days.size >= 3
   const triedToday = days.has(new Date().toISOString().slice(0, 10))

@@ -49,16 +49,20 @@ export default function StoryPage() {
 
   async function handleComplete() {
     if (!childId || !story) return
-    const res = await api.post<{ new_badges: Badge[]; promotions: Promotion[] }>(
-      '/api/progress/story',
-      { child_id: childId, story_id: story.id, last_page: story.pages.length - 1, completed: true }
-    )
-    if (res.data?.new_badges?.[0]) setNewBadge(res.data.new_badges[0])
-    else if (res.data?.promotions?.length) {
-      setShowUnlock(true)
-      setTimeout(() => router.push('/child/home'), 2600)
+    try {
+      // new_badges / promotions are top-level on the response, not under `data`.
+      const res = await api.post('/api/progress/story',
+        { child_id: childId, story_id: story.id, last_page: story.pages.length - 1, completed: true }
+      ) as { new_badges?: Badge[]; promotions?: Promotion[] }
+      if (res.new_badges?.[0]) setNewBadge(res.new_badges[0])
+      else if (res.promotions?.length) {
+        setShowUnlock(true)
+        setTimeout(() => router.push('/child/home'), 2600)
+      }
+      else router.push('/child/home')
+    } catch {
+      router.push('/child/home')   // never leave the child stuck on the last page
     }
-    else router.push('/child/home')
   }
 
   if (!story) return <LoadingScreen message="در حال بارگذاری داستان..." />
