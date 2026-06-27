@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild, setActiveChildId } from '@/lib/activeChild'
 import { containerWidths } from '@/components/shared/layout'
+import { enterChildMode } from '@/lib/mode'
 import { resolveLevel } from '@koodakbook/shared'
 import type { DashboardSummary, Child, ChildSession } from '@koodakbook/shared'
 
@@ -303,12 +304,12 @@ export default function ParentDashboardPage() {
             گزارش کامل پیشرفت 📊
           </Link>
 
-          <Link
-            href="/child/home"
+          <button
+            onClick={() => { enterChildMode(); router.push('/child/home') }}
             className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-md transition-colors text-lg min-h-[56px] lg:col-span-2 xl:col-span-3"
           >
             رفتن به حالت کودک 👶
-          </Link>
+          </button>
         </div>
       </div>
   )

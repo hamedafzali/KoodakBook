@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { markParentUnlocked, isParentUnlocked } from '@/lib/auth'
+import { setMode } from '@/lib/mode'
 
 const PIN_LENGTH = 4
 
@@ -43,6 +44,7 @@ export default function ParentGate({ children }: Props) {
 
   function unlock() {
     markParentUnlocked()
+    setMode('parent')   // entering the parent area is the moment we're in parent mode
     setState('unlocked')
   }
 

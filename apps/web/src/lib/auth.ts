@@ -21,6 +21,7 @@ export function onSignIn(token: string) {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.removeItem(LEGACY_PIN_KEY)
   localStorage.removeItem(ACTIVE_CHILD_KEY)
+  localStorage.removeItem('koodakbook_mode')   // reset to parent for the new owner
   try { sessionStorage.removeItem(UNLOCK_KEY) } catch { /* sessionStorage unavailable */ }
 }
 
@@ -28,6 +29,7 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(LEGACY_PIN_KEY)
   localStorage.removeItem(ACTIVE_CHILD_KEY)
+  localStorage.removeItem('koodakbook_mode')   // reset to parent for the new owner
   try { sessionStorage.removeItem(UNLOCK_KEY) } catch { /* sessionStorage unavailable */ }
 }
 

@@ -21,7 +21,9 @@ export default function SignupPage() {
     if (res.error || !res.data) { setError(res.error ?? 'مشکلی پیش آمد'); setLoading(false); return }
 
     onSignIn(res.data.token)
-    router.push('/onboarding')
+    // New account → parent panel: ParentGate forces a first-run PIN, then the
+    // dashboard prompts the parent to create the first child profile.
+    router.push('/parent/dashboard')
   }
 
   return (

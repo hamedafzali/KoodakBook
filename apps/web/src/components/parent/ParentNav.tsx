@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { enterChildMode } from '@/lib/mode'
 
 const ITEMS = [
   { href: '/parent/dashboard', label: 'داشبورد', icon: '📊' },
@@ -12,6 +13,7 @@ const ITEMS = [
 /** Desktop-only (lg+) sidebar nav for the parent area. */
 export default function ParentNav() {
   const path = usePathname()
+  const router = useRouter()
   return (
     <nav className="w-56 shrink-0 p-4">
       <div className="px-3 py-3 mb-2">
@@ -30,10 +32,11 @@ export default function ParentNav() {
           )
         })}
       </div>
-      <Link href="/child/home"
-        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-white/70 mt-6">
+      <button
+        onClick={() => { enterChildMode(); router.push('/child/home') }}
+        className="w-full text-right flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-white/70 mt-6">
         <span>👶</span> حالت کودک
-      </Link>
+      </button>
     </nav>
   )
 }

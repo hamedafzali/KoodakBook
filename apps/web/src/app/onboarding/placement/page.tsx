@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
+import { enterChildMode } from '@/lib/mode'
 import Mascot from '@/components/child/Mascot'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
@@ -42,6 +43,7 @@ export default function PlacementPage() {
       setChild(c)
       if (!probeRes.data?.questions?.length) {
         // No probe content — skip gracefully, keep the default level.
+        enterChildMode()
         router.push('/child/home')
         return
       }
@@ -79,6 +81,7 @@ export default function PlacementPage() {
     if (child) {
       await api.post('/api/placement/result', { child_id: child.id, level, strands })
     }
+    enterChildMode()
     setTimeout(() => router.push('/child/home'), 2600)
   }
 
