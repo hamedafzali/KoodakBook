@@ -36,6 +36,8 @@ services:
       # Set AI_API_KEY in ACM to that provider's key (Anthropic / OpenAI /
       # DeepSeek / Kimi / Qwen / …).
       AI_API_KEY:         ${AI_API_KEY:-}
+      # Separate key for the text-to-speech provider (story audio). Set in ACM.
+      TTS_API_KEY:        ${TTS_API_KEY:-}
     volumes:
       - uploads:/app/uploads
     ports:

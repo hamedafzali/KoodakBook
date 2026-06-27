@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
-import { Field, Input, Select, Badge, Spinner, Button } from '@/components/ui'
+import { Field, Input, Select, Badge, Spinner, Button, Toggle } from '@/components/ui'
 
 type Provider = 'anthropic' | 'openai_compatible'
 
@@ -200,6 +200,117 @@ export default function AiSettingsPage() {
           />
         </Field>
         <p className="text-xs text-slate-400">ویرایش پرامپت‌ها به‌زودی اضافه می‌شود.</p>
+      </div>
+
+      <TtsCard />
+    </div>
+  )
+}
+
+// ── Story audio (TTS) ─────────────────────────────────────
+interface Tts {
+  enabled: boolean
+  provider: 'openai' | 'google' | 'azure' | 'elevenlabs'
+  base_url: string | null
+  model: string
+  voice: string
+  language: string
+  region: string | null
+  format: string
+}
+
+const TTS_PROVIDERS: { id: Tts['provider']; label: string; voices: string[]; models: string[]; needs: ('voice' | 'model' | 'base_url' | 'region')[] }[] = [
+  { id: 'openai',     label: 'OpenAI TTS',                 voices: ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'], models: ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts'], needs: ['voice', 'model', 'base_url'] },
+  { id: 'google',     label: 'Google Cloud TTS (fa-IR بومی)', voices: ['fa-IR-Standard-A', 'fa-IR-Standard-B', 'fa-IR-Standard-C', 'fa-IR-Standard-D', 'fa-IR-Wavenet-A'], models: [], needs: ['voice'] },
+  { id: 'azure',      label: 'Azure Speech (fa-IR بومی)',  voices: ['fa-IR-DilaraNeural', 'fa-IR-FaridNeural'], models: [], needs: ['voice', 'region'] },
+  { id: 'elevenlabs', label: 'ElevenLabs',                 voices: [], models: ['eleven_multilingual_v2', 'eleven_turbo_v2_5'], needs: ['voice', 'model'] },
+]
+
+function TtsCard() {
+  const [t, setT] = useState<Tts | null>(null)
+  const [keySet, setKeySet] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const r = await api.get<{ tts: Tts; tts_key_set: boolean }>('/api/admin/ai-settings')
+    if (r.data?.tts) { setT(r.data.tts); setKeySet(r.data.tts_key_set) }
+  }, [])
+  useEffect(() => { load() }, [load])
+
+  if (!t) return null
+  const p = TTS_PROVIDERS.find(x => x.id === t.provider)!
+
+  function choose(id: Tts['provider']) {
+    const np = TTS_PROVIDERS.find(x => x.id === id)!
+    setT(prev => prev && ({ ...prev, provider: id, voice: np.voices[0] ?? '', model: np.models[0] ?? prev.model }))
+  }
+
+  async function save() {
+    if (!t) return
+    setSaving(true); setMsg(null); setErr(null)
+    const r = await api.patch<{ ok: boolean }>('/api/admin/tts-settings', {
+      enabled: t.enabled, provider: t.provider, base_url: t.base_url || null,
+      model: t.model, voice: t.voice, language: t.language, region: t.region || null, format: t.format,
+    })
+    setSaving(false)
+    if (r.error) { setErr(r.error); return }
+    setMsg('ذخیره شد ✅'); load()
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-slate-800">صدای داستان‌ها (TTS)</h3>
+        <Badge tone={t.enabled ? 'green' : 'gray'}>{t.enabled ? 'فعال' : 'غیرفعال'}</Badge>
+      </div>
+      <p className="text-sm text-slate-500">برای داستان‌های ساخته‌شده با هوش مصنوعی، صدا تولید می‌شود تا «بشنو» کار کند.</p>
+
+      <div className={`rounded-xl border px-4 py-2.5 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+        {keySet ? '✓ کلید TTS_API_KEY تنظیم شده است.' : '⚠ کلید TTS_API_KEY در ACM تنظیم نشده — تا آن زمان صدا ساخته نمی‌شود.'}
+      </div>
+
+      <Toggle checked={t.enabled} onChange={v => setT({ ...t, enabled: v })} label="تولید صدا برای داستان‌های جدید" />
+
+      <Field label="ارائه‌دهنده‌ی صدا">
+        <Select value={t.provider} onChange={e => choose(e.target.value as Tts['provider'])}>
+          {TTS_PROVIDERS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}
+        </Select>
+      </Field>
+
+      <Field label="صدا (Voice)" hint={p.id === 'elevenlabs' ? 'voice_id از پنل ElevenLabs' : 'یک صدای فارسی انتخاب کنید'}>
+        {p.voices.length > 0 ? (
+          <Select value={t.voice} onChange={e => setT({ ...t, voice: e.target.value })} dir="ltr">
+            {!p.voices.includes(t.voice) && <option value={t.voice}>{t.voice || '—'}</option>}
+            {p.voices.map(v => <option key={v} value={v}>{v}</option>)}
+          </Select>
+        ) : (
+          <Input value={t.voice} onChange={e => setT({ ...t, voice: e.target.value })} placeholder="voice id" dir="ltr" />
+        )}
+      </Field>
+
+      {p.needs.includes('model') && (
+        <Field label="مدل">
+          <Input list="tts-models" value={t.model} onChange={e => setT({ ...t, model: e.target.value })} dir="ltr" />
+          <datalist id="tts-models">{p.models.map(m => <option key={m} value={m} />)}</datalist>
+        </Field>
+      )}
+      {p.needs.includes('region') && (
+        <Field label="Region (Azure)">
+          <Input value={t.region ?? ''} onChange={e => setT({ ...t, region: e.target.value })} placeholder="westeurope" dir="ltr" />
+        </Field>
+      )}
+      {p.needs.includes('base_url') && (
+        <Field label="Base URL" hint="اختیاری — برای نقطه‌ی پایانی سازگار با OpenAI">
+          <Input value={t.base_url ?? ''} onChange={e => setT({ ...t, base_url: e.target.value })} placeholder="https://api.openai.com/v1" dir="ltr" />
+        </Field>
+      )}
+
+      <div className="flex items-center gap-3 pt-1">
+        <Button onClick={save} disabled={saving}>{saving ? 'در حال ذخیره...' : 'ذخیره'}</Button>
+        {msg && <span className="text-sm text-green-600">{msg}</span>}
+        {err && <span className="text-sm text-red-600">{err}</span>}
       </div>
     </div>
   )

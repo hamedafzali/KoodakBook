@@ -4,6 +4,7 @@ import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
 import { getAiSettings, generateStory, AiNotConfiguredError, type StoryJSON } from '../lib/ai'
+import { synthesizeStoryPages } from '../lib/tts'
 
 const router = Router()
 
@@ -68,12 +69,25 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
      values ($1, $2, $3, true, $4) returning id`,
     [story.title_persian, story.title_english, child.level, child_id],
   )
+  const inserted: { id: string; text_persian: string }[] = []
   for (let i = 0; i < story.pages.length; i++) {
     const p = story.pages[i]
-    await query(
-      'insert into story_pages (story_id, page_number, text_persian, text_english) values ($1, $2, $3, $4)',
+    const [pr] = await query<{ id: string }>(
+      'insert into story_pages (story_id, page_number, text_persian, text_english) values ($1, $2, $3, $4) returning id',
       [row.id, i + 1, p.text_persian, p.text_english],
     )
+    inserted.push({ id: pr.id, text_persian: p.text_persian })
+  }
+
+  // Best-effort audio (so بشنو plays a real voice). Never blocks the story:
+  // a TTS failure or disabled config just leaves pages text-only.
+  try {
+    const audioMap = await synthesizeStoryPages(row.id, inserted)
+    for (const [pageId, url] of Object.entries(audioMap)) {
+      await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
+    }
+  } catch (err) {
+    console.error('TTS step failed:', (err as Error).message)
   }
 
   res.status(201).json({

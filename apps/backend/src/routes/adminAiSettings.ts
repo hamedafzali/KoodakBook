@@ -5,16 +5,47 @@ import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
 import { keyConfigured } from '../lib/ai'
 import type { AiSettings } from '../lib/ai'
+import { getTtsSettings, ttsKeyConfigured } from '../lib/tts'
 
 const router = Router()
 
-// GET current AI config + whether the single AI_API_KEY is present in the env.
+// GET AI + TTS config, plus whether each key (AI_API_KEY / TTS_API_KEY) is set.
 router.get('/ai-settings', requireAdmin, requirePermission('ai.manage'), async (_req, res) => {
   const settings = await queryOne<AiSettings & { updated_at: string; updated_by: string | null }>(
     `select provider, model, base_url, system_prompt, user_prompt_template,
             max_tokens, updated_at, updated_by from ai_settings where id = 1`,
   )
-  res.json({ data: { settings, key_set: keyConfigured() }, error: null })
+  const tts = await getTtsSettings()
+  res.json({
+    data: { settings, key_set: keyConfigured(), tts, tts_key_set: ttsKeyConfigured() },
+    error: null,
+  })
+})
+
+// PATCH TTS config (story-audio provider/voice). Key is the separate TTS_API_KEY.
+const ttsSchema = z.object({
+  enabled: z.boolean(),
+  provider: z.enum(['openai', 'google', 'azure', 'elevenlabs']),
+  base_url: z.string().trim().url().nullable().optional(),
+  model: z.string().trim().max(120).default(''),
+  voice: z.string().trim().max(120).default(''),
+  language: z.string().trim().max(20).default('fa-IR'),
+  region: z.string().trim().max(40).nullable().optional(),
+  format: z.string().trim().max(10).default('mp3'),
+})
+
+router.patch('/tts-settings', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
+  const parsed = ttsSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.issues[0]?.message ?? 'Invalid' }); return }
+  const { enabled, provider, base_url, model, voice, language, region, format } = parsed.data
+  await query(
+    `update tts_settings set enabled = $1, provider = $2, base_url = $3, model = $4,
+            voice = $5, language = $6, region = $7, format = $8, updated_at = now(), updated_by = $9
+     where id = 1`,
+    [enabled, provider, base_url ?? null, model, voice, language, region ?? null, format, res.locals.adminEmail],
+  )
+  await logAudit(res.locals.adminEmail, 'tts.settings.update', 'tts_settings', '1', { provider, voice, enabled })
+  res.json({ data: { ok: true }, error: null })
 })
 
 // PATCH provider / model / endpoint. The API key is a single env var (AI_API_KEY),
