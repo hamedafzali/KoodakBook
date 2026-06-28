@@ -23,6 +23,13 @@ export default function StoryListPage() {
   const [myStories, setMyStories] = useState<Story[]>([])   // child's own AI-generated stories
   const [completed, setCompleted] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [voicing, setVoicing] = useState<Set<string>>(new Set())   // stories getting audio built
+
+  async function makeVoice(id: string) {
+    setVoicing(s => new Set(s).add(id))
+    await api.post(`/api/ai/stories/${id}/audio`, {})
+    setVoicing(s => { const n = new Set(s); n.delete(id); return n })
+  }
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -81,25 +88,33 @@ export default function StoryListPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="list">
               {myStories.map(story => {
                 const done = completed.has(story.id)
+                const busy = voicing.has(story.id)
                 return (
-                  <Link
-                    key={story.id}
-                    href={`/child/story/${story.id}`}
-                    role="listitem"
-                    aria-label={`${story.title_persian}${done ? ' — خوانده شده' : ''}`}
-                    className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
-                  >
-                    {done && (
-                      <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium" aria-hidden="true">
-                        ✅ خوندم
+                  <div key={story.id} role="listitem" className="bg-white rounded-lg shadow-sm overflow-hidden relative">
+                    <Link
+                      href={`/child/story/${story.id}`}
+                      aria-label={`${story.title_persian}${done ? ' — خوانده شده' : ''}`}
+                      className="block hover:opacity-95 transition-opacity"
+                    >
+                      {done && (
+                        <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium" aria-hidden="true">
+                          ✅ خوندم
+                        </div>
+                      )}
+                      <div className="w-full h-32 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-5xl" aria-hidden="true">✨</div>
+                      <div className="px-3 pt-3">
+                        <p className="font-bold text-gray-800 text-sm leading-tight persian-text">{story.title_persian}</p>
+                        <p className="text-xs text-fuchsia-500 mt-1">داستان من</p>
                       </div>
-                    )}
-                    <div className="w-full h-32 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-5xl" aria-hidden="true">✨</div>
-                    <div className="p-3">
-                      <p className="font-bold text-gray-800 text-sm leading-tight persian-text">{story.title_persian}</p>
-                      <p className="text-xs text-fuchsia-500 mt-1">داستان من</p>
-                    </div>
-                  </Link>
+                    </Link>
+                    <button
+                      onClick={() => makeVoice(story.id)}
+                      disabled={busy}
+                      className="w-full mt-2 mb-2.5 text-xs font-medium text-purple-700 hover:text-purple-900 disabled:opacity-60"
+                    >
+                      {busy ? '...در حال ساخت صدا' : '🔊 ساخت صدا'}
+                    </button>
+                  </div>
                 )
               })}
             </div>

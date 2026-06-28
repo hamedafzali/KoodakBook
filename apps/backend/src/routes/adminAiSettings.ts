@@ -32,19 +32,21 @@ const ttsSchema = z.object({
   language: z.string().trim().max(20).default('fa-IR'),
   region: z.string().trim().max(40).nullable().optional(),
   format: z.string().trim().max(10).default('mp3'),
+  piper_voice: z.string().trim().max(60).default('fa_IR-amir-medium'),
 })
 
 router.patch('/tts-settings', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
   const parsed = ttsSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.issues[0]?.message ?? 'Invalid' }); return }
-  const { enabled, provider, base_url, model, voice, language, region, format } = parsed.data
+  const { enabled, provider, base_url, model, voice, language, region, format, piper_voice } = parsed.data
   await query(
     `update tts_settings set enabled = $1, provider = $2, base_url = $3, model = $4,
-            voice = $5, language = $6, region = $7, format = $8, updated_at = now(), updated_by = $9
+            voice = $5, language = $6, region = $7, format = $8, piper_voice = $9,
+            updated_at = now(), updated_by = $10
      where id = 1`,
-    [enabled, provider, base_url ?? null, model, voice, language, region ?? null, format, res.locals.adminEmail],
+    [enabled, provider, base_url ?? null, model, voice, language, region ?? null, format, piper_voice, res.locals.adminEmail],
   )
-  await logAudit(res.locals.adminEmail, 'tts.settings.update', 'tts_settings', '1', { provider, voice, enabled })
+  await logAudit(res.locals.adminEmail, 'tts.settings.update', 'tts_settings', '1', { provider, voice, piper_voice, enabled })
   res.json({ data: { ok: true }, error: null })
 })
 

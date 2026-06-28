@@ -217,7 +217,14 @@ interface Tts {
   language: string
   region: string | null
   format: string
+  piper_voice: string
 }
+
+// Free, offline Persian voices (Piper sidecar) — every account gets one of these.
+const PIPER_VOICES = [
+  'fa_IR-amir-medium', 'fa_IR-ganji-medium', 'fa_IR-ganji_adabi-medium',
+  'fa_IR-gyro-medium', 'fa_IR-reza_ibrahim-medium',
+]
 
 const TTS_PROVIDERS: { id: Tts['provider']; label: string; voices: string[]; models: string[]; needs: ('voice' | 'model' | 'base_url' | 'region')[] }[] = [
   { id: 'openai',     label: 'OpenAI TTS',                 voices: ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'], models: ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts'], needs: ['voice', 'model', 'base_url'] },
@@ -252,7 +259,8 @@ function TtsCard() {
     setSaving(true); setMsg(null); setErr(null)
     const r = await api.patch<{ ok: boolean }>('/api/admin/tts-settings', {
       enabled: t.enabled, provider: t.provider, base_url: t.base_url || null,
-      model: t.model, voice: t.voice, language: t.language, region: t.region || null, format: t.format,
+      model: t.model, voice: t.voice, language: t.language, region: t.region || null,
+      format: t.format, piper_voice: t.piper_voice,
     })
     setSaving(false)
     if (r.error) { setErr(r.error); return }
@@ -263,17 +271,30 @@ function TtsCard() {
     <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-slate-800">صدای داستان‌ها (TTS)</h3>
-        <Badge tone={t.enabled ? 'green' : 'gray'}>{t.enabled ? 'فعال' : 'غیرفعال'}</Badge>
+        <Badge tone="green">صدای رایگان همیشه فعال</Badge>
       </div>
       <p className="text-sm text-slate-500">برای داستان‌های ساخته‌شده با هوش مصنوعی، صدا تولید می‌شود تا «بشنو» کار کند.</p>
 
-      <div className={`rounded-xl border px-4 py-2.5 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-        {keySet ? '✓ کلید TTS_API_KEY تنظیم شده است.' : '⚠ کلید TTS_API_KEY در ACM تنظیم نشده — تا آن زمان صدا ساخته نمی‌شود.'}
+      {/* Free baseline — Piper, no key, every account */}
+      <Field label="صدای رایگان (Piper) — برای همه‌ی حساب‌ها" hint="آفلاین، بدون کلید، همیشه فعال">
+        <Select value={t.piper_voice} onChange={e => setT({ ...t, piper_voice: e.target.value })} dir="ltr">
+          {!PIPER_VOICES.includes(t.piper_voice) && <option value={t.piper_voice}>{t.piper_voice}</option>}
+          {PIPER_VOICES.map(v => <option key={v} value={v}>{v}</option>)}
+        </Select>
+      </Field>
+
+      <div className="border-t border-slate-100 pt-4">
+        <p className="text-sm font-semibold text-slate-700 mb-1">صدای پرمیوم (ابری) — فقط حساب‌های پرمیوم</p>
+        <p className="text-xs text-slate-500 mb-3">وقتی فعال باشد و کلید تنظیم شده باشد، حساب‌های پرمیوم به‌جای Piper این صدا را می‌گیرند.</p>
       </div>
 
-      <Toggle checked={t.enabled} onChange={v => setT({ ...t, enabled: v })} label="تولید صدا برای داستان‌های جدید" />
+      <div className={`rounded-xl border px-4 py-2.5 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+        {keySet ? '✓ کلید TTS_API_KEY تنظیم شده است.' : '⚠ کلید TTS_API_KEY در ACM تنظیم نشده — صدای ابری پرمیوم تا آن زمان کار نمی‌کند (Piper همچنان فعال است).'}
+      </div>
 
-      <Field label="ارائه‌دهنده‌ی صدا">
+      <Toggle checked={t.enabled} onChange={v => setT({ ...t, enabled: v })} label="فعال‌سازی صدای ابری برای پرمیوم" />
+
+      <Field label="ارائه‌دهنده‌ی صدای ابری">
         <Select value={t.provider} onChange={e => choose(e.target.value as Tts['provider'])}>
           {TTS_PROVIDERS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}
         </Select>

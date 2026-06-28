@@ -36,8 +36,10 @@ services:
       # Set AI_API_KEY in ACM to that provider's key (Anthropic / OpenAI /
       # DeepSeek / Kimi / Qwen / …).
       AI_API_KEY:         ${AI_API_KEY:-}
-      # Separate key for the text-to-speech provider (story audio). Set in ACM.
+      # Separate key for the cloud TTS provider (premium story audio). Set in ACM.
       TTS_API_KEY:        ${TTS_API_KEY:-}
+      # Free baseline voice (Piper sidecar) — always available, no key.
+      PIPER_URL:          http://piper:5000
     volumes:
       - uploads:/app/uploads
     ports:
@@ -45,6 +47,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+  # Free, offline Persian TTS (all fa_IR Piper voices). Baseline story audio.
+  piper:
+    build:
+      context: .
+      dockerfile: apps/piper/Dockerfile
+    restart: unless-stopped
 
   admin:
     build:

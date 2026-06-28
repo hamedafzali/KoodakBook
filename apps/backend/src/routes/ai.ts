@@ -79,10 +79,12 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
     inserted.push({ id: pr.id, text_persian: p.text_persian })
   }
 
-  // Best-effort audio (so بشنو plays a real voice). Never blocks the story:
-  // a TTS failure or disabled config just leaves pages text-only.
+  // Best-effort audio (so بشنو plays a real voice). Never blocks the story.
+  // Premium accounts get the cloud voice (when enabled+keyed); everyone gets Piper.
   try {
-    const audioMap = await synthesizeStoryPages(row.id, inserted)
+    const acct = await queryOne<{ plan: string }>('select plan from users where id = $1', [res.locals.userId])
+    const premium = !!acct && acct.plan !== 'free'
+    const audioMap = await synthesizeStoryPages(row.id, inserted, { premium })
     for (const [pageId, url] of Object.entries(audioMap)) {
       await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
     }
@@ -103,6 +105,32 @@ router.get('/stories/:child_id', requireAuth, requireChildOwner, async (req, res
     [req.params.child_id],
   )
   res.json({ data: rows, error: null })
+})
+
+// POST /api/ai/stories/:id/audio — (re)generate audio for an existing AI story,
+// so stories made before audio existed (or before TTS was configured) get a voice.
+router.post('/stories/:id/audio', requireAuth, async (req, res) => {
+  const storyId = String(req.params.id)
+  const story = await queryOne<{ created_for_child: string | null }>(
+    'select created_for_child from stories where id = $1 and ai_generated', [storyId])
+  if (!story?.created_for_child) { res.status(404).json({ data: null, error: 'Story not found' }); return }
+
+  // Ownership: the AI story's child must belong to the caller.
+  const owns = await queryOne('select 1 from children where id = $1 and parent_id = $2',
+    [story.created_for_child, res.locals.userId])
+  if (!owns) { res.status(403).json({ data: null, error: 'Forbidden' }); return }
+
+  const pages = await query<{ id: string; text_persian: string }>(
+    'select id, text_persian from story_pages where story_id = $1 order by page_number', [storyId])
+
+  const acct = await queryOne<{ plan: string }>('select plan from users where id = $1', [res.locals.userId])
+  const premium = !!acct && acct.plan !== 'free'
+
+  const audioMap = await synthesizeStoryPages(storyId, pages, { premium })
+  for (const [pageId, url] of Object.entries(audioMap)) {
+    await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
+  }
+  res.json({ data: { ok: true, count: Object.keys(audioMap).length }, error: null })
 })
 
 export default router
