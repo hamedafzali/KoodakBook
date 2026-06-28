@@ -203,6 +203,77 @@ export default function AiSettingsPage() {
       </div>
 
       <TtsCard />
+      <RegenCard />
+    </div>
+  )
+}
+
+// ── Regenerate all audio with the current Piper voice ─────
+interface RegenStatus { running: boolean; scope: string | null; voice: string; done: number; total: number; errors: number; finishedAt: number }
+const REGEN_SCOPES: { id: string; label: string }[] = [
+  { id: 'all', label: 'همه' },
+  { id: 'words', label: 'واژه‌ها' },
+  { id: 'letters', label: 'حروف' },
+  { id: 'stories', label: 'داستان‌ها' },
+]
+
+function RegenCard() {
+  const [st, setSt] = useState<RegenStatus | null>(null)
+  const [pollKey, setPollKey] = useState(0)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    async function tick() {
+      const r = await api.get<RegenStatus>('/api/admin/tts/regenerate/status')
+      if (!active) return
+      if (r.data) setSt(r.data)
+      if (r.data?.running) timer = setTimeout(tick, 1500)
+    }
+    tick()
+    return () => { active = false; if (timer) clearTimeout(timer) }
+  }, [pollKey])
+
+  async function start(scope: string) {
+    setErr(null)
+    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope })
+    if (r.error) { setErr(r.error); return }
+    setPollKey(k => k + 1)
+  }
+
+  const running = st?.running
+  const pct = st && st.total > 0 ? Math.round((st.done / st.total) * 100) : 0
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+      <h3 className="font-bold text-slate-800">بازتولید صداها</h3>
+      <p className="text-sm text-slate-500">
+        صدای محتوا را با صدای Piper انتخاب‌شده در بالا دوباره می‌سازد. برای تغییر صدا، ابتدا «صدای رایگان (Piper)» را تغییر دهید و ذخیره کنید، سپس اینجا بازتولید کنید.
+      </p>
+
+      {running ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-600">در حال ساخت ({st?.scope}) — صدا: {st?.voice}</span>
+            <span className="font-bold text-slate-800">{st?.done} / {st?.total}</span>
+          </div>
+          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full bg-amber-500 transition-all" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {REGEN_SCOPES.map(s => (
+            <Button key={s.id} variant="secondary" onClick={() => start(s.id)}>{s.label}</Button>
+          ))}
+        </div>
+      )}
+
+      {st && !running && st.finishedAt > 0 && (
+        <p className="text-sm text-green-600">تمام شد ✅ — {st.done} مورد{st.errors > 0 ? `، ${st.errors} خطا` : ''}</p>
+      )}
+      {err && <p className="text-sm text-red-600">{err}</p>}
     </div>
   )
 }

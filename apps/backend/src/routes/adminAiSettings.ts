@@ -6,6 +6,7 @@ import { logAudit } from '../lib/audit'
 import { keyConfigured } from '../lib/ai'
 import type { AiSettings } from '../lib/ai'
 import { getTtsSettings, ttsKeyConfigured } from '../lib/tts'
+import { startRegen, getRegenStatus, type RegenScope } from '../lib/tts/regenerate'
 
 const router = Router()
 
@@ -79,6 +80,21 @@ router.patch('/ai-settings', requireAdmin, requirePermission('ai.manage'), async
   )
   await logAudit(res.locals.adminEmail, 'ai.settings.update', 'ai_settings', null, { provider, model })
   res.json({ data: { ok: true }, error: null })
+})
+
+// ── Regenerate audio (Piper, current voice) for words / letters / stories ─────
+const regenSchema = z.object({ scope: z.enum(['words', 'letters', 'stories', 'all']) })
+
+router.post('/tts/regenerate', requireAdmin, requirePermission('ai.manage'), (req, res) => {
+  const parsed = regenSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: 'scope required' }); return }
+  const started = startRegen(parsed.data.scope as RegenScope)
+  if (!started) { res.status(409).json({ data: null, error: 'A regeneration is already running' }); return }
+  res.json({ data: { started: true }, error: null })
+})
+
+router.get('/tts/regenerate/status', requireAdmin, requirePermission('ai.manage'), (_req, res) => {
+  res.json({ data: getRegenStatus(), error: null })
 })
 
 export default router
