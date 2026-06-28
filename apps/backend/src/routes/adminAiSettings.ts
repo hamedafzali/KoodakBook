@@ -46,7 +46,7 @@ router.patch('/tts-settings', requireAdmin, requirePermission('ai.manage'), asyn
      where id = 1`,
     [enabled, provider, base_url ?? null, model, voice, language, region ?? null, format, piper_voice, res.locals.adminEmail],
   )
-  await logAudit(res.locals.adminEmail, 'tts.settings.update', 'tts_settings', '1', { provider, voice, piper_voice, enabled })
+  await logAudit(res.locals.adminEmail, 'tts.settings.update', 'tts_settings', null, { provider, voice, piper_voice, enabled })
   res.json({ data: { ok: true }, error: null })
 })
 
@@ -77,7 +77,7 @@ router.patch('/ai-settings', requireAdmin, requirePermission('ai.manage'), async
      where id = 1`,
     [provider, model, provider === 'anthropic' ? null : base_url ?? null, max_tokens, res.locals.adminEmail],
   )
-  await logAudit(res.locals.adminEmail, 'ai.settings.update', 'ai_settings', '1', { provider, model })
+  await logAudit(res.locals.adminEmail, 'ai.settings.update', 'ai_settings', null, { provider, model })
   res.json({ data: { ok: true }, error: null })
 })
 

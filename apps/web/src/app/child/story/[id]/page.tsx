@@ -42,6 +42,24 @@ export default function StoryPage() {
     load()
   }, [id, router])
 
+  // Self-heal: an AI story (created for this child) with any silent page builds
+  // its own audio (free Piper), then we refetch so بشنو plays — no manual step.
+  useEffect(() => {
+    if (!story) return
+    const isAi = !!(story as { created_for_child?: string | null }).created_for_child
+    if (!isAi || !story.pages.some(p => !p.audio_url)) return
+    let cancelled = false
+    api.post(`/api/ai/stories/${story.id}/audio`, {})
+      .then(async () => {
+        if (cancelled) return
+        const r = await api.get<FullStory>(`/api/stories/${story.id}`)
+        if (r.data && !cancelled) setStory(r.data)
+      })
+      .catch(() => { /* leave text-only; the manual button remains */ })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story?.id])
+
   async function handlePageChange(page: number) {
     if (!childId || !story) return
     await api.post('/api/progress/story', { child_id: childId, story_id: story.id, last_page: page })
