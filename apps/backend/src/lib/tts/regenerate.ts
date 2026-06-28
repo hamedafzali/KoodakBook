@@ -1,12 +1,13 @@
 import fs from 'fs'
 import path from 'path'
 import { query } from '../db'
+import { phonicsSyllables } from '@koodakbook/shared'
 import { ttsPiper } from './piper'
 import { getTtsSettings } from './index'
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
-export type RegenScope = 'words' | 'letters' | 'stories' | 'all'
+export type RegenScope = 'words' | 'letters' | 'stories' | 'phonics' | 'all'
 
 // In-memory progress for the singleton admin regeneration job.
 interface RegenState {
@@ -25,21 +26,34 @@ export function getRegenStatus(): RegenState {
   return state
 }
 
-interface Item { entity: 'word' | 'letter' | 'story_page'; table: 'words' | 'letters' | 'story_pages'; dir: string; id: string; text: string }
+interface Item {
+  dir: string
+  id: string          // file stem (entity id, or phonics slug)
+  text: string
+  // DB-backed entities repoint audio_url; phonics is resolved by a fixed path.
+  entity?: 'word' | 'letter' | 'story_page'
+  table?: 'words' | 'letters' | 'story_pages'
+  versioned: boolean  // versioned filename busts caches on re-run (phonics path is fixed → false)
+}
 
 async function collect(scope: RegenScope): Promise<Item[]> {
   const items: Item[] = []
   if (scope === 'words' || scope === 'all') {
     for (const w of await query<{ id: string; persian: string }>('select id, persian from words'))
-      items.push({ entity: 'word', table: 'words', dir: 'words', id: w.id, text: w.persian })
+      items.push({ entity: 'word', table: 'words', dir: 'words', id: w.id, text: w.persian, versioned: true })
   }
   if (scope === 'letters' || scope === 'all') {
     for (const l of await query<{ id: string; name_persian: string }>('select id, name_persian from letters'))
-      items.push({ entity: 'letter', table: 'letters', dir: 'letters', id: l.id, text: l.name_persian })
+      items.push({ entity: 'letter', table: 'letters', dir: 'letters', id: l.id, text: l.name_persian, versioned: true })
   }
   if (scope === 'stories' || scope === 'all') {
     for (const p of await query<{ id: string; text_persian: string }>('select id, text_persian from story_pages'))
-      items.push({ entity: 'story_page', table: 'story_pages', dir: 'stories', id: p.id, text: p.text_persian })
+      items.push({ entity: 'story_page', table: 'story_pages', dir: 'stories', id: p.id, text: p.text_persian, versioned: true })
+  }
+  if (scope === 'phonics' || scope === 'all') {
+    // Syllables (consonant + short vowel) — fixed path /uploads/phonics/<slug>.wav.
+    for (const s of phonicsSyllables())
+      items.push({ dir: 'phonics', id: s.slug, text: s.text, versioned: false })
   }
   return items
 }
@@ -55,6 +69,7 @@ export function startRegen(scope: RegenScope): boolean {
       const settings = await getTtsSettings()
       const voice = settings?.piper_voice || 'fa_IR-amir-medium'
       state.voice = voice
+      const ver = state.startedAt   // shared version stamp for this run
       const items = await collect(scope)
       state.total = items.length
       for (const it of items) {
@@ -62,14 +77,19 @@ export function startRegen(scope: RegenScope): boolean {
           const buf = await ttsPiper(voice, it.text)
           const dir = path.resolve(UPLOADS_DIR, it.dir)
           fs.mkdirSync(dir, { recursive: true })
-          const file = `${it.id}.wav`
+          // Versioned name so re-running with a new voice yields a fresh URL (no
+          // stale browser/proxy cache); phonics keeps a fixed name (path is built
+          // client-side and can't carry a version).
+          const file = it.versioned ? `${it.id}-${ver}.wav` : `${it.id}.wav`
           fs.writeFileSync(path.join(dir, file), buf)
-          const url = `/uploads/${it.dir}/${file}`
-          await query(`update ${it.table} set audio_url = $1 where id = $2`, [url, it.id])
-          await query('delete from audio_assets where entity_type = $1 and entity_id = $2', [it.entity, it.id])
+          if (it.entity && it.table) {
+            const url = `/uploads/${it.dir}/${file}`
+            await query(`update ${it.table} set audio_url = $1 where id = $2`, [url, it.id])
+            await query('delete from audio_assets where entity_type = $1 and entity_id = $2', [it.entity, it.id])
+          }
         } catch (err) {
           state.errors++
-          console.error('regen item failed', it.entity, it.id, (err as Error).message)
+          console.error('regen item failed', it.dir, it.id, (err as Error).message)
         }
         state.done++
       }

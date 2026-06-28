@@ -215,6 +215,7 @@ const REGEN_SCOPES: { id: string; label: string }[] = [
   { id: 'words', label: 'واژه‌ها' },
   { id: 'letters', label: 'حروف' },
   { id: 'stories', label: 'داستان‌ها' },
+  { id: 'phonics', label: 'صداها (هجاها)' },
 ]
 
 function RegenCard() {
