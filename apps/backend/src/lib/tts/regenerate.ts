@@ -92,6 +92,7 @@ export function startRegen(scope: RegenScope): boolean {
           console.error('regen item failed', it.dir, it.id, (err as Error).message)
         }
         state.done++
+        await new Promise(r => setTimeout(r, 40))   // pace it — ease memory pressure on a small host
       }
     } catch (err) {
       console.error('regen job failed:', err)

@@ -49,11 +49,15 @@ services:
         condition: service_healthy
 
   # Free, offline Persian TTS (all fa_IR Piper voices). Baseline story audio.
+  # Memory-capped so a long regeneration can't exhaust this small host and take
+  # the stack down — if it hits the cap it restarts (clients retry).
   piper:
     build:
       context: .
       dockerfile: apps/piper/Dockerfile
     restart: unless-stopped
+    mem_limit: 900m
+    memswap_limit: 900m
 
   admin:
     build:
