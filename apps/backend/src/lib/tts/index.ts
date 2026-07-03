@@ -3,6 +3,7 @@ import path from 'path'
 import { queryOne } from '../db'
 import { ttsOpenAI, ttsGoogle, ttsAzure, ttsElevenLabs } from './providers'
 import { ttsPiper } from './piper'
+import { normalizeForTts } from './normalize'
 import type { TtsSettings } from './types'
 
 export type { TtsSettings } from './types'
@@ -34,13 +35,14 @@ async function cloudSynthesize(s: TtsSettings, text: string): Promise<Buffer> {
 
 /** One page → audio bytes + file extension. Premium accounts use the cloud
  *  provider when it's enabled + keyed; everyone else (and any cloud failure)
- *  falls back to the free Piper baseline. */
+ *  falls back to the free sidecar (Edge TTS voice or Piper — always WAV). */
 async function synthOne(s: TtsSettings, text: string, useCloud: boolean): Promise<{ buf: Buffer; ext: string }> {
+  const clean = normalizeForTts(text)
   if (useCloud) {
-    try { return { buf: await cloudSynthesize(s, text), ext: s.format || 'mp3' } }
-    catch (err) { console.error('Cloud TTS failed, using Piper:', (err as Error).message) }
+    try { return { buf: await cloudSynthesize(s, clean), ext: s.format || 'mp3' } }
+    catch (err) { console.error('Cloud TTS failed, using free sidecar:', (err as Error).message) }
   }
-  return { buf: await ttsPiper(s.piper_voice || 'fa_IR-amir-medium', text), ext: 'wav' }
+  return { buf: await ttsPiper(s.piper_voice || 'fa_IR-amir-medium', clean), ext: 'wav' }
 }
 
 /**

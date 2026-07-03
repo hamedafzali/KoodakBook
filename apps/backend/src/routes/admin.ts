@@ -68,6 +68,9 @@ const wordSchema = z.object({
   finglish: z.string().optional(),
   category: z.enum(WORD_CATEGORIES as unknown as [string, ...string[]]),
   stage: z.number().int().min(1).max(4).default(1),
+  // Diacritized pronunciation override, used only when synthesizing audio —
+  // fixes homographs (کرم…) that Persian TTS engines otherwise guess wrong.
+  tts_text: z.string().trim().max(200).nullable().optional(),
   audio_url: z.string().nullable().optional(),
   image_url: z.string().nullable().optional(),
   // ── Animation (Phase 0) — authored here or drafted by the generator ──
@@ -92,10 +95,10 @@ router.post('/words', requireAdmin, async (req, res) => {
   if (!p.success) { res.status(400).json({ data: null, error: p.error.message }); return }
   const animErr = animationError(p.data)
   if (animErr) { res.status(400).json({ data: null, error: animErr }); return }
-  const { persian, english, finglish, category, stage, audio_url, image_url, animation_template, animation_params } = p.data
+  const { persian, english, finglish, category, stage, tts_text, audio_url, image_url, animation_template, animation_params } = p.data
   const [row] = await query(
-    'insert into words (persian,english,finglish,category,stage,audio_url,image_url,animation_template,animation_params) values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *',
-    [persian, english, finglish ?? null, category, stage, audio_url ?? null, image_url ?? null,
+    'insert into words (persian,english,finglish,category,stage,tts_text,audio_url,image_url,animation_template,animation_params) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning *',
+    [persian, english, finglish ?? null, category, stage, tts_text || null, audio_url ?? null, image_url ?? null,
      animation_template ?? null, JSON.stringify(animation_params ?? {})]
   )
   await syncWordTranslations(row)
@@ -280,10 +283,15 @@ router.patch('/lessons/:lesson_id/items/reorder', requireAdmin, async (req, res)
 // ── Letters audio ─────────────────────────────────────────
 
 router.patch('/letters/:id', requireAdmin, async (req, res) => {
-  const { audio_url, example_word_id } = req.body
+  const { audio_url, example_word_id, tts_text } = req.body
+  // tts_text is only applied when the key is present in the body (undefined =
+  // untouched; '' or null clears it back to the plain letter name).
   const row = await queryOne(
-    'update letters set audio_url = coalesce($1, audio_url), example_word_id = coalesce($2, example_word_id) where id = $3 returning *',
-    [audio_url ?? null, example_word_id ?? null, req.params.id]
+    `update letters set audio_url = coalesce($1, audio_url),
+            example_word_id = coalesce($2, example_word_id),
+            tts_text = case when $3 then nullif($4, '') else tts_text end
+      where id = $5 returning *`,
+    [audio_url ?? null, example_word_id ?? null, tts_text !== undefined, tts_text ?? '', req.params.id]
   )
   res.json({ data: row, error: null })
 })

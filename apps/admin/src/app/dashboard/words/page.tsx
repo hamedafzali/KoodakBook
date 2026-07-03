@@ -9,7 +9,7 @@ import { PageHeader, Button, ui } from '@/components/ui'
 const CATEGORIES = WORD_CATEGORIES as readonly string[]
 const EMPTY = {
   persian: '', english: '', finglish: '', category: 'animals', stage: 1,
-  audio_url: '', image_url: '', animation_template: '', animation_params: '',
+  tts_text: '', audio_url: '', image_url: '', animation_template: '', animation_params: '',
 }
 
 export default function AdminWordsPage() {
@@ -35,6 +35,7 @@ export default function AdminWordsPage() {
     const payload = {
       ...form,
       stage: Number(form.stage),
+      tts_text: form.tts_text.trim() || null,
       audio_url: form.audio_url || null,
       image_url: form.image_url || null,
       animation_template: form.animation_template || null,
@@ -58,7 +59,8 @@ export default function AdminWordsPage() {
     setEditing(w.id)
     setForm({
       persian: w.persian, english: w.english, finglish: w.finglish ?? '',
-      category: w.category, stage: w.stage, audio_url: w.audio_url ?? '', image_url: w.image_url ?? '',
+      category: w.category, stage: w.stage, tts_text: w.tts_text ?? '',
+      audio_url: w.audio_url ?? '', image_url: w.image_url ?? '',
       animation_template: w.animation_template ?? '',
       animation_params: w.animation_params && Object.keys(w.animation_params).length
         ? JSON.stringify(w.animation_params, null, 2) : '',
@@ -103,6 +105,12 @@ export default function AdminWordsPage() {
               className={ui.input}>
               {[1,2,3,4].map(s => <option key={s} value={s}>{s}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">تلفظ برای صدا (اِعراب‌گذاری‌شده)</label>
+            <input value={form.tts_text} onChange={e => setForm(f => ({ ...f, tts_text: e.target.value }))}
+              placeholder={form.persian ? `مثلاً ${form.persian} با اِعراب` : 'مثلاً کِرم'}
+              className={ui.input} />
           </div>
           <div>
             <label className="text-xs text-gray-500 block mb-1">قالب انیمیشن</label>

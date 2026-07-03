@@ -98,6 +98,16 @@ insert into letters (character, name_persian, name_english, "group", order_in_gr
   ('ی', 'یه',      'Ye',      8, 8)
 on conflict (character) do nothing;
 
+-- Diacritized letter names for TTS (mirrors migration 030 for fresh installs):
+-- without harakat, engines read «ره» as the word "rah" instead of the letter.
+update letters set tts_text = v.t
+from (values
+  ('ا', 'اَلِف'), ('آ', 'اَلِف مَد'), ('ب', 'بِه'), ('پ', 'پِه'), ('ت', 'تِه'),
+  ('ث', 'ثِه'), ('چ', 'چِه'), ('ح', 'حِه'), ('خ', 'خِه'), ('ر', 'رِه'),
+  ('ز', 'زِه'), ('ژ', 'ژِه'), ('ف', 'فِه'), ('ه', 'هِه'), ('ی', 'یِه')
+) as v(c, t)
+where letters.character = v.c and letters.tts_text is null;
+
 -- ── Lessons ───────────────────────────────────────────────
 insert into lessons (title, type, stage, order_index, description) values
   ('Animals',          'vocabulary', 1,  1, 'Learn Persian names for common animals'),

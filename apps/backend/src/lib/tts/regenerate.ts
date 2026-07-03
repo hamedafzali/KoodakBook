@@ -3,6 +3,7 @@ import path from 'path'
 import { query } from '../db'
 import { phonicsSyllables } from '@koodakbook/shared'
 import { ttsPiper } from './piper'
+import { normalizeForTts } from './normalize'
 import { getTtsSettings } from './index'
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
@@ -38,12 +39,14 @@ interface Item {
 
 async function collect(scope: RegenScope): Promise<Item[]> {
   const items: Item[] = []
+  // tts_text (diacritized pronunciation override) wins over the display text —
+  // Persian script omits short vowels, so homographs/letter names need it.
   if (scope === 'words' || scope === 'all') {
-    for (const w of await query<{ id: string; persian: string }>('select id, persian from words'))
+    for (const w of await query<{ id: string; persian: string }>('select id, coalesce(tts_text, persian) as persian from words'))
       items.push({ entity: 'word', table: 'words', dir: 'words', id: w.id, text: w.persian, versioned: true })
   }
   if (scope === 'letters' || scope === 'all') {
-    for (const l of await query<{ id: string; name_persian: string }>('select id, name_persian from letters'))
+    for (const l of await query<{ id: string; name_persian: string }>('select id, coalesce(tts_text, name_persian) as name_persian from letters'))
       items.push({ entity: 'letter', table: 'letters', dir: 'letters', id: l.id, text: l.name_persian, versioned: true })
   }
   if (scope === 'stories' || scope === 'all') {
@@ -74,7 +77,7 @@ export function startRegen(scope: RegenScope): boolean {
       state.total = items.length
       for (const it of items) {
         try {
-          const buf = await ttsPiper(voice, it.text)
+          const buf = await ttsPiper(voice, normalizeForTts(it.text))
           const dir = path.resolve(UPLOADS_DIR, it.dir)
           fs.mkdirSync(dir, { recursive: true })
           // Versioned name so re-running with a new voice yields a fresh URL (no

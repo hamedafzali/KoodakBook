@@ -15,15 +15,17 @@ export default function AdminLettersPage() {
   const [letters, setLetters] = useState<Letter[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [audioUrl, setAudioUrl] = useState('')
+  const [ttsText, setTtsText] = useState('')
 
   useEffect(() => {
     api.get<Letter[]>('/api/letters').then(r => { if (r.data) setLetters(r.data) })
   }, [])
 
   async function saveAudio(id: string) {
-    await api.patch(`/api/admin/letters/${id}`, { audio_url: audioUrl || null })
+    await api.patch(`/api/admin/letters/${id}`, { audio_url: audioUrl || null, tts_text: ttsText.trim() })
     setEditing(null)
     setAudioUrl('')
+    setTtsText('')
     const res = await api.get<Letter[]>('/api/letters')
     if (res.data) setLetters(res.data)
   }
@@ -50,6 +52,10 @@ export default function AdminLettersPage() {
                 {editing === l.id ? (
                   <div className="space-y-2">
                     <FileUpload type="audio" onUploaded={url => setAudioUrl(url)} currentUrl={l.audio_url} />
+                    {/* Diacritized name used only by TTS — fixes «ره» read as "rah" etc. */}
+                    <input value={ttsText} onChange={e => setTtsText(e.target.value)}
+                      placeholder={`تلفظ برای صدا (مثلاً ${l.name_persian} با اِعراب)`}
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
                     <div className="flex gap-1">
                       <button onClick={() => saveAudio(l.id)} className="flex-1 bg-amber-500 text-white text-xs py-1.5 rounded-lg">ذخیره</button>
                       <button onClick={() => setEditing(null)} className="flex-1 bg-gray-100 text-gray-600 text-xs py-1.5 rounded-lg">انصراف</button>
@@ -61,7 +67,7 @@ export default function AdminLettersPage() {
                       ? <span className="text-xs text-green-600">🔊 صدا دارد</span>
                       : <span className="text-xs text-gray-400">بدون صدا</span>
                     }
-                    <button onClick={() => { setEditing(l.id); setAudioUrl(l.audio_url ?? '') }}
+                    <button onClick={() => { setEditing(l.id); setAudioUrl(l.audio_url ?? ''); setTtsText(l.tts_text ?? '') }}
                       className="block w-full mt-2 text-xs text-amber-600 hover:underline">
                       {l.audio_url ? 'تغییر صدا' : 'افزودن صدا'}
                     </button>

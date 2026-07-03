@@ -58,3 +58,6 @@ tempImg/
 
 # python venv for asset generation
 scripts/.venv/
+
+# claude code (local session settings)
+.claude/settings.local.json

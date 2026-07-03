@@ -292,10 +292,18 @@ interface Tts {
   piper_voice: string
 }
 
-// Free, offline Persian voices (Piper sidecar) — every account gets one of these.
-const PIPER_VOICES = [
-  'fa_IR-amir-medium', 'fa_IR-ganji-medium', 'fa_IR-ganji_adabi-medium',
-  'fa_IR-gyro-medium', 'fa_IR-reza_ibrahim-medium',
+// Free Persian voices (TTS sidecar) — every account gets one of these.
+// "fa-IR-*Neural" = Edge TTS (Microsoft neural, much better Persian, needs
+// internet; the sidecar auto-falls back to Piper offline).
+// "fa_IR-*-medium" = Piper (fully offline).
+const FREE_VOICES = [
+  { id: 'fa-IR-FaridNeural',         label: 'fa-IR-FaridNeural — مرد، کیفیت بالا (Edge)' },
+  { id: 'fa-IR-DilaraNeural',        label: 'fa-IR-DilaraNeural — زن، کیفیت بالا (Edge)' },
+  { id: 'fa_IR-amir-medium',         label: 'fa_IR-amir-medium — آفلاین (Piper)' },
+  { id: 'fa_IR-ganji-medium',        label: 'fa_IR-ganji-medium — آفلاین (Piper)' },
+  { id: 'fa_IR-ganji_adabi-medium',  label: 'fa_IR-ganji_adabi-medium — آفلاین (Piper)' },
+  { id: 'fa_IR-gyro-medium',         label: 'fa_IR-gyro-medium — آفلاین (Piper)' },
+  { id: 'fa_IR-reza_ibrahim-medium', label: 'fa_IR-reza_ibrahim-medium — آفلاین (Piper)' },
 ]
 
 const TTS_PROVIDERS: { id: Tts['provider']; label: string; voices: string[]; models: string[]; needs: ('voice' | 'model' | 'base_url' | 'region')[] }[] = [
@@ -347,11 +355,11 @@ function TtsCard() {
       </div>
       <p className="text-sm text-slate-500">برای داستان‌های ساخته‌شده با هوش مصنوعی، صدا تولید می‌شود تا «بشنو» کار کند.</p>
 
-      {/* Free baseline — Piper, no key, every account */}
-      <Field label="صدای رایگان (Piper) — برای همه‌ی حساب‌ها" hint="آفلاین، بدون کلید، همیشه فعال">
+      {/* Free baseline — sidecar (Edge neural or offline Piper), no key, every account */}
+      <Field label="صدای رایگان — برای همه‌ی حساب‌ها" hint="بدون کلید، همیشه فعال. صداهای Edge کیفیت بسیار بهتری دارند و در صورت قطع اینترنتِ سرور به Piper برمی‌گردند.">
         <Select value={t.piper_voice} onChange={e => setT({ ...t, piper_voice: e.target.value })} dir="ltr">
-          {!PIPER_VOICES.includes(t.piper_voice) && <option value={t.piper_voice}>{t.piper_voice}</option>}
-          {PIPER_VOICES.map(v => <option key={v} value={v}>{v}</option>)}
+          {!FREE_VOICES.some(v => v.id === t.piper_voice) && <option value={t.piper_voice}>{t.piper_voice}</option>}
+          {FREE_VOICES.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
         </Select>
       </Field>
 

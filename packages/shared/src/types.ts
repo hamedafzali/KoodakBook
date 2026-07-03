@@ -61,6 +61,8 @@ export interface Word {
   finglish: string | null
   category: WordCategory
   stage: number
+  /** Diacritized pronunciation override used only for TTS (homographs). */
+  tts_text?: string | null
   audio_url: string | null
   image_url: string | null
   // ── Animation (Phase 0) ──
@@ -85,6 +87,8 @@ export interface Letter {
   name_english: string
   group: number
   order_in_group: number
+  /** Diacritized pronunciation override used only for TTS (letter names). */
+  tts_text?: string | null
   audio_url: string | null
   example_word_id: string | null
   animation_template?: AnimationTemplate | null

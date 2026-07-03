@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh -o StrictHostKeyChecking=no hamed@192.168.178.34 'cd /home/hamed/AdvancedContainerManager/data/projects/KoodakBook && docker compose build 2>&1 | tail -30')"
+    ]
+  }
+}
