@@ -15,6 +15,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     { href: '/dashboard/users', label: 'کاربران', icon: 'users', perm: 'users.read' },
     { href: '/dashboard/team', label: 'تیم و دسترسی', icon: 'shield', perm: 'admin.manage' },
     { href: '/dashboard/plans', label: 'پلن‌ها', icon: 'card', perm: 'plans.manage' },
+    { href: '/dashboard/leads', label: 'درخواست‌ها', icon: 'inbox', perm: 'users.read' },
   ] },
   { title: 'تحلیل', items: [
     { href: '/dashboard/pilot', label: 'پایلوت', icon: 'flask', perm: 'analytics.view' },

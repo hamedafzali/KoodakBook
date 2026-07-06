@@ -1,25 +1,29 @@
-'use client'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { api } from '@/lib/api'
-import { isLoggedIn } from '@/lib/auth'
-import { getMode } from '@/lib/mode'
+import type { Metadata } from 'next'
+import Landing from '@/components/landing/Landing'
+import SessionRedirect from '@/components/landing/SessionRedirect'
+
+export const metadata: Metadata = {
+  title: 'کودک‌بوک — آموزش زبان فارسی به کودکان با قصه و بازی',
+  description:
+    'اپ آموزش فارسی برای کودکان ۳ تا ۱۰ سال خانواده‌های ایرانی خارج از کشور: الفبا، صداکشی، واژگان با مرور هوشمند، تمرین گفتار و داستان‌های شخصی با هوش مصنوعی و صدای گوینده. شروع رایگان.',
+  openGraph: {
+    title: 'کودک‌بوک — فارسی برای کودکان',
+    description: 'کودک شما فارسی را با قصه و بازی یاد می‌گیرد — روزی ۱۰ دقیقه.',
+    type: 'website',
+    locale: 'fa_IR',
+  },
+}
 
 /**
- * Entry router. Confirms the session up front (a deleted/suspended account is
- * caught here and sent to /login by the api client, rather than flashing a shell
- * and bouncing mid-task), then lands by mode — child mode persists across
- * relaunch so the kid never sees a login or PIN.
+ * Public marketing landing. Logged-in sessions are redirected into the app by
+ * <SessionRedirect/> (child mode → child home, else parent dashboard), so kids
+ * relaunching never see the sales page; anonymous visitors read the landing.
  */
 export default function RootPage() {
-  const router = useRouter()
-  useEffect(() => {
-    if (!isLoggedIn()) { router.replace('/login'); return }
-    api.get('/api/auth/me').then(() => {
-      // A dead session already redirected to /login (401 handler cleared the token).
-      if (!isLoggedIn()) return
-      router.replace(getMode() === 'child' ? '/child/home' : '/parent/dashboard')
-    })
-  }, [router])
-  return null
+  return (
+    <>
+      <SessionRedirect />
+      <Landing />
+    </>
+  )
 }

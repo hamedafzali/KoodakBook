@@ -1,0 +1,384 @@
+import Link from 'next/link'
+import { TabletForm, WaitlistForm } from './LeadForms'
+
+/* Public marketing landing (server-rendered for SEO).
+ * Audience: Iranian parents abroad deciding whether this is safe + effective
+ * for their child. Structure follows education-landing best practice:
+ * value → proof → method → trust → price → offers → FAQ. */
+
+// ── Content (single source of truth for the page copy) ─────
+
+const STATS = [
+  { n: '۳۲', l: 'حرف الفبا با صدا و تمرین نوشتن' },
+  { n: '۱۳۰+', l: 'هجا و صداکِشی (بَ بِ بُ …)' },
+  { n: '۴۰۰+', l: 'واژه با تصویر، صدا و مرور هوشمند' },
+  { n: '∞', l: 'داستان شخصی با هوش مصنوعی' },
+]
+
+const FEATURES = [
+  { icon: '📚', title: 'درس‌های مرحله‌ای', text: 'واژگان در ۴ مرحله — حیوانات، خانواده، بدن، رنگ‌ها… هر درس کوتاه، رنگی و بازی‌گونه.' },
+  { icon: '✏️', title: 'الفبا و نوشتن', text: 'هر ۳۲ حرف با صدای درست، شکل حرف در اول/وسط/آخر و تمرین نوشتن با انگشت.' },
+  { icon: '🎵', title: 'صداکِشی (فونیکس)', text: 'زبر، زیر، پیش — بچه‌ها صدای حرف‌ها را می‌شنوند و ترکیب می‌کنند؛ پایه‌ی واقعی خواندن.' },
+  { icon: '🔄', title: 'مرور هوشمند', text: 'تکرار فاصله‌دار (Spaced Repetition): هر واژه دقیقاً وقتی برمی‌گردد که در آستانه‌ی فراموشی است.' },
+  { icon: '🎤', title: 'تمرین گفتن', text: 'کودک واژه را بلند می‌گوید و اپ با تشخیص گفتار می‌شنود — تلفظ همان‌جا تمرین می‌شود.' },
+  { icon: '📖', title: 'داستان با اسم کودک شما', text: 'هوش مصنوعی داستانی می‌سازد که قهرمانش کودک شماست — متناسب با سن و سطح، با صدای گوینده.' },
+  { icon: '🏆', title: 'جایزه و نشان', text: 'ستاره‌ها، نشان‌ها و دستاوردها انگیزه را نگه می‌دارند؛ پیشرفت برای کودک قابل‌لمس می‌شود.' },
+  { icon: '🧭', title: 'آزمون تعیین سطح', text: 'در شروع، یک بازی کوتاه سطح کودک را می‌سنجد تا از جای درست شروع کند — نه آسان‌تر، نه سخت‌تر.' },
+]
+
+const METHOD = [
+  {
+    icon: '🔤', title: 'اول صدا، بعد حرف',
+    text: 'پژوهش‌های علم خواندن (Science of Reading) روشن است: بچه‌ها با شنیدن و ترکیب صداها خواندن را یاد می‌گیرند، نه با حفظ شکل کلمه‌ها. صداکشی ستون این اپ است.',
+  },
+  {
+    icon: '🧠', title: 'تکرار در لحظه‌ی درست',
+    text: 'حافظه با تکرارِ فاصله‌دار می‌ماند. کودک‌بوک هر واژه را درست قبل از فراموشی برمی‌گرداند — همان روشی که در بهترین اپ‌های زبان دنیا استفاده می‌شود.',
+  },
+  {
+    icon: '💛', title: 'قصه به‌جای درس',
+    text: 'کودک با قصه‌ای که قهرمانش خودش است، واژه‌ها را در بافت واقعی می‌بیند و می‌شنود. یادگیری بدون احساس «کلاس» — همان‌طور که زبان مادری یاد گرفته می‌شود.',
+  },
+  {
+    icon: '🌍', title: 'دوزبانگی یک هدیه است',
+    text: 'دوزبانگی با تمرکز، انعطاف ذهنی و مهارت حل مسئله همراه است — و مهم‌تر: پیوند کودک با مادربزرگ، پدربزرگ و هویتش. روزی ۱۰ دقیقه کافی است.',
+  },
+]
+
+const PARENT_POINTS = [
+  { icon: '🔒', title: 'حالت کودک با پین والدین', text: 'کودک داخل بخش خودش می‌ماند؛ تنظیمات و خرید فقط با پین شما باز می‌شود.' },
+  { icon: '🚫', title: 'بدون تبلیغات', text: 'هیچ تبلیغی، هیچ لینک خروجی، هیچ خرید پنهانی — صفحه‌ی کودک فقط محتواست.' },
+  { icon: '📊', title: 'داشبورد پیشرفت', text: 'می‌بینید امروز چه تمرین کرده، کدام واژه‌ها را بلد است و کجا گیر کرده.' },
+  { icon: '👨‍👩‍👧‍👦', title: 'تا ۵ کودک', text: 'هر فرزند پروفایل، سطح و مسیر خودش را دارد — با یک اشتراک خانواده.' },
+]
+
+const FAQ = [
+  {
+    q: 'برای چه سنی مناسب است؟',
+    a: 'طراحی اصلی برای ۳ تا ۱۰ سال است. آزمون تعیین سطحِ شروع، مسیر را با سن و دانسته‌های کودک تنظیم می‌کند — از «اصلاً فارسی نشنیده» تا «حرف می‌زند ولی نمی‌خواند».',
+  },
+  {
+    q: 'کودکم اصلاً فارسی بلد نیست. باز هم جواب می‌دهد؟',
+    a: 'بله — مسیر از صفر شروع می‌شود: اول شنیدن و گفتن واژه‌های ساده با تصویر، بعد صداها و حروف، بعد خواندن. همه‌چیز صدا دارد و به خواندنِ والدین وابسته نیست.',
+  },
+  {
+    q: 'روی چه دستگاه‌هایی کار می‌کند؟',
+    a: 'همین حالا در مرورگر هر موبایل، تبلت و کامپیوتری کار می‌کند و می‌توانید آن را مثل یک اپ به صفحه‌ی اصلی اضافه کنید. اپ اندروید و iOS هم در راه است.',
+  },
+  {
+    q: 'وقت من به‌عنوان والد چقدر گرفته می‌شود؟',
+    a: 'تقریباً هیچ. کودک مستقل کار می‌کند؛ شما فقط گاهی داشبورد را نگاه می‌کنید. البته «هم‌خوانی» داستان‌ها با هم، بهترین بخش ماجراست — اگر وقتش را داشته باشید.',
+  },
+  {
+    q: 'اشتراک را می‌توانم لغو کنم؟',
+    a: 'بله، هر زمان و بدون هیچ شرطی. نسخه‌ی رایگان هم همیشه رایگان می‌ماند — حروف، صداکشی و درس‌های پایه در آن باز است.',
+  },
+  {
+    q: 'اطلاعات کودک من امن است؟',
+    a: 'فقط نام کوچک و سال تولد را می‌گیریم — نه عکس، نه موقعیت مکانی. داده‌ها به هیچ شرکت تبلیغاتی داده نمی‌شود. جزئیات در صفحه‌ی حریم خصوصی آمده است.',
+  },
+]
+
+// ── Small building blocks ──────────────────────────────────
+
+function SectionTitle({ kicker, title, sub }: { kicker: string; title: string; sub?: string }) {
+  return (
+    <div className="text-center max-w-2xl mx-auto mb-10">
+      <p className="text-amber-600 font-bold text-sm mb-2">{kicker}</p>
+      <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 leading-snug">{title}</h2>
+      {sub && <p className="text-slate-500 mt-3 leading-relaxed">{sub}</p>}
+    </div>
+  )
+}
+
+/** Hand-drawn tablet mockup showing a phonics screen — no external images. */
+function TabletMock() {
+  return (
+    <svg viewBox="0 0 320 420" className="w-full max-w-xs mx-auto drop-shadow-xl" role="img"
+      aria-label="نمای اپ کودک‌بوک روی تبلت: تمرین صداکشی حرف ب">
+      <rect x="8" y="8" width="304" height="404" rx="28" fill="#1e293b" />
+      <rect x="20" y="20" width="280" height="380" rx="18" fill="#fffbeb" />
+      {/* header */}
+      <rect x="20" y="20" width="280" height="56" rx="18" fill="#f59e0b" />
+      <rect x="20" y="58" width="280" height="18" fill="#f59e0b" />
+      <text x="160" y="55" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#fff">صداها 🎵</text>
+      {/* big letter card */}
+      <rect x="70" y="100" width="180" height="130" rx="20" fill="#fff" stroke="#fde68a" strokeWidth="3" />
+      <text x="160" y="185" textAnchor="middle" fontSize="72" fontWeight="bold" fill="#b45309">بَ</text>
+      <circle cx="230" cy="120" r="14" fill="#fbbf24" />
+      <text x="230" y="126" textAnchor="middle" fontSize="14">🔊</text>
+      {/* options */}
+      <rect x="45" y="255" width="108" height="52" rx="14" fill="#34d399" />
+      <text x="99" y="288" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#fff">با</text>
+      <rect x="167" y="255" width="108" height="52" rx="14" fill="#818cf8" />
+      <text x="221" y="288" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#fff">بو</text>
+      <rect x="45" y="318" width="108" height="52" rx="14" fill="#f472b6" />
+      <text x="99" y="351" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#fff">بی</text>
+      <rect x="167" y="318" width="108" height="52" rx="14" fill="#fbbf24" />
+      <text x="221" y="351" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#fff">بَه</text>
+      {/* stars */}
+      <text x="48" y="130" fontSize="20">⭐</text>
+      <text x="36" y="230" fontSize="14">⭐</text>
+    </svg>
+  )
+}
+
+function StoreBadge({ store }: { store: 'android' | 'ios' }) {
+  return (
+    <div className="relative flex items-center gap-3 bg-slate-800 text-white rounded-xl px-5 py-2.5 opacity-70 cursor-default select-none"
+      aria-label={`${store === 'android' ? 'Google Play' : 'App Store'} — به‌زودی`}>
+      <span className="text-2xl" aria-hidden="true">{store === 'android' ? '🤖' : ''}</span>
+      <span className="text-right leading-tight">
+        <span className="block text-[10px] text-slate-300">به‌زودی در</span>
+        <span className="block font-bold text-sm" dir="ltr">{store === 'android' ? 'Google Play' : 'App Store'}</span>
+      </span>
+      <span className="absolute -top-2 -left-2 bg-amber-500 text-white text-[10px] font-bold rounded-full px-2 py-0.5">به‌زودی</span>
+    </div>
+  )
+}
+
+// ── Page ───────────────────────────────────────────────────
+
+export default function Landing() {
+  return (
+    <div className="bg-white text-slate-800">
+
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+          <p className="font-bold text-xl text-amber-600">📚 کودک‌بوک</p>
+          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600" aria-label="منوی اصلی">
+            <a href="#features" className="hover:text-amber-600">ویژگی‌ها</a>
+            <a href="#method" className="hover:text-amber-600">روش آموزش</a>
+            <a href="#parents" className="hover:text-amber-600">والدین</a>
+            <a href="#pricing" className="hover:text-amber-600">قیمت</a>
+            <a href="#tablet" className="hover:text-amber-600">تبلت</a>
+            <a href="#faq" className="hover:text-amber-600">سؤالات</a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-amber-600 px-3 py-2">ورود</Link>
+            <Link href="/signup" className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold px-4 py-2 rounded-xl transition">
+              شروع رایگان
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="bg-gradient-to-b from-amber-50 to-white">
+        <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <h1 className="text-3xl sm:text-5xl font-bold leading-tight sm:leading-tight text-slate-900">
+              کودک شما فارسی را<br />
+              <span className="text-amber-600">با قصه و بازی</span> یاد می‌گیرد
+            </h1>
+            <p className="mt-5 text-slate-600 leading-relaxed text-lg">
+              برای خانواده‌های ایرانی خارج از کشور — از الفبا و صداکشی تا داستان‌هایی که
+              قهرمانش کودک خودتان است. روزی ۱۰ دقیقه، برای ۳ تا ۱۰ سال.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/signup" className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-7 py-3.5 rounded-2xl text-lg transition shadow-lg shadow-amber-200">
+                شروع رایگان — بدون کارت بانکی
+              </Link>
+              <a href="#features" className="border-2 border-amber-200 hover:border-amber-400 text-amber-700 font-bold px-7 py-3.5 rounded-2xl text-lg transition">
+                ببینید چطور کار می‌کند
+              </a>
+            </div>
+            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+              <li>🚫 بدون تبلیغات</li>
+              <li>🔒 حالت کودک با پین والدین</li>
+              <li>🇮🇷 تمام محتوا با صدای فارسی</li>
+            </ul>
+          </div>
+          <TabletMock />
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="border-y border-slate-100 bg-white">
+        <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          {STATS.map(s => (
+            <div key={s.l}>
+              <p className="text-3xl font-bold text-amber-600">{s.n}</p>
+              <p className="text-sm text-slate-500 mt-1 leading-snug">{s.l}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
+        <SectionTitle kicker="ویژگی‌ها" title="یک مسیر کامل، از اولین صدا تا اولین کتاب"
+          sub="هشت ابزار که با هم یک برنامه‌ی درسی می‌سازند — نه مجموعه‌ای از بازی‌های پراکنده." />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {FEATURES.map(f => (
+            <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
+              <p className="text-3xl mb-3" aria-hidden="true">{f.icon}</p>
+              <h3 className="font-bold text-slate-800 mb-1.5">{f.title}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Method / pedagogy */}
+      <section id="method" className="bg-amber-50/60 scroll-mt-20">
+        <div className="max-w-6xl mx-auto px-4 py-16">
+          <SectionTitle kicker="روش آموزش" title="چرا این روش جواب می‌دهد؟"
+            sub="کودک‌بوک روی سه ستونِ اثبات‌شده‌ی یادگیری زبان ساخته شده — نه روی سرگرمی خالی." />
+          <div className="grid sm:grid-cols-2 gap-5">
+            {METHOD.map(m => (
+              <div key={m.title} className="rounded-2xl bg-white border border-amber-100 p-6">
+                <p className="text-3xl mb-3" aria-hidden="true">{m.icon}</p>
+                <h3 className="font-bold text-slate-800 mb-2">{m.title}</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">{m.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Parents / trust */}
+      <section id="parents" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
+        <SectionTitle kicker="برای والدین" title="خیال شما راحت، کنترل دست شما"
+          sub="یک اپ کودک اول باید امن باشد، بعد آموزشی. این ترتیب را جدی گرفته‌ایم." />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {PARENT_POINTS.map(p => (
+            <div key={p.title} className="rounded-2xl border border-slate-100 p-5 text-center">
+              <p className="text-3xl mb-3" aria-hidden="true">{p.icon}</p>
+              <h3 className="font-bold text-slate-800 mb-1.5 text-sm">{p.title}</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">{p.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="bg-slate-50 scroll-mt-20">
+        <div className="max-w-4xl mx-auto px-4 py-16">
+          <SectionTitle kicker="قیمت" title="ساده و شفاف — لغو در هر لحظه" />
+          <div className="grid sm:grid-cols-2 gap-6">
+            <div className="rounded-3xl bg-white border border-slate-200 p-7">
+              <h3 className="font-bold text-xl">رایگان</h3>
+              <p className="text-3xl font-bold mt-2">۰€<span className="text-sm font-normal text-slate-400"> — همیشه</span></p>
+              <p className="text-sm text-slate-500 mt-1">برای شروع و آشنایی</p>
+              <ul className="mt-5 space-y-2.5 text-sm text-slate-600">
+                <li>✅ ۱ پروفایل کودک</li>
+                <li>✅ الفبا، نوشتن و صداکشی کامل</li>
+                <li>✅ درس‌های واژگان پایه</li>
+                <li>✅ چند داستان اول کتابخانه</li>
+                <li>✅ آزمون تعیین سطح و داشبورد والدین</li>
+              </ul>
+              <Link href="/signup" className="block text-center mt-7 border-2 border-amber-400 text-amber-600 font-bold py-3 rounded-xl hover:bg-amber-50 transition">
+                شروع رایگان
+              </Link>
+            </div>
+            <div className="relative rounded-3xl bg-white border-2 border-amber-400 p-7 shadow-lg shadow-amber-100">
+              <span className="absolute -top-3.5 right-6 bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">پیشنهاد خانواده‌ها</span>
+              <h3 className="font-bold text-xl">پرمیوم</h3>
+              <p className="text-3xl font-bold mt-2">۹٫۹۹€<span className="text-sm font-normal text-slate-400"> / ماه</span></p>
+              <p className="text-sm text-slate-500 mt-1">مسیر کامل + داستان‌های شخصی</p>
+              <ul className="mt-5 space-y-2.5 text-sm text-slate-600">
+                <li>⭐ تا ۵ پروفایل کودک</li>
+                <li>⭐ تمام کتابخانه‌ی داستان</li>
+                <li>⭐ داستان‌های بی‌نهایت با اسم کودک شما (AI + صدای گوینده)</li>
+                <li>⭐ هم‌خوانی والد و کودک</li>
+                <li>⭐ ضبط صدای خودتان روی واژه‌ها و داستان‌ها</li>
+              </ul>
+              <Link href="/signup" className="block text-center mt-7 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition">
+                شروع با پرمیوم
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tablet offer */}
+      <section id="tablet" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
+        <div className="grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <p className="text-amber-600 font-bold text-sm mb-2">تبلت کودک‌بوک</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 leading-snug">
+              یک تبلت، آماده و امن —<br />روشن کنید و بدهید دست کودک
+            </h2>
+            <p className="text-slate-500 mt-4 leading-relaxed">
+              برای خانواده‌هایی که نمی‌خواهند موبایل خودشان را بدهند: یک تبلت اندرویدی با
+              کودک‌بوک نصب‌شده، حالت کودک قفل‌شده و بدون دسترسی به اینترنت باز. بهترین
+              هدیه‌ی تولد و نوروز برای نوه و خواهرزاده و برادرزاده. 🎁
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-slate-600">
+              <li>✅ کودک‌بوک از قبل نصب و تنظیم‌شده</li>
+              <li>✅ قاب محافظ مخصوص کودک</li>
+              <li>✅ فقط اپ‌های انتخابی شما — بدون یوتیوب و فروشگاه باز</li>
+              <li>✅ ارسال به سراسر اروپا</li>
+            </ul>
+          </div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-4">پیش‌سفارش تبلت — بدون پرداخت</h3>
+            <TabletForm />
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile apps */}
+      <section className="bg-slate-900 text-white">
+        <div className="max-w-6xl mx-auto px-4 py-14 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div>
+            <h2 className="text-2xl font-bold">اپ موبایل در راه است 📱</h2>
+            <p className="text-slate-300 mt-2 leading-relaxed max-w-lg">
+              کودک‌بوک همین امروز در مرورگر موبایل و تبلت کار می‌کند (به صفحه‌ی اصلی اضافه‌اش کنید).
+              نسخه‌ی اندروید و iOS با حالت آفلاین کامل در راه است — ایمیل بگذارید تا اول شما بدانید.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <StoreBadge store="android" />
+              <StoreBadge store="ios" />
+            </div>
+          </div>
+          <div className="w-full md:w-auto md:min-w-[320px]">
+            <WaitlistForm />
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="max-w-3xl mx-auto px-4 py-16 scroll-mt-20">
+        <SectionTitle kicker="سؤالات پرتکرار" title="هر چیزی که والدین از ما می‌پرسند" />
+        <div className="space-y-3">
+          {FAQ.map(f => (
+            <details key={f.q} className="group rounded-2xl border border-slate-200 bg-white px-5 py-4">
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-4 font-bold text-slate-800">
+                {f.q}
+                <span className="text-amber-500 transition group-open:rotate-45 text-xl leading-none" aria-hidden="true">+</span>
+              </summary>
+              <p className="text-sm text-slate-600 leading-relaxed mt-3">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="bg-gradient-to-b from-amber-50 to-white">
+        <div className="max-w-3xl mx-auto px-4 py-16 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">فارسی، بهترین هدیه‌ای است که به کودکتان می‌دهید</h2>
+          <p className="text-slate-500 mt-3">شروع رایگان است — نه کارت بانکی می‌خواهد، نه تعهدی.</p>
+          <Link href="/signup" className="inline-block mt-7 bg-amber-500 hover:bg-amber-600 text-white font-bold px-10 py-4 rounded-2xl text-lg transition shadow-lg shadow-amber-200">
+            ساخت حساب رایگان
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+          <p className="font-bold text-slate-700">📚 کودک‌بوک — فارسی برای کودکان</p>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="پیوندهای پایانی">
+            <Link href="/privacy" className="hover:text-amber-600">حریم خصوصی</Link>
+            <Link href="/terms" className="hover:text-amber-600">شرایط استفاده</Link>
+            <Link href="/login" className="hover:text-amber-600">ورود به اپ</Link>
+            <Link href="/signup" className="hover:text-amber-600">ثبت‌نام</Link>
+          </nav>
+        </div>
+      </footer>
+    </div>
+  )
+}
