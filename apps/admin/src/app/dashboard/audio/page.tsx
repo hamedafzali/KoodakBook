@@ -241,6 +241,7 @@ const REGEN_SCOPES: { id: string; label: string }[] = [
   { id: 'letters', label: 'حروف' },
   { id: 'words', label: 'کلمات' },
   { id: 'phonics', label: 'صداکِشی' },
+  { id: 'math', label: 'اعداد (دنیای اعداد)' },
 ]
 
 function RegenCard() {

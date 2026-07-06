@@ -1,12 +1,12 @@
 import fs from 'fs'
 import path from 'path'
 import { query } from '../db'
-import { phonicsSyllables } from '@koodakbook/shared'
+import { phonicsSyllables, mathAudioItems } from '@koodakbook/shared'
 import { synthesizeSection, getSectionConfigs, type AudioSection } from '../audio'
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
-export type RegenScope = 'words' | 'letters' | 'stories' | 'phonics' | 'all'
+export type RegenScope = 'words' | 'letters' | 'stories' | 'phonics' | 'math' | 'all'
 
 // In-memory progress for the singleton admin regeneration job.
 interface RegenState {
@@ -56,6 +56,13 @@ async function collect(scope: RegenScope): Promise<Item[]> {
     // Syllables (consonant + short vowel) — fixed path /uploads/phonics/<slug>.wav.
     for (const s of phonicsSyllables())
       items.push({ section: 'phonics', dir: 'phonics', id: s.slug, text: s.text, versioned: false })
+  }
+  if (scope === 'math' || scope === 'all') {
+    // دنیای اعداد pack: numbers 0–100 + prompt phrases, fixed paths
+    // /uploads/math/<slug>.wav (client-built, like phonics). Voiced with the
+    // word section's engine — numbers are word-like content.
+    for (const m of mathAudioItems())
+      items.push({ section: 'word', dir: 'math', id: m.slug, text: m.text, versioned: false })
   }
   return items
 }

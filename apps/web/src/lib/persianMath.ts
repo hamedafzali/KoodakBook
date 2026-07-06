@@ -5,24 +5,21 @@
 // targets an age band; the hub recommends by age, difficulty adapts inside.
 
 import type { Child } from '@koodakbook/shared'
+import { mathAudioUrl, numberToPersianWord } from '@koodakbook/shared'
+import { speakOrPlay } from '@/lib/speech'
 
-/** Western → Persian-Indic digits: 456 → ۴۵۶ */
-export function toPersianDigits(n: number | string): string {
-  const map = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']
-  return String(n).replace(/[0-9]/g, d => map[+d])
+// Number formatting/words live in shared (the backend synthesizes the audio
+// pack from the same source of truth).
+export { toPersianDigits, numberToPersianWord, mathAudioUrl } from '@koodakbook/shared'
+
+/** Speak a number: recorded/generated clip first, browser TTS as last resort. */
+export function sayNumber(n: number): void {
+  speakOrPlay(mathAudioUrl(`n${n}`), numberToPersianWord(n))
 }
 
-const ONES = ['صفر', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه', 'ده',
-  'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده', 'بیست']
-const TENS: Record<number, string> = { 20: 'بیست', 30: 'سی', 40: 'چهل', 50: 'پنجاه', 60: 'شصت', 70: 'هفتاد', 80: 'هشتاد', 90: 'نود' }
-
-/** 0–100 in Persian words: 23 → «بیست و سه» */
-export function numberToPersianWord(n: number): string {
-  if (n <= 20) return ONES[n] ?? String(n)
-  if (n === 100) return 'صد'
-  const t = Math.floor(n / 10) * 10
-  const r = n % 10
-  return r === 0 ? TENS[t] : `${TENS[t]} و ${ONES[r]}`
+/** Speak a fixed math phrase by slug (see MATH_PHRASES in shared). */
+export function sayPhrase(slug: string, fallbackText: string): void {
+  speakOrPlay(mathAudioUrl(slug), fallbackText)
 }
 
 /** Child's age from birth_year (falls back to a level-based guess). */

@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
-import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors } from '@/lib/persianMath'
+import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors, sayNumber, sayPhrase } from '@/lib/persianMath'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import Mascot from '@/components/child/Mascot'
@@ -85,8 +85,8 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
     playTap()
     setPicked(n)
     const ok = n === q.answer
-    if (ok) { playSuccess(); setStars(s => s + 1) }
-    speakPersian(ok ? `آفرین! ${numberToPersianWord(q.answer)} تومان` : `${numberToPersianWord(q.answer)} تومان می‌شود!`)
+    if (ok) { playSuccess(); setStars(s => s + 1); sayPhrase('afarin', 'آفرین!') }
+    else sayNumber(q.answer)
     setTimeout(() => { setPicked(null); setIdx(i => i + 1) }, 1500)
   }
 

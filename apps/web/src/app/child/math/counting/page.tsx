@@ -6,12 +6,12 @@ import confetti from 'canvas-confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
-import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors } from '@/lib/persianMath'
+import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors, sayNumber, sayPhrase } from '@/lib/persianMath'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
-import { speakPersian, initSpeech } from '@/lib/speech'
+import { initSpeech } from '@/lib/speech'
 import type { Child } from '@koodakbook/shared'
 
 /* شمارش (ages 3–5) — tap-to-count. The child taps every fruit; each tap
@@ -70,16 +70,16 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
     playTap()
     const next = new Set(tapped).add(i)
     setTapped(next)
-    speakPersian(numberToPersianWord(next.size))   // the count IS the audio
-    if (next.size === r.count) setTimeout(() => speakPersian(`چند تا بود؟`), 900)
+    sayNumber(next.size)   // the count IS the audio (recorded clip, TTS fallback)
+    if (next.size === r.count) setTimeout(() => sayPhrase('q-chandta', 'چند تا بود؟'), 900)
   }
 
   function answer(n: number) {
     if (picked !== null || !allCounted) return
     setPicked(n)
     const ok = n === r.count
-    if (ok) { playSuccess(); setStars(s => s + 1); speakPersian(`آفرین! ${numberToPersianWord(n)} تا!`) }
-    else speakPersian(`${numberToPersianWord(r.count)} تا بود!`)
+    if (ok) { playSuccess(); setStars(s => s + 1); sayPhrase('afarin', 'آفرین!') }
+    else sayNumber(r.count)
     setTimeout(() => { setPicked(null); setTapped(new Set()); setIdx(i => i + 1) }, 1400)
   }
 

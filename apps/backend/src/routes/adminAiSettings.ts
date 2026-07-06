@@ -83,7 +83,7 @@ router.patch('/ai-settings', requireAdmin, requirePermission('ai.manage'), async
 })
 
 // ── Regenerate audio (Piper, current voice) for words / letters / stories ─────
-const regenSchema = z.object({ scope: z.enum(['words', 'letters', 'stories', 'phonics', 'all']) })
+const regenSchema = z.object({ scope: z.enum(['words', 'letters', 'stories', 'phonics', 'math', 'all']) })
 
 router.post('/tts/regenerate', requireAdmin, requirePermission('ai.manage'), (req, res) => {
   const parsed = regenSchema.safeParse(req.body)

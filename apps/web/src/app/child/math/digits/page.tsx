@@ -6,12 +6,12 @@ import confetti from 'canvas-confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
-import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors } from '@/lib/persianMath'
+import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors, sayNumber, sayPhrase } from '@/lib/persianMath'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
-import { speakPersian, initSpeech } from '@/lib/speech'
+import { initSpeech } from '@/lib/speech'
 import type { Child } from '@koodakbook/shared'
 
 /* رقم‌های فارسی (ages 6–7) — the one thing no school abroad teaches: reading
@@ -62,7 +62,7 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
   }, [done])
 
   useEffect(() => {
-    if (!done && q) speakPersian(numberToPersianWord(q.value))   // hear the number, find it
+    if (!done && q) sayNumber(q.value)   // hear the number, find it
   }, [idx]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function pick(n: number) {
@@ -70,8 +70,8 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
     playTap()
     setPicked(n)
     const ok = n === q.value
-    if (ok) { playSuccess(); setStars(s => s + 1) }
-    speakPersian(ok ? `آفرین! ${numberToPersianWord(q.value)}` : `${numberToPersianWord(q.value)} این بود!`)
+    if (ok) { playSuccess(); setStars(s => s + 1); sayPhrase('afarin', 'آفرین!') }
+    else sayNumber(q.value)
     setTimeout(() => { setPicked(null); setIdx(i => i + 1) }, 1200)
   }
 
