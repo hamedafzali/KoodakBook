@@ -27,11 +27,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-amber-50 p-4">
-      <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
+    <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-amber-600 mb-1">KoodakBook</h1>
-          <p className="text-gray-500 text-sm">ایجاد حساب کاربری</p>
+          <p className="text-4xl mb-2" aria-hidden="true">🎈</p>
+          <h1 className="text-2xl font-bold text-slate-800 mb-1">شروع ماجراجویی فارسی</h1>
+          <p className="text-gray-500 text-sm">رایگان است — نه کارت بانکی، نه تعهدی</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -87,7 +87,10 @@ export default function SignupPage() {
             ورود
           </Link>
         </p>
-      </div>
+        <p className="text-center text-[11px] text-gray-400 mt-4 persian-text leading-relaxed">
+          با ثبت‌نام، <Link href="/terms" className="underline hover:text-amber-600">شرایط استفاده</Link> و{' '}
+          <Link href="/privacy" className="underline hover:text-amber-600">حریم خصوصی</Link> را می‌پذیرید.
+        </p>
     </div>
   )
 }

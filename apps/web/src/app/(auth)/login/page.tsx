@@ -33,11 +33,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-amber-50 p-4">
-      <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
+    <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-amber-600 mb-1">KoodakBook</h1>
-          <p className="text-gray-500 text-sm">ورود به حساب</p>
+          <p className="text-4xl mb-2" aria-hidden="true">👋</p>
+          <h1 className="text-2xl font-bold text-slate-800 mb-1">خوش برگشتید!</h1>
+          <p className="text-gray-500 text-sm">قصه‌ها منتظرند — وارد شوید</p>
         </div>
 
         {expired && (
@@ -93,10 +93,9 @@ export default function LoginPage() {
         <p className="text-center text-sm text-gray-500 mt-6 persian-text">
           حساب ندارید؟{' '}
           <Link href="/signup" className="text-amber-700 font-medium hover:underline">
-            ثبت‌نام
+            ثبت‌نام رایگان
           </Link>
         </p>
-      </div>
     </div>
   )
 }
