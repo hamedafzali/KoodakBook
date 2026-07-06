@@ -132,8 +132,11 @@ export default function AdminWordsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FileUpload type="audio" label="فایل صوتی" currentUrl={form.audio_url}
             onUploaded={url => setForm(f => ({ ...f, audio_url: url }))} />
-          <FileUpload type="images" label="تصویر" currentUrl={form.image_url}
-            onUploaded={url => setForm(f => ({ ...f, image_url: url }))} />
+          <div>
+            <FileUpload type="images" label="تصویر" currentUrl={form.image_url}
+              onUploaded={url => setForm(f => ({ ...f, image_url: url }))} />
+            <PhotoPicker query={form.english} onPicked={url => setForm(f => ({ ...f, image_url: url }))} />
+          </div>
         </div>
         <div className="flex gap-2">
           <Button type="submit">{editing ? 'ذخیره' : 'افزودن'}</Button>
@@ -225,6 +228,59 @@ function AnimationParams({ template, value, onChange }: { template: string; valu
           </label>
         )
       })}
+    </div>
+  )
+}
+
+/* ── Free-photo picker (Openverse, CC0/public-domain only) ──
+ * Searches by the word's English gloss; the admin picks one and the backend
+ * downloads it into /uploads (never hotlinked). Real photos beat icons for
+ * vocabulary: the child links the Persian word to the real-world object. */
+function PhotoPicker({ query, onPicked }: { query: string; onPicked: (url: string) => void }) {
+  const [results, setResults] = useState<{ id: string; thumb: string; url: string; license: string }[] | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)   // 'search' | result id
+  const [err, setErr] = useState<string | null>(null)
+
+  async function search() {
+    if (!query.trim()) { setErr('اول معنی انگلیسی را بنویسید'); return }
+    setBusy('search'); setErr(null); setResults(null)
+    const r = await api.get<{ id: string; thumb: string; url: string; license: string }[]>(
+      `/api/admin/images/search?q=${encodeURIComponent(query.trim())}`)
+    setBusy(null)
+    if (r.error || !r.data) { setErr(r.error ?? 'خطا'); return }
+    if (r.data.length === 0) { setErr('عکسی پیدا نشد — واژه‌ی انگلیسی دیگری امتحان کنید'); return }
+    setResults(r.data)
+  }
+
+  async function pick(item: { id: string; url: string }) {
+    setBusy(item.id); setErr(null)
+    const r = await api.post<{ url: string }>('/api/admin/images/import', { url: item.url })
+    setBusy(null)
+    if (r.error || !r.data) { setErr(r.error ?? 'دانلود ممکن نشد'); return }
+    onPicked(r.data.url)
+    setResults(null)
+  }
+
+  return (
+    <div className="mt-2">
+      <button type="button" onClick={search} disabled={busy === 'search'}
+        className="text-xs text-amber-700 hover:underline disabled:opacity-50">
+        {busy === 'search' ? 'در حال جست‌وجو…' : '🔍 پیشنهاد عکس رایگان (بدون حق نشر)'}
+      </button>
+      {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
+      {results && (
+        <div className="grid grid-cols-4 gap-2 mt-2">
+          {results.map(x => (
+            <button key={x.id} type="button" onClick={() => pick(x)} disabled={busy !== null}
+              className={`relative rounded-lg overflow-hidden border-2 hover:border-amber-400 transition ${busy === x.id ? 'opacity-50' : 'border-transparent'}`}
+              title={`license: ${x.license}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={x.thumb} alt="" className="w-full h-16 object-cover" loading="lazy" />
+              {busy === x.id && <span className="absolute inset-0 flex items-center justify-center text-xs bg-white/70">⬇</span>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

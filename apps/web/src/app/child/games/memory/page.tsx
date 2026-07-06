@@ -28,6 +28,7 @@ interface Card {
   persian: string
   english: string
   audio: string | null
+  image: string | null
 }
 
 function shuffle<T>(a: T[]): T[] { return [...a].sort(() => Math.random() - 0.5) }
@@ -62,7 +63,7 @@ function Board({ words, onReplay, onHome }: { words: Word[]; onReplay: () => voi
   const cards = useMemo<Card[]>(() => {
     const picked = shuffle(words).slice(0, PAIRS)
     return shuffle(picked.flatMap(w => ([0, 1] as const).map(i => ({
-      key: `${w.id}-${i}`, wordId: w.id, persian: w.persian, english: w.english, audio: mediaUrl(w.audio_url),
+      key: `${w.id}-${i}`, wordId: w.id, persian: w.persian, english: w.english, audio: mediaUrl(w.audio_url), image: mediaUrl(w.image_url),
     }))))
   }, [words])
 
@@ -144,9 +145,14 @@ function Board({ words, onReplay, onHome }: { words: Word[]; onReplay: () => voi
                     <span className="text-3xl" aria-hidden="true">🌟</span>
                   </div>
                   {/* front (word) */}
-                  <div className={`absolute inset-0 rounded-2xl shadow-sm flex flex-col items-center justify-center gap-0.5 px-1 [backface-visibility:hidden] [transform:rotateY(180deg)] ${
+                  <div className={`absolute inset-0 rounded-2xl shadow-sm flex flex-col items-center justify-center gap-0.5 px-1 overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)] ${
                     isMatched ? 'bg-green-100 border-2 border-green-300' : 'bg-white border-2 border-violet-200'}`}>
-                    <span className="text-xl font-bold text-gray-800 persian-text leading-tight">{card.persian}</span>
+                    {/* real photo when the word has one — word stays visible below */}
+                    {card.image && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={card.image} alt="" className="w-full h-10 object-cover rounded-t-xl -mt-1" loading="lazy" />
+                    )}
+                    <span className={`font-bold text-gray-800 persian-text leading-tight ${card.image ? 'text-base' : 'text-xl'}`}>{card.persian}</span>
                     <span className="text-[10px] text-gray-400 ltr truncate max-w-full">{card.english}</span>
                   </div>
                 </motion.div>
