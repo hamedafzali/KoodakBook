@@ -21,7 +21,7 @@ import type { AudioSection, AudioEngine, AudioSectionConfig } from '@koodakbook/
 
 export type { AudioSection, AudioEngine, AudioSectionConfig }
 
-export const AUDIO_SECTIONS: AudioSection[] = ['story', 'letter', 'word', 'phonics']
+export const AUDIO_SECTIONS: AudioSection[] = ['story', 'letter', 'word', 'phonics', 'math']
 export const AUDIO_ENGINES: AudioEngine[] = ['piper', 'edge', 'azure', 'openai', 'google', 'elevenlabs']
 
 const SIDECAR_ENGINES: AudioEngine[] = ['piper', 'edge']

@@ -59,10 +59,9 @@ async function collect(scope: RegenScope): Promise<Item[]> {
   }
   if (scope === 'math' || scope === 'all') {
     // دنیای اعداد pack: numbers 0–100 + prompt phrases, fixed paths
-    // /uploads/math/<slug>.wav (client-built, like phonics). Voiced with the
-    // word section's engine — numbers are word-like content.
+    // /uploads/math/<slug>.wav (client-built, like phonics). Own section voice.
     for (const m of mathAudioItems())
-      items.push({ section: 'word', dir: 'math', id: m.slug, text: m.text, versioned: false })
+      items.push({ section: 'math', dir: 'math', id: m.slug, text: m.text, versioned: false })
   }
   return items
 }

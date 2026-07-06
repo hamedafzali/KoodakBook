@@ -91,8 +91,14 @@ const SECTIONS: Record<AudioSection, { title: string; desc: string; sample: stri
     sample: 'بَ',
     regenScope: 'phonics',
   },
+  math: {
+    title: 'اعداد (دنیای اعداد)',
+    desc: 'عددهای ۰ تا ۱۰۰ و جمله‌های بازی («چند تا بود؟»، «آفرین!»). کلیپ‌های کوتاه — عدد «دو» و «نه» را حتماً تست کنید.',
+    sample: 'بیست و سه',
+    regenScope: 'math',
+  },
 }
-const SECTION_ORDER: AudioSection[] = ['story', 'letter', 'word', 'phonics']
+const SECTION_ORDER: AudioSection[] = ['story', 'letter', 'word', 'phonics', 'math']
 
 interface SectionsResponse {
   sections: AudioSectionConfig[]
