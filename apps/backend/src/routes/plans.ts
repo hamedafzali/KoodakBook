@@ -9,8 +9,10 @@ const router = Router()
 // site always shows exactly what the admin plans panel configured.
 router.get('/', async (_req, res) => {
   const plans = await query<{ id: string; key: string }>(
-    `select id, key, name, description, price_cents, currency, interval
-       from plans where is_active = true order by sort, price_cents`,
+    `select id, key, name, description, price_cents, currency, interval,
+            show_price, purchasable, badge
+       from plans where is_active = true and is_public = true
+      order by sort, price_cents`,
   )
   const feats = await query<{ plan_id: string; feature_key: string; value: string }>(
     'select plan_id, feature_key, value from plan_features',

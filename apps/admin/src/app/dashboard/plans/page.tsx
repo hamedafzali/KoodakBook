@@ -8,6 +8,7 @@ interface Plan {
   id: string; key: string; name: string; description: string | null
   price_cents: number; currency: string; interval: 'month' | 'year' | 'none'
   trial_days: number; is_active: boolean; is_default: boolean; sort: number
+  is_public: boolean; show_price: boolean; purchasable: boolean; badge: string | null
   subscribers: number; features: Record<string, string>
 }
 
@@ -60,6 +61,10 @@ function PlanCard({ plan, onChange }: { plan: Plan; onChange: () => void }) {
         <div className="flex flex-col items-end gap-1">
           {plan.is_default && <span className="text-[11px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">پیش‌فرض</span>}
           <span className={`text-[11px] px-2 py-0.5 rounded-full ${plan.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>{plan.is_active ? 'فعال' : 'غیرفعال'}</span>
+          {!plan.is_public && <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">🙈 مخفی از سایت</span>}
+          {!plan.show_price && <span className="text-[11px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">قیمت مخفی</span>}
+          {!plan.purchasable && plan.price_cents > 0 && <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">به‌زودی</span>}
+          {plan.badge && <span className="text-[11px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">🏷 {plan.badge}</span>}
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5 mt-3">
@@ -89,6 +94,8 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
     price_cents: plan?.price_cents ?? 0, currency: plan?.currency ?? 'EUR',
     interval: plan?.interval ?? 'month', trial_days: plan?.trial_days ?? 0,
     is_active: plan?.is_active ?? true, is_default: plan?.is_default ?? false,
+    is_public: plan?.is_public ?? true, show_price: plan?.show_price ?? true,
+    purchasable: plan?.purchasable ?? false, badge: plan?.badge ?? '',
   })
   const [featVals, setFeatVals] = useState<Record<string, string>>({ ...(plan?.features ?? {}) })
   const [custom, setCustom] = useState<[string, string][]>(
@@ -140,6 +147,28 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
       <div className="flex gap-4 text-sm">
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={f.is_active} onChange={e => setF({ ...f, is_active: e.target.checked })} /> فعال</label>
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={f.is_default} onChange={e => setF({ ...f, is_default: e.target.checked })} /> پلن پیش‌فرض</label>
+      </div>
+
+      {/* Presentation: how (and whether) this plan appears on the website */}
+      <div className="bg-slate-50 rounded-xl p-3 space-y-2.5">
+        <p className="text-sm font-medium text-gray-700">نمایش در سایت و صفحه‌ی خرید</p>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={f.is_public} onChange={e => setF({ ...f, is_public: e.target.checked })} />
+            نمایش عمومی <span className="text-xs text-gray-400">(خاموش = از سایت مخفی می‌شود)</span>
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={f.show_price} onChange={e => setF({ ...f, show_price: e.target.checked })} />
+            نمایش قیمت <span className="text-xs text-gray-400">(خاموش = «به‌زودی اعلام می‌شود»)</span>
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={f.purchasable} onChange={e => setF({ ...f, purchasable: e.target.checked })} />
+            قابل خرید <span className="text-xs text-gray-400">(خاموش = دکمه‌ی «به‌زودی»)</span>
+          </label>
+        </div>
+        <Field label="برچسب روی کارت (اختیاری)" hint="مثلاً «پیشنهاد خانواده‌ها» یا «۲ ماه رایگان» — کارت را برجسته می‌کند">
+          <input className={inp} value={f.badge} onChange={e => setF({ ...f, badge: e.target.value })} placeholder="بدون برچسب" />
+        </Field>
       </div>
 
       <div>

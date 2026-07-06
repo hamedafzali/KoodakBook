@@ -15,6 +15,9 @@ interface Plan {
   price_cents: number
   currency: string
   interval: 'month' | 'year' | 'none'
+  show_price: boolean
+  purchasable: boolean
+  badge: string | null
   features: Record<string, string>
 }
 
@@ -62,28 +65,29 @@ export default function Pricing() {
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {plans.map(p => {
         const free = p.price_cents === 0
-        const highlight = p.key === 'premium'
+        const highlight = !!p.badge
         return (
           <div key={p.id}
             className={`relative rounded-3xl bg-white p-7 flex flex-col ${
               highlight ? 'border-2 border-amber-400 shadow-lg shadow-amber-100' : 'border border-slate-200'}`}>
-            {highlight && (
-              <span className="absolute -top-3.5 right-6 bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">پیشنهاد خانواده‌ها</span>
-            )}
-            {p.interval === 'year' && (
-              <span className="absolute -top-3.5 right-6 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">۲ ماه رایگان</span>
+            {p.badge && (
+              <span className="absolute -top-3.5 right-6 bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">{p.badge}</span>
             )}
             <h3 className="font-bold text-xl">{p.name}</h3>
-            <p className="text-3xl font-bold mt-2">
-              {price(p)}<span className="text-sm font-normal text-slate-400"> {INTERVAL[p.interval]}</span>
-            </p>
+            {p.show_price ? (
+              <p className="text-3xl font-bold mt-2">
+                {price(p)}<span className="text-sm font-normal text-slate-400"> {INTERVAL[p.interval]}</span>
+              </p>
+            ) : (
+              <p className="text-lg font-bold mt-3 text-slate-400">قیمت به‌زودی اعلام می‌شود</p>
+            )}
             {p.description && <p className="text-sm text-slate-500 mt-1">{p.description}</p>}
             <ul className="mt-5 space-y-2.5 text-sm text-slate-600 flex-1">
               {featureLines(p.features).map(l => <li key={l}>{free ? '✅' : '⭐'} {l}</li>)}
             </ul>
-            {free ? (
+            {p.purchasable ? (
               <Link href="/signup" className="block text-center mt-7 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition">
-                شروع رایگان
+                {free ? 'شروع رایگان' : 'انتخاب این پلن'}
               </Link>
             ) : (
               <span className="block text-center mt-7 bg-slate-100 text-slate-400 font-bold py-3 rounded-xl cursor-default select-none">

@@ -10,7 +10,7 @@ const router = Router()
 router.get('/plans', requireAdmin, async (_req, res) => {
   const plans = await query<{ id: string; key: string }>(
     `select id, key, name, description, price_cents, currency, interval, trial_days,
-            is_active, is_default, sort,
+            is_active, is_default, sort, is_public, show_price, purchasable, badge,
             (select count(*)::int from users u where u.plan = plans.key) as subscribers
      from plans order by sort, price_cents`,
   )
@@ -33,6 +33,11 @@ const planSchema = z.object({
   is_active: z.boolean().default(true),
   is_default: z.boolean().default(false),
   sort: z.number().int().default(0),
+  // Presentation (mig 034): how the plan appears in the public catalogue.
+  is_public: z.boolean().default(true),
+  show_price: z.boolean().default(true),
+  purchasable: z.boolean().default(false),
+  badge: z.string().trim().max(40).nullable().optional(),
   features: z.record(z.string(), z.string()).default({}),
 })
 
@@ -50,9 +55,11 @@ router.post('/plans', requireAdmin, requirePermission('plans.manage'), async (re
   const existing = await queryOne('select id from plans where key = $1', [p.key])
   if (existing) { res.status(409).json({ data: null, error: 'Plan key already exists' }); return }
   const [row] = await query<{ id: string }>(
-    `insert into plans (key,name,description,price_cents,currency,interval,trial_days,is_active,is_default,sort)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id`,
-    [p.key, p.name, p.description ?? null, p.price_cents, p.currency, p.interval, p.trial_days, p.is_active, p.is_default, p.sort],
+    `insert into plans (key,name,description,price_cents,currency,interval,trial_days,is_active,is_default,sort,
+                        is_public,show_price,purchasable,badge)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning id`,
+    [p.key, p.name, p.description ?? null, p.price_cents, p.currency, p.interval, p.trial_days, p.is_active, p.is_default, p.sort,
+     p.is_public, p.show_price, p.purchasable, p.badge || null],
   )
   if (p.is_default) await query('update plans set is_default = false where id <> $1', [row.id])
   await writeFeatures(row.id, p.features)
@@ -69,10 +76,15 @@ router.patch('/plans/:id', requireAdmin, requirePermission('plans.manage'), asyn
        name = coalesce($1,name), description = coalesce($2,description),
        price_cents = coalesce($3,price_cents), currency = coalesce($4,currency),
        interval = coalesce($5,interval), trial_days = coalesce($6,trial_days),
-       is_active = coalesce($7,is_active), is_default = coalesce($8,is_default), sort = coalesce($9,sort)
-     where id = $10 returning id`,
+       is_active = coalesce($7,is_active), is_default = coalesce($8,is_default), sort = coalesce($9,sort),
+       is_public = coalesce($10,is_public), show_price = coalesce($11,show_price),
+       purchasable = coalesce($12,purchasable),
+       badge = case when $13 then nullif($14, '') else badge end
+     where id = $15 returning id`,
     [p.name ?? null, p.description ?? null, p.price_cents ?? null, p.currency ?? null, p.interval ?? null,
-     p.trial_days ?? null, p.is_active ?? null, p.is_default ?? null, p.sort ?? null, req.params.id],
+     p.trial_days ?? null, p.is_active ?? null, p.is_default ?? null, p.sort ?? null,
+     p.is_public ?? null, p.show_price ?? null, p.purchasable ?? null,
+     p.badge !== undefined, p.badge ?? '', req.params.id],
   )
   if (!row) { res.status(404).json({ data: null, error: 'Plan not found' }); return }
   if (p.is_default) await query('update plans set is_default = false where id <> $1', [req.params.id])
