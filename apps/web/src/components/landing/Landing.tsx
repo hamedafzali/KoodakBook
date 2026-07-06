@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { TabletForm, WaitlistForm } from './LeadForms'
+import Pricing from './Pricing'
 
 /* Public marketing landing (server-rendered for SEO).
  * Audience: Iranian parents abroad deciding whether this is safe + effective
@@ -20,7 +21,7 @@ const FEATURES = [
   { icon: '✏️', title: 'الفبا و نوشتن', text: 'هر ۳۲ حرف با صدای درست، شکل حرف در اول/وسط/آخر و تمرین نوشتن با انگشت.' },
   { icon: '🎵', title: 'صداکِشی (فونیکس)', text: 'زبر، زیر، پیش — بچه‌ها صدای حرف‌ها را می‌شنوند و ترکیب می‌کنند؛ پایه‌ی واقعی خواندن.' },
   { icon: '🔄', title: 'مرور هوشمند', text: 'تکرار فاصله‌دار (Spaced Repetition): هر واژه دقیقاً وقتی برمی‌گردد که در آستانه‌ی فراموشی است.' },
-  { icon: '🎤', title: 'تمرین گفتن', text: 'کودک واژه را بلند می‌گوید و اپ با تشخیص گفتار می‌شنود — تلفظ همان‌جا تمرین می‌شود.' },
+  { icon: '🎤', title: 'تمرین گفتن', text: 'کودک واژه را بلند می‌گوید و نرم‌افزار با تشخیص گفتار می‌شنود — تلفظ همان‌جا تمرین می‌شود.' },
   { icon: '📖', title: 'داستان با اسم کودک شما', text: 'هوش مصنوعی داستانی می‌سازد که قهرمانش کودک شماست — متناسب با سن و سطح، با صدای گوینده.' },
   { icon: '🏆', title: 'جایزه و نشان', text: 'ستاره‌ها، نشان‌ها و دستاوردها انگیزه را نگه می‌دارند؛ پیشرفت برای کودک قابل‌لمس می‌شود.' },
   { icon: '🧭', title: 'آزمون تعیین سطح', text: 'در شروع، یک بازی کوتاه سطح کودک را می‌سنجد تا از جای درست شروع کند — نه آسان‌تر، نه سخت‌تر.' },
@@ -29,19 +30,19 @@ const FEATURES = [
 const METHOD = [
   {
     icon: '🔤', title: 'اول صدا، بعد حرف',
-    text: 'پژوهش‌های علم خواندن (Science of Reading) روشن است: بچه‌ها با شنیدن و ترکیب صداها خواندن را یاد می‌گیرند، نه با حفظ شکل کلمه‌ها. صداکشی ستون این اپ است.',
+    text: 'پژوهش‌های علم خواندن (Science of Reading) روشن است: بچه‌ها با شنیدن و ترکیب صداها خواندن را یاد می‌گیرند، نه با حفظ شکل کلمه‌ها. صداکشی ستون این نرم‌افزار است.',
   },
   {
     icon: '🧠', title: 'تکرار در لحظه‌ی درست',
-    text: 'حافظه با تکرارِ فاصله‌دار می‌ماند. کودک‌بوک هر واژه را درست قبل از فراموشی برمی‌گرداند — همان روشی که در بهترین اپ‌های زبان دنیا استفاده می‌شود.',
+    text: 'حافظه با تکرارِ فاصله‌دار می‌ماند. کودک‌بوک هر واژه را درست قبل از فراموشی برمی‌گرداند — همان روشی که در بهترین نرم‌افزارهای زبان دنیا استفاده می‌شود.',
   },
   {
     icon: '💛', title: 'قصه به‌جای درس',
     text: 'کودک با قصه‌ای که قهرمانش خودش است، واژه‌ها را در بافت واقعی می‌بیند و می‌شنود. یادگیری بدون احساس «کلاس» — همان‌طور که زبان مادری یاد گرفته می‌شود.',
   },
   {
-    icon: '🌍', title: 'دوزبانگی یک هدیه است',
-    text: 'دوزبانگی با تمرکز، انعطاف ذهنی و مهارت حل مسئله همراه است — و مهم‌تر: پیوند کودک با مادربزرگ، پدربزرگ و هویتش. روزی ۱۰ دقیقه کافی است.',
+    icon: '🌍', title: 'چندزبانی یک هدیه است',
+    text: 'چندزبانی با تمرکز، انعطاف ذهنی و مهارت حل مسئله همراه است — و مهم‌تر: پیوند کودک با مادربزرگ، پدربزرگ و هویتش. روزی ۱۰ دقیقه کافی است.',
   },
 ]
 
@@ -63,7 +64,7 @@ const FAQ = [
   },
   {
     q: 'روی چه دستگاه‌هایی کار می‌کند؟',
-    a: 'همین حالا در مرورگر هر موبایل، تبلت و کامپیوتری کار می‌کند و می‌توانید آن را مثل یک اپ به صفحه‌ی اصلی اضافه کنید. اپ اندروید و iOS هم در راه است.',
+    a: 'همین حالا در مرورگر هر موبایل، تبلت و کامپیوتری کار می‌کند و می‌توانید آن را مثل یک نرم‌افزار به صفحه‌ی اصلی اضافه کنید. نرم‌افزار اندروید و iOS هم در راه است.',
   },
   {
     q: 'وقت من به‌عنوان والد چقدر گرفته می‌شود؟',
@@ -95,7 +96,7 @@ function SectionTitle({ kicker, title, sub }: { kicker: string; title: string; s
 function TabletMock() {
   return (
     <svg viewBox="0 0 320 420" className="w-full max-w-xs mx-auto drop-shadow-xl" role="img"
-      aria-label="نمای اپ کودک‌بوک روی تبلت: تمرین صداکشی حرف ب">
+      aria-label="نمای نرم‌افزار کودک‌بوک روی تبلت: تمرین صداکشی حرف ب">
       <rect x="8" y="8" width="304" height="404" rx="28" fill="#1e293b" />
       <rect x="20" y="20" width="280" height="380" rx="18" fill="#fffbeb" />
       {/* header */}
@@ -119,6 +120,50 @@ function TabletMock() {
       {/* stars */}
       <text x="48" y="130" fontSize="20">⭐</text>
       <text x="36" y="230" fontSize="14">⭐</text>
+    </svg>
+  )
+}
+
+/** Product shot for the tablet offer: tablet in a kid-proof bumper case with a
+ *  gift bow — drawn inline, no stock-photo licensing. */
+function TabletProduct() {
+  return (
+    <svg viewBox="0 0 420 320" className="w-full max-w-md mx-auto" role="img"
+      aria-label="تبلت کودک‌بوک با قاب محافظ کودک و روبان هدیه">
+      {/* soft backdrop */}
+      <ellipse cx="210" cy="290" rx="170" ry="18" fill="#f1f5f9" />
+      {/* bumper case */}
+      <rect x="40" y="40" width="340" height="230" rx="42" fill="#fb923c" />
+      <rect x="46" y="46" width="328" height="218" rx="38" fill="#fdba74" />
+      {/* screen */}
+      <rect x="72" y="68" width="276" height="174" rx="16" fill="#fffbeb" />
+      <rect x="72" y="68" width="276" height="40" rx="16" fill="#f59e0b" />
+      <rect x="72" y="92" width="276" height="16" fill="#f59e0b" />
+      <text x="210" y="95" textAnchor="middle" fontSize="17" fontWeight="bold" fill="#fff">کودک‌بوک 📚</text>
+      {/* app tiles */}
+      <rect x="92" y="122" width="72" height="52" rx="12" fill="#34d399" />
+      <text x="128" y="155" textAnchor="middle" fontSize="22">🔤</text>
+      <rect x="174" y="122" width="72" height="52" rx="12" fill="#818cf8" />
+      <text x="210" y="155" textAnchor="middle" fontSize="22">📖</text>
+      <rect x="256" y="122" width="72" height="52" rx="12" fill="#f472b6" />
+      <text x="292" y="155" textAnchor="middle" fontSize="22">🎵</text>
+      <rect x="92" y="184" width="72" height="42" rx="12" fill="#fbbf24" />
+      <text x="128" y="212" textAnchor="middle" fontSize="20">🎤</text>
+      <rect x="174" y="184" width="72" height="42" rx="12" fill="#60a5fa" />
+      <text x="210" y="212" textAnchor="middle" fontSize="20">🏆</text>
+      <rect x="256" y="184" width="72" height="42" rx="12" fill="#a78bfa" />
+      <text x="292" y="212" textAnchor="middle" fontSize="20">✏️</text>
+      {/* grip handles */}
+      <circle cx="40" cy="155" r="20" fill="#fb923c" />
+      <circle cx="380" cy="155" r="20" fill="#fb923c" />
+      {/* gift bow */}
+      <circle cx="352" cy="52" r="6" fill="#e11d48" />
+      <path d="M352 52c-14-22-34-12-24 2 6 9 18 4 24-2z" fill="#f43f5e" />
+      <path d="M352 52c14-22 34-12 24 2-6 9-18 4-24-2z" fill="#f43f5e" />
+      <path d="M348 56l-10 26 12-8 8 10z" fill="#fb7185" />
+      {/* sparkles */}
+      <text x="60" y="35" fontSize="18">✨</text>
+      <text x="330" y="295" fontSize="16">⭐</text>
     </svg>
   )
 }
@@ -178,7 +223,7 @@ export default function Landing() {
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/signup" className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-7 py-3.5 rounded-2xl text-lg transition shadow-lg shadow-amber-200">
-                شروع رایگان — بدون کارت بانکی
+                شروع رایگان
               </Link>
               <a href="#features" className="border-2 border-amber-200 hover:border-amber-400 text-amber-700 font-bold px-7 py-3.5 rounded-2xl text-lg transition">
                 ببینید چطور کار می‌کند
@@ -241,7 +286,7 @@ export default function Landing() {
       {/* Parents / trust */}
       <section id="parents" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
         <SectionTitle kicker="برای والدین" title="خیال شما راحت، کنترل دست شما"
-          sub="یک اپ کودک اول باید امن باشد، بعد آموزشی. این ترتیب را جدی گرفته‌ایم." />
+          sub="یک نرم‌افزار کودک اول باید امن باشد، بعد آموزشی. این ترتیب را جدی گرفته‌ایم." />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {PARENT_POINTS.map(p => (
             <div key={p.title} className="rounded-2xl border border-slate-100 p-5 text-center">
@@ -253,68 +298,54 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* Pricing — synced from the admin plans panel via /api/plans */}
       <section id="pricing" className="bg-slate-50 scroll-mt-20">
-        <div className="max-w-4xl mx-auto px-4 py-16">
-          <SectionTitle kicker="قیمت" title="ساده و شفاف — لغو در هر لحظه" />
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="rounded-3xl bg-white border border-slate-200 p-7">
-              <h3 className="font-bold text-xl">رایگان</h3>
-              <p className="text-3xl font-bold mt-2">۰€<span className="text-sm font-normal text-slate-400"> — همیشه</span></p>
-              <p className="text-sm text-slate-500 mt-1">برای شروع و آشنایی</p>
-              <ul className="mt-5 space-y-2.5 text-sm text-slate-600">
-                <li>✅ ۱ پروفایل کودک</li>
-                <li>✅ الفبا، نوشتن و صداکشی کامل</li>
-                <li>✅ درس‌های واژگان پایه</li>
-                <li>✅ چند داستان اول کتابخانه</li>
-                <li>✅ آزمون تعیین سطح و داشبورد والدین</li>
-              </ul>
-              <Link href="/signup" className="block text-center mt-7 border-2 border-amber-400 text-amber-600 font-bold py-3 rounded-xl hover:bg-amber-50 transition">
-                شروع رایگان
-              </Link>
-            </div>
-            <div className="relative rounded-3xl bg-white border-2 border-amber-400 p-7 shadow-lg shadow-amber-100">
-              <span className="absolute -top-3.5 right-6 bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">پیشنهاد خانواده‌ها</span>
-              <h3 className="font-bold text-xl">پرمیوم</h3>
-              <p className="text-3xl font-bold mt-2">۹٫۹۹€<span className="text-sm font-normal text-slate-400"> / ماه</span></p>
-              <p className="text-sm text-slate-500 mt-1">مسیر کامل + داستان‌های شخصی</p>
-              <ul className="mt-5 space-y-2.5 text-sm text-slate-600">
-                <li>⭐ تا ۵ پروفایل کودک</li>
-                <li>⭐ تمام کتابخانه‌ی داستان</li>
-                <li>⭐ داستان‌های بی‌نهایت با اسم کودک شما (AI + صدای گوینده)</li>
-                <li>⭐ هم‌خوانی والد و کودک</li>
-                <li>⭐ ضبط صدای خودتان روی واژه‌ها و داستان‌ها</li>
-              </ul>
-              <Link href="/signup" className="block text-center mt-7 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition">
-                شروع با پرمیوم
-              </Link>
-            </div>
-          </div>
+        <div className="max-w-5xl mx-auto px-4 py-16">
+          <SectionTitle kicker="قیمت" title="ساده و شفاف — لغو در هر لحظه"
+            sub="امروز همه‌چیز با حساب رایگان شروع می‌شود؛ پلن‌های پرمیوم به‌زودی فعال می‌شوند." />
+          <Pricing />
         </div>
       </section>
 
-      {/* Tablet offer */}
+      {/* Tablet offer (coming soon — collect interest, no prices yet) */}
       <section id="tablet" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
+        <div className="text-center max-w-2xl mx-auto mb-10">
+          <p className="text-amber-600 font-bold text-sm mb-2">
+            تبلت کودک‌بوک <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full mr-1">به‌زودی</span>
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 leading-snug">
+            یک تبلت، آماده و امن — روشن کنید و بدهید دست کودک
+          </h2>
+          <p className="text-slate-500 mt-3 leading-relaxed">
+            برای خانواده‌هایی که نمی‌خواهند موبایل خودشان را بدهند: تبلتی با کودک‌بوک
+            نصب‌شده، حالت کودک قفل‌شده و بدون دسترسی باز به اینترنت. بهترین هدیه‌ی تولد
+            و نوروز برای نوه و خواهرزاده و برادرزاده. 🎁
+          </p>
+        </div>
+
+        {/* Packages — deliberately without prices until launch */}
+        <div className="grid sm:grid-cols-3 gap-5 mb-12">
+          {[
+            { icon: '📦', title: 'بسته‌ی پایه', items: ['تبلت ۸ اینچ', 'کودک‌بوک نصب و تنظیم‌شده', 'حالت کودک قفل‌شده'] },
+            { icon: '🛡️', title: 'بسته‌ی محافظ', items: ['تبلت ۱۰ اینچ', 'قاب ضدضربه‌ی مخصوص کودک', 'پایه‌ی رومیزی + محافظ صفحه'] },
+            { icon: '🎁', title: 'بسته‌ی هدیه', items: ['بسته‌ی محافظ کامل', 'جعبه‌ی هدیه و کارت تبریک', 'ارسال مستقیم به گیرنده در اروپا'] },
+          ].map(p => (
+            <div key={p.title} className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+              <p className="text-4xl mb-3" aria-hidden="true">{p.icon}</p>
+              <h3 className="font-bold text-slate-800 mb-3">{p.title}</h3>
+              <ul className="space-y-1.5 text-sm text-slate-500">
+                {p.items.map(i => <li key={i}>{i}</li>)}
+              </ul>
+              <p className="mt-4 text-xs font-bold text-amber-600 bg-amber-50 rounded-full py-1.5">قیمت به‌زودی اعلام می‌شود</p>
+            </div>
+          ))}
+        </div>
+
         <div className="grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <p className="text-amber-600 font-bold text-sm mb-2">تبلت کودک‌بوک</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 leading-snug">
-              یک تبلت، آماده و امن —<br />روشن کنید و بدهید دست کودک
-            </h2>
-            <p className="text-slate-500 mt-4 leading-relaxed">
-              برای خانواده‌هایی که نمی‌خواهند موبایل خودشان را بدهند: یک تبلت اندرویدی با
-              کودک‌بوک نصب‌شده، حالت کودک قفل‌شده و بدون دسترسی به اینترنت باز. بهترین
-              هدیه‌ی تولد و نوروز برای نوه و خواهرزاده و برادرزاده. 🎁
-            </p>
-            <ul className="mt-4 space-y-2 text-sm text-slate-600">
-              <li>✅ کودک‌بوک از قبل نصب و تنظیم‌شده</li>
-              <li>✅ قاب محافظ مخصوص کودک</li>
-              <li>✅ فقط اپ‌های انتخابی شما — بدون یوتیوب و فروشگاه باز</li>
-              <li>✅ ارسال به سراسر اروپا</li>
-            </ul>
-          </div>
+          <TabletProduct />
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-4">پیش‌سفارش تبلت — بدون پرداخت</h3>
+            <h3 className="font-bold text-slate-800 mb-1">فرم علاقه‌مندی — بدون پرداخت</h3>
+            <p className="text-xs text-slate-400 mb-4">ثبت‌نام کنید تا با اعلام قیمت، اول به شما خبر بدهیم و در اولویت ارسال باشید.</p>
             <TabletForm />
           </div>
         </div>
@@ -324,7 +355,7 @@ export default function Landing() {
       <section className="bg-slate-900 text-white">
         <div className="max-w-6xl mx-auto px-4 py-14 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
-            <h2 className="text-2xl font-bold">اپ موبایل در راه است 📱</h2>
+            <h2 className="text-2xl font-bold">نرم‌افزار موبایل در راه است 📱</h2>
             <p className="text-slate-300 mt-2 leading-relaxed max-w-lg">
               کودک‌بوک همین امروز در مرورگر موبایل و تبلت کار می‌کند (به صفحه‌ی اصلی اضافه‌اش کنید).
               نسخه‌ی اندروید و iOS با حالت آفلاین کامل در راه است — ایمیل بگذارید تا اول شما بدانید.
@@ -374,7 +405,7 @@ export default function Landing() {
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="پیوندهای پایانی">
             <Link href="/privacy" className="hover:text-amber-600">حریم خصوصی</Link>
             <Link href="/terms" className="hover:text-amber-600">شرایط استفاده</Link>
-            <Link href="/login" className="hover:text-amber-600">ورود به اپ</Link>
+            <Link href="/login" className="hover:text-amber-600">ورود به نرم‌افزار</Link>
             <Link href="/signup" className="hover:text-amber-600">ثبت‌نام</Link>
           </nav>
         </div>

@@ -31,6 +31,30 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
   )
   if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
 
+  // Daily cap from the account's plan (ai_stories_per_day feature) — counts
+  // today's AI stories across all the family's children. Plans without the
+  // feature are uncapped.
+  const cap = await queryOne<{ value: string }>(
+    `select pf.value from users u
+       join plans p on p.key = u.plan
+       join plan_features pf on pf.plan_id = p.id and pf.feature_key = 'ai_stories_per_day'
+      where u.id = $1`,
+    [res.locals.userId],
+  )
+  const perDay = cap ? parseInt(cap.value, 10) : NaN
+  if (Number.isFinite(perDay)) {
+    const used = await queryOne<{ n: string }>(
+      `select count(*) as n from stories s
+        join children c on c.id = s.created_for_child
+       where c.parent_id = $1 and s.ai_generated and s.created_at >= date_trunc('day', now())`,
+      [res.locals.userId],
+    )
+    if (Number(used?.n ?? 0) >= perDay) {
+      res.status(429).json({ data: null, error: `سهم امروزِ داستان‌های شخصی (${perDay} داستان) تمام شد — فردا دوباره بساز! 🌙` })
+      return
+    }
+  }
+
   // Anchor vocabulary: a few words at or below the child's level so the story
   // reinforces what they're already learning.
   const words = await query<{ persian: string; english: string }>(

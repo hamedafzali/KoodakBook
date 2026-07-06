@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import { query } from '../lib/db'
-import { requireAuth } from '../middleware/auth'
 
 const router = Router()
 
 // Customer-facing plan catalogue (active plans + their feature values) for the
-// in-app plans/upgrade page. Admin management lives under /api/admin/plans.
-router.get('/', requireAuth, async (_req, res) => {
+// in-app plans/upgrade page AND the public marketing pricing section —
+// deliberately unauthenticated: it's a price list, and one endpoint means the
+// site always shows exactly what the admin plans panel configured.
+router.get('/', async (_req, res) => {
   const plans = await query<{ id: string; key: string }>(
     `select id, key, name, description, price_cents, currency, interval
        from plans where is_active = true order by sort, price_cents`,
