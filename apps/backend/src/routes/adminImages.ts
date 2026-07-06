@@ -8,31 +8,82 @@ import { requireAdmin, requirePermission } from '../middleware/admin'
 const router = Router()
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
-/* Free-photo picker for word cards.
- * Search proxies Openverse (openly-licensed image aggregator; keyless public
- * API) filtered to CC0/public-domain only — no attribution burden in a kids'
- * product. Import downloads the chosen photo to our uploads volume so the app
- * never hotlinks third-party hosts (privacy, speed, availability). A human
- * picks every image — no blind bulk matching. */
+/* Free-photo picker for word cards — multi-source, best available first:
+ *   Pixabay  (PIXABAY_API_KEY, free registration) — curated stock, safesearch,
+ *            best relevance. License: free use, no attribution.
+ *   Pexels   (PEXELS_API_KEY, free registration) — high-quality photos,
+ *            free use, no attribution.
+ *   Openverse (keyless fallback) — CC0/public-domain aggregate; weakest
+ *            relevance but always available.
+ * Import downloads the chosen photo to our uploads volume so the app never
+ * hotlinks third-party hosts. A human picks every image — no bulk matching. */
+
+interface Pic { id: string; thumb: string; url: string; license: string; source: string }
+
+const FETCH_OPTS = { headers: { 'User-Agent': 'KoodakBook-admin/1.0' }, signal: AbortSignal.timeout(10_000) } as const
+
+async function searchPixabay(q: string, key: string): Promise<Pic[]> {
+  const r = await fetch(
+    `https://pixabay.com/api/?key=${key}&q=${encodeURIComponent(q)}&image_type=photo&safesearch=true&per_page=24`,
+    FETCH_OPTS,
+  )
+  if (!r.ok) throw new Error(`Pixabay ${r.status}`)
+  const j = await r.json() as { hits?: { id: number; previewURL: string; webformatURL: string }[] }
+  return (j.hits ?? []).map(h => ({
+    id: `px-${h.id}`, thumb: h.previewURL, url: h.webformatURL, license: 'pixabay', source: 'Pixabay',
+  }))
+}
+
+async function searchPexels(q: string, key: string): Promise<Pic[]> {
+  const r = await fetch(
+    `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=24`,
+    { ...FETCH_OPTS, headers: { ...FETCH_OPTS.headers, Authorization: key } },
+  )
+  if (!r.ok) throw new Error(`Pexels ${r.status}`)
+  const j = await r.json() as { photos?: { id: number; src: { tiny: string; large: string } }[] }
+  return (j.photos ?? []).map(p => ({
+    id: `pe-${p.id}`, thumb: p.src.tiny, url: p.src.large, license: 'pexels', source: 'Pexels',
+  }))
+}
+
+async function searchOpenverse(q: string): Promise<Pic[]> {
+  const r = await fetch(
+    `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&license=cc0,pdm&page_size=20&mature=false`,
+    FETCH_OPTS,
+  )
+  if (!r.ok) throw new Error(`Openverse ${r.status}`)
+  const j = await r.json() as { results?: { id: string; thumbnail: string; url: string; license: string }[] }
+  return (j.results ?? []).map(x => ({
+    id: `ov-${x.id}`, thumb: x.thumbnail, url: x.url, license: x.license, source: 'Openverse',
+  }))
+}
 
 router.get('/images/search', requireAdmin, requirePermission('content.edit'), async (req, res) => {
   const q = String(req.query.q ?? '').trim().slice(0, 80)
   if (!q) { res.status(400).json({ data: null, error: 'q required' }); return }
-  try {
-    const r = await fetch(
-      `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&license=cc0,pdm&page_size=8&mature=false`,
-      { headers: { 'User-Agent': 'KoodakBook-admin/1.0' }, signal: AbortSignal.timeout(10_000) },
-    )
-    if (!r.ok) throw new Error(`Openverse ${r.status}`)
-    const json = await r.json() as { results?: { id: string; thumbnail: string; url: string; title?: string; license: string; source?: string }[] }
-    const results = (json.results ?? []).map(x => ({
-      id: x.id, thumb: x.thumbnail, url: x.url,
-      title: x.title ?? '', license: x.license, source: x.source ?? '',
-    }))
-    res.json({ data: results, error: null })
-  } catch (err) {
-    res.status(502).json({ data: null, error: `جست‌وجوی تصویر ممکن نشد: ${(err as Error).message}` })
+
+  const pixabayKey = process.env.PIXABAY_API_KEY
+  const pexelsKey = process.env.PEXELS_API_KEY
+
+  // Keyed sources in parallel when configured; Openverse fills the gap.
+  const tasks: Promise<Pic[]>[] = []
+  if (pixabayKey) tasks.push(searchPixabay(q, pixabayKey))
+  if (pexelsKey) tasks.push(searchPexels(q, pexelsKey))
+  if (tasks.length === 0) tasks.push(searchOpenverse(q))
+
+  const settled = await Promise.allSettled(tasks)
+  let results = settled.flatMap(s => (s.status === 'fulfilled' ? s.value : []))
+  // Keyed sources configured but all failed → still try the keyless fallback.
+  if (results.length === 0 && tasks.length > 0 && (pixabayKey || pexelsKey)) {
+    try { results = await searchOpenverse(q) } catch { /* keep empty */ }
   }
+  if (results.length === 0) {
+    const failure = settled.find(s => s.status === 'rejected') as PromiseRejectedResult | undefined
+    res.status(502).json({ data: null, error: `جست‌وجوی تصویر ممکن نشد${failure ? `: ${(failure.reason as Error).message}` : ''}` })
+    return
+  }
+  // Interleave sources so the grid mixes providers instead of blocks.
+  res.json({ data: results.slice(0, 36), error: null })
 })
 
 const importSchema = z.object({ url: z.string().url().max(600) })

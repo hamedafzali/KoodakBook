@@ -232,23 +232,27 @@ function AnimationParams({ template, value, onChange }: { template: string; valu
   )
 }
 
-/* ── Free-photo picker (Openverse, CC0/public-domain only) ──
- * Searches by the word's English gloss; the admin picks one and the backend
- * downloads it into /uploads (never hotlinked). Real photos beat icons for
- * vocabulary: the child links the Persian word to the real-world object. */
+/* ── Free-photo picker (Pixabay/Pexels when keys are set, Openverse fallback) ──
+ * Searches by an editable query (prefilled with the word's English gloss —
+ * refine it when results miss, e.g. "bear" → "brown bear animal"). The admin
+ * picks one; the backend downloads it into /uploads (never hotlinked). */
 function PhotoPicker({ query, onPicked }: { query: string; onPicked: (url: string) => void }) {
-  const [results, setResults] = useState<{ id: string; thumb: string; url: string; license: string }[] | null>(null)
+  const [q, setQ] = useState(query)
+  const [results, setResults] = useState<{ id: string; thumb: string; url: string; license: string; source: string }[] | null>(null)
   const [busy, setBusy] = useState<string | null>(null)   // 'search' | result id
   const [err, setErr] = useState<string | null>(null)
 
+  // Follow the word being edited until the admin starts typing their own query.
+  useEffect(() => { setQ(query); setResults(null); setErr(null) }, [query])
+
   async function search() {
-    if (!query.trim()) { setErr('اول معنی انگلیسی را بنویسید'); return }
+    if (!q.trim()) { setErr('عبارت جست‌وجو را بنویسید (انگلیسی بهترین نتیجه را می‌دهد)'); return }
     setBusy('search'); setErr(null); setResults(null)
-    const r = await api.get<{ id: string; thumb: string; url: string; license: string }[]>(
-      `/api/admin/images/search?q=${encodeURIComponent(query.trim())}`)
+    const r = await api.get<{ id: string; thumb: string; url: string; license: string; source: string }[]>(
+      `/api/admin/images/search?q=${encodeURIComponent(q.trim())}`)
     setBusy(null)
     if (r.error || !r.data) { setErr(r.error ?? 'خطا'); return }
-    if (r.data.length === 0) { setErr('عکسی پیدا نشد — واژه‌ی انگلیسی دیگری امتحان کنید'); return }
+    if (r.data.length === 0) { setErr('عکسی پیدا نشد — عبارت دیگری امتحان کنید') ; return }
     setResults(r.data)
   }
 
@@ -263,19 +267,26 @@ function PhotoPicker({ query, onPicked }: { query: string; onPicked: (url: strin
 
   return (
     <div className="mt-2">
-      <button type="button" onClick={search} disabled={busy === 'search'}
-        className="text-xs text-amber-700 hover:underline disabled:opacity-50">
-        {busy === 'search' ? 'در حال جست‌وجو…' : '🔍 پیشنهاد عکس رایگان (بدون حق نشر)'}
-      </button>
+      <div className="flex gap-2">
+        <input value={q} onChange={e => setQ(e.target.value)} dir="ltr"
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); search() } }}
+          placeholder="brown bear animal"
+          className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
+        <button type="button" onClick={search} disabled={busy === 'search'}
+          className="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1.5 rounded-lg hover:bg-amber-200 disabled:opacity-50 whitespace-nowrap">
+          {busy === 'search' ? '…' : '🔍 عکس رایگان'}
+        </button>
+      </div>
       {err && <p className="text-xs text-red-500 mt-1">{err}</p>}
       {results && (
-        <div className="grid grid-cols-4 gap-2 mt-2">
+        <div className="grid grid-cols-4 gap-2 mt-2 max-h-64 overflow-y-auto pr-1">
           {results.map(x => (
             <button key={x.id} type="button" onClick={() => pick(x)} disabled={busy !== null}
               className={`relative rounded-lg overflow-hidden border-2 hover:border-amber-400 transition ${busy === x.id ? 'opacity-50' : 'border-transparent'}`}
-              title={`license: ${x.license}`}>
+              title={`${x.source} — ${x.license}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={x.thumb} alt="" className="w-full h-16 object-cover" loading="lazy" />
+              <span className="absolute bottom-0 inset-x-0 bg-black/45 text-white text-[9px] text-center leading-4">{x.source}</span>
               {busy === x.id && <span className="absolute inset-0 flex items-center justify-center text-xs bg-white/70">⬇</span>}
             </button>
           ))}
