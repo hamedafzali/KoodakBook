@@ -48,7 +48,7 @@ export default function SignupPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="email@example.com"
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 min-h-[48px]"
+              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 min-h-[48px]"
             />
           </div>
           <div>
@@ -64,7 +64,7 @@ export default function SignupPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="حداقل ۶ کاراکتر"
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 min-h-[48px]"
+              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 min-h-[48px]"
             />
           </div>
 
@@ -75,21 +75,21 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[52px] text-base"
+            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[52px] text-base"
           >
-            {loading ? 'در حال ثبت‌نام...' : 'ثبت‌نام'}
+            {loading ? 'در حال ثبت‌نام...' : 'ثبت‌نام رایگان'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-6 persian-text">
           حساب دارید؟{' '}
-          <Link href="/login" className="text-amber-700 font-medium hover:underline">
+          <Link href="/login" className="text-emerald-700 font-medium hover:underline">
             ورود
           </Link>
         </p>
         <p className="text-center text-[11px] text-gray-400 mt-4 persian-text leading-relaxed">
-          با ثبت‌نام، <Link href="/terms" className="underline hover:text-amber-600">شرایط استفاده</Link> و{' '}
-          <Link href="/privacy" className="underline hover:text-amber-600">حریم خصوصی</Link> را می‌پذیرید.
+          با ثبت‌نام، <Link href="/terms" className="underline hover:text-emerald-600">شرایط استفاده</Link> و{' '}
+          <Link href="/privacy" className="underline hover:text-emerald-600">حریم خصوصی</Link> را می‌پذیرید.
         </p>
     </div>
   )
