@@ -22,5 +22,5 @@ export interface StoryVars {
 export interface StoryJSON {
   title_persian: string
   title_english: string
-  pages: { text_persian: string; text_english: string }[]
+  pages: { text_persian: string; text_english: string; scene?: string; time?: string }[]
 }

@@ -440,6 +440,18 @@ export default function ChildHomePage() {
                 </div>
               </motion.div>
             </Link>
+            <Link href="/child/games/memory" aria-label="بازی حافظه: جفت کلمه‌ها را پیدا کن">
+              <motion.div
+                className="bg-gradient-to-br from-violet-400 to-purple-500 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
+                whileTap={{ scale: 0.96 }}
+              >
+                <span className="text-3xl" aria-hidden="true">🃏</span>
+                <div>
+                  <p className="font-bold text-sm">بازی حافظه</p>
+                  <p className="text-xs opacity-80">جفت‌ها را پیدا کن</p>
+                </div>
+              </motion.div>
+            </Link>
             <Link href="/child/rewards" aria-label="جوایز من">
               <motion.div
                 className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px]"

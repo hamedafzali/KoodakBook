@@ -17,7 +17,7 @@ export async function generateOpenAICompatible(opts: {
         role: 'system',
         content: opts.system +
           '\n\nRespond ONLY with a JSON object of this shape (no markdown, no commentary): ' +
-          '{ "title_persian": string, "title_english": string, "pages": [ { "text_persian": string, "text_english": string } ] }',
+          '{ "title_persian": string, "title_english": string, "pages": [ { "text_persian": string, "text_english": string, "scene": string, "time": "day"|"night" } ] }',
       },
       { role: 'user', content: opts.prompt },
     ],

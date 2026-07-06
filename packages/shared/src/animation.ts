@@ -191,6 +191,10 @@ export const TEMPLATE_REGISTRY: Record<AnimationTemplate, TemplateSpec> = {
 
 // ── Story scene plans ───────────────────────────────────────
 export interface ScenePage {
+  /** Scene-library slug (see scenes.ts) — picks the page's backdrop. */
+  scene?: string
+  /** Backdrop time of day. */
+  time?: 'day' | 'night'
   focus_word?: string
   motion?: string
   interaction?: string

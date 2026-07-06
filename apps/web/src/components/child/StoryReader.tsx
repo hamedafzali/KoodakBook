@@ -1,8 +1,9 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { StoryPage, Story } from '@koodakbook/shared'
+import { parseSceneRef, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
 import BilingualText from '../shared/BilingualText'
+import SceneBackdrop from './SceneBackdrop'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakPersian, stopSpeaking } from '@/lib/speech'
@@ -21,6 +22,19 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
   const page = story.pages[currentPage]
   const isLast = currentPage === story.pages.length - 1
   const progress = Math.round(((currentPage + 1) / story.pages.length) * 100)
+
+  // Backdrop per page from scene_plan; a page without one inherits the
+  // previous page's scene (stories rarely change location every page), and the
+  // whole story falls back to a friendly default.
+  const scenes = useMemo<{ scene: SceneSlug; time: SceneTime }[]>(() => {
+    let last: { scene: SceneSlug; time: SceneTime } = { scene: 'park', time: 'day' }
+    return story.pages.map(p => {
+      const ref = parseSceneRef(p.scene_plan?.scene, p.scene_plan?.time)
+      if (ref) last = ref
+      return last
+    })
+  }, [story.pages])
+  const sceneRef = scenes[currentPage]
 
   function goNext() {
     playTap()
@@ -65,20 +79,33 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           <span className="text-sm text-gray-400 shrink-0">{currentPage + 1} / {story.pages.length}</span>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress path — a trail of stepping stones, one per page; the
+            walker hops a stone per page-turn and a flag waits at the end.
+            Kids read "how far to go" spatially, without numbers. */}
         <div
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progress}
           aria-label={`پیشرفت داستان: ${progress} درصد`}
-          className="h-1.5 bg-gray-200 rounded-full mt-2 overflow-hidden"
+          className="mt-2 flex items-center gap-0"
+          dir="rtl"
         >
-          <motion.div
-            className="h-full bg-brand-gradient rounded-full"
-            animate={{ width: `${progress}%` }}
-            transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-          />
+          {story.pages.map((_, i) => (
+            <div key={i} className="flex items-center flex-1 min-w-0 last:flex-none">
+              <div className="relative shrink-0 w-5 h-5 flex items-center justify-center">
+                <span className={`w-2.5 h-2.5 rounded-full ${i <= currentPage ? 'bg-amber-500' : 'bg-gray-200'}`} />
+                {i === currentPage && (
+                  <motion.span layoutId="story-walker" transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                    className="absolute -top-2 text-sm leading-none select-none">🐣</motion.span>
+                )}
+              </div>
+              {i < story.pages.length - 1 && (
+                <div className={`flex-1 h-0.5 border-t-2 border-dotted ${i < currentPage ? 'border-amber-400' : 'border-gray-200'}`} />
+              )}
+            </div>
+          ))}
+          <span className="shrink-0 text-sm mr-1 leading-none select-none" aria-hidden="true">🚩</span>
         </div>
       </div>
 
@@ -94,7 +121,8 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
             exit={{ opacity: 0, x: 30 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
           >
-            {/* Illustration */}
+            {/* Illustration: a real page image wins; otherwise the scene
+                library paints the page's location with a slow Ken Burns drift. */}
             {mediaUrl(page.image_url) ? (
               <img
                 src={mediaUrl(page.image_url)!}
@@ -102,9 +130,8 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 className="rounded-lg shadow-lg w-full max-h-64 object-contain lg:w-1/2 lg:max-h-[64vh] lg:self-center"
               />
             ) : (
-              <div className="w-full h-52 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg shadow-md flex items-center justify-center lg:w-1/2 lg:h-[64vh]">
-                <span className="text-7xl lg:text-9xl">📖</span>
-              </div>
+              <SceneBackdrop scene={sceneRef.scene} time={sceneRef.time}
+                className="w-full h-52 shadow-md lg:w-1/2 lg:h-[64vh]" />
             )}
 
             {/* Story text */}

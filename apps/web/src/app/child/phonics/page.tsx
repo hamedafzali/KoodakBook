@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { isLoggedIn } from '@/lib/auth'
 import PageHeader from '@/components/child/PageHeader'
@@ -29,6 +29,53 @@ function playErrorSound() {
 
 function shuffle<T>(a: T[]): T[] { return [...a].sort(() => Math.random() - 0.5) }
 
+/* ── Merge stage: the blending animation IS the phonics lesson ──────────────
+ * Consonant slides in, the vowel mark drops onto it, they "snap" into the
+ * syllable exactly as its sound plays — seeing the merge while hearing it is
+ * what blending means. Timings match the audio delay in demoMerge(). */
+interface MergeDemo { c: string; mark: string; text: string; markName: string; run: number }
+
+function MergeStage({ demo }: { demo: MergeDemo | null }) {
+  const reduce = useReducedMotion()
+  if (!demo) return (
+    <div className="bg-white/70 border-2 border-dashed border-amber-200 rounded-lg h-28 flex items-center justify-center text-gray-400 persian-text text-sm">
+      روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود ✨
+    </div>
+  )
+  if (reduce) return (
+    <div className="bg-white rounded-lg h-28 shadow-sm flex items-center justify-center">
+      <span className="text-6xl font-bold text-amber-600">{demo.text}</span>
+    </div>
+  )
+  return (
+    <div key={demo.run} className="bg-white rounded-lg h-28 shadow-sm relative overflow-hidden" aria-label={`ساخت هجای ${demo.text}`}>
+      {/* the two parts fly together… */}
+      <motion.span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-gray-800"
+        initial={{ x: 70, opacity: 0 }}
+        animate={{ x: [70, 8, 8], opacity: [0, 1, 0] }}
+        transition={{ duration: 0.75, times: [0, 0.6, 1], ease: 'easeOut' }}>
+        {demo.c}
+      </motion.span>
+      <motion.span className="absolute inset-0 flex items-center justify-center text-5xl font-bold text-orange-500"
+        initial={{ y: -60, opacity: 0 }}
+        animate={{ y: [-60, -14, -14], opacity: [0, 1, 0] }}
+        transition={{ duration: 0.75, times: [0, 0.6, 1], ease: 'easeOut' }}>
+        {'◌' + demo.mark}
+      </motion.span>
+      {/* …and snap into the syllable as the audio fires */}
+      <motion.span className="absolute inset-0 flex items-center justify-center text-7xl font-bold text-amber-600"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: [0, 0, 1.18, 1], opacity: [0, 0, 1, 1] }}
+        transition={{ duration: 1.05, times: [0, 0.55, 0.8, 1], ease: 'easeOut' }}>
+        {demo.text}
+      </motion.span>
+      <motion.span className="absolute left-4 top-3 text-xl" initial={{ scale: 0 }}
+        animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}>✨</motion.span>
+      <span className="absolute right-3 bottom-2 text-[11px] text-gray-400 persian-text">{demo.markName}</span>
+    </div>
+  )
+}
+
 export default function PhonicsPage() {
   const router = useRouter()
   const [phase, setPhase] = useState<'learn' | 'quiz' | 'done'>('learn')
@@ -39,9 +86,20 @@ export default function PhonicsPage() {
     initSpeech()
   }, [router])
 
+  const [demo, setDemo] = useState<MergeDemo | null>(null)
+  const demoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   function say(text: string, slug: string) {
     playTap()
     speakOrPlay(phonicsAudioUrl(slug), text)
+  }
+
+  /** Learn-mode tap: run the merge animation and fire the audio at the snap. */
+  function demoMerge(c: string, mark: string, markName: string, text: string, slug: string) {
+    playTap()
+    setDemo(d => ({ c, mark, markName, text, run: (d?.run ?? 0) + 1 }))
+    if (demoTimer.current) clearTimeout(demoTimer.current)
+    demoTimer.current = setTimeout(() => speakOrPlay(phonicsAudioUrl(slug), text), 550)
   }
 
   if (phase === 'quiz') return <PhonicsQuiz all={all} say={say} onDone={() => setPhase('done')} onExit={() => setPhase('learn')} />
@@ -76,8 +134,13 @@ export default function PhonicsPage() {
         <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3">
           <Mascot size={64} mood="happy" />
           <p className="text-gray-700 persian-text text-sm flex-1">
-            این سه نشانه به حرف‌ها صدا می‌دهند. ضربه بزن و گوش کن!
+            این سه نشانه به حرف‌ها صدا می‌دهند. ضربه بزن، ببین و گوش کن!
           </p>
+        </div>
+
+        {/* The blending stage — sticky so every tap below plays here in view */}
+        <div className="sticky top-2 z-10">
+          <MergeStage demo={demo} />
         </div>
 
         {/* The three marks */}
@@ -87,7 +150,7 @@ export default function PhonicsPage() {
             {SHORT_VOWELS.map(v => {
               const syll = DEMO + v.mark
               return (
-                <motion.button key={v.key} onClick={() => say(syll, 'b' + v.latin)} whileTap={{ scale: 0.95 }}
+                <motion.button key={v.key} onClick={() => demoMerge(DEMO, v.mark, v.namePersian, syll, 'b' + v.latin)} whileTap={{ scale: 0.95 }}
                   className={`bg-gradient-to-br ${v.color} rounded-[1.5rem] p-4 text-white shadow-md flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target`}
                   aria-label={`${v.namePersian}: ${syll}`}>
                   <span className="text-5xl font-bold leading-none">{syll}</span>
@@ -110,7 +173,7 @@ export default function PhonicsPage() {
                 const text = c.ch + v.mark
                 const slug = c.latin + v.latin
                 return (
-                  <motion.button key={slug} onClick={() => say(text, slug)} whileTap={{ scale: 0.92 }}
+                  <motion.button key={slug} onClick={() => demoMerge(c.ch, v.mark, v.namePersian, text, slug)} whileTap={{ scale: 0.92 }}
                     className="bg-white rounded-2xl py-3 shadow-sm flex flex-col items-center gap-0.5 touch-target"
                     aria-label={`بخوان: ${text}`}>
                     <span className="text-3xl font-bold text-gray-800">{text}</span>

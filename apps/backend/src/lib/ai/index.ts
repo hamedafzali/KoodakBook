@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { queryOne } from '../db'
 import { generateAnthropic } from './anthropic'
 import { generateOpenAICompatible } from './openaiCompat'
+import { SCENE_SLUGS } from '@koodakbook/shared'
 import type { AiSettings, StoryVars, StoryJSON } from './types'
 
 export type { AiSettings, StoryVars, StoryJSON } from './types'
@@ -21,8 +22,11 @@ const STORY_JSON_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        properties: { text_persian: { type: 'string' }, text_english: { type: 'string' } },
-        required: ['text_persian', 'text_english'],
+        properties: {
+          text_persian: { type: 'string' }, text_english: { type: 'string' },
+          scene: { type: 'string' }, time: { type: 'string' },
+        },
+        required: ['text_persian', 'text_english', 'scene', 'time'],
       },
     },
   },
@@ -32,7 +36,10 @@ const STORY_JSON_SCHEMA = {
 const StorySchema = z.object({
   title_persian: z.string().min(1),
   title_english: z.string().min(1),
-  pages: z.array(z.object({ text_persian: z.string().min(1), text_english: z.string().min(1) })).min(1),
+  pages: z.array(z.object({
+    text_persian: z.string().min(1), text_english: z.string().min(1),
+    scene: z.string().optional(), time: z.string().optional(),
+  })).min(1),
 })
 
 export async function getAiSettings(): Promise<AiSettings | null> {
@@ -66,7 +73,12 @@ export async function generateStory(settings: AiSettings, vars: StoryVars): Prom
   if (!apiKey) throw new AiNotConfiguredError('Missing AI_API_KEY')
 
   const system = settings.system_prompt
-  const prompt = render(settings.user_prompt_template, vars)
+  // Scene directive appended in code (not the DB template) so the library list
+  // always matches packages/shared/src/scenes.ts.
+  const prompt = render(settings.user_prompt_template, vars) +
+    `\n\nFor each page also pick where it happens: "scene" must be exactly one of ` +
+    `[${SCENE_SLUGS.join(', ')}] and "time" must be "day" or "night". ` +
+    `Keep the scene stable across pages unless the story really moves location.`
 
   let raw: string
   if (settings.provider === 'anthropic') {

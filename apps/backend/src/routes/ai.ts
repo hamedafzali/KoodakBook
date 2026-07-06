@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
 import { getAiSettings, generateStory, AiNotConfiguredError, type StoryJSON } from '../lib/ai'
 import { synthesizeStoryPages } from '../lib/tts'
+import { parseSceneRef } from '@koodakbook/shared'
 
 const router = Router()
 
@@ -96,9 +97,12 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
   const inserted: { id: string; text_persian: string }[] = []
   for (let i = 0; i < story.pages.length; i++) {
     const p = story.pages[i]
+    // Scene backdrop for the player — validated against the scene library;
+    // an unknown slug is dropped (player inherits the previous page's scene).
+    const sceneRef = parseSceneRef(p.scene, p.time)
     const [pr] = await query<{ id: string }>(
-      'insert into story_pages (story_id, page_number, text_persian, text_english) values ($1, $2, $3, $4) returning id',
-      [row.id, i + 1, p.text_persian, p.text_english],
+      'insert into story_pages (story_id, page_number, text_persian, text_english, scene_plan) values ($1, $2, $3, $4, $5) returning id',
+      [row.id, i + 1, p.text_persian, p.text_english, sceneRef ? JSON.stringify(sceneRef) : null],
     )
     inserted.push({ id: pr.id, text_persian: p.text_persian })
   }
