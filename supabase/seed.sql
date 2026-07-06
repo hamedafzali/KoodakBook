@@ -100,6 +100,9 @@ on conflict (character) do nothing;
 
 -- Diacritized letter names for TTS (mirrors migration 030 for fresh installs):
 -- without harakat, engines read «ره» as the word "rah" instead of the letter.
+-- Fresh installs run this seed BEFORE the backend applies migrations, so the
+-- column must be created here too (030 is add-if-not-exists — safe both ways).
+alter table letters add column if not exists tts_text text;
 update letters set tts_text = v.t
 from (values
   ('ا', 'اَلِف'), ('آ', 'اَلِف مَد'), ('ب', 'بِه'), ('پ', 'پِه'), ('ت', 'تِه'),

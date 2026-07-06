@@ -1,6 +1,23 @@
 # Audio Module — Design Plan
 
-**Status:** proposal (no code changed yet)
+**Status:** partially shipped — per-section engine/voice config + admin «صداها»
+page landed (mig 031, `lib/audio/`, `/dashboard/audio`). The asset/review
+pipeline below (§3.4–3.6) remains the follow-up.
+
+## 0. Persian TTS engine research (July 2026)
+
+Ranked for Iranian Persian, per docs + community reports (test before trusting):
+
+| Rank | Engine | Persian quality | Cost | Notes |
+|---|---|---|---|---|
+| 1 | **ElevenLabs `eleven_v3`** | best, near-human | paid | Persian is **only** in the v3 family — `eleven_multilingual_v2` does NOT support fa. Needs a voice_id from their panel. |
+| 2 | **Azure / Edge neural** (`fa-IR-FaridNeural`, `DilaraNeural`) | good | Edge free (sidecar) / Azure keyed | Same voices; Azure = official key + SLA + free monthly tier. |
+| 3 | **OpenAI TTS** (`gpt-4o-mini-tts`) | fluent but accent drifts Afghan (community reports) | paid | Test per content type before adopting. |
+| 4 | **Google Cloud TTS** | classic voices: **no fa-IR at all**; only new Gemini-TTS speaks Persian | paid | Effectively unusable via the classic API this app calls. |
+| 5 | **Piper** (`fa_IR-*`) | robotic | free, offline | Keep only as the no-internet fallback. |
+| — | **Human recording** | best possible | ~1h mic time | Beats every engine for letters/phonics; admin recorder exists per item. |
+
+**Status:** asset-pipeline sections are proposal (no code changed yet)
 **Owner:** admin/content pipeline
 **Replaces:** `apps/backend/src/lib/tts/*`, per-row `audio_url` writes, fixed phonics paths, versioned filenames
 

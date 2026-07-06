@@ -53,6 +53,17 @@ export interface Promotion {
 
 export type CreateChildInput = Pick<Child, 'name' | 'birth_year' | 'level' | 'avatar_url'>
 
+// ── Audio (per-section TTS voices) ─────────────────────────
+export type AudioSection = 'story' | 'letter' | 'word' | 'phonics'
+/** piper/edge run on the free sidecar; the rest are keyed cloud engines. */
+export type AudioEngine = 'piper' | 'edge' | 'azure' | 'openai' | 'google' | 'elevenlabs'
+
+export interface AudioSectionConfig {
+  section: AudioSection
+  engine: AudioEngine
+  voice: string
+}
+
 // ── Content ───────────────────────────────────────────────
 export interface Word {
   id: string

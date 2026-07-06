@@ -203,78 +203,6 @@ export default function AiSettingsPage() {
       </div>
 
       <TtsCard />
-      <RegenCard />
-    </div>
-  )
-}
-
-// ── Regenerate all audio with the current Piper voice ─────
-interface RegenStatus { running: boolean; scope: string | null; voice: string; done: number; total: number; errors: number; finishedAt: number }
-const REGEN_SCOPES: { id: string; label: string }[] = [
-  { id: 'all', label: 'همه' },
-  { id: 'words', label: 'واژه‌ها' },
-  { id: 'letters', label: 'حروف' },
-  { id: 'stories', label: 'داستان‌ها' },
-  { id: 'phonics', label: 'صداها (هجاها)' },
-]
-
-function RegenCard() {
-  const [st, setSt] = useState<RegenStatus | null>(null)
-  const [pollKey, setPollKey] = useState(0)
-  const [err, setErr] = useState<string | null>(null)
-
-  useEffect(() => {
-    let active = true
-    let timer: ReturnType<typeof setTimeout> | undefined
-    async function tick() {
-      const r = await api.get<RegenStatus>('/api/admin/tts/regenerate/status')
-      if (!active) return
-      if (r.data) setSt(r.data)
-      if (r.data?.running) timer = setTimeout(tick, 1500)
-    }
-    tick()
-    return () => { active = false; if (timer) clearTimeout(timer) }
-  }, [pollKey])
-
-  async function start(scope: string) {
-    setErr(null)
-    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope })
-    if (r.error) { setErr(r.error); return }
-    setPollKey(k => k + 1)
-  }
-
-  const running = st?.running
-  const pct = st && st.total > 0 ? Math.round((st.done / st.total) * 100) : 0
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-      <h3 className="font-bold text-slate-800">بازتولید صداها</h3>
-      <p className="text-sm text-slate-500">
-        صدای محتوا را با صدای Piper انتخاب‌شده در بالا دوباره می‌سازد. برای تغییر صدا، ابتدا «صدای رایگان (Piper)» را تغییر دهید و ذخیره کنید، سپس اینجا بازتولید کنید.
-      </p>
-
-      {running ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">در حال ساخت ({st?.scope}) — صدا: {st?.voice}</span>
-            <span className="font-bold text-slate-800">{st?.done} / {st?.total}</span>
-          </div>
-          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-amber-500 transition-all" style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {REGEN_SCOPES.map(s => (
-            <Button key={s.id} variant="secondary" onClick={() => start(s.id)}>{s.label}</Button>
-          ))}
-        </div>
-      )}
-
-      {st && !running && st.finishedAt > 0 && (
-        <p className="text-sm text-green-600">تمام شد ✅ — {st.done} مورد{st.errors > 0 ? `، ${st.errors} خطا` : ''}</p>
-      )}
-      {err && <p className="text-sm text-red-600">{err}</p>}
     </div>
   )
 }
@@ -292,25 +220,12 @@ interface Tts {
   piper_voice: string
 }
 
-// Free Persian voices (TTS sidecar) — every account gets one of these.
-// "fa-IR-*Neural" = Edge TTS (Microsoft neural, much better Persian, needs
-// internet; the sidecar auto-falls back to Piper offline).
-// "fa_IR-*-medium" = Piper (fully offline).
-const FREE_VOICES = [
-  { id: 'fa-IR-FaridNeural',         label: 'fa-IR-FaridNeural — مرد، کیفیت بالا (Edge)' },
-  { id: 'fa-IR-DilaraNeural',        label: 'fa-IR-DilaraNeural — زن، کیفیت بالا (Edge)' },
-  { id: 'fa_IR-amir-medium',         label: 'fa_IR-amir-medium — آفلاین (Piper)' },
-  { id: 'fa_IR-ganji-medium',        label: 'fa_IR-ganji-medium — آفلاین (Piper)' },
-  { id: 'fa_IR-ganji_adabi-medium',  label: 'fa_IR-ganji_adabi-medium — آفلاین (Piper)' },
-  { id: 'fa_IR-gyro-medium',         label: 'fa_IR-gyro-medium — آفلاین (Piper)' },
-  { id: 'fa_IR-reza_ibrahim-medium', label: 'fa_IR-reza_ibrahim-medium — آفلاین (Piper)' },
-]
-
 const TTS_PROVIDERS: { id: Tts['provider']; label: string; voices: string[]; models: string[]; needs: ('voice' | 'model' | 'base_url' | 'region')[] }[] = [
   { id: 'openai',     label: 'OpenAI TTS',                 voices: ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'], models: ['tts-1', 'tts-1-hd', 'gpt-4o-mini-tts'], needs: ['voice', 'model', 'base_url'] },
   { id: 'google',     label: 'Google Cloud TTS (fa-IR بومی)', voices: ['fa-IR-Standard-A', 'fa-IR-Standard-B', 'fa-IR-Standard-C', 'fa-IR-Standard-D', 'fa-IR-Wavenet-A'], models: [], needs: ['voice'] },
   { id: 'azure',      label: 'Azure Speech (fa-IR بومی)',  voices: ['fa-IR-DilaraNeural', 'fa-IR-FaridNeural'], models: [], needs: ['voice', 'region'] },
-  { id: 'elevenlabs', label: 'ElevenLabs',                 voices: [], models: ['eleven_multilingual_v2', 'eleven_turbo_v2_5'], needs: ['voice', 'model'] },
+  // Persian works only on the eleven_v3 model family.
+  { id: 'elevenlabs', label: 'ElevenLabs',                 voices: [], models: ['eleven_v3'], needs: ['model'] },
 ]
 
 function TtsCard() {
@@ -353,20 +268,10 @@ function TtsCard() {
         <h3 className="font-bold text-slate-800">صدای داستان‌ها (TTS)</h3>
         <Badge tone="green">صدای رایگان همیشه فعال</Badge>
       </div>
-      <p className="text-sm text-slate-500">برای داستان‌های ساخته‌شده با هوش مصنوعی، صدا تولید می‌شود تا «بشنو» کار کند.</p>
-
-      {/* Free baseline — sidecar (Edge neural or offline Piper), no key, every account */}
-      <Field label="صدای رایگان — برای همه‌ی حساب‌ها" hint="بدون کلید، همیشه فعال. صداهای Edge کیفیت بسیار بهتری دارند و در صورت قطع اینترنتِ سرور به Piper برمی‌گردند.">
-        <Select value={t.piper_voice} onChange={e => setT({ ...t, piper_voice: e.target.value })} dir="ltr">
-          {!FREE_VOICES.some(v => v.id === t.piper_voice) && <option value={t.piper_voice}>{t.piper_voice}</option>}
-          {FREE_VOICES.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
-        </Select>
-      </Field>
-
-      <div className="border-t border-slate-100 pt-4">
-        <p className="text-sm font-semibold text-slate-700 mb-1">صدای پرمیوم (ابری) — فقط حساب‌های پرمیوم</p>
-        <p className="text-xs text-slate-500 mb-3">وقتی فعال باشد و کلید تنظیم شده باشد، حساب‌های پرمیوم به‌جای Piper این صدا را می‌گیرند.</p>
-      </div>
+      <p className="text-sm text-slate-500">
+        انتخاب موتور و صدای هر بخش (داستان، حروف، کلمات، صداکشی) به بخش{' '}
+        <a href="/dashboard/audio" className="text-amber-600 font-semibold hover:underline">«صداها»</a>{' '}
+        منتقل شده است. اینجا فقط تنظیمات ارائه‌دهنده‌ی ابری (کلید، ریجن، مدل) و فعال‌سازی آن برای حساب‌های پرمیوم است.</p>
 
       <div className={`rounded-xl border px-4 py-2.5 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
         {keySet ? '✓ کلید TTS_API_KEY تنظیم شده است.' : '⚠ کلید TTS_API_KEY در ACM تنظیم نشده — صدای ابری پرمیوم تا آن زمان کار نمی‌کند (Piper همچنان فعال است).'}
@@ -378,17 +283,6 @@ function TtsCard() {
         <Select value={t.provider} onChange={e => choose(e.target.value as Tts['provider'])}>
           {TTS_PROVIDERS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}
         </Select>
-      </Field>
-
-      <Field label="صدا (Voice)" hint={p.id === 'elevenlabs' ? 'voice_id از پنل ElevenLabs' : 'یک صدای فارسی انتخاب کنید'}>
-        {p.voices.length > 0 ? (
-          <Select value={t.voice} onChange={e => setT({ ...t, voice: e.target.value })} dir="ltr">
-            {!p.voices.includes(t.voice) && <option value={t.voice}>{t.voice || '—'}</option>}
-            {p.voices.map(v => <option key={v} value={v}>{v}</option>)}
-          </Select>
-        ) : (
-          <Input value={t.voice} onChange={e => setT({ ...t, voice: e.target.value })} placeholder="voice id" dir="ltr" />
-        )}
       </Field>
 
       {p.needs.includes('model') && (
