@@ -25,6 +25,7 @@ export const AUDIO_SECTIONS: AudioSection[] = ['story', 'letter', 'word', 'phoni
 export const AUDIO_ENGINES: AudioEngine[] = ['piper', 'edge', 'azure', 'openai', 'google', 'elevenlabs']
 
 const SIDECAR_ENGINES: AudioEngine[] = ['piper', 'edge']
+export const CLOUD_ENGINES: AudioEngine[] = ['azure', 'openai', 'google', 'elevenlabs']
 const SIDECAR_FALLBACK_VOICE = 'fa-IR-FaridNeural'  // Edge neural; sidecar drops to Piper offline
 
 export interface Clip { buf: Buffer; ext: 'mp3' | 'wav'; engine: AudioEngine; voice: string }
@@ -48,21 +49,38 @@ export function engineAvailable(engine: AudioEngine): boolean {
 }
 
 export async function getSectionConfigs(): Promise<AudioSectionConfig[]> {
-  return query<AudioSectionConfig>('select section, engine, voice from audio_sections order by section')
+  return query<AudioSectionConfig>(
+    'select section, engine, voice, premium_engine, premium_voice from audio_sections order by section')
 }
 
 export async function getSectionConfig(section: AudioSection): Promise<AudioSectionConfig> {
   const row = await queryOne<AudioSectionConfig>(
-    'select section, engine, voice from audio_sections where section = $1', [section])
+    'select section, engine, voice, premium_engine, premium_voice from audio_sections where section = $1', [section])
   return row ?? { section, engine: 'piper', voice: 'fa_IR-amir-medium' }
 }
 
-export async function setSectionConfig(section: AudioSection, engine: AudioEngine, voice: string, by: string | null): Promise<void> {
+export async function setSectionConfig(
+  section: AudioSection, engine: AudioEngine, voice: string,
+  premiumEngine: AudioEngine | null, premiumVoice: string | null, by: string | null,
+): Promise<void> {
   await query(
-    `update audio_sections set engine = $1, voice = $2, updated_at = now(), updated_by = $3
-      where section = $4`,
-    [engine, voice, by, section],
+    `update audio_sections set engine = $1, voice = $2,
+            premium_engine = $3, premium_voice = $4,
+            updated_at = now(), updated_by = $5
+      where section = $6`,
+    [engine, voice, premiumEngine, premiumVoice || null, by, section],
   )
+}
+
+/** Synthesize the PREMIUM variant of a section, or null when none configured.
+ *  No sidecar fallback — a failed premium clip must not silently become a free
+ *  one; the caller counts the error and the free variant still exists. */
+export async function synthesizeSectionPremium(
+  section: AudioSection, text: string, opts: SynthOpts = {},
+): Promise<Clip | null> {
+  const cfg = await getSectionConfig(section)
+  if (!cfg.premium_engine || !cfg.premium_voice) return null
+  return synthesizeWith(cfg.premium_engine, cfg.premium_voice, text, opts)
 }
 
 /** Provider-level extras (region, model, base_url) live in tts_settings; they

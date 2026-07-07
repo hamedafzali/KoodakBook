@@ -65,6 +65,7 @@ const ENGINES: Record<AudioEngine, EngineMeta> = {
   },
 }
 const ENGINE_ORDER: AudioEngine[] = ['edge', 'elevenlabs', 'azure', 'openai', 'google', 'piper']
+const PREMIUM_ENGINES: AudioEngine[] = ['elevenlabs', 'azure', 'openai', 'google']
 
 const SECTIONS: Record<AudioSection, { title: string; desc: string; sample: string; regenScope: string }> = {
   story: {
@@ -151,6 +152,8 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
   const meta = SECTIONS[cfg.section]
   const [engine, setEngine] = useState<AudioEngine>(cfg.engine)
   const [voice, setVoice] = useState(cfg.voice)
+  const [pEngine, setPEngine] = useState<AudioEngine | ''>(cfg.premium_engine ?? '')
+  const [pVoice, setPVoice] = useState(cfg.premium_voice ?? '')
   const [sample, setSample] = useState(meta.sample)
   const [busy, setBusy] = useState<'preview' | 'save' | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -158,7 +161,8 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const em = ENGINES[engine]
-  const dirty = engine !== cfg.engine || voice !== cfg.voice
+  const dirty = engine !== cfg.engine || voice !== cfg.voice ||
+    pEngine !== (cfg.premium_engine ?? '') || pVoice !== (cfg.premium_voice ?? '')
 
   function pick(e: AudioEngine) {
     setEngine(e)
@@ -168,9 +172,9 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
     if (!ENGINES[e].voices.some(v => v.id === voice)) setVoice(first ? first.id : '')
   }
 
-  async function preview() {
+  async function preview(e: AudioEngine, v: string) {
     setBusy('preview'); setMsg(null); setErr(null)
-    const r = await api.post<{ audio: string }>('/api/admin/audio/preview', { engine, voice, text: sample })
+    const r = await api.post<{ audio: string }>('/api/admin/audio/preview', { engine: e, voice: v, text: sample })
     setBusy(null)
     if (r.error || !r.data) { setErr(r.error ?? 'خطا در تولید صدا'); return }
     audioRef.current?.pause()
@@ -180,10 +184,13 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
 
   async function save() {
     setBusy('save'); setMsg(null); setErr(null)
-    const r = await api.patch<{ ok: boolean }>(`/api/admin/audio/sections/${cfg.section}`, { engine, voice })
+    const r = await api.patch<{ ok: boolean }>(`/api/admin/audio/sections/${cfg.section}`,
+      { engine, voice, premium_engine: pEngine || null, premium_voice: pVoice.trim() || null })
     setBusy(null)
     if (r.error) { setErr(r.error); return }
     cfg.engine = engine; cfg.voice = voice
+    cfg.premium_engine = (pEngine || null) as typeof cfg.premium_engine
+    cfg.premium_voice = pVoice.trim() || null
     setMsg('ذخیره شد ✅ — برای اعمال روی فایل‌های موجود، پایین صفحه بازتولید کنید.')
   }
 
@@ -225,12 +232,39 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
             <Input value={sample} onChange={e => setSample(e.target.value)} />
           </Field>
         </div>
-        <Button variant="secondary" onClick={preview} disabled={busy !== null || !voice || !engines[engine]}>
+        <Button variant="secondary" onClick={() => preview(engine, voice)} disabled={busy !== null || !voice || !engines[engine]}>
           {busy === 'preview' ? 'در حال ساخت…' : '▶ تست'}
         </Button>
         <Button onClick={save} disabled={busy !== null || !voice || !dirty}>
           {busy === 'save' ? 'در حال ذخیره…' : 'ذخیره'}
         </Button>
+      </div>
+
+      {/* Premium tier: paid accounts hear this instead; files are generated
+          side by side under /uploads/premium during regeneration. */}
+      <div className="border-t border-dashed border-slate-200 pt-3 space-y-3">
+        <p className="text-sm font-semibold text-slate-700">صدای پرمیوم (اختیاری) ⭐
+          <span className="text-xs font-normal text-slate-400 mr-2">فقط حساب‌های پولی این نسخه را می‌شنوند؛ خالی = همان صدای رایگان</span>
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="موتور پرمیوم">
+            <Select value={pEngine} onChange={e => setPEngine(e.target.value as AudioEngine | '')}>
+              <option value="">— بدون صدای پرمیوم</option>
+              {PREMIUM_ENGINES.map(e => (
+                <option key={e} value={e} disabled={!engines[e]}>
+                  {ENGINES[e].label}{!engines[e] ? ' — کلید ندارد' : ''}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="صدای پرمیوم" hint={pEngine === 'elevenlabs' ? 'voice_id از پنل ElevenLabs' : pEngine ? ENGINES[pEngine].hint : ''}>
+            <div className="flex gap-2">
+              <Input value={pVoice} onChange={e => setPVoice(e.target.value)} placeholder="voice id" dir="ltr" disabled={!pEngine} />
+              <Button variant="secondary" onClick={() => pEngine && preview(pEngine, pVoice)}
+                disabled={busy !== null || !pEngine || !pVoice || !engines[pEngine as AudioEngine]}>▶</Button>
+            </div>
+          </Field>
+        </div>
       </div>
 
       {msg && <p className="text-sm text-green-600">{msg}</p>}

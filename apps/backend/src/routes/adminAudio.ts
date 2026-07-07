@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
 import {
-  AUDIO_SECTIONS, AUDIO_ENGINES, getSectionConfigs, setSectionConfig,
+  AUDIO_SECTIONS, AUDIO_ENGINES, CLOUD_ENGINES, getSectionConfigs, setSectionConfig,
   engineAvailable, synthesizeWith,
   type AudioSection, type AudioEngine,
 } from '../lib/audio'
@@ -21,6 +21,8 @@ router.get('/audio/sections', requireAdmin, requirePermission('ai.manage'), asyn
 const sectionSchema = z.object({
   engine: z.enum(AUDIO_ENGINES as [AudioEngine, ...AudioEngine[]]),
   voice: z.string().trim().min(1).max(120),
+  premium_engine: z.enum(CLOUD_ENGINES as [AudioEngine, ...AudioEngine[]]).nullable().optional(),
+  premium_voice: z.string().trim().max(120).nullable().optional(),
 })
 
 router.patch('/audio/sections/:section', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
@@ -28,7 +30,11 @@ router.patch('/audio/sections/:section', requireAdmin, requirePermission('ai.man
   if (!AUDIO_SECTIONS.includes(section)) { res.status(400).json({ data: null, error: 'Unknown section' }); return }
   const parsed = sectionSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.issues[0]?.message ?? 'Invalid' }); return }
-  await setSectionConfig(section, parsed.data.engine, parsed.data.voice, res.locals.adminEmail)
+  const { engine, voice, premium_engine, premium_voice } = parsed.data
+  if (premium_engine && !premium_voice) {
+    res.status(400).json({ data: null, error: 'برای صدای پرمیوم، voice هم لازم است' }); return
+  }
+  await setSectionConfig(section, engine, voice, premium_engine ?? null, premium_voice ?? null, res.locals.adminEmail)
   await logAudit(res.locals.adminEmail, 'audio.section.update', 'audio_sections', section, parsed.data)
   res.json({ data: { ok: true }, error: null })
 })

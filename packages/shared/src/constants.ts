@@ -263,7 +263,9 @@ export function isPremiumActive(
   plan: string | null | undefined,
   expiresAt?: string | null,
 ): boolean {
-  if (plan !== 'premium') return false
+  // Any paid tier counts (premium, premium_solo, premium_duo, premium_yearly…)
+  // — plans are DB rows since mig 024, so never enumerate keys here.
+  if (!plan || plan === 'free') return false
   if (!expiresAt) return true
   return new Date(expiresAt).getTime() > Date.now()
 }

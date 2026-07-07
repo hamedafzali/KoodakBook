@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { query } from '../db'
 import { phonicsSyllables, mathAudioItems } from '@koodakbook/shared'
-import { synthesizeSection, getSectionConfigs, type AudioSection } from '../audio'
+import { synthesizeSection, synthesizeWith, getSectionConfigs, type AudioSection } from '../audio'
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
@@ -34,6 +34,7 @@ interface Item {
   entity?: 'word' | 'letter' | 'story_page'
   table?: 'words' | 'letters' | 'story_pages'
   versioned: boolean      // versioned filename busts caches on re-run (phonics path is fixed → false)
+  premiumEligible: boolean // AI story pages are excluded: their voice is chosen at generation time
 }
 
 async function collect(scope: RegenScope): Promise<Item[]> {
@@ -42,26 +43,29 @@ async function collect(scope: RegenScope): Promise<Item[]> {
   // Persian script omits short vowels, so homographs/letter names need it.
   if (scope === 'words' || scope === 'all') {
     for (const w of await query<{ id: string; persian: string }>('select id, coalesce(tts_text, persian) as persian from words'))
-      items.push({ section: 'word', entity: 'word', table: 'words', dir: 'words', id: w.id, text: w.persian, versioned: true })
+      items.push({ section: 'word', entity: 'word', table: 'words', dir: 'words', id: w.id, text: w.persian, versioned: true, premiumEligible: true })
   }
   if (scope === 'letters' || scope === 'all') {
     for (const l of await query<{ id: string; name_persian: string }>('select id, coalesce(tts_text, name_persian) as name_persian from letters'))
-      items.push({ section: 'letter', entity: 'letter', table: 'letters', dir: 'letters', id: l.id, text: l.name_persian, versioned: true })
+      items.push({ section: 'letter', entity: 'letter', table: 'letters', dir: 'letters', id: l.id, text: l.name_persian, versioned: true, premiumEligible: true })
   }
   if (scope === 'stories' || scope === 'all') {
-    for (const p of await query<{ id: string; text_persian: string }>('select id, text_persian from story_pages'))
-      items.push({ section: 'story', entity: 'story_page', table: 'story_pages', dir: 'stories', id: p.id, text: p.text_persian, versioned: true })
+    // Premium variants only for the curated catalog — regenerating every AI
+    // story with a paid engine would burn credits on one-family content.
+    for (const p of await query<{ id: string; text_persian: string; ai_generated: boolean }>(
+      'select p.id, p.text_persian, s.ai_generated from story_pages p join stories s on s.id = p.story_id'))
+      items.push({ section: 'story', entity: 'story_page', table: 'story_pages', dir: 'stories', id: p.id, text: p.text_persian, versioned: true, premiumEligible: !p.ai_generated })
   }
   if (scope === 'phonics' || scope === 'all') {
     // Syllables (consonant + short vowel) — fixed path /uploads/phonics/<slug>.wav.
     for (const s of phonicsSyllables())
-      items.push({ section: 'phonics', dir: 'phonics', id: s.slug, text: s.text, versioned: false })
+      items.push({ section: 'phonics', dir: 'phonics', id: s.slug, text: s.text, versioned: false, premiumEligible: true })
   }
   if (scope === 'math' || scope === 'all') {
     // دنیای اعداد pack: numbers 0–100 + prompt phrases, fixed paths
     // /uploads/math/<slug>.wav (client-built, like phonics). Own section voice.
     for (const m of mathAudioItems())
-      items.push({ section: 'math', dir: 'math', id: m.slug, text: m.text, versioned: false })
+      items.push({ section: 'math', dir: 'math', id: m.slug, text: m.text, versioned: false, premiumEligible: true })
   }
   return items
 }
@@ -97,6 +101,25 @@ export function startRegen(scope: RegenScope): boolean {
             const url = `/uploads/${it.dir}/${file}`
             await query(`update ${it.table} set audio_url = $1 where id = $2`, [url, it.id])
             await query('delete from audio_assets where entity_type = $1 and entity_id = $2', [it.entity, it.id])
+          }
+          // Premium variant (e.g. ElevenLabs) side by side under /uploads/premium/…
+          // — free file above stays untouched; a premium failure only counts an error.
+          const cfg = configs.find(c => c.section === it.section)
+          if (it.premiumEligible && cfg?.premium_engine && cfg.premium_voice) {
+            try {
+              const pClip = await synthesizeWith(cfg.premium_engine, cfg.premium_voice, it.text, { wav: !it.versioned })
+              const pDir = path.resolve(UPLOADS_DIR, 'premium', it.dir)
+              fs.mkdirSync(pDir, { recursive: true })
+              const pFile = it.versioned ? `${it.id}-${ver}.${pClip.ext}` : `${it.id}.wav`
+              fs.writeFileSync(path.join(pDir, pFile), pClip.buf)
+              if (it.entity && it.table) {
+                await query(`update ${it.table} set audio_url_premium = $1 where id = $2`,
+                  [`/uploads/premium/${it.dir}/${pFile}`, it.id])
+              }
+            } catch (err) {
+              state.errors++
+              console.error('premium regen failed', it.dir, it.id, (err as Error).message)
+            }
           }
         } catch (err) {
           state.errors++

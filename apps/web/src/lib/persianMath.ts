@@ -6,7 +6,8 @@
 
 import type { Child } from '@koodakbook/shared'
 import { mathAudioUrl, numberToPersianWord } from '@koodakbook/shared'
-import { speakOrPlay } from '@/lib/speech'
+import { speakOrPlayFirst } from '@/lib/speech'
+import { audioCandidates } from '@/lib/premium'
 
 // Number formatting/words live in shared (the backend synthesizes the audio
 // pack from the same source of truth).
@@ -14,12 +15,12 @@ export { toPersianDigits, numberToPersianWord, mathAudioUrl } from '@koodakbook/
 
 /** Speak a number: recorded/generated clip first, browser TTS as last resort. */
 export function sayNumber(n: number): void {
-  speakOrPlay(mathAudioUrl(`n${n}`), numberToPersianWord(n))
+  speakOrPlayFirst(audioCandidates(mathAudioUrl(`n${n}`)), numberToPersianWord(n))
 }
 
 /** Speak a fixed math phrase by slug (see MATH_PHRASES in shared). */
 export function sayPhrase(slug: string, fallbackText: string): void {
-  speakOrPlay(mathAudioUrl(slug), fallbackText)
+  speakOrPlayFirst(audioCandidates(mathAudioUrl(slug)), fallbackText)
 }
 
 /** Child's age from birth_year (falls back to a level-based guess). */

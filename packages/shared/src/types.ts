@@ -62,6 +62,9 @@ export interface AudioSectionConfig {
   section: AudioSection
   engine: AudioEngine
   voice: string
+  /** Optional paid tier (cloud engines only); null = premium hears the free voice. */
+  premium_engine?: AudioEngine | null
+  premium_voice?: string | null
 }
 
 // ── Content ───────────────────────────────────────────────
@@ -75,6 +78,7 @@ export interface Word {
   /** Diacritized pronunciation override used only for TTS (homographs). */
   tts_text?: string | null
   audio_url: string | null
+  audio_url_premium?: string | null
   image_url: string | null
   // ── Animation (Phase 0) ──
   animation_template?: AnimationTemplate | null
@@ -101,6 +105,7 @@ export interface Letter {
   /** Diacritized pronunciation override used only for TTS (letter names). */
   tts_text?: string | null
   audio_url: string | null
+  audio_url_premium?: string | null
   example_word_id: string | null
   animation_template?: AnimationTemplate | null
   animation_params?: AnimationParams
@@ -150,6 +155,7 @@ export interface StoryPage {
   text_english: string | null
   image_url: string | null
   audio_url: string | null
+  audio_url_premium?: string | null
   scene_plan?: ScenePlan | null
   animation_review?: AnimationReview
   animation_engine_version?: number | null

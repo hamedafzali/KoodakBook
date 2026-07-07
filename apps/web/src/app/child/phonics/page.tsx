@@ -8,7 +8,8 @@ import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
-import { speakOrPlay, initSpeech } from '@/lib/speech'
+import { speakOrPlay, speakOrPlayFirst, initSpeech } from '@/lib/speech'
+import { audioCandidates, ensurePremiumFlag } from '@/lib/premium'
 import {
   SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl,
   type Syllable,
@@ -84,6 +85,7 @@ export default function PhonicsPage() {
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
+    ensurePremiumFlag()
   }, [router])
 
   const [demo, setDemo] = useState<MergeDemo | null>(null)
@@ -91,7 +93,7 @@ export default function PhonicsPage() {
 
   function say(text: string, slug: string) {
     playTap()
-    speakOrPlay(phonicsAudioUrl(slug), text)
+    speakOrPlayFirst(audioCandidates(phonicsAudioUrl(slug)), text)
   }
 
   /** Learn-mode tap: run the merge animation and fire the audio at the snap. */
@@ -99,7 +101,7 @@ export default function PhonicsPage() {
     playTap()
     setDemo(d => ({ c, mark, markName, text, run: (d?.run ?? 0) + 1 }))
     if (demoTimer.current) clearTimeout(demoTimer.current)
-    demoTimer.current = setTimeout(() => speakOrPlay(phonicsAudioUrl(slug), text), 550)
+    demoTimer.current = setTimeout(() => speakOrPlayFirst(audioCandidates(phonicsAudioUrl(slug)), text), 550)
   }
 
   if (phase === 'quiz') return <PhonicsQuiz all={all} say={say} onDone={() => setPhase('done')} onExit={() => setPhase('learn')} />

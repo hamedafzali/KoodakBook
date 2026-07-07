@@ -89,6 +89,20 @@ export function speakOrPlay(audioUrl: string | null | undefined, text: string): 
   speakPersian(text)
 }
 
+/** Like speakOrPlay, but tries several clip URLs in order (e.g. the premium
+ * variant, then the free one) before falling back to browser TTS. */
+export function speakOrPlayFirst(urls: (string | null | undefined)[], text: string): void {
+  const list = urls.map(mediaUrl).filter((u): u is string => !!u)
+  const tryAt = (i: number): void => {
+    if (i >= list.length) { speakPersian(text); return }
+    try {
+      const audio = new Audio(list[i])
+      audio.play().catch(() => tryAt(i + 1))
+    } catch { tryAt(i + 1) }
+  }
+  tryAt(0)
+}
+
 /** True if the browser can speak at all (used to decide quiz audio modes). */
 export function canSpeak(): boolean {
   return getSynth() !== null

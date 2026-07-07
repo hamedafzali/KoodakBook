@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { queryOne } from '../db'
-import { synthesizeSection, synthesizeSectionFree, getSectionConfig, isSidecarEngine } from '../audio'
+import { synthesizeSection, synthesizeSectionFree, synthesizeSectionPremium, getSectionConfig, isSidecarEngine } from '../audio'
 import type { TtsSettings } from './types'
 
 export type { TtsSettings } from './types'
@@ -42,7 +42,14 @@ export async function synthesizeStoryPages(
   const out: Record<string, string> = {}
   for (const page of pages) {
     try {
-      const clip = useConfigured
+      // Premium accounts: dedicated premium engine first (when configured),
+      // then the section's free config; free accounts: sidecar only.
+      let clip = null
+      if (paidAllowed) {
+        try { clip = await synthesizeSectionPremium('story', page.text_persian) }
+        catch (err) { console.error('premium story TTS failed, using free config:', (err as Error).message) }
+      }
+      if (!clip) clip = useConfigured
         ? await synthesizeSection('story', page.text_persian)
         : await synthesizeSectionFree('story', page.text_persian)
       const file = `${storyId}-${page.id}.${clip.ext}`

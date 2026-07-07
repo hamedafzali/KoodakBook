@@ -1,7 +1,36 @@
 import { Router } from 'express'
+import type { Request } from 'express'
 import { query, queryOne } from '../lib/db'
+import { verifyToken } from '../lib/jwt'
+import { isPremiumActive } from '@koodakbook/shared'
 
 const router = Router()
+
+/* ── Premium audio resolution ───────────────────────────────
+ * Content routes are public, but the api client always attaches the token
+ * when logged in. Decode it opportunistically: paid accounts get the premium
+ * audio variant (audio_url_premium, e.g. ElevenLabs) transparently promoted
+ * into audio_url — the apps never need to know two variants exist. */
+async function isPremiumRequest(req: Request): Promise<boolean> {
+  const h = req.headers.authorization
+  if (!h?.startsWith('Bearer ')) return false
+  try {
+    const { sub } = verifyToken(h.slice(7))
+    const u = await queryOne<{ plan: string; plan_expires_at: string | null }>(
+      'select plan, plan_expires_at from users where id = $1', [sub])
+    return isPremiumActive(u?.plan, u?.plan_expires_at)
+  } catch { return false }
+}
+
+/** Promote the premium variant in place (recurses into nested content objects). */
+function promoteAudio<T>(obj: T, premium: boolean): T {
+  if (!premium || !obj || typeof obj !== 'object') return obj
+  const o = obj as Record<string, unknown>
+  if (typeof o.audio_url_premium === 'string' && o.audio_url_premium) o.audio_url = o.audio_url_premium
+  for (const k of ['word', 'letter', 'example_word']) if (o[k]) promoteAudio(o[k], premium)
+  if (Array.isArray(o.words)) for (const w of o.words) promoteAudio((w as Record<string, unknown>)?.word, premium)
+  return obj
+}
 
 // Resolve a row to JSON with its audio_url overridden by the primary
 // audio_asset (a native take supersedes the TTS bootstrap — mig-017/018).
@@ -35,7 +64,8 @@ router.get('/lessons/:id', async (req, res) => {
      order by li.order_index`,
     [req.params.id]
   )
-  res.json({ data: { ...lesson, items }, error: null })
+  const premium = await isPremiumRequest(req)
+  res.json({ data: { ...lesson, items: (items as Record<string, unknown>[]).map(i => promoteAudio(i, premium)) }, error: null })
 })
 
 router.get('/stories', async (req, res) => {
@@ -68,7 +98,8 @@ router.get('/stories/:id', async (req, res) => {
      order by sp.page_number`,
     [req.params.id]
   )
-  res.json({ data: { ...story.obj, pages: pages.map(r => r.obj) }, error: null })
+  const premium = await isPremiumRequest(req)
+  res.json({ data: { ...promoteAudio(story.obj, premium), pages: pages.map(r => promoteAudio(r.obj, premium)) }, error: null })
 })
 
 router.get('/words', async (req, res) => {
@@ -81,13 +112,14 @@ router.get('/words', async (req, res) => {
   if (conditions.length) sql += ' where ' + conditions.join(' and ')
   sql += ' order by w.category, w.persian'
   const rows = await query<Obj>(sql, params)
-  res.json({ data: rows.map(r => r.obj), error: null })
+  const premium = await isPremiumRequest(req)
+  res.json({ data: rows.map(r => promoteAudio(r.obj, premium)), error: null })
 })
 
 router.get('/words/:id', async (req, res) => {
   const word = await queryOne<Obj>(`select ${withAudio('w', 'word')} as obj from words w where w.id = $1`, [req.params.id])
   if (!word) { res.status(404).json({ data: null, error: 'Word not found' }); return }
-  res.json({ data: word.obj, error: null })
+  res.json({ data: promoteAudio(word.obj, await isPremiumRequest(req)), error: null })
 })
 
 router.get('/letters', async (req, res) => {
@@ -100,7 +132,8 @@ router.get('/letters', async (req, res) => {
      left join words w on w.id = l.example_word_id
      order by l.group, l.order_in_group`
   )
-  res.json({ data: rows.map(r => r.obj), error: null })
+  const premium = await isPremiumRequest(req)
+  res.json({ data: rows.map(r => promoteAudio(r.obj, premium)), error: null })
 })
 
 export default router
