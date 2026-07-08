@@ -110,14 +110,18 @@ interface SectionsResponse {
 // operator picks by NAME — never hunts voice ids in a third-party panel.
 type VoiceOpt = { id: string; label: string }
 let elevenCache: VoiceOpt[] | null = null
-function useElevenVoices(active: boolean): VoiceOpt[] | null {
+function useElevenVoices(active: boolean): { voices: VoiceOpt[] | null; error: string | null } {
   const [voices, setVoices] = useState<VoiceOpt[] | null>(elevenCache)
+  const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     if (!active || elevenCache) return
     api.get<VoiceOpt[]>('/api/admin/audio/voices?engine=elevenlabs')
-      .then(r => { if (r.data) { elevenCache = r.data; setVoices(r.data) } })
+      .then(r => {
+        if (r.data) { elevenCache = r.data; setVoices(r.data) }
+        else setError(r.error ?? 'دریافت فهرست صداها ممکن نشد')
+      })
   }, [active])
-  return voices
+  return { voices, error }
 }
 
 /** Options for a voice picker: live ElevenLabs list when that engine is
@@ -183,7 +187,7 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const em = ENGINES[engine]
-  const elevenVoices = useElevenVoices(engines.elevenlabs && (engine === 'elevenlabs' || pEngine === 'elevenlabs'))
+  const { voices: elevenVoices, error: elevenErr } = useElevenVoices(engines.elevenlabs && (engine === 'elevenlabs' || pEngine === 'elevenlabs'))
   const dirty = engine !== cfg.engine || voice !== cfg.voice ||
     pEngine !== (cfg.premium_engine ?? '') || pVoice !== (cfg.premium_voice ?? '')
 
@@ -256,7 +260,7 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
               </Select>
             ) : (
               <Input value={voice} onChange={e => setVoice(e.target.value)}
-                placeholder={engine === 'elevenlabs' ? 'در حال دریافت صداها…' : 'voice id'} dir="ltr" />
+                placeholder={engine === 'elevenlabs' ? (elevenErr ? 'voice id — فهرست دریافت نشد' : 'در حال دریافت صداها…') : 'voice id'} dir="ltr" />
             )
           })()}
         </Field>
@@ -305,7 +309,7 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
                   </Select>
                 ) : (
                   <Input value={pVoice} onChange={e => setPVoice(e.target.value)}
-                    placeholder={pEngine === 'elevenlabs' ? 'در حال دریافت صداها…' : 'voice id'} dir="ltr" disabled={!pEngine} />
+                    placeholder={pEngine === 'elevenlabs' ? (elevenErr ? 'voice id — فهرست دریافت نشد' : 'در حال دریافت صداها…') : 'voice id'} dir="ltr" disabled={!pEngine} />
                 )
               })()}
               <Button variant="secondary" onClick={() => pEngine && preview(pEngine, pVoice)}
@@ -326,6 +330,9 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
         </Button>
       </div>
 
+      {elevenErr && (engine === 'elevenlabs' || pEngine === 'elevenlabs') && (
+        <p className="text-sm text-red-600">{elevenErr}</p>
+      )}
       {msg && <p className="text-sm text-green-600">{msg}</p>}
       {err && <p className="text-sm text-red-600 ltr text-left">{err}</p>}
     </div>

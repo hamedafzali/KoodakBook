@@ -71,6 +71,7 @@ router.get('/audio/voices', requireAdmin, requirePermission('ai.manage'), async 
     const r = await fetch('https://api.elevenlabs.io/v1/voices', {
       headers: { 'xi-api-key': key }, signal: AbortSignal.timeout(10_000),
     })
+    if (r.status === 401) throw new Error('کلید ElevenLabs نامعتبر است (401) — کلید را دوباره از elevenlabs.io → API Keys کپی کنید')
     if (!r.ok) throw new Error(`ElevenLabs ${r.status}`)
     const j = await r.json() as { voices?: { voice_id: string; name: string; labels?: Record<string, string> }[] }
     const voices = (j.voices ?? []).map(v => ({
