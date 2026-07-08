@@ -7,11 +7,13 @@ import { synthesizeSection, synthesizeWith, getSectionConfigs, type AudioSection
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
 export type RegenScope = 'words' | 'letters' | 'stories' | 'phonics' | 'math' | 'all'
+export type RegenTier = 'free' | 'premium'
 
 // In-memory progress for the singleton admin regeneration job.
 interface RegenState {
   running: boolean
   scope: RegenScope | null
+  tier: RegenTier
   voice: string          // human-readable "engine:voice" summary for the admin UI
   done: number
   total: number
@@ -19,7 +21,7 @@ interface RegenState {
   startedAt: number
   finishedAt: number
 }
-let state: RegenState = { running: false, scope: null, voice: '', done: 0, total: 0, errors: 0, startedAt: 0, finishedAt: 0 }
+let state: RegenState = { running: false, scope: null, tier: 'free', voice: '', done: 0, total: 0, errors: 0, startedAt: 0, finishedAt: 0 }
 
 export function getRegenStatus(): RegenState {
   return state
@@ -70,60 +72,63 @@ async function collect(scope: RegenScope): Promise<Item[]> {
   return items
 }
 
-/** Start a regeneration using each section's configured engine + voice.
- *  Returns false if one is already running. Runs in the background; poll
- *  getRegenStatus(). */
-export function startRegen(scope: RegenScope): boolean {
+/** Start a regeneration for ONE tier: 'free' rebuilds the standard files
+ *  (premium files untouched), 'premium' rebuilds only the premium variants
+ *  (never re-synthesizes free — no wasted sidecar work, no wasted credits).
+ *  Returns false if a run is already in progress. Poll getRegenStatus(). */
+export function startRegen(scope: RegenScope, tier: RegenTier = 'free'): boolean {
   if (state.running) return false
-  state = { running: true, scope, voice: '', done: 0, total: 0, errors: 0, startedAt: Date.now(), finishedAt: 0 }
+  state = { running: true, scope, tier, voice: '', done: 0, total: 0, errors: 0, startedAt: Date.now(), finishedAt: 0 }
 
   void (async () => {
     try {
       const configs = await getSectionConfigs()
-      const items = await collect(scope)
+      let items = await collect(scope)
+      if (tier === 'premium') {
+        // Only sections with a premium voice configured, and never AI stories.
+        items = items.filter(it => {
+          const c = configs.find(x => x.section === it.section)
+          return it.premiumEligible && c?.premium_engine && c.premium_voice
+        })
+      }
       const used = [...new Set(items.map(i => i.section))]
-      state.voice = configs.filter(c => used.includes(c.section)).map(c => `${c.engine}:${c.voice}`).join('، ')
+      state.voice = configs.filter(c => used.includes(c.section))
+        .map(c => tier === 'premium' ? `${c.premium_engine}:${c.premium_voice}` : `${c.engine}:${c.voice}`)
+        .join('، ')
       const ver = state.startedAt   // shared version stamp for this run
       state.total = items.length
       for (const it of items) {
         try {
-          // Phonics must be real WAV bytes: its client path is a fixed .wav and
-          // express-static types the response by extension.
-          const clip = await synthesizeSection(it.section, it.text, { wav: !it.versioned })
-          const dir = path.resolve(UPLOADS_DIR, it.dir)
-          fs.mkdirSync(dir, { recursive: true })
-          // Versioned name so re-running with a new voice yields a fresh URL (no
-          // stale browser/proxy cache); phonics keeps a fixed name (path is built
-          // client-side and can't carry a version).
-          const file = it.versioned ? `${it.id}-${ver}.${clip.ext}` : `${it.id}.wav`
-          fs.writeFileSync(path.join(dir, file), clip.buf)
-          if (it.entity && it.table) {
-            const url = `/uploads/${it.dir}/${file}`
-            await query(`update ${it.table} set audio_url = $1 where id = $2`, [url, it.id])
-            await query('delete from audio_assets where entity_type = $1 and entity_id = $2', [it.entity, it.id])
-          }
-          // Premium variant (e.g. ElevenLabs) side by side under /uploads/premium/…
-          // — free file above stays untouched; a premium failure only counts an error.
-          const cfg = configs.find(c => c.section === it.section)
-          if (it.premiumEligible && cfg?.premium_engine && cfg.premium_voice) {
-            try {
-              const pClip = await synthesizeWith(cfg.premium_engine, cfg.premium_voice, it.text, { wav: !it.versioned })
-              const pDir = path.resolve(UPLOADS_DIR, 'premium', it.dir)
-              fs.mkdirSync(pDir, { recursive: true })
-              const pFile = it.versioned ? `${it.id}-${ver}.${pClip.ext}` : `${it.id}.wav`
-              fs.writeFileSync(path.join(pDir, pFile), pClip.buf)
-              if (it.entity && it.table) {
-                await query(`update ${it.table} set audio_url_premium = $1 where id = $2`,
-                  [`/uploads/premium/${it.dir}/${pFile}`, it.id])
-              }
-            } catch (err) {
-              state.errors++
-              console.error('premium regen failed', it.dir, it.id, (err as Error).message)
+          if (tier === 'free') {
+            // Phonics/math must be real WAV bytes: their client paths are fixed
+            // .wav and express-static types the response by extension.
+            const clip = await synthesizeSection(it.section, it.text, { wav: !it.versioned })
+            const dir = path.resolve(UPLOADS_DIR, it.dir)
+            fs.mkdirSync(dir, { recursive: true })
+            // Versioned name so re-running with a new voice yields a fresh URL
+            // (no stale caches); fixed names for client-built paths.
+            const file = it.versioned ? `${it.id}-${ver}.${clip.ext}` : `${it.id}.wav`
+            fs.writeFileSync(path.join(dir, file), clip.buf)
+            if (it.entity && it.table) {
+              const url = `/uploads/${it.dir}/${file}`
+              await query(`update ${it.table} set audio_url = $1 where id = $2`, [url, it.id])
+              await query('delete from audio_assets where entity_type = $1 and entity_id = $2', [it.entity, it.id])
+            }
+          } else {
+            const cfg = configs.find(c => c.section === it.section)!
+            const pClip = await synthesizeWith(cfg.premium_engine!, cfg.premium_voice!, it.text, { wav: !it.versioned })
+            const pDir = path.resolve(UPLOADS_DIR, 'premium', it.dir)
+            fs.mkdirSync(pDir, { recursive: true })
+            const pFile = it.versioned ? `${it.id}-${ver}.${pClip.ext}` : `${it.id}.wav`
+            fs.writeFileSync(path.join(pDir, pFile), pClip.buf)
+            if (it.entity && it.table) {
+              await query(`update ${it.table} set audio_url_premium = $1 where id = $2`,
+                [`/uploads/premium/${it.dir}/${pFile}`, it.id])
             }
           }
         } catch (err) {
           state.errors++
-          console.error('regen item failed', it.dir, it.id, (err as Error).message)
+          console.error(`${tier} regen item failed`, it.dir, it.id, (err as Error).message)
         }
         state.done++
         await new Promise(r => setTimeout(r, 40))   // pace it — ease memory pressure on a small host

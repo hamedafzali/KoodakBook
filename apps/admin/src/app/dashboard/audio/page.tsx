@@ -106,6 +106,28 @@ interface SectionsResponse {
   engines: Record<AudioEngine, boolean>
 }
 
+// ElevenLabs voice catalogue, fetched from the account's own voice list so the
+// operator picks by NAME — never hunts voice ids in a third-party panel.
+type VoiceOpt = { id: string; label: string }
+let elevenCache: VoiceOpt[] | null = null
+function useElevenVoices(active: boolean): VoiceOpt[] | null {
+  const [voices, setVoices] = useState<VoiceOpt[] | null>(elevenCache)
+  useEffect(() => {
+    if (!active || elevenCache) return
+    api.get<VoiceOpt[]>('/api/admin/audio/voices?engine=elevenlabs')
+      .then(r => { if (r.data) { elevenCache = r.data; setVoices(r.data) } })
+  }, [active])
+  return voices
+}
+
+/** Options for a voice picker: live ElevenLabs list when that engine is
+ *  chosen, else the static per-engine list (empty → free-text input). */
+function voiceOptionsFor(engine: AudioEngine | '', eleven: VoiceOpt[] | null): VoiceOpt[] {
+  if (!engine) return []
+  if (engine === 'elevenlabs') return eleven ?? []
+  return ENGINES[engine].voices
+}
+
 export default function AudioPage() {
   const [data, setData] = useState<SectionsResponse | null>(null)
 
@@ -161,8 +183,18 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const em = ENGINES[engine]
+  const elevenVoices = useElevenVoices(engines.elevenlabs && (engine === 'elevenlabs' || pEngine === 'elevenlabs'))
   const dirty = engine !== cfg.engine || voice !== cfg.voice ||
     pEngine !== (cfg.premium_engine ?? '') || pVoice !== (cfg.premium_voice ?? '')
+
+  /** Kick off this section's regeneration for one tier (free ≠ premium runs). */
+  async function regen(tier: 'free' | 'premium') {
+    if (dirty) { setErr('اول تغییرات را ذخیره کنید، بعد بازتولید'); return }
+    setMsg(null); setErr(null)
+    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope: meta.regenScope, tier })
+    if (r.error) { setErr(r.error); return }
+    setMsg(tier === 'premium' ? 'بازتولید پرمیوم شروع شد ⭐ — پیشرفت در پایین صفحه' : 'بازتولید رایگان شروع شد — پیشرفت در پایین صفحه')
+  }
 
   function pick(e: AudioEngine) {
     setEngine(e)
@@ -215,14 +247,18 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
           </Select>
         </Field>
         <Field label="صدا (Voice)" hint={em.hint}>
-          {em.voices.length > 0 ? (
-            <Select value={voice} onChange={e => setVoice(e.target.value)} dir="ltr">
-              {!em.voices.some(v => v.id === voice) && voice && <option value={voice}>{voice}</option>}
-              {em.voices.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
-            </Select>
-          ) : (
-            <Input value={voice} onChange={e => setVoice(e.target.value)} placeholder="voice id" dir="ltr" />
-          )}
+          {(() => {
+            const opts = voiceOptionsFor(engine, elevenVoices)
+            return opts.length > 0 ? (
+              <Select value={voice} onChange={e => setVoice(e.target.value)} dir="ltr">
+                {!opts.some(v => v.id === voice) && voice && <option value={voice}>{voice}</option>}
+                {opts.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
+              </Select>
+            ) : (
+              <Input value={voice} onChange={e => setVoice(e.target.value)}
+                placeholder={engine === 'elevenlabs' ? 'در حال دریافت صداها…' : 'voice id'} dir="ltr" />
+            )
+          })()}
         </Field>
       </div>
 
@@ -257,14 +293,37 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
               ))}
             </Select>
           </Field>
-          <Field label="صدای پرمیوم" hint={pEngine === 'elevenlabs' ? 'voice_id از پنل ElevenLabs' : pEngine ? ENGINES[pEngine].hint : ''}>
+          <Field label="صدای پرمیوم" hint={pEngine ? ENGINES[pEngine].hint : ''}>
             <div className="flex gap-2">
-              <Input value={pVoice} onChange={e => setPVoice(e.target.value)} placeholder="voice id" dir="ltr" disabled={!pEngine} />
+              {(() => {
+                const opts = voiceOptionsFor(pEngine, elevenVoices)
+                return opts.length > 0 ? (
+                  <Select value={pVoice} onChange={e => setPVoice(e.target.value)} dir="ltr">
+                    {!pVoice && <option value="">— انتخاب صدا</option>}
+                    {!opts.some(v => v.id === pVoice) && pVoice && <option value={pVoice}>{pVoice}</option>}
+                    {opts.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
+                  </Select>
+                ) : (
+                  <Input value={pVoice} onChange={e => setPVoice(e.target.value)}
+                    placeholder={pEngine === 'elevenlabs' ? 'در حال دریافت صداها…' : 'voice id'} dir="ltr" disabled={!pEngine} />
+                )
+              })()}
               <Button variant="secondary" onClick={() => pEngine && preview(pEngine, pVoice)}
                 disabled={busy !== null || !pEngine || !pVoice || !engines[pEngine as AudioEngine]}>▶</Button>
             </div>
           </Field>
         </div>
+      </div>
+
+      {/* Generation lives here, per tier: each run builds ONLY its own files */}
+      <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+        <Button variant="secondary" onClick={() => regen('free')} disabled={busy !== null}>
+          🔄 بازتولید رایگان این بخش
+        </Button>
+        <Button variant="secondary" onClick={() => regen('premium')}
+          disabled={busy !== null || !cfg.premium_engine || !cfg.premium_voice}>
+          ⭐ بازتولید پرمیوم این بخش
+        </Button>
       </div>
 
       {msg && <p className="text-sm text-green-600">{msg}</p>}
@@ -274,16 +333,7 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
 }
 
 // ── Regenerate stored audio with the saved per-section voices ─────
-interface RegenStatus { running: boolean; scope: string | null; voice: string; done: number; total: number; errors: number; finishedAt: number }
-const REGEN_SCOPES: { id: string; label: string }[] = [
-  { id: 'all', label: 'همه' },
-  { id: 'stories', label: 'داستان‌ها' },
-  { id: 'letters', label: 'حروف' },
-  { id: 'words', label: 'کلمات' },
-  { id: 'phonics', label: 'صداکِشی' },
-  { id: 'math', label: 'اعداد (دنیای اعداد)' },
-]
-
+interface RegenStatus { running: boolean; scope: string | null; tier?: 'free' | 'premium'; voice: string; done: number; total: number; errors: number; finishedAt: number }
 function RegenCard() {
   const [st, setSt] = useState<RegenStatus | null>(null)
   const [pollKey, setPollKey] = useState(0)
@@ -302,9 +352,9 @@ function RegenCard() {
     return () => { active = false; if (timer) clearTimeout(timer) }
   }, [pollKey])
 
-  async function start(scope: string) {
+  async function start(tier: 'free' | 'premium') {
     setErr(null)
-    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope })
+    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope: 'all', tier })
     if (r.error) { setErr(r.error); return }
     setPollKey(k => k + 1)
   }
@@ -314,15 +364,15 @@ function RegenCard() {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-      <h3 className="font-bold text-slate-800">بازتولید صداهای ذخیره‌شده</h3>
+      <h3 className="font-bold text-slate-800">بازتولید همه‌ی بخش‌ها + پیشرفت</h3>
       <p className="text-sm text-slate-500">
-        فایل‌های صوتی موجود را با موتور و صدای ذخیره‌شده‌ی هر بخش دوباره می‌سازد. صداهای ضبط‌شده‌ی انسانی دست‌نخورده می‌مانند؛ اول تنظیمات بالا را ذخیره کنید.
+        بازتولید هر بخش، داخل کارت همان بخش است. اینجا می‌توانید همه را یک‌جا بسازید — رایگان و پرمیوم جدا از هم اجرا می‌شوند و فایل‌های هم را دست نمی‌زنند. صداهای ضبط‌شده‌ی انسانی همیشه دست‌نخورده می‌مانند.
       </p>
 
       {running ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">در حال ساخت ({st?.scope}) — {st?.voice}</span>
+            <span className="text-slate-600">در حال ساخت {st?.tier === 'premium' ? 'پرمیوم ⭐' : 'رایگان'} ({st?.scope}) — {st?.voice}</span>
             <span className="font-bold text-slate-800">{st?.done} / {st?.total}</span>
           </div>
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -331,9 +381,8 @@ function RegenCard() {
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {REGEN_SCOPES.map(s => (
-            <Button key={s.id} variant="secondary" onClick={() => start(s.id)}>{s.label}</Button>
-          ))}
+          <Button variant="secondary" onClick={() => start('free')}>🔄 بازتولید همه — رایگان</Button>
+          <Button variant="secondary" onClick={() => start('premium')}>⭐ بازتولید همه — پرمیوم</Button>
         </div>
       )}
 

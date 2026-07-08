@@ -6,7 +6,8 @@ import { logAudit } from '../lib/audit'
 import { keyConfigured } from '../lib/ai'
 import type { AiSettings } from '../lib/ai'
 import { getTtsSettings, ttsKeyConfigured } from '../lib/tts'
-import { startRegen, getRegenStatus, type RegenScope } from '../lib/tts/regenerate'
+import { startRegen, getRegenStatus, type RegenScope, type RegenTier } from '../lib/tts/regenerate'
+import { getSectionConfigs } from '../lib/audio'
 
 const router = Router()
 
@@ -83,13 +84,27 @@ router.patch('/ai-settings', requireAdmin, requirePermission('ai.manage'), async
 })
 
 // ── Regenerate audio (Piper, current voice) for words / letters / stories ─────
-const regenSchema = z.object({ scope: z.enum(['words', 'letters', 'stories', 'phonics', 'math', 'all']) })
+const regenSchema = z.object({
+  scope: z.enum(['words', 'letters', 'stories', 'phonics', 'math', 'all']),
+  tier: z.enum(['free', 'premium']).default('free'),
+})
+const SCOPE_SECTIONS: Record<string, string[]> = {
+  words: ['word'], letters: ['letter'], stories: ['story'], phonics: ['phonics'], math: ['math'],
+  all: ['word', 'letter', 'story', 'phonics', 'math'],
+}
 
-router.post('/tts/regenerate', requireAdmin, requirePermission('ai.manage'), (req, res) => {
+router.post('/tts/regenerate', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
   const parsed = regenSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: 'scope required' }); return }
-  const started = startRegen(parsed.data.scope as RegenScope)
-  if (!started) { res.status(409).json({ data: null, error: 'A regeneration is already running' }); return }
+  const { scope, tier } = parsed.data
+  if (tier === 'premium') {
+    const configs = await getSectionConfigs()
+    const wanted = SCOPE_SECTIONS[scope] ?? []
+    const ok = configs.some(c => wanted.includes(c.section) && c.premium_engine && c.premium_voice)
+    if (!ok) { res.status(400).json({ data: null, error: 'برای این بخش صدای پرمیوم تنظیم نشده است — اول در کارت بخش، موتور و صدای پرمیوم را ذخیره کنید.' }); return }
+  }
+  const started = startRegen(scope as RegenScope, tier as RegenTier)
+  if (!started) { res.status(409).json({ data: null, error: 'یک بازتولید در حال اجراست — صبر کنید تمام شود' }); return }
   res.json({ data: { started: true }, error: null })
 })
 

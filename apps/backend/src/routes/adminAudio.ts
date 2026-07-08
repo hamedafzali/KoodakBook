@@ -4,7 +4,7 @@ import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
 import {
   AUDIO_SECTIONS, AUDIO_ENGINES, CLOUD_ENGINES, getSectionConfigs, setSectionConfig,
-  engineAvailable, synthesizeWith,
+  engineAvailable, engineKey, synthesizeWith,
   type AudioSection, type AudioEngine,
 } from '../lib/audio'
 
@@ -57,6 +57,29 @@ router.post('/audio/preview', requireAdmin, requirePermission('ai.manage'), asyn
     res.json({ data: { audio: `data:${mime};base64,${clip.buf.toString('base64')}` }, error: null })
   } catch (err) {
     res.status(502).json({ data: null, error: (err as Error).message })
+  }
+})
+
+// Voice catalogue for engines that expose one — the operator picks from a
+// dropdown instead of hunting voice ids in a third-party panel.
+router.get('/audio/voices', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
+  const engine = String(req.query.engine ?? '')
+  if (engine !== 'elevenlabs') { res.json({ data: [], error: null }); return }
+  const key = engineKey('elevenlabs')
+  if (!key) { res.status(400).json({ data: null, error: 'کلید ElevenLabs تنظیم نشده است' }); return }
+  try {
+    const r = await fetch('https://api.elevenlabs.io/v1/voices', {
+      headers: { 'xi-api-key': key }, signal: AbortSignal.timeout(10_000),
+    })
+    if (!r.ok) throw new Error(`ElevenLabs ${r.status}`)
+    const j = await r.json() as { voices?: { voice_id: string; name: string; labels?: Record<string, string> }[] }
+    const voices = (j.voices ?? []).map(v => ({
+      id: v.voice_id,
+      label: [v.name, v.labels?.gender, v.labels?.age].filter(Boolean).join(' — '),
+    }))
+    res.json({ data: voices, error: null })
+  } catch (err) {
+    res.status(502).json({ data: null, error: `دریافت فهرست صداها ممکن نشد: ${(err as Error).message}` })
   }
 })
 
