@@ -36,8 +36,15 @@ services:
       # Set AI_API_KEY in ACM to that provider's key (Anthropic / OpenAI /
       # DeepSeek / Kimi / Qwen / …).
       AI_API_KEY:         ${AI_API_KEY:-}
-      # Separate key for the cloud TTS provider (premium story audio). Set in ACM.
+      # Cloud TTS keys — per-engine names win, TTS_API_KEY is the shared
+      # fallback. Values come from the .env file next to this compose file.
       TTS_API_KEY:        ${TTS_API_KEY:-}
+      TTS_ELEVENLABS_KEY: ${TTS_ELEVENLABS_KEY:-}
+      TTS_AZURE_KEY:      ${TTS_AZURE_KEY:-}
+      TTS_OPENAI_KEY:     ${TTS_OPENAI_KEY:-}
+      # Free-photo picker sources (admin words page) — optional, better results.
+      PIXABAY_API_KEY:    ${PIXABAY_API_KEY:-}
+      PEXELS_API_KEY:     ${PEXELS_API_KEY:-}
       # Free baseline voice (Piper sidecar) — always available, no key.
       PIPER_URL:          http://piper:5000
     volumes:
