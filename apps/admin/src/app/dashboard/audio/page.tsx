@@ -114,7 +114,8 @@ function useElevenVoices(active: boolean): { voices: VoiceOpt[] | null; error: s
   const [voices, setVoices] = useState<VoiceOpt[] | null>(elevenCache)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
-    if (!active || elevenCache) return
+    if (!active) return
+    if (elevenCache) { setVoices(elevenCache); return }   // late activators hydrate from cache
     api.get<VoiceOpt[]>('/api/admin/audio/voices?engine=elevenlabs')
       .then(r => {
         if (r.data) { elevenCache = r.data; setVoices(r.data) }
@@ -325,7 +326,7 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
           🔄 بازتولید رایگان این بخش
         </Button>
         <Button variant="secondary" onClick={() => regen('premium')}
-          disabled={busy !== null || !cfg.premium_engine || !cfg.premium_voice}>
+          disabled={busy !== null || !pEngine || !pVoice}>
           ⭐ بازتولید پرمیوم این بخش
         </Button>
       </div>
@@ -366,6 +367,14 @@ function RegenCard() {
     setPollKey(k => k + 1)
   }
 
+  const [demoMsg, setDemoMsg] = useState<string | null>(null)
+  async function makeDemo() {
+    setErr(null); setDemoMsg('در حال ساخت نمونه‌ها…')
+    const r = await api.post<{ free: string; premium: string }>('/api/admin/audio/demo', {})
+    if (r.error) { setDemoMsg(null); setErr(r.error); return }
+    setDemoMsg('نمونه‌ها ساخته شد ✅ — در بخش قیمتِ سایت پخش می‌شوند')
+  }
+
   const running = st?.running
   const pct = st && st.total > 0 ? Math.round((st.done / st.total) * 100) : 0
 
@@ -390,12 +399,14 @@ function RegenCard() {
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => start('free')}>🔄 بازتولید همه — رایگان</Button>
           <Button variant="secondary" onClick={() => start('premium')}>⭐ بازتولید همه — پرمیوم</Button>
+          <Button variant="secondary" onClick={makeDemo}>🎧 ساخت نمونه‌ی صدا برای سایت</Button>
         </div>
       )}
 
       {st && !running && st.finishedAt > 0 && (
         <p className="text-sm text-green-600">تمام شد ✅ — {st.done} مورد{st.errors > 0 ? `، ${st.errors} خطا` : ''}</p>
       )}
+      {demoMsg && <p className="text-sm text-slate-600">{demoMsg}</p>}
       {err && <p className="text-sm text-red-600">{err}</p>}
     </div>
   )

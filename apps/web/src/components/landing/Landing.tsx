@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { TabletForm, WaitlistForm } from './LeadForms'
 import Pricing from './Pricing'
+import VoiceDemo from './VoiceDemo'
 
 /* Public marketing landing (server-rendered for SEO).
  * Audience: Iranian parents abroad deciding whether this is safe + effective
@@ -304,6 +305,8 @@ export default function Landing() {
           <SectionTitle kicker="قیمت" title="ساده و شفاف — لغو در هر لحظه"
             sub="امروز همه‌چیز با حساب رایگان شروع می‌شود؛ پلن‌های پرمیوم به‌زودی فعال می‌شوند." />
           <Pricing />
+          {/* Hear-the-difference: hidden until admin generates both samples */}
+          <VoiceDemo />
         </div>
       </section>
 

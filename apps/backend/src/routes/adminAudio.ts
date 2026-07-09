@@ -2,11 +2,15 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
+import fs from 'fs'
+import path from 'path'
 import {
   AUDIO_SECTIONS, AUDIO_ENGINES, CLOUD_ENGINES, getSectionConfigs, setSectionConfig,
-  engineAvailable, engineKey, synthesizeWith,
+  engineAvailable, engineKey, synthesizeWith, synthesizeSection, synthesizeSectionPremium,
   type AudioSection, type AudioEngine,
 } from '../lib/audio'
+
+const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
 const router = Router()
 
@@ -81,6 +85,34 @@ router.get('/audio/voices', requireAdmin, requirePermission('ai.manage'), async 
     res.json({ data: voices, error: null })
   } catch (err) {
     res.status(502).json({ data: null, error: `دریافت فهرست صداها ممکن نشد: ${(err as Error).message}` })
+  }
+})
+
+// Public voice samples for the pricing page: the same story excerpt read by
+// the free voice and the premium voice, so families HEAR what they'd pay for.
+// Written to fixed paths the landing plays directly; regenerate any time the
+// voices change.
+const DEMO_TEXT =
+  'یکی بود، یکی نبود. پیرزن مهربانی بود که دلش برای دخترش تنگ شده بود. ' +
+  'گفت: می‌روم به دیدنش! راه خانه‌ی دختر از جنگل می‌گذشت و یک ماجرای شیرین در راه بود…'
+
+router.post('/audio/demo', requireAdmin, requirePermission('ai.manage'), async (_req, res) => {
+  try {
+    const premium = await synthesizeSectionPremium('story', DEMO_TEXT, { wav: true })
+    if (!premium) {
+      res.status(400).json({ data: null, error: 'اول صدای پرمیوم بخش داستان‌ها را تنظیم و ذخیره کنید' })
+      return
+    }
+    const free = await synthesizeSection('story', DEMO_TEXT, { wav: true })
+    const dir = path.resolve(UPLOADS_DIR, 'demo')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(path.join(dir, 'voice-free.wav'), free.buf)
+    fs.writeFileSync(path.join(dir, 'voice-premium.wav'), premium.buf)
+    await logAudit(res.locals.adminEmail, 'audio.demo.generate', 'audio_sections', 'story',
+      { free: `${free.engine}:${free.voice}`, premium: `${premium.engine}:${premium.voice}` })
+    res.json({ data: { free: '/uploads/demo/voice-free.wav', premium: '/uploads/demo/voice-premium.wav' }, error: null })
+  } catch (err) {
+    res.status(502).json({ data: null, error: `ساخت نمونه ممکن نشد: ${(err as Error).message}` })
   }
 })
 
