@@ -10,7 +10,8 @@ import { useChildSession } from '@/lib/useSession'
 import { pickChild, setActiveChildId } from '@/lib/activeChild'
 import { consumeChildPick } from '@/lib/mode'
 import { childAge } from '@/lib/persianMath'
-import { speakPersian } from '@/lib/speech'
+import { speakPersian, speakOrPlay } from '@/lib/speech'
+import { playTap } from '@/lib/sounds'
 import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
@@ -18,7 +19,7 @@ import { LESSON_TYPE_EMOJI, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL
 import { MODULE, IconChip, ModuleCard, ChunkyButton } from '@/components/child/kit'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import { SCENE_SLUGS, type SceneSlug } from '@koodakbook/shared'
-import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels } from '@koodakbook/shared'
+import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels, Letter } from '@koodakbook/shared'
 
 /* Child home, redesigned for its real audience.
  *
@@ -52,6 +53,7 @@ export default function ChildHomePage() {
   const [child, setChild] = useState<Child | null>(null)
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [stories, setStories] = useState<Story[]>([])
+  const [letters, setLetters] = useState<Letter[]>([])
   const [stats, setStats] = useState({ words: 0, streak: 0, xp: 0 })
   const [reviewWords, setReviewWords] = useState<ReviewItem[]>([])
   const [strandLevels, setStrandLevels] = useState<StrandLevels>(ALL_UNLOCKED)
@@ -68,9 +70,10 @@ export default function ChildHomePage() {
 
   async function loadForChild(c: Child) {
     setChild(c)
-    const [lessonsRes, storiesRes, dashRes, reviewRes, progressRes, placeRes] = await Promise.all([
+    const [lessonsRes, storiesRes, lettersRes, dashRes, reviewRes, progressRes, placeRes] = await Promise.all([
       api.get<Lesson[]>('/api/lessons'),
       api.get<Story[]>('/api/stories'),
+      api.get<Letter[]>('/api/letters'),
       api.get<DashboardSummary>(`/api/dashboard/${c.id}`),
       api.get<ReviewItem[]>(`/api/progress/${c.id}/review`),
       api.get<{ lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
@@ -89,6 +92,7 @@ export default function ChildHomePage() {
     }
     if (lessonsRes.data) setLessons(lessonsRes.data)
     if (storiesRes.data) setStories(storiesRes.data)
+    if (lettersRes.data) setLetters(lettersRes.data)
   }
 
   function resolveChild(c: Child) {
@@ -254,6 +258,25 @@ export default function ChildHomePage() {
           <ActionTile emoji="🚪" title="همه‌ی قصه‌ها" href="/child/story" big={band === 1} />
         </TileRow>
 
+        {/* ── Alphabet row: tap a letter, HEAR it (all bands) ── */}
+        {letters.length > 0 && (
+          <TileRow label="الفبا — ضربه بزن و بشنو 🔤" bigTiles={band === 1}>
+            {letters.map(l => (
+              <button key={l.id} role="listitem"
+                onClick={() => { playTap(); speakOrPlay(l.audio_url, l.name_persian) }}
+                aria-label={`بشنو: ${l.name_persian}`}
+                className="flex-shrink-0 snap-start">
+                <motion.div whileTap={{ scale: 0.88 }}
+                  className={`${band === 1 ? 'w-24 h-28' : 'w-20 h-24'} bg-white rounded-2xl shadow-card flex flex-col items-center justify-center gap-1`}>
+                  <span className={`${band === 1 ? 'text-5xl' : 'text-4xl'} font-bold text-sky-600 leading-none`}>{l.character}</span>
+                  <span className="text-[11px] text-slate-400 persian-text">{l.name_persian}</span>
+                </motion.div>
+              </button>
+            ))}
+            <ActionTile emoji="✍️" title="بنویس!" href="/child/write" big={band === 1} />
+          </TileRow>
+        )}
+
         {/* ── Lessons row (bands 2–3) ── */}
         {band >= 2 && (
           <TileRow label="درس‌ها 📚">
@@ -266,6 +289,29 @@ export default function ChildHomePage() {
             {lessonRow.pool.length > 1 && <ActionTile emoji="🎲" title="شانسی!" onClick={() => surprise('lesson')} />}
             {lessonRow.doneCount > 0 && <ActionTile emoji="⭐" title={`انجام‌شده (${lessonRow.doneCount})`} href="/child/lesson" />}
             <ActionTile emoji="🚪" title="همه‌ی درس‌ها" href="/child/lesson" />
+          </TileRow>
+        )}
+
+        {/* ── Games row: the fun shelf (bands 2–3) ── */}
+        {band >= 2 && (
+          <TileRow label="بازی‌ها 🎮">
+            {([
+              { href: '/child/games/memory', emoji: '🃏', title: 'بازی حافظه', m: 'games' as const },
+              { href: '/child/math/counting', emoji: '🍎', title: 'شمارش', m: 'lessons' as const },
+              { href: '/child/math/digits', emoji: '۴', title: 'رقم‌ها', m: 'letters' as const },
+              { href: '/child/math/bazaar', emoji: '🛒', title: 'بازار', m: 'rewards' as const },
+              { href: '/child/speak', emoji: '🎤', title: 'بگو ببینم!', m: 'speak' as const },
+            ]).map(g => (
+              <Link key={g.href} href={g.href} role="listitem" aria-label={g.title}
+                className="flex-shrink-0 snap-start group">
+                <motion.div whileTap={{ y: 4 }}
+                  className={`w-32 h-[120px] ${MODULE[g.m].solid} ${MODULE[g.m].edge} border-b-[6px] group-active:border-b-2 rounded-2xl relative overflow-hidden flex flex-col items-center justify-center gap-1.5 text-white`}>
+                  <span className="absolute -top-5 -left-5 w-16 h-16 bg-white/15 rounded-full" aria-hidden="true" />
+                  <span className="text-4xl font-bold drop-shadow-sm" aria-hidden="true">{g.emoji}</span>
+                  <p className="font-bold text-sm drop-shadow-sm">{g.title}</p>
+                </motion.div>
+              </Link>
+            ))}
           </TileRow>
         )}
 
@@ -328,25 +374,31 @@ export default function ChildHomePage() {
 
 function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: boolean; children: React.ReactNode }) {
   const scroller = useRef<HTMLDivElement>(null)
-  const [overflows, setOverflows] = useState(false)
+  const [ends, setEnds] = useState({ start: true, end: true })   // hidden until measured
 
-  // Mouse users can't wheel a horizontal row — show arrows whenever the row
-  // actually overflows (touch keeps swiping as before).
+  // Track position, not just overflow: each arrow exists only while there is
+  // content in ITS direction (self-evident semantics, disappears at the end).
+  // RTL note: modern engines report scrollLeft ≤ 0 in RTL; |scrollLeft| is the
+  // distance travelled from the start (which sits at the visual RIGHT).
   useEffect(() => {
     const el = scroller.current
     if (!el) return
-    const check = () => setOverflows(el.scrollWidth > el.clientWidth + 8)
+    const check = () => {
+      const max = el.scrollWidth - el.clientWidth
+      const pos = Math.abs(el.scrollLeft)
+      setEnds({ start: max <= 8 || pos <= 8, end: max <= 8 || pos >= max - 8 })
+    }
     check()
+    el.addEventListener('scroll', check, { passive: true })
     const ro = new ResizeObserver(check)
     ro.observe(el)
-    return () => ro.disconnect()
+    return () => { el.removeEventListener('scroll', check); ro.disconnect() }
   })
 
-  /** dirVisual +1 = slide view to the visual right. In RTL, forward-through-
-   *  content is the visual LEFT (negative scrollBy in modern browsers). */
-  function nudge(dirVisual: 1 | -1) {
+  /** forward = deeper into content = visual LEFT in RTL. */
+  function nudge(forward: boolean) {
     const el = scroller.current
-    if (el) el.scrollBy({ left: dirVisual * el.clientWidth * 0.8, behavior: 'smooth' })
+    if (el) el.scrollBy({ left: (forward ? -1 : 1) * el.clientWidth * 0.8, behavior: 'smooth' })
   }
 
   return (
@@ -360,15 +412,16 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
           role="list" aria-label={label}>
           {children}
         </div>
-        {/* Mouse affordance: arrows overlaid on the row's edges (desktop only).
-            RTL: forward-through-content is the visual LEFT. */}
-        {overflows && (
-          <>
-            <button onClick={() => nudge(-1)} aria-label="بعدی"
-              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/95 shadow-md border border-slate-100 items-center justify-center text-xl text-gray-500 hover:text-amber-600 hover:scale-110 transition">‹</button>
-            <button onClick={() => nudge(1)} aria-label="قبلی"
-              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/95 shadow-md border border-slate-100 items-center justify-center text-xl text-gray-500 hover:text-amber-600 hover:scale-110 transition">›</button>
-          </>
+        {/* Desktop affordance: glossy arrows floated half OFF the content so
+            they never cover a tile; each lives only while its direction has
+            more content, so it can't point the wrong way. */}
+        {!ends.end && (
+          <button onClick={() => nudge(true)} aria-label="بعدی"
+            className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-lg ring-1 ring-slate-200/80 items-center justify-center text-2xl text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">‹</button>
+        )}
+        {!ends.start && (
+          <button onClick={() => nudge(false)} aria-label="قبلی"
+            className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-lg ring-1 ring-slate-200/80 items-center justify-center text-2xl text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">›</button>
         )}
       </div>
     </section>
