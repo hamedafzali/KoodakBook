@@ -386,14 +386,17 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
     const check = () => {
       const max = el.scrollWidth - el.clientWidth
       const pos = Math.abs(el.scrollLeft)
-      setEnds({ start: max <= 8 || pos <= 8, end: max <= 8 || pos >= max - 8 })
+      const next = { start: max <= 8 || pos <= 8, end: max <= 8 || pos >= max - 8 }
+      // Functional + value-compared: a fresh object every call here would
+      // re-render → re-run → loop, freezing the whole page's interactivity.
+      setEnds(prev => (prev.start === next.start && prev.end === next.end ? prev : next))
     }
     check()
     el.addEventListener('scroll', check, { passive: true })
     const ro = new ResizeObserver(check)
     ro.observe(el)
     return () => { el.removeEventListener('scroll', check); ro.disconnect() }
-  })
+  }, [])
 
   /** forward = deeper into content = visual LEFT in RTL. */
   function nudge(forward: boolean) {
