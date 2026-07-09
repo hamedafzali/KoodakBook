@@ -173,7 +173,7 @@ export default function ChildHomePage() {
       </AnimatePresence>
 
       {/* ── Hero: greeting + mascot; stats only for older kids ── */}
-      <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 pt-8 pb-14 px-5 rounded-b-[3rem] overflow-hidden">
+      <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 pt-8 pb-24 px-5 rounded-b-[2.5rem]">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="relative flex items-end justify-between">
@@ -192,12 +192,12 @@ export default function ChildHomePage() {
             )}
           </div>
           <button onClick={() => speakPersian(nextUp.say)} aria-label="مَسکات — بگو چی کار کنیم">
-            <Mascot size={band === 1 ? 120 : 100} mood={stats.streak > 0 ? 'happy' : 'idle'} className="-mb-5" />
+            <Mascot size={band === 1 ? 116 : 96} mood={stats.streak > 0 ? 'happy' : 'idle'} />
           </button>
         </div>
       </div>
 
-      <div className={`px-4 pt-5 space-y-7 ${band === 3 ? 'lg:px-8 lg:max-w-5xl lg:mx-auto' : 'max-w-2xl mx-auto'}`}>
+      <div className={`relative -mt-14 px-4 space-y-7 pb-4 ${band === 3 ? 'lg:px-8 lg:max-w-5xl lg:mx-auto' : 'max-w-2xl mx-auto'}`}>
 
         {/* ── THE button: the app already decided what's next ── */}
         <Link href={nextUp.href} aria-label={`${nextUp.label}: ${nextUp.title}`}>
@@ -205,7 +205,7 @@ export default function ChildHomePage() {
             whileTap={{ scale: 0.97 }}
             animate={{ scale: [1, 1.015, 1] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            className={`bg-white rounded-[1.75rem] shadow-lg ring-4 ring-yellow-300/70 flex items-center gap-4 ${band === 1 ? 'p-6' : 'p-5'}`}
+            className={`bg-white rounded-[1.75rem] shadow-xl ring-4 ring-yellow-300/70 flex items-center gap-4 ${band === 1 ? 'p-6' : 'p-5'}`}
           >
             <span className={`${band === 1 ? 'text-6xl' : 'text-5xl'} shrink-0`} aria-hidden="true">{nextUp.emoji}</span>
             <div className="flex-1 min-w-0">
@@ -333,23 +333,25 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className={`font-bold text-gray-800 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
+      <h2 className={`font-bold text-gray-800 mb-3 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
+      <div className="relative">
+        {/* Full-bleed on mobile (-mx-4) so tiles swipe edge-to-edge instead of
+            clipping at the page padding; pt-1/px-1 give the glow ring room. */}
+        <div ref={scroller}
+          className="flex items-stretch gap-3 overflow-x-auto pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-1 snap-x scroll-smooth"
+          role="list" aria-label={label}>
+          {children}
+        </div>
+        {/* Mouse affordance: arrows overlaid on the row's edges (desktop only).
+            RTL: forward-through-content is the visual LEFT. */}
         {overflows && (
-          <div className="hidden sm:flex gap-1.5">
-            <button onClick={() => nudge(1)} aria-label="قبلی"
-              className="w-9 h-9 rounded-full bg-white shadow text-gray-400 hover:text-amber-600 text-lg leading-none">›</button>
+          <>
             <button onClick={() => nudge(-1)} aria-label="بعدی"
-              className="w-9 h-9 rounded-full bg-white shadow text-gray-400 hover:text-amber-600 text-lg leading-none">‹</button>
-          </div>
+              className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/95 shadow-md border border-slate-100 items-center justify-center text-xl text-gray-500 hover:text-amber-600 hover:scale-110 transition">‹</button>
+            <button onClick={() => nudge(1)} aria-label="قبلی"
+              className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/95 shadow-md border border-slate-100 items-center justify-center text-xl text-gray-500 hover:text-amber-600 hover:scale-110 transition">›</button>
+          </>
         )}
-      </div>
-      {/* Full-bleed on mobile (-mx-4) so tiles swipe edge-to-edge instead of
-          clipping at the page padding; pt-1/px-1 give the glow ring room. */}
-      <div ref={scroller}
-        className="flex gap-3 overflow-x-auto pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-1 snap-x scroll-smooth"
-        role="list" aria-label={label}>
-        {children}
       </div>
     </section>
   )
@@ -361,22 +363,23 @@ function CardTile({ href, title, sub, badge, emoji, image, grad, glow, big }: {
 }) {
   const w = big ? 'w-44' : 'w-36'
   const h = big ? 'h-32' : 'h-24'
+  const total = big ? 'h-[212px]' : 'h-[172px]'
   return (
     <Link href={href} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>
       <motion.div
-        className={`${w} bg-white rounded-lg overflow-hidden shadow-md relative ${glow ? 'ring-4 ring-yellow-300/80' : ''}`}
+        className={`${w} ${total} bg-white rounded-lg overflow-hidden shadow-md relative flex flex-col ${glow ? 'ring-4 ring-yellow-300/80' : ''}`}
         whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.96 }}
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
       >
         {badge && <span className="absolute top-2 right-2 z-10 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>}
         {image ? (
-          <img src={image} alt="" className={`w-full ${h} object-cover`} />
+          <img src={image} alt="" className={`w-full ${h} object-cover shrink-0`} />
         ) : (
-          <div className={`w-full ${h} bg-gradient-to-br ${grad} flex items-center justify-center ${big ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{emoji}</div>
+          <div className={`w-full ${h} shrink-0 bg-gradient-to-br ${grad} flex items-center justify-center ${big ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{emoji}</div>
         )}
-        <div className="p-3">
-          <p className={`font-bold text-gray-800 leading-tight ${big ? 'text-base' : 'text-sm'}`}>{title}</p>
-          {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        <div className="p-3 flex-1 min-h-0">
+          <p className={`font-bold text-gray-800 leading-tight line-clamp-2 ${big ? 'text-base' : 'text-sm'}`}>{title}</p>
+          {sub && <p className="text-xs text-gray-400 mt-0.5 truncate">{sub}</p>}
         </div>
       </motion.div>
     </Link>
@@ -387,11 +390,11 @@ function CardTile({ href, title, sub, badge, emoji, image, grad, glow, big }: {
 function LockedTile({ title, big }: { title: string; big?: boolean }) {
   return (
     <div role="listitem" className="flex-shrink-0" aria-label={`${title} — هنوز خوابه`}>
-      <div className={`${big ? 'w-44' : 'w-36'} bg-white/60 rounded-lg overflow-hidden shadow-sm select-none`}>
-        <div className={`w-full ${big ? 'h-32' : 'h-24'} bg-gray-100 flex items-center justify-center ${big ? 'text-5xl' : 'text-4xl'}`} aria-hidden="true">😴</div>
-        <div className="p-3">
-          <p className="font-bold text-gray-400 text-sm leading-tight">{title}</p>
-          <p className="text-xs text-gray-400 mt-0.5">هنوز خوابه — بعداً بیدار می‌شه!</p>
+      <div className={`${big ? 'w-44 h-[212px]' : 'w-36 h-[172px]'} bg-white/60 rounded-lg overflow-hidden shadow-sm select-none flex flex-col`}>
+        <div className={`w-full shrink-0 ${big ? 'h-32' : 'h-24'} bg-gray-100 flex items-center justify-center ${big ? 'text-5xl' : 'text-4xl'}`} aria-hidden="true">😴</div>
+        <div className="p-3 flex-1 min-h-0">
+          <p className="font-bold text-gray-400 text-sm leading-tight line-clamp-2">{title}</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate">هنوز خوابه!</p>
         </div>
       </div>
     </div>
@@ -404,7 +407,7 @@ function ActionTile({ emoji, title, href, onClick, big }: {
 }) {
   const inner = (
     <motion.div whileTap={{ scale: 0.94 }}
-      className={`${big ? 'w-32 h-[188px]' : 'w-28 h-[156px]'} bg-amber-50 border-2 border-dashed border-amber-200 rounded-lg flex flex-col items-center justify-center gap-2`}>
+      className={`${big ? 'w-32 h-[212px]' : 'w-28 h-[172px]'} bg-amber-50 border-2 border-dashed border-amber-200 rounded-lg flex flex-col items-center justify-center gap-2`}>
       <span className={big ? 'text-5xl' : 'text-4xl'} aria-hidden="true">{emoji}</span>
       <p className="font-bold text-amber-700 text-xs text-center px-2 leading-snug">{title}</p>
     </motion.div>
