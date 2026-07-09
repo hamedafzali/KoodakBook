@@ -30,6 +30,36 @@ router.post('/signup', async (req, res) => {
   res.status(201).json({ data: { token, user_id: user.id }, error: null })
 })
 
+// ── Kid login: username only ─────────────────────────────
+// The child types just their username (parent set it in settings) and lands in
+// child mode. No password — kids can't type them; the parent area stays behind
+// the PIN. Rate-limited so names can't be enumerated quickly. Future: this is
+// the hook point for face recognition.
+const kidAttempts = new Map<string, number[]>()
+function kidAllowed(ip: string): boolean {
+  const now = Date.now()
+  const hits = (kidAttempts.get(ip) ?? []).filter(t => now - t < 60_000)
+  hits.push(now)
+  kidAttempts.set(ip, hits)
+  if (kidAttempts.size > 5000) kidAttempts.clear()
+  return hits.length <= 10
+}
+
+router.post('/child-login', async (req, res) => {
+  if (!kidAllowed(req.ip ?? 'unknown')) {
+    res.status(429).json({ data: null, error: 'کمی صبر کن و دوباره امتحان کن' }); return
+  }
+  const username = String(req.body?.username ?? '').trim().toLowerCase()
+  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+    res.status(400).json({ data: null, error: 'اسمت را درست بنویس (حروف انگلیسی)' }); return
+  }
+  const child = await queryOne<{ id: string; name: string; parent_id: string }>(
+    'select id, name, parent_id from children where lower(username) = $1', [username])
+  if (!child) { res.status(404).json({ data: null, error: 'این اسم را پیدا نکردم! از مامان یا بابا بپرس' }); return }
+  const token = signToken(child.parent_id)
+  res.json({ data: { token, child_id: child.id, child_name: child.name }, error: null })
+})
+
 router.post('/login', async (req, res) => {
   const parsed = authSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: 'Invalid email or password' }); return }

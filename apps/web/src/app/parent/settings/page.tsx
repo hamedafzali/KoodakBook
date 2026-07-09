@@ -40,6 +40,18 @@ export default function SettingsPage() {
     })
   }, [])
 
+  // Kid-login username per child (mig 039): the child types just this on the
+  // «ورود بچه‌ها» screen. Future: face detection replaces the typing.
+  const [unameDraft, setUnameDraft] = useState<Record<string, string>>({})
+  const [unameMsg, setUnameMsg] = useState<Record<string, string>>({})
+  async function saveUsername(id: string) {
+    const v = (unameDraft[id] ?? '').trim().toLowerCase()
+    const r = await api.patch<Child>(`/api/children/${id}`, { username: v })
+    if (r.error) { setUnameMsg(m => ({ ...m, [id]: r.error! })); return }
+    setUnameMsg(m => ({ ...m, [id]: v ? `ذخیره شد ✅ — کودک با «${v}» وارد می‌شود` : 'حذف شد' }))
+    setChildren(cs => cs.map(c => (c.id === id ? { ...c, username: v || null } : c)))
+  }
+
   function chooseChild(id: string) {
     setActiveChildId(id)
     setActiveId(id)
@@ -140,17 +152,34 @@ export default function SettingsPage() {
             <h2 id="children-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">کودکان</h2>
             <div className="bg-white rounded-md shadow-sm divide-y divide-slate-100">
               {children.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => chooseChild(c.id)}
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-right min-h-[56px]"
-                  aria-pressed={c.id === activeId}
-                >
-                  <span className="font-medium text-slate-800 text-sm">{c.name}</span>
-                  {c.id === activeId
-                    ? <span className="text-xs text-white bg-amber-500 px-2 py-0.5 rounded-full">فعال</span>
-                    : <span className="text-xs text-slate-400">انتخاب</span>}
-                </button>
+                <div key={c.id} className="px-5 py-4">
+                  <button
+                    onClick={() => chooseChild(c.id)}
+                    className="w-full flex items-center justify-between text-right min-h-[32px]"
+                    aria-pressed={c.id === activeId}
+                  >
+                    <span className="font-medium text-slate-800 text-sm">{c.name}</span>
+                    {c.id === activeId
+                      ? <span className="text-xs text-white bg-amber-500 px-2 py-0.5 rounded-full">فعال</span>
+                      : <span className="text-xs text-slate-400">انتخاب</span>}
+                  </button>
+                  {/* Kid-login username: the child types just this on «ورود بچه‌ها» */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400 shrink-0">اسم ورود کودک:</span>
+                    <input
+                      value={unameDraft[c.id] ?? c.username ?? ''}
+                      onChange={e => setUnameDraft(d => ({ ...d, [c.id]: e.target.value }))}
+                      placeholder="مثلاً sara2018"
+                      dir="ltr"
+                      className="ltr flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-400"
+                    />
+                    <button onClick={() => saveUsername(c.id)}
+                      className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg px-3 py-1.5 shrink-0">
+                      ذخیره
+                    </button>
+                  </div>
+                  {unameMsg[c.id] && <p className="text-[11px] text-slate-500 mt-1">{unameMsg[c.id]}</p>}
+                </div>
               ))}
               <Link
                 href="/onboarding"

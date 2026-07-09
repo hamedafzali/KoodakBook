@@ -96,6 +96,9 @@ export default function LoginPage() {
             ثبت‌نام رایگان
           </Link>
         </p>
+        <Link href="/kid" className="block text-center mt-4 bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 rounded-2xl py-3 font-bold text-sky-700 transition">
+          🐣 ورود بچه‌ها — با اسم مخصوص خودت
+        </Link>
     </div>
   )
 }

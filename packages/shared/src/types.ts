@@ -15,6 +15,8 @@ export interface Child {
   birth_year: number | null
   level: 1 | 2 | 3 | 4
   avatar_url: string | null
+  /** Kid-mode login name (mig 039) — parent-defined, globally unique. */
+  username?: string | null
   created_at: string
   /** Set once the placement probe has run (mig-020). */
   placement_done?: boolean

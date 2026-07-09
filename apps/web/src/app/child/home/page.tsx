@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -9,18 +9,24 @@ import { mediaUrl } from '@/lib/media'
 import { useChildSession } from '@/lib/useSession'
 import { pickChild, setActiveChildId } from '@/lib/activeChild'
 import { consumeChildPick } from '@/lib/mode'
+import { childAge } from '@/lib/persianMath'
+import { speakPersian } from '@/lib/speech'
 import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
-import EmptyState from '@/components/child/EmptyState'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
-import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel, wordEmoji, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
+import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
 import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels } from '@koodakbook/shared'
 
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.07 } },
-}
-const item = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }
+/* Child home, redesigned for its real audience.
+ *
+ * Principles (design/motion/content plan §1):
+ *  - ONE giant "play" button that routes to the smartest next activity — a
+ *    4-year-old should never have to decide, only tap the glowing thing.
+ *  - Windowed carousels instead of truncated lists: continue + the next ~10
+ *    relevant items, then a 🎲 random tile and a 🚪 door to the full page.
+ *    Bounded UI at ANY catalog size (100+ stories still shows ~13 tiles).
+ *  - Age bands: 3–5 see hero + stories + two giant tiles; 6–7 add lessons and
+ *    the practice grid; 8–10 get the dense layout with stats and review. */
 
 function greeting() {
   const h = new Date().getHours()
@@ -28,6 +34,8 @@ function greeting() {
   if (h < 17) return 'ظهر بخیر'
   return 'شب بخیر'
 }
+
+interface NextUp { href: string; label: string; title: string; emoji: string; say: string }
 
 export default function ChildHomePage() {
   const router = useRouter()
@@ -37,17 +45,17 @@ export default function ChildHomePage() {
   const [stats, setStats] = useState({ words: 0, streak: 0, xp: 0 })
   const [reviewWords, setReviewWords] = useState<ReviewItem[]>([])
   const [strandLevels, setStrandLevels] = useState<StrandLevels>(ALL_UNLOCKED)
+  const [doneLessons, setDoneLessons] = useState<Set<string>>(new Set())
+  const [doneStories, setDoneStories] = useState<Set<string>>(new Set())
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
   const [showTutorial, setShowTutorial] = useState(false)
-  const [pickList, setPickList] = useState<Child[]>([])   // "who's playing?" — only when a parent switches in with >1 child
+  const [pickList, setPickList] = useState<Child[]>([])
   const [showPicker, setShowPicker] = useState(false)
 
   useChildSession(child?.id ?? null)
-
   useEffect(() => { if (!hasSeenTutorial()) setShowTutorial(true) }, [])
 
-  // Load everything for one chosen child (runs after the child is resolved).
   async function loadForChild(c: Child) {
     setChild(c)
     const [lessonsRes, storiesRes, dashRes, reviewRes, progressRes, placeRes] = await Promise.all([
@@ -60,8 +68,10 @@ export default function ChildHomePage() {
     ])
     if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
     if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
-    if (reviewRes.data) setReviewWords(reviewRes.data)   // spaced-repetition words due now
+    if (reviewRes.data) setReviewWords(reviewRes.data)
     if (progressRes.data) {
+      setDoneLessons(new Set(progressRes.data.lessons.filter(l => l.completed).map(l => l.lesson_id)))
+      setDoneStories(new Set(progressRes.data.stories.filter(s => s.completed).map(s => s.story_id)))
       const lastLessonId = progressRes.data.lessons.filter(l => !l.completed).at(-1)?.lesson_id
       if (lastLessonId && lessonsRes.data) setLastLesson(lessonsRes.data.find(l => l.id === lastLessonId) ?? null)
       const lastStoryId = progressRes.data.stories.filter(s => !s.completed).at(-1)?.story_id
@@ -71,8 +81,6 @@ export default function ChildHomePage() {
     if (storiesRes.data) setStories(storiesRes.data)
   }
 
-  // Resolve a chosen child: remember it, run the placement assessment the first
-  // time (deferred from creation), otherwise load the home.
   function resolveChild(c: Child) {
     setActiveChildId(c.id)
     if (!c.placement_done) { router.replace('/onboarding/placement'); return }
@@ -88,7 +96,6 @@ export default function ChildHomePage() {
       if (cancelled) return
       const list = childRes.data ?? []
       if (list.length === 0) { router.replace('/parent/dashboard'); return }
-      // Parent just switched in and there are several kids → ask who's playing.
       if (consumeChildPick() && list.length > 1) { setPickList(list); setShowPicker(true); return }
       const c = pickChild(list)
       if (c) resolveChild(c)
@@ -98,46 +105,61 @@ export default function ChildHomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
-  // Order by placement: unlocked first, then by stage; show the top few.
-  const lessonView = [...lessons]
-    .map(l => ({ l, locked: !isLessonUnlocked(l, strandLevels) }))
-    .sort((a, b) => Number(a.locked) - Number(b.locked) || a.l.stage - b.l.stage)
-    .slice(0, 4)
-  const storyView = [...stories]
-    .map(s => ({ s, locked: !isStoryUnlocked(s, strandLevels) }))
-    .sort((a, b) => Number(a.locked) - Number(b.locked) || a.s.stage - b.s.stage)
-    .slice(0, 4)
+  const band = child ? (childAge(child) <= 5 ? 1 : childAge(child) <= 7 ? 2 : 3) : 2
 
-  // "Who's playing?" — shown when a parent switches into child mode with >1 child.
-  // Full-screen overlay (z-50) so it covers the nav/rail: no child page is
-  // reachable until someone is chosen, and there's an explicit way back.
+  // ── The one decision the app makes FOR the child ──────────
+  const nextUp = useMemo<NextUp>(() => {
+    if (lastLesson) return { href: `/child/lesson/${lastLesson.id}`, label: 'ادامه‌ی درس', title: lastLesson.title, emoji: LESSON_TYPE_EMOJI[lastLesson.type] ?? '📚', say: `بیا درس ${lastLesson.title} رو تمام کنیم!` }
+    if (reviewWords.length >= 3) return { href: '/child/review', label: 'مرور کلمه‌ها', title: `${reviewWords.length} کلمه منتظرند`, emoji: '🔄', say: 'بیا کلمه‌هایی که یاد گرفتی رو مرور کنیم!' }
+    if (lastStory) return { href: `/child/story/${lastStory.id}`, label: 'ادامه‌ی قصه', title: lastStory.title_persian, emoji: '📖', say: `بیا بقیه‌ی قصه‌ی ${lastStory.title_persian} رو بخونیم!` }
+    const nl = lessons.find(l => isLessonUnlocked(l, strandLevels) && !doneLessons.has(l.id))
+    if (nl) return { href: `/child/lesson/${nl.id}`, label: 'درس تازه', title: nl.title, emoji: LESSON_TYPE_EMOJI[nl.type] ?? '📚', say: `بیا درس ${nl.title} رو شروع کنیم!` }
+    const ns = stories.find(s => isStoryUnlocked(s, strandLevels) && !doneStories.has(s.id))
+    if (ns) return { href: `/child/story/${ns.id}`, label: 'قصه‌ی تازه', title: ns.title_persian, emoji: '📖', say: `بیا قصه‌ی ${ns.title_persian} رو بخونیم!` }
+    return { href: '/child/phonics', label: 'بازی صداها', title: 'زبر، زیر، پیش', emoji: '🎵', say: 'بیا با صداها بازی کنیم!' }
+  }, [lastLesson, lastStory, reviewWords, lessons, stories, strandLevels, doneLessons, doneStories])
+
+  // ── Windowed carousels: bounded tiles at any catalog size ──
+  const lessonRow = useMemo(() => {
+    const unlocked = lessons.filter(l => isLessonUnlocked(l, strandLevels))
+    const todo = unlocked.filter(l => !doneLessons.has(l.id)).sort((a, b) => a.stage - b.stage)
+    const locked = lessons.filter(l => !isLessonUnlocked(l, strandLevels)).slice(0, 2)
+    return { window: todo.slice(0, 10), doneCount: doneLessons.size, locked, pool: todo }
+  }, [lessons, strandLevels, doneLessons])
+
+  const storyRow = useMemo(() => {
+    const unlocked = stories.filter(s => isStoryUnlocked(s, strandLevels))
+    const fresh = unlocked.filter(s => !doneStories.has(s.id) && s.id !== lastStory?.id).sort((a, b) => a.stage - b.stage)
+    const win = (lastStory ? [lastStory] : []).concat(fresh).slice(0, 10)
+    const locked = stories.filter(s => !isStoryUnlocked(s, strandLevels)).slice(0, 2)
+    return { window: win, doneCount: doneStories.size, locked, pool: unlocked }
+  }, [stories, strandLevels, doneStories, lastStory])
+
+  function surprise(kind: 'lesson' | 'story') {
+    const pool = kind === 'lesson' ? lessonRow.pool : storyRow.pool
+    if (pool.length === 0) return
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    speakPersian('سورپرایز!')
+    router.push(kind === 'lesson' ? `/child/lesson/${pick.id}` : `/child/story/${(pick as Story).id}`)
+  }
+
   if (showPicker) {
     return (
       <div className="fixed inset-0 z-50 child-bg flex flex-col items-center justify-center p-6 gap-8">
         <h1 className="text-2xl font-bold text-gray-800 persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
-            <motion.button
-              key={c.id}
-              onClick={() => resolveChild(c)}
-              whileTap={{ scale: 0.94 }}
-              className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center gap-3"
-              aria-label={`بازی با ${c.name}`}
-            >
+            <motion.button key={c.id} onClick={() => resolveChild(c)} whileTap={{ scale: 0.94 }}
+              className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center gap-3" aria-label={`بازی با ${c.name}`}>
               <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center overflow-hidden text-4xl">
-                {mediaUrl(c.avatar_url) ? (
-                  <img src={mediaUrl(c.avatar_url)!} alt="" className="w-full h-full object-cover" />
-                ) : '🧒'}
+                {mediaUrl(c.avatar_url) ? <img src={mediaUrl(c.avatar_url)!} alt="" className="w-full h-full object-cover" /> : '🧒'}
               </div>
               <span className="font-bold text-gray-800">{c.name}</span>
             </motion.button>
           ))}
         </div>
-        {/* Way back to the parent area (PIN-gated, since the device was handed over). */}
-        <button
-          onClick={() => router.push('/parent/dashboard')}
-          className="text-sm text-gray-500 hover:text-amber-700 transition-colors persian-text mt-2"
-        >
+        <button onClick={() => router.push('/parent/dashboard')}
+          className="text-sm text-gray-500 hover:text-amber-700 transition-colors persian-text mt-2">
           → بازگشت به پنل والدین
         </button>
       </div>
@@ -146,342 +168,229 @@ export default function ChildHomePage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-
       <AnimatePresence>
-        {showTutorial && (
-          <Tutorial childName={child?.name} onClose={() => setShowTutorial(false)} />
-        )}
+        {showTutorial && <Tutorial childName={child?.name} onClose={() => setShowTutorial(false)} />}
       </AnimatePresence>
 
-      {/* ── Hero ── */}
-      <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 pt-10 pb-16 px-5 rounded-b-[3rem] overflow-hidden">
+      {/* ── Hero: greeting + mascot; stats only for older kids ── */}
+      <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 pt-8 pb-14 px-5 rounded-b-[3rem] overflow-hidden">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
-
         <div className="relative flex items-end justify-between">
           <div className="text-white">
             <p className="text-white text-sm mb-1">{greeting()} 👋</p>
-            <h1 className="text-3xl font-bold leading-tight">
-              {child?.name ?? 'کودک عزیز'}
-            </h1>
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {stats.streak > 0 && (
-                <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
-                  🔥 <span>{stats.streak} روز</span>
-                </div>
-              )}
-              {stats.words > 0 && (
-                <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
-                  ⭐ <span>{stats.words} کلمه</span>
-                </div>
-              )}
-              <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium flex items-center gap-1">
-                🎓 <span>{resolveLevel(stats.xp).label}</span>
+            <h1 className="text-3xl font-bold leading-tight">{child?.name ?? 'کودک عزیز'}</h1>
+            {band === 3 && (
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {stats.streak > 0 && <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium">🔥 {stats.streak} روز</div>}
+                {stats.words > 0 && <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium">⭐ {stats.words} کلمه</div>}
+                <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium">🎓 {resolveLevel(stats.xp).label}</div>
               </div>
-            </div>
+            )}
+            {band !== 3 && stats.streak > 0 && (
+              <div className="inline-block bg-white/20 rounded-full px-3 py-1 text-sm font-medium mt-2">🔥 {stats.streak} روز</div>
+            )}
           </div>
-          <Mascot size={110} mood={stats.streak > 0 ? 'happy' : 'idle'} className="-mb-6" />
+          <button onClick={() => speakPersian(nextUp.say)} aria-label="مَسکات — بگو چی کار کنیم">
+            <Mascot size={band === 1 ? 120 : 100} mood={stats.streak > 0 ? 'happy' : 'idle'} className="-mb-5" />
+          </button>
         </div>
       </div>
 
-      <div className="px-4 lg:px-8 pt-5 lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+      <div className={`px-4 pt-5 space-y-7 ${band === 3 ? 'lg:px-8 lg:max-w-5xl lg:mx-auto' : 'max-w-2xl mx-auto'}`}>
 
-        {/* ── Left column: companion + continue + review ── */}
-        <div className="space-y-6 lg:col-span-4">
-
-        {/* Desktop companion (lg-only) — anchors the left column even before a
-            child has any progress, so the two-column home never looks lopsided. */}
-        <aside className="hidden lg:block bg-white rounded-lg p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <Mascot size={56} mood={stats.streak > 0 ? 'happy' : 'idle'} />
-            <div className="min-w-0">
-              <p className="font-bold text-gray-800 truncate">{child?.name ?? 'کودک عزیز'}</p>
-              <p className="text-sm text-amber-600 font-medium">{resolveLevel(stats.xp).label}</p>
-            </div>
-          </div>
-          <div
-            className="mt-4 h-2.5 bg-amber-100 rounded-full overflow-hidden"
-            role="progressbar" aria-valuenow={resolveLevel(stats.xp).pct} aria-valuemin={0} aria-valuemax={100}
-            aria-label="پیشرفت سطح"
+        {/* ── THE button: the app already decided what's next ── */}
+        <Link href={nextUp.href} aria-label={`${nextUp.label}: ${nextUp.title}`}>
+          <motion.div
+            whileTap={{ scale: 0.97 }}
+            animate={{ scale: [1, 1.015, 1] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+            className={`bg-white rounded-[1.75rem] shadow-lg ring-4 ring-yellow-300/70 flex items-center gap-4 ${band === 1 ? 'p-6' : 'p-5'}`}
           >
-            <div className="h-full bg-brand-gradient rounded-full" style={{ width: `${resolveLevel(stats.xp).pct}%` }} />
-          </div>
-          <div className="flex gap-3 mt-3 text-xs text-gray-600">
-            <span className="flex items-center gap-1">🔥 {stats.streak} روز</span>
-            <span className="flex items-center gap-1">⭐ {stats.words} کلمه</span>
-          </div>
-        </aside>
-
-        {/* ── Continue where you left off ── */}
-        {(lastLesson || lastStory) && (
-          <section>
-            <h2 className="font-bold text-gray-800 text-base mb-2">ادامه بده 🎯</h2>
-            {lastLesson && (
-              <Link href={`/child/lesson/${lastLesson.id}`}>
-                <motion.div
-                  className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3"
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-2xl">
-                    {LESSON_TYPE_EMOJI[lastLesson.type] ?? '📖'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-amber-600 font-medium">درس ناتمام</p>
-                    <p className="font-bold text-gray-800 truncate">{lastLesson.title}</p>
-                  </div>
-                  <span className="text-amber-400 text-xl">←</span>
-                </motion.div>
-              </Link>
-            )}
-            {lastStory && !lastLesson && (
-              <Link href={`/child/story/${lastStory.id}`}>
-                <motion.div
-                  className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3"
-                  whileTap={{ scale: 0.97 }}
-                >
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-2xl">📖</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-green-600 font-medium">داستان ناتمام</p>
-                    <p className="font-bold text-gray-800 truncate">{lastStory.title_persian}</p>
-                  </div>
-                  <span className="text-green-400 text-xl">←</span>
-                </motion.div>
-              </Link>
-            )}
-          </section>
-        )}
-
-        {/* ── Spaced-repetition review ── */}
-        {reviewWords.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-bold text-gray-800 text-base">مرور امروز 🔄</h2>
-              <Link href="/child/review" className="text-amber-700 text-sm font-medium hover:underline">شروع ←</Link>
+            <span className={`${band === 1 ? 'text-6xl' : 'text-5xl'} shrink-0`} aria-hidden="true">{nextUp.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-600 font-bold text-sm">{nextUp.label}</p>
+              <p className={`font-bold text-gray-800 truncate ${band === 1 ? 'text-2xl' : 'text-lg'}`}>{nextUp.title}</p>
             </div>
-            <Link href="/child/review" aria-label={`مرور ${reviewWords.length} کلمه`}>
-              <motion.div className="bg-white rounded-lg p-3 shadow-sm" whileTap={{ scale: 0.98 }}>
-                <div className="flex gap-2 overflow-x-auto pb-1 snap-x" role="list" aria-label="کلمات برای مرور">
-                  {reviewWords.slice(0, 8).map(({ word }) => (
-                    <div
-                      key={word.id}
-                      role="listitem"
-                      className="flex-shrink-0 snap-start bg-amber-50 rounded-md px-4 py-3 flex flex-col items-center gap-1 min-w-[80px]"
-                    >
-                      {mediaUrl(word.image_url) ? (
-                        <img src={mediaUrl(word.image_url)!} alt={word.english} className="w-10 h-10 object-contain" />
-                      ) : (
-                        <span className="text-3xl" aria-hidden="true">{wordEmoji(word.english) ?? '🔤'}</span>
-                      )}
-                      <span className="font-bold text-gray-800 text-lg">{word.persian}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-center text-xs text-amber-600 font-medium mt-2">
-                  {reviewWords.length} کلمه برای مرور — ضربه بزن 🎯
-                </p>
-              </motion.div>
-            </Link>
-          </section>
+            <span className={`bg-brand-gradient text-white font-bold rounded-2xl shadow-md shrink-0 ${band === 1 ? 'text-xl px-6 py-4' : 'px-5 py-3'}`}>
+              بازی کن! 🎈
+            </span>
+          </motion.div>
+        </Link>
+
+        {/* ── Stories row (all bands — stories are the heart) ── */}
+        <TileRow label="قصه‌ها 📖" bigTiles={band === 1}>
+          {storyRow.window.map((s, idx) => (
+            <CardTile key={s.id} href={`/child/story/${s.id}`} title={s.title_persian}
+              image={mediaUrl(s.cover_url)} emoji="📖" grad={ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]}
+              glow={s.id === (lastStory?.id ?? storyRow.window[0]?.id)} big={band === 1}
+              badge={s.id === lastStory?.id ? 'ادامه بده' : undefined} />
+          ))}
+          {storyRow.locked.map(s => (
+            <LockedTile key={s.id} title={s.title_persian} big={band === 1} />
+          ))}
+          {storyRow.pool.length > 1 && (
+            <ActionTile emoji="🎲" title="شانسی!" onClick={() => surprise('story')} big={band === 1} />
+          )}
+          {storyRow.doneCount > 0 && (
+            <ActionTile emoji="⭐" title={`خوانده‌ها (${storyRow.doneCount})`} href="/child/story" big={band === 1} />
+          )}
+          <ActionTile emoji="🚪" title="همه‌ی قصه‌ها" href="/child/story" big={band === 1} />
+        </TileRow>
+
+        {/* ── Lessons row (bands 2–3) ── */}
+        {band >= 2 && (
+          <TileRow label="درس‌ها 📚">
+            {lessonRow.window.map((l, idx) => (
+              <CardTile key={l.id} href={`/child/lesson/${l.id}`} title={l.title}
+                emoji={LESSON_TYPE_EMOJI[l.type] ?? '📖'} grad={ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]}
+                sub={`مرحله ${l.stage}`} glow={idx === 0} />
+            ))}
+            {lessonRow.locked.map(l => <LockedTile key={l.id} title={l.title} />)}
+            {lessonRow.pool.length > 1 && <ActionTile emoji="🎲" title="شانسی!" onClick={() => surprise('lesson')} />}
+            {lessonRow.doneCount > 0 && <ActionTile emoji="⭐" title={`انجام‌شده (${lessonRow.doneCount})`} href="/child/lesson" />}
+            <ActionTile emoji="🚪" title="همه‌ی درس‌ها" href="/child/lesson" />
+          </TileRow>
         )}
 
-        </div>{/* ── left column end ── */}
-
-        {/* ── Right column: lessons / stories / practice ── */}
-        <div className="space-y-6 mt-6 lg:mt-0 lg:col-span-8">
-
-        {/* ── Lessons ── */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-gray-800 text-base">درس‌های امروز 📚</h2>
-            <Link href="/child/lesson" className="text-amber-700 text-sm font-medium hover:underline">
-              همه ←
-            </Link>
-          </div>
-          {lessons.length === 0 ? (
-            <EmptyState message="هنوز درسی نیست" subMessage="به زودی اضافه می‌شود!" />
-          ) : (
-            <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-              {lessonView.map(({ l: lesson, locked }, idx) => (
-                <motion.div key={lesson.id} variants={item}>
-                  {locked ? (
-                    <div
-                      className="rounded-lg p-4 bg-white/60 shadow-sm cursor-not-allowed select-none"
-                      aria-label={`${lesson.title} — قفل شده، به زودی`}
-                    >
-                      <span className="text-3xl" aria-hidden="true">🔒</span>
-                      <p className="font-bold mt-2 text-sm leading-tight text-gray-500">{lesson.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">به زودی</p>
-                    </div>
-                  ) : (
-                    <Link href={`/child/lesson/${lesson.id}`}>
-                      <motion.div
-                        className={`bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} rounded-lg p-4 text-white shadow-md`}
-                        whileHover={{ scale: 1.03, y: -2 }}
-                        whileTap={{ scale: 0.96 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                      >
-                        <span className="text-3xl" aria-hidden="true">{LESSON_TYPE_EMOJI[lesson.type] ?? '📖'}</span>
-                        <p className="font-bold mt-2 text-sm leading-tight">{lesson.title}</p>
-                        <p className="text-xs opacity-80 mt-0.5">مرحله {lesson.stage}</p>
-                      </motion.div>
-                    </Link>
-                  )}
-                </motion.div>
-              ))}
+        {/* ── Review strip (band 3: older kids like seeing the queue) ── */}
+        {band === 3 && reviewWords.length > 0 && (
+          <Link href="/child/review" aria-label={`مرور ${reviewWords.length} کلمه`}>
+            <motion.div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3" whileTap={{ scale: 0.98 }}>
+              <span className="text-3xl" aria-hidden="true">🔄</span>
+              <div className="flex-1">
+                <p className="font-bold text-gray-800 text-sm">مرور امروز</p>
+                <p className="text-xs text-gray-500">{reviewWords.length} کلمه منتظر توست</p>
+              </div>
+              <span className="text-amber-400 text-xl">←</span>
             </motion.div>
-          )}
-        </section>
-
-        {/* ── Stories ── */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-gray-800 text-base">داستان‌ها 📖</h2>
-            <Link href="/child/story" className="text-amber-700 text-sm font-medium hover:underline">
-              همه ←
-            </Link>
-          </div>
-          {stories.length === 0 ? (
-            <EmptyState message="هنوز داستانی نیست" />
-          ) : (
-            <div
-              className="flex gap-3 overflow-x-auto pb-2 snap-x"
-              role="list"
-              aria-label="داستان‌ها"
-            >
-              {storyView.map(({ s: story, locked }, idx) => (
-                locked ? (
-                  <div
-                    key={story.id}
-                    role="listitem"
-                    className="flex-shrink-0"
-                    aria-label={`${story.title_persian} — قفل شده، به زودی`}
-                  >
-                    <div className="w-36 bg-white/60 rounded-lg overflow-hidden shadow-sm cursor-not-allowed select-none">
-                      <div className="w-full h-28 bg-gray-100 flex items-center justify-center text-5xl" aria-hidden="true">🔒</div>
-                      <div className="p-3">
-                        <p className="font-bold text-gray-400 text-sm leading-tight">{story.title_persian}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">به زودی</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <Link
-                    key={story.id}
-                    href={`/child/story/${story.id}`}
-                    role="listitem"
-                    className="flex-shrink-0 snap-start"
-                    aria-label={story.title_persian}
-                  >
-                    <motion.div
-                      className="w-36 bg-white rounded-lg overflow-hidden shadow-md"
-                      whileHover={{ scale: 1.04, y: -3 }}
-                      whileTap={{ scale: 0.96 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                    >
-                      {mediaUrl(story.cover_url) ? (
-                        <img
-                          src={mediaUrl(story.cover_url)!}
-                          alt={story.title_persian}
-                          className="w-full h-28 object-cover"
-                        />
-                      ) : (
-                        <div className={`w-full h-28 bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} flex items-center justify-center text-5xl`} aria-hidden="true">
-                          📖
-                        </div>
-                      )}
-                      <div className="p-3">
-                        <p className="font-bold text-gray-800 text-sm leading-tight">{story.title_persian}</p>
-                      </div>
-                    </motion.div>
-                  </Link>
-                )
-              ))}
-            </div>
-          )}
-        </section>
+          </Link>
+        )}
 
         {/* ── Practice ── */}
-        <section>
-          <h2 className="font-bold text-gray-800 text-base mb-3">تمرین کن 🌟</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/child/phonics" aria-label="صداها: زبر زیر پیش">
-              <motion.div
-                className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="text-3xl" aria-hidden="true">🎵</span>
-                <div>
-                  <p className="font-bold text-sm">صداها</p>
-                  <p className="text-xs opacity-90">زبر، زیر، پیش</p>
-                </div>
+        {band === 1 ? (
+          /* Two giant, loud choices — that's the whole menu at this age */
+          <div className="grid grid-cols-2 gap-4">
+            <Link href="/child/phonics" aria-label="بازی صداها">
+              <motion.div whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-[1.5rem] p-5 shadow-md text-white flex flex-col items-center gap-2 min-h-[120px] justify-center">
+                <span className="text-5xl" aria-hidden="true">🎵</span>
+                <p className="font-bold text-lg">صداها</p>
               </motion.div>
             </Link>
-            <Link href="/child/write" aria-label="تمرین نوشتن">
-              <motion.div
-                className="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="text-3xl" aria-hidden="true">✏️</span>
-                <div>
-                  <p className="font-bold text-sm">نوشتن</p>
-                  <p className="text-xs opacity-80">حرف‌ها را بنویس</p>
-                </div>
-              </motion.div>
-            </Link>
-            <Link href="/child/speak" aria-label="تمرین گفتن">
-              <motion.div
-                className="bg-gradient-to-br from-rose-400 to-pink-500 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="text-3xl" aria-hidden="true">🎤</span>
-                <div>
-                  <p className="font-bold text-sm">گفتن</p>
-                  <p className="text-xs opacity-80">کلمه‌ها را بگو</p>
-                </div>
-              </motion.div>
-            </Link>
-            <Link href="/child/math" aria-label="دنیای اعداد: ریاضی به فارسی">
-              <motion.div
-                className="bg-gradient-to-br from-indigo-400 to-violet-500 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="text-3xl" aria-hidden="true">🔢</span>
-                <div>
-                  <p className="font-bold text-sm">دنیای اعداد</p>
-                  <p className="text-xs opacity-80">ریاضی به فارسی</p>
-                </div>
-              </motion.div>
-            </Link>
-            <Link href="/child/games/memory" aria-label="بازی حافظه: جفت کلمه‌ها را پیدا کن">
-              <motion.div
-                className="bg-gradient-to-br from-violet-400 to-purple-500 rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] text-white"
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="text-3xl" aria-hidden="true">🃏</span>
-                <div>
-                  <p className="font-bold text-sm">بازی حافظه</p>
-                  <p className="text-xs opacity-80">جفت‌ها را پیدا کن</p>
-                </div>
-              </motion.div>
-            </Link>
-            <Link href="/child/rewards" aria-label="جوایز من">
-              <motion.div
-                className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px]"
-                whileTap={{ scale: 0.96 }}
-              >
-                <span className="text-3xl" aria-hidden="true">🏆</span>
-                <div>
-                  <p className="font-bold text-gray-800 text-sm">جوایز من</p>
-                  <p className="text-xs text-gray-500">مدال‌هایم</p>
-                </div>
+            <Link href="/child/math/counting" aria-label="بازی شمارش">
+              <motion.div whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-br from-emerald-400 to-green-500 rounded-[1.5rem] p-5 shadow-md text-white flex flex-col items-center gap-2 min-h-[120px] justify-center">
+                <span className="text-5xl" aria-hidden="true">🍎</span>
+                <p className="font-bold text-lg">بشمار!</p>
               </motion.div>
             </Link>
           </div>
-        </section>
-        </div>{/* ── right column end ── */}
-      </div>{/* ── two-column grid end ── */}
+        ) : (
+          <section>
+            <h2 className="font-bold text-gray-800 text-base mb-3">تمرین کن 🌟</h2>
+            <div className={`grid grid-cols-2 gap-3 ${band === 3 ? 'lg:grid-cols-3' : ''}`}>
+              <PracticeTile href="/child/phonics" emoji="🎵" title="صداها" sub="زبر، زیر، پیش" grad="from-orange-500 to-amber-600" />
+              <PracticeTile href="/child/write" emoji="✏️" title="نوشتن" sub="حرف‌ها را بنویس" grad="from-blue-400 to-cyan-500" />
+              <PracticeTile href="/child/speak" emoji="🎤" title="گفتن" sub="کلمه‌ها را بگو" grad="from-rose-400 to-pink-500" />
+              <PracticeTile href="/child/math" emoji="🔢" title="دنیای اعداد" sub="ریاضی به فارسی" grad="from-indigo-400 to-violet-500" />
+              <PracticeTile href="/child/games/memory" emoji="🃏" title="بازی حافظه" sub="جفت‌ها را پیدا کن" grad="from-violet-400 to-purple-500" />
+              <PracticeTile href="/child/rewards" emoji="🏆" title="جوایز من" sub="مدال‌هایم" light />
+            </div>
+          </section>
+        )}
+      </div>
 
       <BottomNav />
     </div>
+  )
+}
+
+/* ── Building blocks ─────────────────────────────────────── */
+
+function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: boolean; children: React.ReactNode }) {
+  return (
+    <section>
+      <h2 className={`font-bold text-gray-800 mb-3 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x" role="list" aria-label={label}>
+        {children}
+      </div>
+    </section>
+  )
+}
+
+function CardTile({ href, title, sub, badge, emoji, image, grad, glow, big }: {
+  href: string; title: string; sub?: string; badge?: string
+  emoji: string; image?: string | null; grad: string; glow?: boolean; big?: boolean
+}) {
+  const w = big ? 'w-44' : 'w-36'
+  const h = big ? 'h-32' : 'h-24'
+  return (
+    <Link href={href} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>
+      <motion.div
+        className={`${w} bg-white rounded-lg overflow-hidden shadow-md relative ${glow ? 'ring-4 ring-yellow-300/80' : ''}`}
+        whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.96 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+      >
+        {badge && <span className="absolute top-2 right-2 z-10 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>}
+        {image ? (
+          <img src={image} alt="" className={`w-full ${h} object-cover`} />
+        ) : (
+          <div className={`w-full ${h} bg-gradient-to-br ${grad} flex items-center justify-center ${big ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{emoji}</div>
+        )}
+        <div className="p-3">
+          <p className={`font-bold text-gray-800 leading-tight ${big ? 'text-base' : 'text-sm'}`}>{title}</p>
+          {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
+
+/** Friendly lock: sleeping tile, not a barrier. */
+function LockedTile({ title, big }: { title: string; big?: boolean }) {
+  return (
+    <div role="listitem" className="flex-shrink-0" aria-label={`${title} — هنوز خوابه`}>
+      <div className={`${big ? 'w-44' : 'w-36'} bg-white/60 rounded-lg overflow-hidden shadow-sm select-none`}>
+        <div className={`w-full ${big ? 'h-32' : 'h-24'} bg-gray-100 flex items-center justify-center ${big ? 'text-5xl' : 'text-4xl'}`} aria-hidden="true">😴</div>
+        <div className="p-3">
+          <p className="font-bold text-gray-400 text-sm leading-tight">{title}</p>
+          <p className="text-xs text-gray-400 mt-0.5">هنوز خوابه — بعداً بیدار می‌شه!</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** 🎲 dice / ⭐ stack / 🚪 door tiles at the end of each row. */
+function ActionTile({ emoji, title, href, onClick, big }: {
+  emoji: string; title: string; href?: string; onClick?: () => void; big?: boolean
+}) {
+  const inner = (
+    <motion.div whileTap={{ scale: 0.94 }}
+      className={`${big ? 'w-32 h-[188px]' : 'w-28 h-[156px]'} bg-amber-50 border-2 border-dashed border-amber-200 rounded-lg flex flex-col items-center justify-center gap-2`}>
+      <span className={big ? 'text-5xl' : 'text-4xl'} aria-hidden="true">{emoji}</span>
+      <p className="font-bold text-amber-700 text-xs text-center px-2 leading-snug">{title}</p>
+    </motion.div>
+  )
+  if (href) return <Link href={href} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>{inner}</Link>
+  return <button onClick={onClick} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>{inner}</button>
+}
+
+function PracticeTile({ href, emoji, title, sub, grad, light }: {
+  href: string; emoji: string; title: string; sub: string; grad?: string; light?: boolean
+}) {
+  return (
+    <Link href={href} aria-label={`${title}: ${sub}`}>
+      <motion.div whileTap={{ scale: 0.96 }}
+        className={`rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] ${
+          light ? 'bg-white' : `bg-gradient-to-br ${grad} text-white`}`}>
+        <span className="text-3xl" aria-hidden="true">{emoji}</span>
+        <div>
+          <p className={`font-bold text-sm ${light ? 'text-gray-800' : ''}`}>{title}</p>
+          <p className={`text-xs ${light ? 'text-gray-500' : 'opacity-80'}`}>{sub}</p>
+        </div>
+      </motion.div>
+    </Link>
   )
 }
