@@ -133,11 +133,29 @@ function voiceOptionsFor(engine: AudioEngine | '', eleven: VoiceOpt[] | null): V
   return ENGINES[engine].voices
 }
 
+interface RegenStatus { running: boolean; scope: string | null; tier?: 'free' | 'premium'; voice: string; done: number; total: number; errors: number; finishedAt: number }
+
 export default function AudioPage() {
   const [data, setData] = useState<SectionsResponse | null>(null)
+  const [regen, setRegen] = useState<RegenStatus | null>(null)
 
   useEffect(() => {
     api.get<SectionsResponse>('/api/admin/audio/sections').then(r => { if (r.data) setData(r.data) })
+  }, [])
+
+  // One global status poller: a run started ANYWHERE (a section card or the
+  // bottom card) shows its progress in the right card within a tick.
+  useEffect(() => {
+    let on = true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    async function tick() {
+      const r = await api.get<RegenStatus>('/api/admin/tts/regenerate/status')
+      if (!on) return
+      if (r.data) setRegen(r.data)
+      timer = setTimeout(tick, r.data?.running ? 1500 : 3000)
+    }
+    tick()
+    return () => { on = false; if (timer) clearTimeout(timer) }
   }, [])
 
   if (!data) return <Spinner />
@@ -166,16 +184,16 @@ export default function AudioPage() {
       {SECTION_ORDER.map(sec => {
         const cfg = data.sections.find(s => s.section === sec)
         if (!cfg) return null
-        return <SectionCard key={sec} cfg={cfg} engines={data.engines} />
+        return <SectionCard key={sec} cfg={cfg} engines={data.engines} regen={regen} />
       })}
 
-      <RegenCard />
+      <RegenCard st={regen} />
     </div>
   )
 }
 
 // ── One content section: engine + voice + test + save ─────
-function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Record<AudioEngine, boolean> }) {
+function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig; engines: Record<AudioEngine, boolean>; regen: RegenStatus | null }) {
   const meta = SECTIONS[cfg.section]
   const [engine, setEngine] = useState<AudioEngine>(cfg.engine)
   const [voice, setVoice] = useState(cfg.voice)
@@ -198,7 +216,7 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
     setMsg(null); setErr(null)
     const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope: meta.regenScope, tier })
     if (r.error) { setErr(r.error); return }
-    setMsg(tier === 'premium' ? 'بازتولید پرمیوم شروع شد ⭐ — پیشرفت در پایین صفحه' : 'بازتولید رایگان شروع شد — پیشرفت در پایین صفحه')
+    setMsg(tier === 'premium' ? 'بازتولید پرمیوم شروع شد ⭐' : 'بازتولید رایگان شروع شد')
   }
 
   function pick(e: AudioEngine) {
@@ -322,14 +340,31 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
 
       {/* Generation lives here, per tier: each run builds ONLY its own files */}
       <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-        <Button variant="secondary" onClick={() => regen('free')} disabled={busy !== null}>
+        <Button variant="secondary" onClick={() => regen('free')} disabled={busy !== null || regenSt?.running}>
           🔄 بازتولید رایگان این بخش
         </Button>
         <Button variant="secondary" onClick={() => regen('premium')}
-          disabled={busy !== null || !pEngine || !pVoice}>
+          disabled={busy !== null || regenSt?.running || !pEngine || !pVoice}>
           ⭐ بازتولید پرمیوم این بخش
         </Button>
       </div>
+
+      {/* Live progress for the run touching THIS section */}
+      {regenSt?.running && (regenSt.scope === meta.regenScope || regenSt.scope === 'all') && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-slate-600">
+            <span>
+              در حال ساخت {regenSt.tier === 'premium' ? 'پرمیوم ⭐' : 'رایگان'}
+              {regenSt.scope === 'all' ? ' (همه‌ی بخش‌ها)' : ''} — {regenSt.voice}
+            </span>
+            <span className="font-bold text-slate-800">{regenSt.done} / {regenSt.total}</span>
+          </div>
+          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-full bg-amber-500 transition-all"
+              style={{ width: `${regenSt.total ? Math.round((regenSt.done / regenSt.total) * 100) : 0}%` }} />
+          </div>
+        </div>
+      )}
 
       {elevenErr && (engine === 'elevenlabs' || pEngine === 'elevenlabs') && (
         <p className="text-sm text-red-600">{elevenErr}</p>
@@ -341,30 +376,13 @@ function SectionCard({ cfg, engines }: { cfg: AudioSectionConfig; engines: Recor
 }
 
 // ── Regenerate stored audio with the saved per-section voices ─────
-interface RegenStatus { running: boolean; scope: string | null; tier?: 'free' | 'premium'; voice: string; done: number; total: number; errors: number; finishedAt: number }
-function RegenCard() {
-  const [st, setSt] = useState<RegenStatus | null>(null)
-  const [pollKey, setPollKey] = useState(0)
+function RegenCard({ st }: { st: RegenStatus | null }) {
   const [err, setErr] = useState<string | null>(null)
-
-  useEffect(() => {
-    let active = true
-    let timer: ReturnType<typeof setTimeout> | undefined
-    async function tick() {
-      const r = await api.get<RegenStatus>('/api/admin/tts/regenerate/status')
-      if (!active) return
-      if (r.data) setSt(r.data)
-      if (r.data?.running) timer = setTimeout(tick, 1500)
-    }
-    tick()
-    return () => { active = false; if (timer) clearTimeout(timer) }
-  }, [pollKey])
 
   async function start(tier: 'free' | 'premium') {
     setErr(null)
     const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope: 'all', tier })
-    if (r.error) { setErr(r.error); return }
-    setPollKey(k => k + 1)
+    if (r.error) setErr(r.error)
   }
 
   const [demoMsg, setDemoMsg] = useState<string | null>(null)
