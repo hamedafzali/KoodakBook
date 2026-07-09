@@ -15,7 +15,9 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
 import { LESSON_TYPE_EMOJI, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
-import { MODULE, IconChip, ModuleCard } from '@/components/child/kit'
+import { MODULE, IconChip, ModuleCard, ChunkyButton } from '@/components/child/kit'
+import SceneBackdrop from '@/components/child/SceneBackdrop'
+import { SCENE_SLUGS, type SceneSlug } from '@koodakbook/shared'
 import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels } from '@koodakbook/shared'
 
 /* Child home, redesigned for its real audience.
@@ -37,6 +39,13 @@ function greeting() {
 }
 
 interface NextUp { href: string; label: string; title: string; emoji: string; say: string }
+
+/** Deterministic scene per story id — tiles get stable illustrated covers. */
+function sceneFor(id: string): SceneSlug {
+  let h = 0
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return SCENE_SLUGS[h % SCENE_SLUGS.length]
+}
 
 export default function ChildHomePage() {
   const router = useRouter()
@@ -177,6 +186,12 @@ export default function ChildHomePage() {
       <div className="relative bg-gradient-to-b from-amber-400 to-orange-500 pt-8 pb-24 px-5 rounded-b-[2.5rem]">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
+        <motion.span className="absolute top-6 left-16 text-xl select-none" aria-hidden="true"
+          animate={{ y: [0, -6, 0], rotate: [0, 8, 0] }} transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}>⭐</motion.span>
+        <motion.span className="absolute bottom-16 right-24 text-lg select-none opacity-80" aria-hidden="true"
+          animate={{ y: [0, -8, 0] }} transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}>☁️</motion.span>
+        <motion.span className="absolute top-14 right-1/3 text-sm select-none opacity-90" aria-hidden="true"
+          animate={{ y: [0, -5, 0], rotate: [0, -10, 0] }} transition={{ duration: 3.0, repeat: Infinity, ease: 'easeInOut', delay: 1.1 }}>✨</motion.span>
         <div className="relative flex items-end justify-between">
           <div className="text-white">
             <p className="text-white text-sm mb-1">{greeting()} 👋</p>
@@ -213,9 +228,9 @@ export default function ChildHomePage() {
               <p className="text-amber-600 font-bold text-sm">{nextUp.label}</p>
               <p className={`font-bold text-gray-800 truncate ${band === 1 ? 'text-2xl' : 'text-lg'}`}>{nextUp.title}</p>
             </div>
-            <span className={`bg-brand-gradient text-white font-bold rounded-2xl shadow-md shrink-0 ${band === 1 ? 'text-xl px-6 py-4' : 'px-5 py-3'}`}>
+            <ChunkyButton className={band === 1 ? 'text-xl px-6 py-4' : 'px-5 py-3'}>
               بازی کن! 🎈
-            </span>
+            </ChunkyButton>
           </motion.div>
         </Link>
 
@@ -223,7 +238,7 @@ export default function ChildHomePage() {
         <TileRow label="قصه‌ها 📖" bigTiles={band === 1}>
           {storyRow.window.map(s => (
             <CardTile key={s.id} href={`/child/story/${s.id}`} title={s.title_persian}
-              image={mediaUrl(s.cover_url)} emoji="📖" tint={MODULE.stories.soft}
+              image={mediaUrl(s.cover_url)} emoji="📖" tint={MODULE.stories.soft} scene={sceneFor(s.id)}
               glow={s.id === (lastStory?.id ?? storyRow.window[0]?.id)} big={band === 1}
               badge={s.id === lastStory?.id ? 'ادامه بده' : undefined} />
           ))}
@@ -272,18 +287,20 @@ export default function ChildHomePage() {
         {band === 1 ? (
           /* Two giant, loud choices — that's the whole menu at this age */
           <div className="grid grid-cols-2 gap-4">
-            <Link href="/child/phonics" aria-label="بازی صداها">
-              <motion.div whileTap={{ scale: 0.95 }}
-                className="bg-white rounded-3xl p-5 shadow-card flex flex-col items-center gap-3 min-h-[132px] justify-center">
-                <IconChip module="phonics" size="xl" />
-                <p className="font-bold text-lg text-slate-800">صداها</p>
+            <Link href="/child/phonics" aria-label="بازی صداها" className="group">
+              <motion.div whileTap={{ y: 4 }}
+                className={`relative overflow-hidden ${MODULE.phonics.solid} ${MODULE.phonics.edge} border-b-[6px] group-active:border-b-2 rounded-3xl p-5 text-white flex flex-col items-center gap-2 min-h-[136px] justify-center`}>
+                <span className="absolute -top-8 -left-8 w-24 h-24 bg-white/15 rounded-full" aria-hidden="true" />
+                <span className="text-6xl drop-shadow-sm" aria-hidden="true">🎵</span>
+                <p className="font-bold text-xl drop-shadow-sm">صداها</p>
               </motion.div>
             </Link>
-            <Link href="/child/math/counting" aria-label="بازی شمارش">
-              <motion.div whileTap={{ scale: 0.95 }}
-                className="bg-white rounded-3xl p-5 shadow-card flex flex-col items-center gap-3 min-h-[132px] justify-center">
-                <IconChip module="math" emoji="🍎" size="xl" />
-                <p className="font-bold text-lg text-slate-800">بشمار!</p>
+            <Link href="/child/math/counting" aria-label="بازی شمارش" className="group">
+              <motion.div whileTap={{ y: 4 }}
+                className={`relative overflow-hidden ${MODULE.lessons.solid} ${MODULE.lessons.edge} border-b-[6px] group-active:border-b-2 rounded-3xl p-5 text-white flex flex-col items-center gap-2 min-h-[136px] justify-center`}>
+                <span className="absolute -top-8 -left-8 w-24 h-24 bg-white/15 rounded-full" aria-hidden="true" />
+                <span className="text-6xl drop-shadow-sm" aria-hidden="true">🍎</span>
+                <p className="font-bold text-xl drop-shadow-sm">بشمار!</p>
               </motion.div>
             </Link>
           </div>
@@ -358,9 +375,9 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
   )
 }
 
-function CardTile({ href, title, sub, badge, emoji, image, tint, glow, big }: {
+function CardTile({ href, title, sub, badge, emoji, image, tint, scene, glow, big }: {
   href: string; title: string; sub?: string; badge?: string
-  emoji: string; image?: string | null; tint: string; glow?: boolean; big?: boolean
+  emoji: string; image?: string | null; tint: string; scene?: SceneSlug; glow?: boolean; big?: boolean
 }) {
   const w = big ? 'w-44' : 'w-36'
   const h = big ? 'h-32' : 'h-24'
@@ -375,6 +392,8 @@ function CardTile({ href, title, sub, badge, emoji, image, tint, glow, big }: {
         {badge && <span className="absolute top-2 right-2 z-10 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>}
         {image ? (
           <img src={image} alt="" className={`w-full ${h} object-cover shrink-0`} />
+        ) : scene ? (
+          <div className={`w-full ${h} shrink-0`}><SceneBackdrop scene={scene} className="w-full h-full !rounded-none" /></div>
         ) : (
           <div className={`w-full ${h} shrink-0 ${tint} flex items-center justify-center ${big ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{emoji}</div>
         )}
