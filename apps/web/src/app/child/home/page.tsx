@@ -395,7 +395,11 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
     el.addEventListener('scroll', check, { passive: true })
     const ro = new ResizeObserver(check)
     ro.observe(el)
-    return () => { el.removeEventListener('scroll', check); ro.disconnect() }
+    // Rows fill asynchronously (API data) without resizing the scroller box —
+    // watch the children too, or arrows would only appear after a manual scroll.
+    const mo = new MutationObserver(check)
+    mo.observe(el, { childList: true })
+    return () => { el.removeEventListener('scroll', check); ro.disconnect(); mo.disconnect() }
   }, [])
 
   /** forward = deeper into content = visual LEFT in RTL. */
