@@ -1,12 +1,12 @@
 'use client'
-import { useState, useRef, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { parseSceneRef, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
 import BilingualText from '../shared/BilingualText'
 import SceneBackdrop from './SceneBackdrop'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
-import { speakPersian, stopSpeaking } from '@/lib/speech'
+import { speakOrPlay, stopSpeaking } from '@/lib/speech'
 
 interface Props {
   story: Story & { pages: StoryPage[] }
@@ -18,10 +18,23 @@ interface Props {
 
 export default function StoryReader({ story, showBilingual, onBack, onPageChange, onComplete }: Props) {
   const [currentPage, setCurrentPage] = useState(0)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const page = story.pages[currentPage]
   const isLast = currentPage === story.pages.length - 1
   const progress = Math.round(((currentPage + 1) / story.pages.length) * 100)
+
+  /** Read this page aloud (recorded clip → premium/free → TTS fallback). */
+  function readPage() {
+    if (page) speakOrPlay(page.audio_url, page.text_persian)
+  }
+
+  // Auto-read each page the moment it appears — the child listens immediately;
+  // «بشنو» stays for a replay. A short delay lets the page-turn settle and any
+  // previous page's audio stop. Stops audio when leaving the reader.
+  useEffect(() => {
+    const t = setTimeout(readPage, 350)
+    return () => { clearTimeout(t); stopSpeaking() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, story.id])
 
   // Backdrop per page from scene_plan; a page without one inherits the
   // previous page's scene (stories rarely change location every page), and the
@@ -43,7 +56,6 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
     const next = currentPage + 1
     setCurrentPage(next)
     onPageChange?.(next)
-    audioRef.current?.load()
   }
 
   function goPrev() {
@@ -143,18 +155,13 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 englishClassName="text-base mt-2"
               />
               <motion.button
-                onClick={() => {
-                  const recorded = mediaUrl(page.audio_url)
-                  if (recorded && audioRef.current) audioRef.current.play().catch(() => speakPersian(page.text_persian))
-                  else speakPersian(page.text_persian)
-                }}
+                onClick={() => { playTap(); readPage() }}
                 whileTap={{ scale: 0.9 }}
-                aria-label="پخش صدای این صفحه"
+                aria-label="پخش دوباره‌ی صدای این صفحه"
                 className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px]"
               >
                 <span className="text-xl">🔊</span>
-                <span>بشنو</span>
-                {mediaUrl(page.audio_url) && <audio ref={audioRef} src={mediaUrl(page.audio_url)!} preload="none" />}
+                <span>دوباره بشنو</span>
               </motion.button>
             </div>
           </motion.div>

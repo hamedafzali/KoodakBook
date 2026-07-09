@@ -1,11 +1,11 @@
 'use client'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import type { Word, Letter } from '@koodakbook/shared'
 import { wordEmoji } from '@koodakbook/shared'
 import { mediaUrl } from '@/lib/media'
 import { playTap, playSuccess } from '@/lib/sounds'
-import { speakPersian, speakOrPlay } from '@/lib/speech'
+import { speakOrPlay } from '@/lib/speech'
 
 export type QuizMode = 'flashcard' | 'listen_tap' | 'match_image' | 'name_it'
 
@@ -51,8 +51,21 @@ function wordVisual(word: Word): { type: 'img' | 'emoji'; value: string } | null
 export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcardNext }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
   const { mode, correctWord, correctLetter, distractorWords = [] } = question
+
+  // Auto-play the prompt the moment a card appears — the child listens
+  // immediately; the speaker button stays for replay. Skip match_image, where
+  // hearing the word would hand over the answer. Card remounts per question
+  // (keyed), so this fires once each.
+  useEffect(() => {
+    if (mode === 'match_image') return
+    const t = setTimeout(() => {
+      if (correctWord) speakOrPlay(correctWord.audio_url, correctWord.persian)
+      else if (correctLetter) speakOrPlay(correctLetter.audio_url, correctLetter.name_persian)
+    }, 420)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleAnswer = useCallback((id: string, isCorrect: boolean) => {
     if (feedback !== null) return
@@ -70,8 +83,8 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
 
   function speakPrompt() {
     playTap()
-    if (correctWord?.audio_url && audioRef.current) audioRef.current.play().catch(() => correctWord && speakPersian(correctWord.persian))
-    else if (correctWord) speakPersian(correctWord.persian)
+    if (correctWord) speakOrPlay(correctWord.audio_url, correctWord.persian)
+    else if (correctLetter) speakOrPlay(correctLetter.audio_url, correctLetter.name_persian)
   }
 
   /* ── FLASHCARD ─────────────────────────────────────────────────────── */
@@ -93,7 +106,6 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
             <span className="text-base text-gray-400 ltr">{correctWord.english}</span>
             <span className="text-xs text-amber-500 flex items-center gap-1"><span>🔊</span> ضربه بزن تا بشنوی</span>
           </motion.button>
-          {correctWord.audio_url && <audio ref={audioRef} src={mediaUrl(correctWord.audio_url)!} preload="none" />}
           <NextButton onClick={onFlashcardNext} />
         </motion.div>
       )
@@ -154,7 +166,6 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
     return (
       <motion.div className="flex flex-col items-center gap-5 w-full"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        {correctWord.audio_url && <audio ref={audioRef} src={mediaUrl(correctWord.audio_url)!} preload="auto" />}
         <motion.button
           onClick={speakPrompt}
           className="w-28 h-28 rounded-full bg-brand-gradient-br flex items-center justify-center shadow-lg touch-target"
@@ -194,7 +205,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
       <motion.div className="flex flex-col items-center gap-5 w-full"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <button
-          onClick={() => speakPersian(correctWord.persian)}
+          onClick={() => { playTap(); speakOrPlay(correctWord.audio_url, correctWord.persian) }}
           className="bg-white rounded-lg shadow-md px-8 py-5 text-center touch-target"
           aria-label={`کلمه: ${correctWord.persian}. ضربه بزن تا بشنوی`}
         >

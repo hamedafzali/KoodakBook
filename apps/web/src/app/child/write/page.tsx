@@ -26,10 +26,19 @@ export default function WritePage() {
     })
   }, [router])
 
+  const letter = letters[idx]
+
+  // Say each letter the moment it appears — the child hears it before tracing;
+  // the button stays for replay.
+  useEffect(() => {
+    if (!letter) return
+    const t = setTimeout(() => speakOrPlay(letter.audio_url, letter.name_persian), 350)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [letter?.id])
+
   if (loading) return <LoadingScreen message="در حال بارگذاری..." />
   if (letters.length === 0) return <LoadingScreen message="حرفی برای تمرین نیست" />
-
-  const letter = letters[idx]
 
   return (
     <div className="min-h-screen child-bg pb-nav">

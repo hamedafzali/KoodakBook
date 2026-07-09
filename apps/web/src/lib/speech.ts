@@ -72,31 +72,37 @@ export function speakPersian(text: string, opts?: { rate?: number; pitch?: numbe
   }
 }
 
+// The clip currently playing, so a new play (or stopSpeaking) can cut it off —
+// otherwise auto-playing sequential pages/cards would overlap.
+let currentAudio: HTMLAudioElement | null = null
+
+function stopAudio() {
+  if (currentAudio) {
+    try { currentAudio.pause(); currentAudio.currentTime = 0 } catch { /* ignore */ }
+    currentAudio = null
+  }
+}
+
 /**
  * Play a recorded clip if one exists, otherwise fall back to Persian TTS.
  * Use this everywhere audio is triggered so recorded Persian always wins over
  * (possibly absent) browser voices.
  */
 export function speakOrPlay(audioUrl: string | null | undefined, text: string): void {
-  const url = mediaUrl(audioUrl)
-  if (url) {
-    try {
-      const audio = new Audio(url)
-      audio.play().catch(() => { speakPersian(text) })
-      return
-    } catch { /* fall through to TTS */ }
-  }
-  speakPersian(text)
+  speakOrPlayFirst([audioUrl], text)
 }
 
 /** Like speakOrPlay, but tries several clip URLs in order (e.g. the premium
  * variant, then the free one) before falling back to browser TTS. */
 export function speakOrPlayFirst(urls: (string | null | undefined)[], text: string): void {
+  stopAudio()
+  getSynth()?.cancel()
   const list = urls.map(mediaUrl).filter((u): u is string => !!u)
   const tryAt = (i: number): void => {
     if (i >= list.length) { speakPersian(text); return }
     try {
       const audio = new Audio(list[i])
+      currentAudio = audio
       audio.play().catch(() => tryAt(i + 1))
     } catch { tryAt(i + 1) }
   }
@@ -109,5 +115,6 @@ export function canSpeak(): boolean {
 }
 
 export function stopSpeaking() {
+  stopAudio()
   getSynth()?.cancel()
 }
