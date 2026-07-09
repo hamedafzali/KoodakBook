@@ -150,6 +150,11 @@ body {
   background: linear-gradient(160deg, #FFFBF0 0%, #FFF5E0 100%);
 }
 
+/* ── Design-system shadows: exactly two elevations ─────────
+ * card  = resting cards; raised = the one primary action per screen. */
+.shadow-card { box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.06); }
+.shadow-raised { box-shadow: 0 2px 4px rgb(15 23 42 / 0.06), 0 12px 28px rgb(245 158 11 / 0.22); }
+
 /* ── Card Base ─────────────────────────────────────────────────────────────── */
 .card {
   background: var(--color-surface);

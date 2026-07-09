@@ -14,7 +14,8 @@ import { speakPersian } from '@/lib/speech'
 import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
-import { ACTIVITY_GRADIENTS, LESSON_TYPE_EMOJI, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
+import { LESSON_TYPE_EMOJI, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
+import { MODULE, IconChip, ModuleCard } from '@/components/child/kit'
 import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels } from '@koodakbook/shared'
 
 /* Child home, redesigned for its real audience.
@@ -173,7 +174,7 @@ export default function ChildHomePage() {
       </AnimatePresence>
 
       {/* ── Hero: greeting + mascot; stats only for older kids ── */}
-      <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 pt-8 pb-24 px-5 rounded-b-[2.5rem]">
+      <div className="relative bg-gradient-to-b from-amber-400 to-orange-500 pt-8 pb-24 px-5 rounded-b-[2.5rem]">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="relative flex items-end justify-between">
@@ -205,7 +206,7 @@ export default function ChildHomePage() {
             whileTap={{ scale: 0.97 }}
             animate={{ scale: [1, 1.015, 1] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            className={`bg-white rounded-[1.75rem] shadow-xl ring-4 ring-yellow-300/70 flex items-center gap-4 ${band === 1 ? 'p-6' : 'p-5'}`}
+            className={`bg-white rounded-[1.75rem] shadow-raised ring-4 ring-yellow-300/70 flex items-center gap-4 ${band === 1 ? 'p-6' : 'p-5'}`}
           >
             <span className={`${band === 1 ? 'text-6xl' : 'text-5xl'} shrink-0`} aria-hidden="true">{nextUp.emoji}</span>
             <div className="flex-1 min-w-0">
@@ -220,9 +221,9 @@ export default function ChildHomePage() {
 
         {/* ── Stories row (all bands — stories are the heart) ── */}
         <TileRow label="قصه‌ها 📖" bigTiles={band === 1}>
-          {storyRow.window.map((s, idx) => (
+          {storyRow.window.map(s => (
             <CardTile key={s.id} href={`/child/story/${s.id}`} title={s.title_persian}
-              image={mediaUrl(s.cover_url)} emoji="📖" grad={ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]}
+              image={mediaUrl(s.cover_url)} emoji="📖" tint={MODULE.stories.soft}
               glow={s.id === (lastStory?.id ?? storyRow.window[0]?.id)} big={band === 1}
               badge={s.id === lastStory?.id ? 'ادامه بده' : undefined} />
           ))}
@@ -243,7 +244,7 @@ export default function ChildHomePage() {
           <TileRow label="درس‌ها 📚">
             {lessonRow.window.map((l, idx) => (
               <CardTile key={l.id} href={`/child/lesson/${l.id}`} title={l.title}
-                emoji={LESSON_TYPE_EMOJI[l.type] ?? '📖'} grad={ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]}
+                emoji={LESSON_TYPE_EMOJI[l.type] ?? '📖'} tint={MODULE.lessons.soft}
                 sub={`مرحله ${l.stage}`} glow={idx === 0} />
             ))}
             {lessonRow.locked.map(l => <LockedTile key={l.id} title={l.title} />)}
@@ -273,16 +274,16 @@ export default function ChildHomePage() {
           <div className="grid grid-cols-2 gap-4">
             <Link href="/child/phonics" aria-label="بازی صداها">
               <motion.div whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-[1.5rem] p-5 shadow-md text-white flex flex-col items-center gap-2 min-h-[120px] justify-center">
-                <span className="text-5xl" aria-hidden="true">🎵</span>
-                <p className="font-bold text-lg">صداها</p>
+                className="bg-white rounded-3xl p-5 shadow-card flex flex-col items-center gap-3 min-h-[132px] justify-center">
+                <IconChip module="phonics" size="xl" />
+                <p className="font-bold text-lg text-slate-800">صداها</p>
               </motion.div>
             </Link>
             <Link href="/child/math/counting" aria-label="بازی شمارش">
               <motion.div whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-br from-emerald-400 to-green-500 rounded-[1.5rem] p-5 shadow-md text-white flex flex-col items-center gap-2 min-h-[120px] justify-center">
-                <span className="text-5xl" aria-hidden="true">🍎</span>
-                <p className="font-bold text-lg">بشمار!</p>
+                className="bg-white rounded-3xl p-5 shadow-card flex flex-col items-center gap-3 min-h-[132px] justify-center">
+                <IconChip module="math" emoji="🍎" size="xl" />
+                <p className="font-bold text-lg text-slate-800">بشمار!</p>
               </motion.div>
             </Link>
           </div>
@@ -290,12 +291,12 @@ export default function ChildHomePage() {
           <section>
             <h2 className="font-bold text-gray-800 text-base mb-3">تمرین کن 🌟</h2>
             <div className={`grid grid-cols-2 gap-3 ${band === 3 ? 'lg:grid-cols-3' : ''}`}>
-              <PracticeTile href="/child/phonics" emoji="🎵" title="صداها" sub="زبر، زیر، پیش" grad="from-orange-500 to-amber-600" />
-              <PracticeTile href="/child/write" emoji="✏️" title="نوشتن" sub="حرف‌ها را بنویس" grad="from-blue-400 to-cyan-500" />
-              <PracticeTile href="/child/speak" emoji="🎤" title="گفتن" sub="کلمه‌ها را بگو" grad="from-rose-400 to-pink-500" />
-              <PracticeTile href="/child/math" emoji="🔢" title="دنیای اعداد" sub="ریاضی به فارسی" grad="from-indigo-400 to-violet-500" />
-              <PracticeTile href="/child/games/memory" emoji="🃏" title="بازی حافظه" sub="جفت‌ها را پیدا کن" grad="from-violet-400 to-purple-500" />
-              <PracticeTile href="/child/rewards" emoji="🏆" title="جوایز من" sub="مدال‌هایم" light />
+              <ModuleCard module="phonics" href="/child/phonics" title="صداها" sub="زبر، زیر، پیش" />
+              <ModuleCard module="write" href="/child/write" title="نوشتن" sub="حرف‌ها را بنویس" />
+              <ModuleCard module="speak" href="/child/speak" title="گفتن" sub="کلمه‌ها را بگو" />
+              <ModuleCard module="math" href="/child/math" title="دنیای اعداد" sub="ریاضی به فارسی" />
+              <ModuleCard module="games" href="/child/games/memory" title="بازی حافظه" sub="جفت‌ها را پیدا کن" />
+              <ModuleCard module="rewards" href="/child/rewards" title="جوایز من" sub="مدال‌هایم" />
             </div>
           </section>
         )}
@@ -357,9 +358,9 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
   )
 }
 
-function CardTile({ href, title, sub, badge, emoji, image, grad, glow, big }: {
+function CardTile({ href, title, sub, badge, emoji, image, tint, glow, big }: {
   href: string; title: string; sub?: string; badge?: string
-  emoji: string; image?: string | null; grad: string; glow?: boolean; big?: boolean
+  emoji: string; image?: string | null; tint: string; glow?: boolean; big?: boolean
 }) {
   const w = big ? 'w-44' : 'w-36'
   const h = big ? 'h-32' : 'h-24'
@@ -367,7 +368,7 @@ function CardTile({ href, title, sub, badge, emoji, image, grad, glow, big }: {
   return (
     <Link href={href} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>
       <motion.div
-        className={`${w} ${total} bg-white rounded-lg overflow-hidden shadow-md relative flex flex-col ${glow ? 'ring-4 ring-yellow-300/80' : ''}`}
+        className={`${w} ${total} bg-white rounded-2xl overflow-hidden shadow-card relative flex flex-col ${glow ? 'ring-4 ring-yellow-300/80' : ''}`}
         whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.96 }}
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
       >
@@ -375,7 +376,7 @@ function CardTile({ href, title, sub, badge, emoji, image, grad, glow, big }: {
         {image ? (
           <img src={image} alt="" className={`w-full ${h} object-cover shrink-0`} />
         ) : (
-          <div className={`w-full ${h} shrink-0 bg-gradient-to-br ${grad} flex items-center justify-center ${big ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{emoji}</div>
+          <div className={`w-full ${h} shrink-0 ${tint} flex items-center justify-center ${big ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{emoji}</div>
         )}
         <div className="p-3 flex-1 min-h-0">
           <p className={`font-bold text-gray-800 leading-tight line-clamp-2 ${big ? 'text-base' : 'text-sm'}`}>{title}</p>
@@ -414,22 +415,4 @@ function ActionTile({ emoji, title, href, onClick, big }: {
   )
   if (href) return <Link href={href} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>{inner}</Link>
   return <button onClick={onClick} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>{inner}</button>
-}
-
-function PracticeTile({ href, emoji, title, sub, grad, light }: {
-  href: string; emoji: string; title: string; sub: string; grad?: string; light?: boolean
-}) {
-  return (
-    <Link href={href} aria-label={`${title}: ${sub}`}>
-      <motion.div whileTap={{ scale: 0.96 }}
-        className={`rounded-lg p-4 shadow-sm flex items-center gap-3 min-h-[72px] ${
-          light ? 'bg-white' : `bg-gradient-to-br ${grad} text-white`}`}>
-        <span className="text-3xl" aria-hidden="true">{emoji}</span>
-        <div>
-          <p className={`font-bold text-sm ${light ? 'text-gray-800' : ''}`}>{title}</p>
-          <p className={`text-xs ${light ? 'text-gray-500' : 'opacity-80'}`}>{sub}</p>
-        </div>
-      </motion.div>
-    </Link>
-  )
 }

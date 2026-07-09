@@ -32,27 +32,26 @@ export default function BottomNav() {
             href={nav.href}
             aria-label={nav.ariaLabel}
             aria-current={active ? 'page' : undefined}
-            className={`flex flex-col items-center gap-0.5 min-w-[60px] min-h-[44px] justify-center rounded-xl transition-colors ${
-              active ? 'text-amber-700' : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className="relative flex flex-col items-center gap-0.5 min-w-[64px] min-h-[52px] justify-center rounded-2xl transition-colors"
           >
+            {active && (
+              <motion.div
+                layoutId="nav-pill"
+                className="absolute inset-x-1 inset-y-0.5 bg-amber-100 rounded-2xl"
+                transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                aria-hidden="true"
+              />
+            )}
             <motion.span
-              className={`text-2xl leading-none ${active ? 'scale-110' : ''}`}
+              className="relative text-2xl leading-none"
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
             >
               {nav.emoji}
             </motion.span>
-            <span className={`text-xs leading-none ${active ? 'font-bold text-amber-700' : 'font-medium'}`}>
+            <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-gray-400'}`}>
               {nav.label}
             </span>
-            {active && (
-              <motion.div
-                layoutId="nav-indicator"
-                className="absolute bottom-0 w-8 h-0.5 bg-amber-500 rounded-full"
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              />
-            )}
           </Link>
         )
       })}
