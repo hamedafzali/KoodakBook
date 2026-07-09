@@ -133,7 +133,7 @@ function voiceOptionsFor(engine: AudioEngine | '', eleven: VoiceOpt[] | null): V
   return ENGINES[engine].voices
 }
 
-interface RegenStatus { running: boolean; scope: string | null; tier?: 'free' | 'premium'; voice: string; done: number; total: number; errors: number; finishedAt: number }
+interface RegenStatus { running: boolean; scope: string | null; tier?: 'free' | 'premium'; mode?: 'all' | 'missing'; voice: string; done: number; total: number; errors: number; finishedAt: number }
 
 export default function AudioPage() {
   const [data, setData] = useState<SectionsResponse | null>(null)
@@ -210,11 +210,14 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
   const dirty = engine !== cfg.engine || voice !== cfg.voice ||
     pEngine !== (cfg.premium_engine ?? '') || pVoice !== (cfg.premium_voice ?? '')
 
+  const [onlyMissing, setOnlyMissing] = useState(true)
+
   /** Kick off this section's regeneration for one tier (free ≠ premium runs). */
   async function regen(tier: 'free' | 'premium') {
     if (dirty) { setErr('اول تغییرات را ذخیره کنید، بعد بازتولید'); return }
     setMsg(null); setErr(null)
-    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope: meta.regenScope, tier })
+    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate',
+      { scope: meta.regenScope, tier, mode: onlyMissing ? 'missing' : 'all' })
     if (r.error) { setErr(r.error); return }
     setMsg(tier === 'premium' ? 'بازتولید پرمیوم شروع شد ⭐' : 'بازتولید رایگان شروع شد')
   }
@@ -339,7 +342,11 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
       </div>
 
       {/* Generation lives here, per tier: each run builds ONLY its own files */}
-      <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+      <label className="flex items-center gap-2 text-xs text-slate-600 border-t border-slate-100 pt-3 cursor-pointer">
+        <input type="checkbox" checked={onlyMissing} onChange={e => setOnlyMissing(e.target.checked)} />
+        فقط موارد بدون صدا (جدیدها) — چیزی که صدا دارد دوباره ساخته نمی‌شود
+      </label>
+      <div className="flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => regen('free')} disabled={busy !== null || regenSt?.running}>
           🔄 بازتولید رایگان این بخش
         </Button>
@@ -355,6 +362,7 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
           <div className="flex items-center justify-between text-xs text-slate-600">
             <span>
               در حال ساخت {regenSt.tier === 'premium' ? 'پرمیوم ⭐' : 'رایگان'}
+              {regenSt.mode === 'missing' ? ' — فقط جدیدها' : ''}
               {regenSt.scope === 'all' ? ' (همه‌ی بخش‌ها)' : ''} — {regenSt.voice}
             </span>
             <span className="font-bold text-slate-800">{regenSt.done} / {regenSt.total}</span>
@@ -378,10 +386,12 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
 // ── Regenerate stored audio with the saved per-section voices ─────
 function RegenCard({ st }: { st: RegenStatus | null }) {
   const [err, setErr] = useState<string | null>(null)
+  const [onlyMissing, setOnlyMissing] = useState(true)
 
   async function start(tier: 'free' | 'premium') {
     setErr(null)
-    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate', { scope: 'all', tier })
+    const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate',
+      { scope: 'all', tier, mode: onlyMissing ? 'missing' : 'all' })
     if (r.error) setErr(r.error)
   }
 
@@ -414,10 +424,16 @@ function RegenCard({ st }: { st: RegenStatus | null }) {
           </div>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => start('free')}>🔄 بازتولید همه — رایگان</Button>
-          <Button variant="secondary" onClick={() => start('premium')}>⭐ بازتولید همه — پرمیوم</Button>
-          <Button variant="secondary" onClick={makeDemo}>🎧 ساخت نمونه‌ی صدا برای سایت</Button>
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+            <input type="checkbox" checked={onlyMissing} onChange={e => setOnlyMissing(e.target.checked)} />
+            فقط موارد بدون صدا (جدیدها)
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => start('free')}>🔄 بازتولید همه — رایگان</Button>
+            <Button variant="secondary" onClick={() => start('premium')}>⭐ بازتولید همه — پرمیوم</Button>
+            <Button variant="secondary" onClick={makeDemo}>🎧 ساخت نمونه‌ی صدا برای سایت</Button>
+          </div>
         </div>
       )}
 

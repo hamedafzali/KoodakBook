@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { query, queryOne } from '../lib/db'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
 import fs from 'fs'
@@ -85,6 +86,43 @@ router.get('/audio/voices', requireAdmin, requirePermission('ai.manage'), async 
     res.json({ data: voices, error: null })
   } catch (err) {
     res.status(502).json({ data: null, error: `دریافت فهرست صداها ممکن نشد: ${(err as Error).message}` })
+  }
+})
+
+// One-off generation for a single word — the cheap path after adding a word:
+// no need to run (or pay for) a whole batch.
+const wordGenSchema = z.object({ tier: z.enum(['free', 'premium']).default('free') })
+
+router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
+  const parsed = wordGenSchema.safeParse(req.body ?? {})
+  const tier = parsed.success ? parsed.data.tier : 'free'
+  const w = await queryOne<{ id: string; text: string }>(
+    'select id, coalesce(tts_text, persian) as text from words where id = $1', [req.params.id])
+  if (!w) { res.status(404).json({ data: null, error: 'Word not found' }); return }
+  try {
+    if (tier === 'premium') {
+      const clip = await synthesizeSectionPremium('word', w.text)
+      if (!clip) { res.status(400).json({ data: null, error: 'اول صدای پرمیوم بخش کلمات را تنظیم و ذخیره کنید' }); return }
+      const dir = path.resolve(UPLOADS_DIR, 'premium', 'words')
+      fs.mkdirSync(dir, { recursive: true })
+      const file = `${w.id}-${Date.now()}.${clip.ext}`
+      fs.writeFileSync(path.join(dir, file), clip.buf)
+      const url = `/uploads/premium/words/${file}`
+      await query('update words set audio_url_premium = $1 where id = $2', [url, w.id])
+      res.json({ data: { url }, error: null })
+    } else {
+      const clip = await synthesizeSection('word', w.text)
+      const dir = path.resolve(UPLOADS_DIR, 'words')
+      fs.mkdirSync(dir, { recursive: true })
+      const file = `${w.id}-${Date.now()}.${clip.ext}`
+      fs.writeFileSync(path.join(dir, file), clip.buf)
+      const url = `/uploads/words/${file}`
+      await query('update words set audio_url = $1 where id = $2', [url, w.id])
+      await query("delete from audio_assets where entity_type = 'word' and entity_id = $1", [w.id])
+      res.json({ data: { url }, error: null })
+    }
+  } catch (err) {
+    res.status(502).json({ data: null, error: `ساخت صدا ممکن نشد: ${(err as Error).message}` })
   }
 })
 

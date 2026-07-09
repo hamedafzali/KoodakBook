@@ -11,11 +11,16 @@ let premium = false
 let started = false
 
 export function ensurePremiumFlag(): void {
-  if (started || !isLoggedIn()) return
+  if (started || typeof window === 'undefined' || !isLoggedIn()) return
   started = true
+  // Last known answer applies instantly (fresh page loads would otherwise play
+  // the free voice on the first tap while /me is still in flight)…
+  try { premium = sessionStorage.getItem('kb_premium') === '1' } catch { /* private mode */ }
+  // …then refresh from the server.
   api.get<{ plan?: string; plan_expires_at?: string | null }>('/api/auth/me').then(r => {
     premium = isPremiumActive(r.data?.plan, r.data?.plan_expires_at)
-  }).catch(() => { /* stay free */ })
+    try { sessionStorage.setItem('kb_premium', premium ? '1' : '0') } catch { /* ignore */ }
+  }).catch(() => { /* keep cached value */ })
 }
 
 export function isPremiumClient(): boolean {

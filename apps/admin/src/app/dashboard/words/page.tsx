@@ -17,6 +17,16 @@ export default function AdminWordsPage() {
   const [form, setForm] = useState({ ...EMPTY })
   const [editing, setEditing] = useState<string | null>(null)
   const [filter, setFilter] = useState('all')
+  const [genBusy, setGenBusy] = useState<string | null>(null)
+
+  /** Voice ONE word (free or premium tier) — for newly added words, no batch. */
+  async function genAudio(id: string, tier: 'free' | 'premium') {
+    setGenBusy(id)
+    const r = await api.post<{ url: string }>(`/api/admin/audio/word/${id}`, { tier })
+    setGenBusy(null)
+    if (r.error) { alert(r.error); return }
+    load()
+  }
 
   useEffect(() => { load() }, [])
 
@@ -173,9 +183,22 @@ export default function AdminWordsPage() {
                 <td className="px-4 py-3 font-bold">{w.persian}</td>
                 <td className="px-4 py-3 ltr text-gray-500">{w.english}</td>
                 <td className="px-4 py-3 text-center"><span className="bg-gray-100 px-2 py-0.5 rounded-full text-xs">{w.category}</span></td>
-                <td className="px-4 py-3 text-center">{w.audio_url ? '🔊' : '—'}</td>
+                <td className="px-4 py-3 text-center whitespace-nowrap">
+                  <span title={w.audio_url ? 'صدای رایگان دارد' : 'بدون صدای رایگان'}>{w.audio_url ? '🔊' : '—'}</span>
+                  <span className="mx-0.5" title={w.audio_url_premium ? 'صدای پرمیوم دارد' : 'بدون صدای پرمیوم'}>{w.audio_url_premium ? '⭐' : ''}</span>
+                </td>
                 <td className="px-4 py-3 text-center">{w.image_url ? '🖼' : '—'}</td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-4 py-3 text-center whitespace-nowrap">
+                  <button onClick={() => genAudio(w.id, 'free')} disabled={genBusy !== null}
+                    title="ساخت صدای رایگان همین کلمه"
+                    className="text-slate-500 hover:text-amber-600 text-xs ml-2 disabled:opacity-40">
+                    {genBusy === w.id ? '…' : '🔊 ساخت'}
+                  </button>
+                  <button onClick={() => genAudio(w.id, 'premium')} disabled={genBusy !== null}
+                    title="ساخت صدای پرمیوم همین کلمه"
+                    className="text-slate-500 hover:text-amber-600 text-xs ml-3 disabled:opacity-40">
+                    ⭐ ساخت
+                  </button>
                   <button onClick={() => startEdit(w)} className="text-amber-600 hover:underline text-xs ml-3">ویرایش</button>
                   <button onClick={() => handleDelete(w.id)} className="text-red-500 hover:underline text-xs">حذف</button>
                 </td>

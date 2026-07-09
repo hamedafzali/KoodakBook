@@ -6,7 +6,7 @@ import { logAudit } from '../lib/audit'
 import { keyConfigured } from '../lib/ai'
 import type { AiSettings } from '../lib/ai'
 import { getTtsSettings, ttsKeyConfigured } from '../lib/tts'
-import { startRegen, getRegenStatus, type RegenScope, type RegenTier } from '../lib/tts/regenerate'
+import { startRegen, getRegenStatus, type RegenScope, type RegenTier, type RegenMode } from '../lib/tts/regenerate'
 import { getSectionConfigs } from '../lib/audio'
 
 const router = Router()
@@ -87,6 +87,7 @@ router.patch('/ai-settings', requireAdmin, requirePermission('ai.manage'), async
 const regenSchema = z.object({
   scope: z.enum(['words', 'letters', 'stories', 'phonics', 'math', 'all']),
   tier: z.enum(['free', 'premium']).default('free'),
+  mode: z.enum(['all', 'missing']).default('all'),
 })
 const SCOPE_SECTIONS: Record<string, string[]> = {
   words: ['word'], letters: ['letter'], stories: ['story'], phonics: ['phonics'], math: ['math'],
@@ -96,14 +97,14 @@ const SCOPE_SECTIONS: Record<string, string[]> = {
 router.post('/tts/regenerate', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
   const parsed = regenSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: 'scope required' }); return }
-  const { scope, tier } = parsed.data
+  const { scope, tier, mode } = parsed.data
   if (tier === 'premium') {
     const configs = await getSectionConfigs()
     const wanted = SCOPE_SECTIONS[scope] ?? []
     const ok = configs.some(c => wanted.includes(c.section) && c.premium_engine && c.premium_voice)
     if (!ok) { res.status(400).json({ data: null, error: 'برای این بخش صدای پرمیوم تنظیم نشده است — اول در کارت بخش، موتور و صدای پرمیوم را ذخیره کنید.' }); return }
   }
-  const started = startRegen(scope as RegenScope, tier as RegenTier)
+  const started = startRegen(scope as RegenScope, tier as RegenTier, mode as RegenMode)
   if (!started) { res.status(409).json({ data: null, error: 'یک بازتولید در حال اجراست — صبر کنید تمام شود' }); return }
   res.json({ data: { started: true }, error: null })
 })
