@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -309,10 +309,46 @@ export default function ChildHomePage() {
 /* ── Building blocks ─────────────────────────────────────── */
 
 function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: boolean; children: React.ReactNode }) {
+  const scroller = useRef<HTMLDivElement>(null)
+  const [overflows, setOverflows] = useState(false)
+
+  // Mouse users can't wheel a horizontal row — show arrows whenever the row
+  // actually overflows (touch keeps swiping as before).
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    const check = () => setOverflows(el.scrollWidth > el.clientWidth + 8)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  })
+
+  /** dirVisual +1 = slide view to the visual right. In RTL, forward-through-
+   *  content is the visual LEFT (negative scrollBy in modern browsers). */
+  function nudge(dirVisual: 1 | -1) {
+    const el = scroller.current
+    if (el) el.scrollBy({ left: dirVisual * el.clientWidth * 0.8, behavior: 'smooth' })
+  }
+
   return (
     <section>
-      <h2 className={`font-bold text-gray-800 mb-3 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
-      <div className="flex gap-3 overflow-x-auto pb-2 snap-x" role="list" aria-label={label}>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className={`font-bold text-gray-800 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
+        {overflows && (
+          <div className="hidden sm:flex gap-1.5">
+            <button onClick={() => nudge(1)} aria-label="قبلی"
+              className="w-9 h-9 rounded-full bg-white shadow text-gray-400 hover:text-amber-600 text-lg leading-none">›</button>
+            <button onClick={() => nudge(-1)} aria-label="بعدی"
+              className="w-9 h-9 rounded-full bg-white shadow text-gray-400 hover:text-amber-600 text-lg leading-none">‹</button>
+          </div>
+        )}
+      </div>
+      {/* Full-bleed on mobile (-mx-4) so tiles swipe edge-to-edge instead of
+          clipping at the page padding; pt-1/px-1 give the glow ring room. */}
+      <div ref={scroller}
+        className="flex gap-3 overflow-x-auto pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-1 snap-x scroll-smooth"
+        role="list" aria-label={label}>
         {children}
       </div>
     </section>

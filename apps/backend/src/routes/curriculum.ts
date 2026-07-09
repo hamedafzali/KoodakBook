@@ -2,7 +2,7 @@ import { Router } from 'express'
 import type { Request } from 'express'
 import { query, queryOne } from '../lib/db'
 import { verifyToken } from '../lib/jwt'
-import { isPremiumActive } from '@koodakbook/shared'
+import { userIsPremium, promoteAudio } from '../lib/premiumAudio'
 
 const router = Router()
 
@@ -16,20 +16,8 @@ async function isPremiumRequest(req: Request): Promise<boolean> {
   if (!h?.startsWith('Bearer ')) return false
   try {
     const { sub } = verifyToken(h.slice(7))
-    const u = await queryOne<{ plan: string; plan_expires_at: string | null }>(
-      'select plan, plan_expires_at from users where id = $1', [sub])
-    return isPremiumActive(u?.plan, u?.plan_expires_at)
+    return userIsPremium(sub)
   } catch { return false }
-}
-
-/** Promote the premium variant in place (recurses into nested content objects). */
-function promoteAudio<T>(obj: T, premium: boolean): T {
-  if (!premium || !obj || typeof obj !== 'object') return obj
-  const o = obj as Record<string, unknown>
-  if (typeof o.audio_url_premium === 'string' && o.audio_url_premium) o.audio_url = o.audio_url_premium
-  for (const k of ['word', 'letter', 'example_word']) if (o[k]) promoteAudio(o[k], premium)
-  if (Array.isArray(o.words)) for (const w of o.words) promoteAudio((w as Record<string, unknown>)?.word, premium)
-  return obj
 }
 
 // Resolve a row to JSON with its audio_url overridden by the primary

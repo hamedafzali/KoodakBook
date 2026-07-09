@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
+import { userIsPremium } from '../lib/premiumAudio'
 import { requireChildOwner } from '../middleware/childOwner'
 
 const router = Router()
@@ -9,8 +10,8 @@ const router = Router()
 const STRANDS = ['P', 'D', 'V', 'F', 'C'] as const
 
 // ── Probe item shapes ─────────────────────────────────────
-interface WordRow   { id: string; persian: string; english: string; audio_url: string | null }
-interface LetterRow { id: string; character: string; name_persian: string; audio_url: string | null }
+interface WordRow   { id: string; persian: string; english: string; audio_url: string | null; audio_url_premium?: string | null }
+interface LetterRow { id: string; character: string; name_persian: string; audio_url: string | null; audio_url_premium?: string | null }
 
 interface ProbeChoice {
   id: string
@@ -48,12 +49,15 @@ const letterChoice = (l: LetterRow): ProbeChoice => ({ id: l.id, kind: 'letter',
 // harder than the last), then computes a per-strand placement. Difficulty is
 // heuristic (stage + word length) until pilot data calibrates content_items.
 router.get('/probe', requireAuth, async (_req, res) => {
+  const premium = await userIsPremium(res.locals.userId)
+  const aud = (r: { audio_url: string | null; audio_url_premium?: string | null }) =>
+    (premium && r.audio_url_premium) || r.audio_url
   const words = await query<WordRow>(
-    `select id, persian, english, audio_url from words
+    `select id, persian, english, audio_url, audio_url_premium from words
      where audio_url is not null and audio_url <> '' and stage = 1`
   )
   const letters = await query<LetterRow>(
-    `select id, character, name_persian, audio_url from letters
+    `select id, character, name_persian, audio_url, audio_url_premium from letters
      where audio_url is not null and audio_url <> ''`
   )
 
@@ -85,7 +89,7 @@ router.get('/probe', requireAuth, async (_req, res) => {
     questions.push({
       strand: 'V', stage: 1, mode: 'listen',
       prompt: 'گوش کن. این کدام است؟',
-      audio_url: correct.audio_url,
+      audio_url: aud(correct),
       choices: shuffle([correct, d1, d2].map(wordChoice)),
       correct_id: correct.id,
     })
@@ -97,7 +101,7 @@ router.get('/probe', requireAuth, async (_req, res) => {
     questions.push({
       strand: 'D', stage: 2, mode: 'listen',
       prompt: 'این صدا برای کدام حرف است؟',
-      audio_url: correct.audio_url,
+      audio_url: aud(correct),
       choices: shuffle([correct, d1, d2].map(letterChoice)),
       correct_id: correct.id,
     })
