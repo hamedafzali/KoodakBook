@@ -9,6 +9,7 @@ import RewardPopup from '@/components/child/RewardPopup'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import Mascot from '@/components/child/Mascot'
 import { pickChild } from '@/lib/activeChild'
+import { getTranslationLang } from '@/lib/translation'
 import type { Story, StoryPage, Badge, Child, Promotion } from '@koodakbook/shared'
 
 type FullStory = Story & { pages: StoryPage[] }
@@ -18,13 +19,7 @@ export default function StoryPage() {
   const { id } = useParams<{ id: string }>()
   const [story, setStory] = useState<FullStory | null>(null)
   const [childId, setChildId] = useState('')
-  const [showBilingual, setShowBilingual] = useState(true)
-
-  // Honor the parent's translation preference as the default
-  useEffect(() => {
-    const pref = localStorage.getItem('koodakbook_show_translation')
-    if (pref !== null) setShowBilingual(pref === '1')
-  }, [])
+  const [lang] = useState(() => getTranslationLang())   // parent-set family language
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
   const [showUnlock, setShowUnlock] = useState(false)
 
@@ -32,7 +27,7 @@ export default function StoryPage() {
     if (!isLoggedIn()) { router.push('/login'); return }
     async function load() {
       const [storyRes, childRes] = await Promise.all([
-        api.get<FullStory>(`/api/stories/${id}`),
+        api.get<FullStory>(`/api/stories/${id}?lang=${lang}`),
         api.get<Child[]>('/api/children'),
       ])
       if (storyRes.data) setStory(storyRes.data)
@@ -40,7 +35,7 @@ export default function StoryPage() {
       if (child) setChildId(child.id)
     }
     load()
-  }, [id, router])
+  }, [id, router, lang])
 
   // Self-heal: an AI story (created for this child) with any silent page builds
   // its own audio (free Piper), then we refetch so بشنو plays — no manual step.
@@ -56,6 +51,23 @@ export default function StoryPage() {
         if (r.data && !cancelled) setStory(r.data)
       })
       .catch(() => { /* leave text-only; the manual button remains */ })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story?.id])
+
+  // Self-heal translations: if the family language isn't English/none and some
+  // pages lack it, translate on demand (AI, cached) then refetch with the lang.
+  useEffect(() => {
+    if (!story || lang === 'none' || lang === 'en') return
+    if (!story.pages.some(p => !p.translation)) return
+    let cancelled = false
+    api.post(`/api/ai/stories/${story.id}/translate`, { lang })
+      .then(async () => {
+        if (cancelled) return
+        const r = await api.get<FullStory>(`/api/stories/${story.id}?lang=${lang}`)
+        if (r.data && !cancelled) setStory(r.data)
+      })
+      .catch(() => { /* leave Persian-only; nothing breaks */ })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id])
@@ -102,27 +114,9 @@ export default function StoryPage() {
     <>
       {newBadge && <RewardPopup badge={newBadge} onClose={() => router.push('/child/home')} />}
 
-      {/* Translation toggle — correctly positioned at end-side in RTL (right edge) */}
-      <div className="fixed top-4 right-4 z-20 flex items-center gap-2 bg-white/95 backdrop-blur rounded-full px-3 py-2 shadow-md text-sm">
-        <span className="text-gray-600 text-xs font-medium">ترجمه</span>
-        <button
-          onClick={() => setShowBilingual(v => !v)}
-          role="switch"
-          aria-checked={showBilingual}
-          aria-label={showBilingual ? 'غیرفعال کردن ترجمه' : 'فعال کردن ترجمه'}
-          className={`w-11 h-6 rounded-full transition-colors relative ${showBilingual ? 'bg-amber-500' : 'bg-gray-300'}`}
-        >
-          <span
-            className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${
-              showBilingual ? 'right-1' : 'right-6'
-            }`}
-          />
-        </button>
-      </div>
-
       <StoryReader
         story={story}
-        showBilingual={showBilingual}
+        showBilingual={lang !== 'none'}
         onBack={() => router.push('/child/story')}
         onPageChange={handlePageChange}
         onComplete={handleComplete}

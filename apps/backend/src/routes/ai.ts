@@ -3,9 +3,9 @@ import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
-import { getAiSettings, generateStory, AiNotConfiguredError, type StoryJSON } from '../lib/ai'
+import { getAiSettings, generateStory, translateLines, AiNotConfiguredError, type StoryJSON } from '../lib/ai'
 import { synthesizeStoryPages } from '../lib/tts'
-import { parseSceneRef } from '@koodakbook/shared'
+import { parseSceneRef, isTranslationLang, langEnglishName } from '@koodakbook/shared'
 
 const router = Router()
 
@@ -159,6 +159,38 @@ router.post('/stories/:id/audio', requireAuth, async (req, res) => {
     await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
   }
   res.json({ data: { ok: true, count: Object.keys(audioMap).length }, error: null })
+})
+
+// POST /api/ai/stories/:id/translate { lang } — fill missing translations for
+// one language on any story (folk tale or AI). Cached in story_pages.translations
+// so it's a one-time cost per story+language, shared across families.
+router.post('/stories/:id/translate', requireAuth, async (req, res) => {
+  const storyId = String(req.params.id)
+  const lang = String(req.body?.lang ?? '')
+  if (!isTranslationLang(lang) || lang === 'en') {
+    res.status(400).json({ data: null, error: 'زبان نامعتبر' }); return
+  }
+  const settings = await getAiSettings()
+  if (!settings) { res.status(503).json({ data: null, error: 'ترجمه فعلاً در دسترس نیست' }); return }
+
+  const pages = await query<{ id: string; text_persian: string; translations: Record<string, string> }>(
+    'select id, text_persian, translations from story_pages where story_id = $1 order by page_number', [storyId])
+  const missing = pages.filter(p => !p.translations?.[lang])
+  if (missing.length === 0) { res.json({ data: { ok: true, translated: 0 }, error: null }); return }
+
+  try {
+    const out = await translateLines(settings, missing.map(p => p.text_persian), langEnglishName(lang))
+    for (let i = 0; i < missing.length; i++) {
+      await query(
+        `update story_pages set translations = translations || jsonb_build_object($1::text, $2::text) where id = $3`,
+        [lang, out[i], missing[i].id])
+    }
+    res.json({ data: { ok: true, translated: missing.length }, error: null })
+  } catch (err) {
+    if (err instanceof AiNotConfiguredError) { res.status(503).json({ data: null, error: 'کلید هوش مصنوعی تنظیم نشده' }); return }
+    console.error('translate failed:', (err as Error).message)
+    res.status(502).json({ data: null, error: 'ترجمه موفق نبود' })
+  }
 })
 
 export default router

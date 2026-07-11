@@ -158,6 +158,8 @@ export interface StoryPage {
   image_url: string | null
   audio_url: string | null
   audio_url_premium?: string | null
+  /** Chosen family-language translation for this page (attached per request). */
+  translation?: string | null
   scene_plan?: ScenePlan | null
   animation_review?: AnimationReview
   animation_engine_version?: number | null

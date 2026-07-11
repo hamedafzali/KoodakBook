@@ -150,7 +150,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
             <div className="bg-white rounded-lg p-5 shadow-sm lg:w-1/2 lg:p-8 lg:self-stretch lg:flex lg:flex-col lg:justify-center">
               <BilingualText
                 persian={page.text_persian}
-                english={showBilingual ? page.text_english : null}
+                english={showBilingual ? (page.translation ?? page.text_english) : null}
                 persianClassName="persian-body-lg font-bold"
                 englishClassName="text-base mt-2"
               />

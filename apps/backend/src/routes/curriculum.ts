@@ -87,7 +87,17 @@ router.get('/stories/:id', async (req, res) => {
     [req.params.id]
   )
   const premium = await isPremiumRequest(req)
-  res.json({ data: { ...promoteAudio(story.obj, premium), pages: pages.map(r => promoteAudio(r.obj, premium)) }, error: null })
+  // ?lang attaches the chosen family-language translation per page (from the
+  // translations map, or text_english for 'en'); the app shows page.translation.
+  const lang = typeof req.query.lang === 'string' ? req.query.lang : null
+  const withTx = (o: Record<string, unknown>) => {
+    if (lang && lang !== 'none') {
+      const tx = (o.translations as Record<string, string> | undefined)?.[lang]
+      o.translation = tx ?? (lang === 'en' ? (o.text_english as string | null) : null)
+    }
+    return o
+  }
+  res.json({ data: { ...promoteAudio(story.obj, premium), pages: pages.map(r => withTx(promoteAudio(r.obj, premium))) }, error: null })
 })
 
 router.get('/words', async (req, res) => {

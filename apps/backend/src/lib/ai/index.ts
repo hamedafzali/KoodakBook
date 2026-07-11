@@ -93,6 +93,33 @@ export async function generateStory(settings: AiSettings, vars: StoryVars): Prom
   return parsed.data
 }
 
+/** Translate an array of Persian children's-story lines into one language.
+ *  Batched (one call per story) to keep latency + cost down. Returns strings in
+ *  the same order; throws on provider/parse failure so callers can leave the
+ *  page untranslated rather than store garbage. */
+export async function translateLines(settings: AiSettings, lines: string[], targetLanguage: string): Promise<string[]> {
+  const apiKey = process.env.AI_API_KEY
+  if (!apiKey) throw new AiNotConfiguredError('Missing AI_API_KEY')
+  const system =
+    `You translate Persian children's story sentences into ${targetLanguage}. ` +
+    `Keep each translation simple, warm and natural for a young child; preserve meaning and tone. ` +
+    `Reply with ONLY a JSON array of strings — one translation per input, in the same order, nothing else.`
+  const prompt = JSON.stringify(lines)
+
+  let raw: string
+  if (settings.provider === 'anthropic') {
+    raw = await generateAnthropic({ apiKey, model: settings.model, maxTokens: settings.max_tokens, system, prompt, schema: { type: 'object' } as unknown as Record<string, unknown> })
+  } else {
+    if (!settings.base_url) throw new Error('base_url required for openai_compatible provider')
+    raw = await generateOpenAICompatible({ apiKey, baseURL: settings.base_url, model: settings.model, maxTokens: settings.max_tokens, system, prompt })
+  }
+  const parsed = extractJson(raw)
+  if (!Array.isArray(parsed) || parsed.length !== lines.length || !parsed.every(x => typeof x === 'string')) {
+    throw new Error('translation: unexpected shape')
+  }
+  return parsed as string[]
+}
+
 /** Whether the single AI key is present in the backend env (admin status). */
 export function keyConfigured(): boolean {
   return !!process.env.AI_API_KEY

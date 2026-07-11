@@ -6,10 +6,11 @@ import { api } from '@/lib/api'
 import { clearToken, lockParent } from '@/lib/auth'
 import { getActiveChildId, setActiveChildId } from '@/lib/activeChild'
 import type { Child } from '@koodakbook/shared'
+import { TRANSLATION_LANGS } from '@koodakbook/shared'
+import { getTranslationLang, setTranslationLang } from '@/lib/translation'
 import { containerWidths } from '@/components/shared/layout'
 
 const GOAL_KEY = 'koodakbook_daily_goal_min'
-const TRANSLATION_KEY = 'koodakbook_show_translation'
 
 const DAILY_GOALS = [
   { value: 5,  label: '۵ دقیقه' },
@@ -21,7 +22,7 @@ const DAILY_GOALS = [
 export default function SettingsPage() {
   const router = useRouter()
   const [dailyGoal, setDailyGoal] = useState<number>(10)
-  const [showTranslation, setShowTranslation] = useState(true)
+  const [transLang, setTransLang] = useState('en')
   const [logoutConfirm, setLogoutConfirm] = useState(false)
   const [children, setChildren] = useState<Child[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -29,8 +30,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const stored = localStorage.getItem(GOAL_KEY)
     if (stored) setDailyGoal(parseInt(stored))
-    const trans = localStorage.getItem(TRANSLATION_KEY)
-    if (trans !== null) setShowTranslation(trans === '1')
+    setTransLang(getTranslationLang())
     setActiveId(getActiveChildId())
     api.get<Child[]>('/api/children').then(res => {
       if (res.data) {
@@ -62,12 +62,9 @@ export default function SettingsPage() {
     localStorage.setItem(GOAL_KEY, String(val))
   }
 
-  function handleTranslationToggle() {
-    setShowTranslation(v => {
-      const next = !v
-      localStorage.setItem(TRANSLATION_KEY, next ? '1' : '0')
-      return next
-    })
+  function handleLangChange(code: string) {
+    setTransLang(code)
+    setTranslationLang(code)
   }
 
   async function handleLogout() {
@@ -128,21 +125,25 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Translation toggle */}
-              <div className="px-5 py-4 flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-slate-800 text-sm">نمایش ترجمه انگلیسی</p>
-                  <p className="text-xs text-slate-400 mt-0.5">در داستان‌ها و درس‌ها</p>
+              {/* Translation language — the family's language shown under the
+                  Persian story text (or off). Non-English are translated on
+                  demand and cached. */}
+              <div className="px-5 py-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-800 text-sm">زبان ترجمه‌ی داستان‌ها</p>
+                  <p className="text-xs text-slate-400 mt-0.5">زیر متن فارسی نمایش داده می‌شود</p>
                 </div>
-                <button
-                  role="switch"
-                  aria-checked={showTranslation}
-                  aria-label="نمایش ترجمه انگلیسی"
-                  onClick={handleTranslationToggle}
-                  className={`w-12 h-7 rounded-full transition-colors relative ${showTranslation ? 'bg-amber-500' : 'bg-gray-300'}`}
+                <select
+                  value={transLang}
+                  onChange={e => handleLangChange(e.target.value)}
+                  aria-label="زبان ترجمه"
+                  className="shrink-0 border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-amber-400"
                 >
-                  <span className={`absolute top-1.5 w-4 h-4 bg-white rounded-full shadow transition-all ${showTranslation ? 'right-1.5' : 'right-7'}`} />
-                </button>
+                  <option value="none">خاموش</option>
+                  {TRANSLATION_LANGS.map(l => (
+                    <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </section>
