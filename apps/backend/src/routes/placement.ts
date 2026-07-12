@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
-import { userIsPremium } from '../lib/premiumAudio'
+import { userIsPremium, AUDIO_QUALITY_FOR_ALL } from '../lib/premiumAudio'
 import { requireChildOwner } from '../middleware/childOwner'
 
 const router = Router()
@@ -49,7 +49,7 @@ const letterChoice = (l: LetterRow): ProbeChoice => ({ id: l.id, kind: 'letter',
 // harder than the last), then computes a per-strand placement. Difficulty is
 // heuristic (stage + word length) until pilot data calibrates content_items.
 router.get('/probe', requireAuth, async (_req, res) => {
-  const premium = await userIsPremium(res.locals.userId)
+  const premium = AUDIO_QUALITY_FOR_ALL ? true : await userIsPremium(res.locals.userId)
   const aud = (r: { audio_url: string | null; audio_url_premium?: string | null }) =>
     (premium && r.audio_url_premium) || r.audio_url
   const words = await query<WordRow>(

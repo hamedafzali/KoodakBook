@@ -5,6 +5,13 @@ import { isPremiumActive } from '@koodakbook/shared'
  * Paid accounts get audio_url_premium transparently promoted into audio_url —
  * the apps never know two variants exist. */
 
+/** Policy (product review 2026-07): audio QUALITY is not a paid tier.
+ * Catalog clips are pre-generated files — serving the best variant to every
+ * account has zero marginal cost, and voice quality is core to learning and
+ * trust. Per-use costs (AI story narration) are gated by usage caps instead.
+ * Flip to false only if the strategy reverts. */
+export const AUDIO_QUALITY_FOR_ALL = true
+
 export async function userIsPremium(userId: string | null | undefined): Promise<boolean> {
   if (!userId) return false
   const u = await queryOne<{ plan: string; plan_expires_at: string | null }>(

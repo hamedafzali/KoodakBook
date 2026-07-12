@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { queryOne } from '../db'
-import { synthesizeSection, synthesizeSectionFree, synthesizeSectionPremium, getSectionConfig, isSidecarEngine } from '../audio'
+import { synthesizeSection, synthesizeSectionPremium } from '../audio'
 import type { TtsSettings } from './types'
 
 export type { TtsSettings } from './types'
@@ -31,10 +31,9 @@ export async function synthesizeStoryPages(
   pages: { id: string; text_persian: string }[],
   opts: { premium: boolean },
 ): Promise<Record<string, string>> {
-  const settings = await getTtsSettings()
-  const cfg = await getSectionConfig('story')
-  const paidAllowed = opts.premium && (settings?.enabled ?? false)
-  const useConfigured = isSidecarEngine(cfg.engine) || paidAllowed
+  // Voice policy (product review 2026-07): every family hears the best
+  // configured voice; plan differences live in usage caps, not audio quality.
+  void opts
 
   const dir = path.resolve(UPLOADS_DIR, 'ai-stories')
   try { fs.mkdirSync(dir, { recursive: true }) } catch { /* ignore */ }
@@ -42,16 +41,12 @@ export async function synthesizeStoryPages(
   const out: Record<string, string> = {}
   for (const page of pages) {
     try {
-      // Premium accounts: dedicated premium engine first (when configured),
-      // then the section's free config; free accounts: sidecar only.
+      // Best voice first (premium engine when configured), section config as
+      // resilience fallback (which itself falls back to the sidecar).
       let clip = null
-      if (paidAllowed) {
-        try { clip = await synthesizeSectionPremium('story', page.text_persian) }
-        catch (err) { console.error('premium story TTS failed, using free config:', (err as Error).message) }
-      }
-      if (!clip) clip = useConfigured
-        ? await synthesizeSection('story', page.text_persian)
-        : await synthesizeSectionFree('story', page.text_persian)
+      try { clip = await synthesizeSectionPremium('story', page.text_persian) }
+      catch (err) { console.error('premium story TTS failed, using section config:', (err as Error).message) }
+      if (!clip) clip = await synthesizeSection('story', page.text_persian)
       const file = `${storyId}-${page.id}.${clip.ext}`
       fs.writeFileSync(path.join(dir, file), clip.buf)
       out[page.id] = `/uploads/ai-stories/${file}`

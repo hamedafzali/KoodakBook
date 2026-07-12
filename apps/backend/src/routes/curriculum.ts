@@ -2,7 +2,7 @@ import { Router } from 'express'
 import type { Request } from 'express'
 import { query, queryOne } from '../lib/db'
 import { verifyToken } from '../lib/jwt'
-import { userIsPremium, promoteAudio } from '../lib/premiumAudio'
+import { userIsPremium, promoteAudio, AUDIO_QUALITY_FOR_ALL } from '../lib/premiumAudio'
 
 const router = Router()
 
@@ -52,7 +52,7 @@ router.get('/lessons/:id', async (req, res) => {
      order by li.order_index`,
     [req.params.id]
   )
-  const premium = await isPremiumRequest(req)
+  const premium = AUDIO_QUALITY_FOR_ALL ? true : await isPremiumRequest(req)
   res.json({ data: { ...lesson, items: (items as Record<string, unknown>[]).map(i => promoteAudio(i, premium)) }, error: null })
 })
 
@@ -86,7 +86,7 @@ router.get('/stories/:id', async (req, res) => {
      order by sp.page_number`,
     [req.params.id]
   )
-  const premium = await isPremiumRequest(req)
+  const premium = AUDIO_QUALITY_FOR_ALL ? true : await isPremiumRequest(req)
   // ?lang attaches the chosen family-language translation per page (from the
   // translations map, or text_english for 'en'); the app shows page.translation.
   const lang = typeof req.query.lang === 'string' ? req.query.lang : null
@@ -110,14 +110,14 @@ router.get('/words', async (req, res) => {
   if (conditions.length) sql += ' where ' + conditions.join(' and ')
   sql += ' order by w.category, w.persian'
   const rows = await query<Obj>(sql, params)
-  const premium = await isPremiumRequest(req)
+  const premium = AUDIO_QUALITY_FOR_ALL ? true : await isPremiumRequest(req)
   res.json({ data: rows.map(r => promoteAudio(r.obj, premium)), error: null })
 })
 
 router.get('/words/:id', async (req, res) => {
   const word = await queryOne<Obj>(`select ${withAudio('w', 'word')} as obj from words w where w.id = $1`, [req.params.id])
   if (!word) { res.status(404).json({ data: null, error: 'Word not found' }); return }
-  res.json({ data: promoteAudio(word.obj, await isPremiumRequest(req)), error: null })
+  res.json({ data: promoteAudio(word.obj, AUDIO_QUALITY_FOR_ALL ? true : await isPremiumRequest(req)), error: null })
 })
 
 router.get('/letters', async (req, res) => {
@@ -130,7 +130,7 @@ router.get('/letters', async (req, res) => {
      left join words w on w.id = l.example_word_id
      order by l.group, l.order_in_group`
   )
-  const premium = await isPremiumRequest(req)
+  const premium = AUDIO_QUALITY_FOR_ALL ? true : await isPremiumRequest(req)
   res.json({ data: rows.map(r => promoteAudio(r.obj, premium)), error: null })
 })
 

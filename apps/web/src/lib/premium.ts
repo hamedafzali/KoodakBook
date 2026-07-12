@@ -28,8 +28,9 @@ export function isPremiumClient(): boolean {
   return premium
 }
 
-/** Playback candidates for a fixed-path clip: premium variant first (when the
- *  account is paid), then the free file — the player falls through on 404. */
+/** Playback candidates for a fixed-path clip. Policy: audio quality is not a
+ *  paid tier — EVERY account tries the premium variant first and falls
+ *  through (404) to the free file, then browser TTS. */
 export function audioCandidates(url: string): string[] {
-  return isPremiumClient() ? [url.replace('/uploads/', '/uploads/premium/'), url] : [url]
+  return [url.replace('/uploads/', '/uploads/premium/'), url]
 }
