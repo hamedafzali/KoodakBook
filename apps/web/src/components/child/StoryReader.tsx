@@ -36,6 +36,18 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, story.id])
 
+  // Prefetch the NEXT page's clip while this one plays, so the page-turn
+  // speaks instantly instead of waiting on the network.
+  useEffect(() => {
+    const next = story.pages[currentPage + 1]
+    const url = mediaUrl(next?.audio_url)
+    if (!url) return
+    const a = new Audio()
+    a.preload = 'auto'
+    a.src = url
+    // no play() — just warm the browser's media cache
+  }, [currentPage, story.pages])
+
   // Backdrop per page from scene_plan; a page without one inherits the
   // previous page's scene (stories rarely change location every page), and the
   // whole story falls back to a friendly default.
