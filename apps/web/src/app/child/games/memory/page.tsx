@@ -13,7 +13,8 @@ import Mascot from '@/components/child/Mascot'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
-import type { Word, Child } from '@koodakbook/shared'
+import type { Word, Child, AppCharacter, CharacterLine } from '@koodakbook/shared'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 
 /* Memory match — the first data-driven game template: it feeds off the word
  * catalog, so every new word row is automatically new game content. Matching
@@ -33,15 +34,31 @@ interface Card {
 
 function shuffle<T>(a: T[]): T[] { return [...a].sort(() => Math.random() - 0.5) }
 
+function pickLine(host: AppCharacter | null, trigger: string): CharacterLine | null {
+  const matches = (host?.lines ?? []).filter(l => l.trigger === trigger)
+  return matches.length ? matches[Math.floor(Math.random() * matches.length)] : null
+}
+
 export default function MemoryGamePage() {
   const router = useRouter()
   const [words, setWords] = useState<Word[] | null>(null)
+  const [host, setHost] = useState<AppCharacter | null>(null)
   const [round, setRound] = useState(0)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
     async function load() {
+      // ?host=<slug> → this friend presents the game (plan §5: games gain a host)
+      const slug = new URLSearchParams(window.location.search).get('host')
+      if (slug) {
+        api.get<AppCharacter[]>('/api/characters').then(r => {
+          const h = r.data?.find(c => c.slug === slug) ?? null
+          setHost(h)
+          const open = pickLine(h, 'game_open') ?? pickLine(h, 'greeting')
+          if (open) setTimeout(() => speakOrPlay(open.audio_url, open.text_persian), 600)
+        })
+      }
       const [wordsRes, childRes] = await Promise.all([
         api.get<Word[]>('/api/words'),
         api.get<Child[]>('/api/children'),
@@ -56,10 +73,10 @@ export default function MemoryGamePage() {
   }, [router])
 
   if (!words) return <LoadingScreen message="در حال چیدن کارت‌ها..." />
-  return <Board key={round} words={words} onReplay={() => setRound(r => r + 1)} onHome={() => router.push('/child/home')} />
+  return <Board key={round} words={words} host={host} onReplay={() => setRound(r => r + 1)} onHome={() => router.push('/child/home')} />
 }
 
-function Board({ words, onReplay, onHome }: { words: Word[]; onReplay: () => void; onHome: () => void }) {
+function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppCharacter | null; onReplay: () => void; onHome: () => void }) {
   const cards = useMemo<Card[]>(() => {
     const picked = shuffle(words).slice(0, PAIRS)
     return shuffle(picked.flatMap(w => ([0, 1] as const).map(i => ({
@@ -73,7 +90,13 @@ function Board({ words, onReplay, onHome }: { words: Word[]; onReplay: () => voi
   const done = matched.size === PAIRS
 
   useEffect(() => {
-    if (done) { playComplete(); confetti({ particleCount: 120, spread: 90, origin: { y: 0.4 }, colors: ['#a78bfa', '#f472b6', '#fbbf24'] }) }
+    if (done) {
+      playComplete()
+      confetti({ particleCount: 120, spread: 90, origin: { y: 0.4 }, colors: ['#a78bfa', '#f472b6', '#fbbf24'] })
+      const praise = pickLine(host, 'praise')
+      if (praise) setTimeout(() => speakOrPlay(praise.audio_url, praise.text_persian), 500)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done])
 
   function flip(card: Card) {
@@ -96,7 +119,7 @@ function Board({ words, onReplay, onHome }: { words: Word[]; onReplay: () => voi
   if (done) return (
     <div className="min-h-screen flex flex-col items-center justify-center child-bg p-6 gap-5 text-center">
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
-        <Mascot size={130} mood="excited" />
+        {host ? <CharacterAvatar slug={host.slug} size={130} mood="excited" /> : <Mascot size={130} mood="excited" />}
       </motion.div>
       <h1 className="text-3xl font-bold text-gray-800">همه را پیدا کردی! 🎉</h1>
       <p className="text-gray-600 persian-text">با {moves} حرکت — عالی بود!</p>

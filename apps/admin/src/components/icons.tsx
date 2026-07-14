@@ -20,6 +20,7 @@ const P: Record<string, ReactElement> = {
   flask: <><path d="M9 3h6" /><path d="M10 3v6l-4 9a1 1 0 0 0 1 1.4h10a1 1 0 0 0 1-1.4l-4-9V3" /></>,
   chevron: <path d="m9 18 6-6-6-6" />,
   volume: <><path d="M11 5 6 9H2v6h4l5 4z" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /></>,
+  smile: <><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" /></>,
   inbox: <><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></>,
 }
 

@@ -69,6 +69,35 @@ export interface AudioSectionConfig {
   premium_voice?: string | null
 }
 
+// ── Interactive characters (mig 042) ───────────────────────
+export interface AppCharacter {
+  id: string
+  slug: string
+  name_persian: string
+  type: 'child' | 'animal' | 'fantasy'
+  personality: string
+  age_band: number
+  level: number
+  voice_engine: string
+  voice_id: string
+  animation: Record<string, unknown>
+  topics: string[]
+  teaching_role: string
+  home_scene: string
+  is_active: boolean
+  sort: number
+  lines?: CharacterLine[]
+}
+
+export interface CharacterLine {
+  id: string
+  character_id: string
+  trigger: string
+  text_persian: string
+  audio_url: string | null
+  emotion: string
+}
+
 // ── Content ───────────────────────────────────────────────
 export interface Word {
   id: string

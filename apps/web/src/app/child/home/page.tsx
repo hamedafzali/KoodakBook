@@ -19,7 +19,8 @@ import { LESSON_TYPE_EMOJI, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL
 import { MODULE, IconChip, ModuleCard, ChunkyButton } from '@/components/child/kit'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import { SCENE_SLUGS, type SceneSlug } from '@koodakbook/shared'
-import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels, Letter } from '@koodakbook/shared'
+import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels, Letter, AppCharacter } from '@koodakbook/shared'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 
 /* Child home, redesigned for its real audience.
  *
@@ -54,6 +55,7 @@ export default function ChildHomePage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [letters, setLetters] = useState<Letter[]>([])
+  const [friends, setFriends] = useState<AppCharacter[]>([])
   const [stats, setStats] = useState({ words: 0, streak: 0, xp: 0 })
   const [reviewWords, setReviewWords] = useState<ReviewItem[]>([])
   const [strandLevels, setStrandLevels] = useState<StrandLevels>(ALL_UNLOCKED)
@@ -67,6 +69,7 @@ export default function ChildHomePage() {
 
   useChildSession(child?.id ?? null)
   useEffect(() => { if (!hasSeenTutorial()) setShowTutorial(true) }, [])
+  useEffect(() => { api.get<AppCharacter[]>('/api/characters').then(r => { if (r.data) setFriends(r.data) }) }, [])
 
   async function loadForChild(c: Child) {
     setChild(c)
@@ -237,6 +240,23 @@ export default function ChildHomePage() {
             </ChunkyButton>
           </motion.div>
         </Link>
+
+        {/* ── Friends row: the characters (all bands) ── */}
+        {friends.length > 0 && (
+          <TileRow label="دوست‌های من 🦊" bigTiles={band === 1}>
+            {friends.map(f => (
+              <Link key={f.slug} href={`/child/friends/${f.slug}`} role="listitem"
+                aria-label={`برو پیش ${f.name_persian}`} className="flex-shrink-0 snap-start">
+                <motion.div whileTap={{ scale: 0.93 }}
+                  className={`${band === 1 ? 'w-40' : 'w-32'} bg-white rounded-2xl shadow-card flex flex-col items-center gap-1 py-3`}>
+                  <CharacterAvatar slug={f.slug} size={band === 1 ? 96 : 76} mood="idle" />
+                  <p className="font-bold text-slate-800 text-sm">{f.name_persian}</p>
+                  <p className="text-[10px] text-amber-600 font-medium">بیا پیشم! 👋</p>
+                </motion.div>
+              </Link>
+            ))}
+          </TileRow>
+        )}
 
         {/* ── Stories row (all bands — stories are the heart) ── */}
         <TileRow label="قصه‌ها 📖" bigTiles={band === 1}>
