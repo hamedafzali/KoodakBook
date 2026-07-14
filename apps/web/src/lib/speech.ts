@@ -65,6 +65,9 @@ export function speakPersian(text: string, opts?: { rate?: number; pitch?: numbe
     // Slower, higher pitch is clearer and friendlier for children
     utter.rate = opts?.rate ?? 0.85
     utter.pitch = opts?.pitch ?? 1.1
+    utter.onstart = () => setSpeaking(true)
+    utter.onend = () => setSpeaking(false)
+    utter.onerror = () => setSpeaking(false)
     synth.speak(utter)
     return true
   } catch {
@@ -76,11 +79,31 @@ export function speakPersian(text: string, opts?: { rate?: number; pitch?: numbe
 // otherwise auto-playing sequential pages/cards would overlap.
 let currentAudio: HTMLAudioElement | null = null
 
+// ── Speaking broadcast: characters act (mouth, bob, gestures) while audio is
+// actually playing. Listeners get true on start and false on end/cut. ──
+type SpeakingListener = (speaking: boolean) => void
+const speakingListeners = new Set<SpeakingListener>()
+let speakingNow = false
+
+function setSpeaking(v: boolean) {
+  if (speakingNow === v) return
+  speakingNow = v
+  for (const fn of speakingListeners) { try { fn(v) } catch { /* listener's problem */ } }
+}
+
+/** Subscribe to "is a character voice playing right now". Returns unsubscribe. */
+export function onSpeaking(fn: SpeakingListener): () => void {
+  speakingListeners.add(fn)
+  fn(speakingNow)
+  return () => { speakingListeners.delete(fn) }
+}
+
 function stopAudio() {
   if (currentAudio) {
     try { currentAudio.pause(); currentAudio.currentTime = 0 } catch { /* ignore */ }
     currentAudio = null
   }
+  setSpeaking(false)
 }
 
 /**
@@ -103,6 +126,9 @@ export function speakOrPlayFirst(urls: (string | null | undefined)[], text: stri
     try {
       const audio = new Audio(list[i])
       currentAudio = audio
+      audio.onplaying = () => { if (currentAudio === audio) setSpeaking(true) }
+      audio.onended = () => { if (currentAudio === audio) setSpeaking(false) }
+      audio.onpause = () => { if (currentAudio === audio) setSpeaking(false) }
       audio.play().catch(() => tryAt(i + 1))
     } catch { tryAt(i + 1) }
   }
@@ -117,4 +143,5 @@ export function canSpeak(): boolean {
 export function stopSpeaking() {
   stopAudio()
   getSynth()?.cancel()
+  setSpeaking(false)
 }
