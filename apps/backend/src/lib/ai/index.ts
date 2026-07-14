@@ -120,6 +120,38 @@ export async function translateLines(settings: AiSettings, lines: string[], targ
   return parsed as string[]
 }
 
+/** One constrained character-conversation turn (character plan §4).
+ *  The prompt embeds the transcript; output is strict JSON {reply, emotion}.
+ *  Throws on provider/parse failure — the route falls back to scripted lines,
+ *  so a child never sees a model failure. */
+export async function chatTurn(
+  settings: AiSettings,
+  opts: { system: string; history: { role: 'child' | 'character'; text: string }[]; childText: string },
+): Promise<{ reply: string; emotion: string }> {
+  const apiKey = process.env.AI_API_KEY
+  if (!apiKey) throw new AiNotConfiguredError('Missing AI_API_KEY')
+
+  const transcript = opts.history
+    .map(h => `${h.role === 'child' ? 'کودک' : 'تو'}: ${h.text}`)
+    .join('\n')
+  const prompt =
+    (transcript ? `گفت‌وگوی تا اینجا:\n${transcript}\n\n` : '') +
+    `کودک: ${opts.childText}\n\n` +
+    'Reply ONLY with JSON: { "reply": string, "emotion": "happy" | "excited" | "encouraging" }'
+
+  let raw: string
+  if (settings.provider === 'anthropic') {
+    raw = await generateAnthropic({ apiKey, model: settings.model, maxTokens: 300, system: opts.system, prompt, schema: { type: 'object' } as unknown as Record<string, unknown> })
+  } else {
+    if (!settings.base_url) throw new Error('base_url required for openai_compatible provider')
+    raw = await generateOpenAICompatible({ apiKey, baseURL: settings.base_url, model: settings.model, maxTokens: 300, system: opts.system, prompt })
+  }
+  const parsed = extractJson(raw) as { reply?: unknown; emotion?: unknown }
+  if (typeof parsed?.reply !== 'string' || !parsed.reply.trim()) throw new Error('chat: unexpected shape')
+  const emotion = typeof parsed.emotion === 'string' ? parsed.emotion : 'happy'
+  return { reply: parsed.reply.trim(), emotion }
+}
+
 /** Whether the single AI key is present in the backend env (admin status). */
 export function keyConfigured(): boolean {
   return !!process.env.AI_API_KEY

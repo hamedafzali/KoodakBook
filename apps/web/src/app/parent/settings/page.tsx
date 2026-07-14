@@ -183,6 +183,15 @@ export default function SettingsPage() {
                 </div>
               ))}
               <Link
+                href="/parent/conversations"
+                className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px]"
+              >
+                <span className="font-medium text-slate-800 text-sm">گفت‌وگوهای کودک با شخصیت‌ها 💬</span>
+                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              <Link
                 href="/onboarding"
                 className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px] text-amber-700"
               >

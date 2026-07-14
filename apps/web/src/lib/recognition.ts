@@ -37,6 +37,12 @@ export interface ListenResult {
   matched: boolean
 }
 
+/** Free dictation: listen once and return whatever Persian was heard
+ *  (conversation mode — no target to match). Empty string = heard nothing. */
+export function dictateOnce(timeoutMs = 7000): Promise<string> {
+  return listenOnce('', timeoutMs).then(r => r.transcript.trim())
+}
+
 /**
  * Listen once and compare against the target word.
  * Resolves with the transcript and whether it matches.

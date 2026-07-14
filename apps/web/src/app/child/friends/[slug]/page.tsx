@@ -114,15 +114,17 @@ export default function CharacterHomePage() {
             </motion.div>
           </Link>
 
-          {/* V2 door: the conversation engine — sleeps, doesn't pretend */}
-          <div aria-label="حرف بزنیم — به‌زودی"
-            className="bg-white/60 rounded-2xl p-4 flex items-center gap-3 min-h-[76px] select-none">
-            <span className="text-4xl" aria-hidden="true">💬</span>
-            <div>
-              <p className="font-bold text-slate-400">حرف بزنیم</p>
-              <p className="text-xs text-slate-400">به‌زودی — {character.name_persian} داره یاد می‌گیره گوش کنه! 😴</p>
-            </div>
-          </div>
+          <Link href={`/child/friends/${character.slug}/talk`} aria-label="حرف بزنیم" className="group">
+            <motion.div whileTap={{ y: 4 }}
+              className={`relative overflow-hidden ${MODULE.speak.solid} ${MODULE.speak.edge} border-b-[6px] group-active:border-b-2 rounded-2xl p-4 text-white flex items-center gap-3 min-h-[76px]`}>
+              <span className="absolute -top-5 -left-5 w-16 h-16 bg-white/15 rounded-full" aria-hidden="true" />
+              <span className="text-4xl drop-shadow-sm" aria-hidden="true">💬</span>
+              <div>
+                <p className="font-bold drop-shadow-sm">حرف بزنیم!</p>
+                <p className="text-xs text-white/85">{character.name_persian} گوش می‌کنه و جواب می‌ده</p>
+              </div>
+            </motion.div>
+          </Link>
         </div>
       </div>
 

@@ -1,10 +1,14 @@
 import { Router } from 'express'
 import fs from 'fs'
 import path from 'path'
+import crypto from 'crypto'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
+import { requireAuth } from '../middleware/auth'
+import { requireChildOwner } from '../middleware/childOwner'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { synthesizeWith, type AudioEngine } from '../lib/audio'
+import { getAiSettings, chatTurn, AiNotConfiguredError } from '../lib/ai'
 
 const router = Router()
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
@@ -123,6 +127,147 @@ router.post('/admin/:id/audio', requireAdmin, requirePermission('ai.manage'), as
     await new Promise(r => setTimeout(r, 40))
   }
   res.json({ data: { done, errors, remaining: missing.length - done }, error: null })
+})
+
+/* ── Conversation engine (plan §4): controlled, never open-ended ─────────
+ * Turn Planner (deterministic) → LLM boxed by the character card + child
+ * level + allowed vocabulary → deterministic validator → cached TTS in the
+ * character's voice. Failures fall back to scripted lines — the child never
+ * sees a model error. Every turn is logged for the parent transcript. */
+
+const EMOTIONS = new Set(['happy', 'excited', 'encouraging'])
+
+/** Form validation only (length/script); the vocabulary constraint lives in
+ *  the prompt — a strict lexicon check would reject normal function words. */
+function validReply(reply: string): boolean {
+  if (reply.length < 2 || reply.length > 220) return false
+  if (/[A-Za-z]|https?:|www\./.test(reply)) return false                 // Persian only, no links
+  if ((reply.match(/[.!؟?]/g) ?? []).length > 3) return false            // ≤ ~2-3 sentences
+  if (/آدرس|شماره|تلفن|رمز|پسورد|کجا زندگی/.test(reply)) return false   // never asks where/who
+  return true
+}
+
+async function scriptedFallback(characterId: string): Promise<{ reply: string; emotion: string; lineAudio: string | null }> {
+  const line = await queryOne<{ text_persian: string; emotion: string; audio_url: string | null }>(
+    `select text_persian, emotion, audio_url from character_lines
+      where character_id = $1 and trigger in ('encourage', 'retry') order by random() limit 1`, [characterId])
+  return { reply: line?.text_persian ?? 'آفرین! بازم بگو!', emotion: line?.emotion ?? 'encouraging', lineAudio: line?.audio_url ?? null }
+}
+
+const chatSchema = z.object({
+  child_id: z.string().uuid(),
+  text: z.string().trim().min(1).max(300),
+})
+
+router.post('/:slug/chat', requireAuth, requireChildOwner, async (req, res) => {
+  const p = chatSchema.safeParse(req.body)
+  if (!p.success) { res.status(400).json({ data: null, error: 'text لازم است' }); return }
+  const { child_id, text } = p.data
+
+  const character = await queryOne<{ id: string; name_persian: string; personality: string; system_prompt: string; topics: string[]; voice_engine: string; voice_id: string }>(
+    'select id, name_persian, personality, system_prompt, topics, voice_engine, voice_id from characters where slug = $1 and is_active', [req.params.slug])
+  if (!character) { res.status(404).json({ data: null, error: 'Character not found' }); return }
+
+  // Daily cap: child turns today across the whole family, from the plan.
+  const cap = await queryOne<{ value: string }>(
+    `select pf.value from users u
+       join plans p on p.key = u.plan
+       join plan_features pf on pf.plan_id = p.id and pf.feature_key = 'conversations_per_day'
+      where u.id = $1`, [res.locals.userId])
+  const perDay = cap ? parseInt(cap.value, 10) : NaN
+  if (Number.isFinite(perDay)) {
+    const used = await queryOne<{ n: string }>(
+      `select count(*) as n from conversations c join children ch on ch.id = c.child_id
+        where ch.parent_id = $1 and c.role = 'child' and c.created_at >= date_trunc('day', now())`,
+      [res.locals.userId])
+    if (Number(used?.n ?? 0) >= perDay) {
+      const bye = await queryOne<{ text_persian: string; audio_url: string | null }>(
+        `select text_persian, audio_url from character_lines where character_id = $1 and trigger = 'bye' limit 1`, [character.id])
+      res.status(429).json({ data: null, error: bye?.text_persian ?? 'امروز خیلی حرف زدیم! فردا بازم بیا! 🌙' })
+      return
+    }
+  }
+
+  const child = await queryOne<{ name: string; level: number }>('select name, level from children where id = $1', [child_id])
+  const history = (await query<{ role: 'child' | 'character'; text: string }>(
+    `select role, text from conversations where child_id = $1 and character_id = $2
+      order by created_at desc limit 6`, [child_id, character.id])).reverse()
+
+  // Allowed vocabulary: the child's stage (+1) filtered by the character's topics.
+  const vocab = await query<{ persian: string }>(
+    `select persian from words where stage <= $1 ${character.topics.length ? 'and category = any($2)' : ''} limit 220`,
+    character.topics.length ? [(child?.level ?? 1) + 1, character.topics] : [(child?.level ?? 1) + 1])
+
+  // Turn Planner: the pedagogical frame is fixed — the LLM fills it, only.
+  const system =
+    `تو «${character.name_persian}» هستی، دوست بچه‌ها در یک اپ آموزش فارسی. شخصیتت: ${character.personality}. ` +
+    (character.system_prompt ? character.system_prompt + ' ' : '') +
+    `مخاطبت «${child?.name ?? 'کودک'}» است، سطح فارسی ${child?.level ?? 1} از ۴. ` +
+    'در هر نوبت دقیقاً این کار را بکن: (۱) با یک کلمه تشویق کن، (۲) حرف کودک را به شکل درست و کمی کامل‌تر تکرار کن (بدون گفتن «اشتباه»)، (۳) یک سؤال کوتاه و ساده بپرس. ' +
+    'حداکثر دو جمله‌ی کوتاه. فقط فارسی، بدون حروف انگلیسی و لینک. هیچ‌وقت اسم خانوادگی، آدرس یا اطلاعات شخصی نپرس. ' +
+    (vocab.length ? `تا می‌توانی از این واژه‌ها استفاده کن: ${vocab.map(v => v.persian).join('، ')}` : '')
+
+  const settings = await getAiSettings()
+  let reply: string | null = null
+  let emotion = 'happy'
+  let lineAudio: string | null = null
+
+  if (settings) {
+    // one retry on validation failure, then scripted fallback
+    for (let attempt = 0; attempt < 2 && !reply; attempt++) {
+      try {
+        const out = await chatTurn(settings, { system, history, childText: text })
+        if (validReply(out.reply)) {
+          reply = out.reply
+          emotion = EMOTIONS.has(out.emotion) ? out.emotion : 'happy'
+        }
+      } catch (err) {
+        if (err instanceof AiNotConfiguredError) break
+        console.error('chat turn failed:', (err as Error).message)
+      }
+    }
+  }
+  if (!reply) {
+    const fb = await scriptedFallback(character.id)
+    reply = fb.reply; emotion = fb.emotion; lineAudio = fb.lineAudio
+  }
+
+  // Voice: character's own, cached by content hash (constrained replies repeat).
+  let audio_url: string | null = lineAudio
+  if (!audio_url) {
+    const hash = crypto.createHash('sha256').update(character.id + '|' + reply).digest('hex').slice(0, 20)
+    const dir = path.resolve(UPLOADS_DIR, 'characters', 'chat')
+    const file = path.join(dir, `${hash}.mp3`)
+    if (fs.existsSync(file)) {
+      audio_url = `/uploads/characters/chat/${hash}.mp3`
+    } else {
+      try {
+        const clip = await synthesizeWith(character.voice_engine as AudioEngine, character.voice_id, reply)
+        fs.mkdirSync(dir, { recursive: true })
+        const named = path.join(dir, `${hash}.${clip.ext}`)
+        fs.writeFileSync(named, clip.buf)
+        audio_url = `/uploads/characters/chat/${hash}.${clip.ext}`
+      } catch { /* quota/key down → client falls back to browser TTS */ }
+    }
+  }
+
+  await query('insert into conversations (child_id, character_id, role, text) values ($1,$2,$3,$4)',
+    [child_id, character.id, 'child', text])
+  await query('insert into conversations (child_id, character_id, role, text) values ($1,$2,$3,$4)',
+    [child_id, character.id, 'character', reply])
+
+  res.json({ data: { reply, emotion, audio_url }, error: null })
+})
+
+// Transcript (child app resume + parent review — both are child-owner scoped).
+router.get('/:slug/chat/:child_id', requireAuth, requireChildOwner, async (req, res) => {
+  const character = await queryOne<{ id: string }>('select id from characters where slug = $1', [req.params.slug])
+  if (!character) { res.status(404).json({ data: null, error: 'Character not found' }); return }
+  const rows = await query(
+    `select role, text, created_at from conversations
+      where child_id = $1 and character_id = $2 order by created_at desc limit 50`,
+    [req.params.child_id, character.id])
+  res.json({ data: (rows as unknown[]).reverse(), error: null })
 })
 
 export default router
