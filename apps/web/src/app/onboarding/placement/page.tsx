@@ -7,13 +7,15 @@ import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import { enterChildMode } from '@/lib/mode'
 import Mascot from '@/components/child/Mascot'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 import LoadingScreen from '@/components/child/LoadingScreen'
-import { speakOrPlay, initSpeech } from '@/lib/speech'
+import { speakOrPlay, speakPersian, stopSpeaking, initSpeech } from '@/lib/speech'
+import { useSpeaking } from '@/lib/useSpeaking'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { wordEmoji } from '@koodakbook/shared'
 import type { Child, PlacementProbe, ProbeQuestion, ProbeChoice, Strand } from '@koodakbook/shared'
 
-type Phase = 'loading' | 'question' | 'feedback' | 'done'
+type Phase = 'loading' | 'intro' | 'question' | 'feedback' | 'done'
 
 function choiceFace(c: ProbeChoice): string {
   if (c.kind === 'letter') return c.character ?? c.persian
@@ -48,12 +50,23 @@ export default function PlacementPage() {
         return
       }
       setQuestions(probeRes.data.questions)
-      setPhase('question')
+      // Simorgh hosts: greet first, and the «بزن بریم» tap doubles as the user
+      // gesture browsers require before the first listen-question can auto-play.
+      setPhase('intro')
     }
     load()
   }, [router])
 
   const q = questions[idx]
+  const speaking = useSpeaking()   // syncs Simorgh's talking mouth to her voice
+
+  // Simorgh speaks her welcome when the intro appears.
+  useEffect(() => {
+    if (phase !== 'intro' || !child) return
+    initSpeech()
+    const t = setTimeout(() => speakPersian(`سلام ${child.name}! من سیمرغم! بیا با هم یک بازی کوچولو کنیم!`), 400)
+    return () => clearTimeout(t)
+  }, [phase, child])
 
   // Auto-play the audio prompt when a listen-question appears.
   useEffect(() => {
@@ -106,6 +119,23 @@ export default function PlacementPage() {
   }
 
   if (phase === 'loading') return <LoadingScreen message="آماده‌سازی بازی..." />
+
+  if (phase === 'intro') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center child-bg p-6 text-center">
+        <CharacterAvatar slug="simorgh" size={150} mood="happy" talking={speaking} />
+        <h1 className="text-2xl font-bold text-gray-800 mt-5 persian-text">سلام {child?.name}! من سیمرغم 🌟</h1>
+        <p className="text-gray-600 mt-2 persian-text leading-relaxed max-w-xs">
+          بیا با هم یک بازی کوچولو کنیم تا ببینم چی بلدی — امتحان نیست، فقط بازیه!
+        </p>
+        <motion.button whileTap={{ scale: 0.94, y: 4 }}
+          onClick={() => { playTap(); stopSpeaking(); setPhase('question') }}
+          className="mt-8 bg-amber-500 text-white font-bold text-xl rounded-2xl px-12 py-4 shadow-lg border-b-[6px] border-amber-600 touch-target">
+          بزن بریم! 🎈
+        </motion.button>
+      </div>
+    )
+  }
 
   if (phase === 'done') {
     const labels = ['', 'تازه‌کار', 'آشنا با کلمه‌ها', 'خواننده‌ی کوچک', 'خواننده‌ی ماهر']

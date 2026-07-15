@@ -1,4 +1,7 @@
 'use client'
+/* MIRROR of apps/web/src/components/child/CharacterAvatar.tsx — keep in sync when the art
+ * or acting states change. Copied (not shared) because @koodakbook/shared
+ * stays plain TS for the backend CJS build. */
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Mascot from './Mascot'

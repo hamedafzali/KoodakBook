@@ -104,7 +104,7 @@ export default function TalkPage() {
         <SceneBackdrop scene={scene} className="w-full h-44 !rounded-none rounded-b-[2rem]" />
         <div className="absolute inset-x-0 bottom-0 flex justify-center">
           <CharacterAvatar slug={character.slug} size={110} talking={speaking}
-            mood={busy === 'think' ? 'idle' : mood} className="-mb-1 drop-shadow-lg" />
+            mood={busy === 'think' ? 'thinking' : mood} className="-mb-1 drop-shadow-lg" />
         </div>
         <Link href={`/child/friends/${slug}`} aria-label="برگشت"
           className="absolute top-3 right-3 w-11 h-11 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-slate-500">

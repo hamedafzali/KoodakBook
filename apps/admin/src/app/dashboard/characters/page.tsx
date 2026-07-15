@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { PageHeader, Field, Input, Select, Badge, Spinner, Button } from '@/components/ui'
+import CharacterAvatar, { type CharacterMood } from '@/components/CharacterAvatar'
 import { SCENE_SLUGS, SCENE_LABELS, type AppCharacter, type SceneSlug } from '@koodakbook/shared'
 
 /* شخصیت‌ها — the character registry (docs/character-system-plan.md).
@@ -13,6 +14,15 @@ interface LineDraft { trigger: string; text_persian: string; emotion: string; au
 
 const TRIGGERS = ['greeting', 'praise', 'retry', 'encourage', 'game_open', 'story_open', 'bye']
 const EMOTIONS = ['happy', 'excited', 'encouraging', 'idle']
+// Every acting state the app can put a character in — the `emotion` column of
+// a line (and the LLM's emotion in chat) maps straight onto these.
+const MOODS: { id: CharacterMood; label: string }[] = [
+  { id: 'idle', label: 'آرام' },
+  { id: 'happy', label: 'خوشحال' },
+  { id: 'excited', label: 'هیجان‌زده' },
+  { id: 'encouraging', label: 'تشویق‌گر' },
+  { id: 'thinking', label: 'در فکر 💭' },
+]
 const TYPES = [
   { id: 'fantasy', label: 'افسانه‌ای' },
   { id: 'animal', label: 'حیوان' },
@@ -58,6 +68,11 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
+  // Acting preview: mood + talking, exactly the two inputs the app (and a
+  // future Rive state machine) drives. Remount on change replays one-shot moods.
+  const [pMood, setPMood] = useState<CharacterMood>('idle')
+  const [pTalk, setPTalk] = useState(false)
+  const [pKey, setPKey] = useState(0)
 
   const voiced = lines.filter(l => l.audio_url).length
 
@@ -94,6 +109,32 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
         <div className="flex gap-2">
           <Badge tone={c.is_active ? 'green' : 'gray'}>{c.is_active ? 'فعال' : 'خاموش'}</Badge>
           <Badge tone={voiced === lines.length && lines.length > 0 ? 'green' : 'amber'}>🔊 {voiced}/{lines.length}</Badge>
+        </div>
+      </div>
+
+      {/* Acting preview — same artwork + states the child app renders */}
+      <div className="flex items-center gap-4 bg-slate-50 rounded-xl p-3">
+        <div className="shrink-0 w-[104px] h-[104px] flex items-center justify-center">
+          <CharacterAvatar key={pKey} slug={c.slug} size={96} mood={pMood} talking={pTalk} />
+        </div>
+        <div className="space-y-2 min-w-0">
+          <p className="text-xs font-semibold text-slate-500">
+            پیش‌نمایش حرکت‌ها — همان حالت‌هایی که کودک در اپ می‌بیند (ستون emotion جمله‌ها به همین حالت‌ها وصل است)
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {MOODS.map(m => (
+              <button key={m.id} onClick={() => { setPMood(m.id); setPKey(k => k + 1) }}
+                className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
+                  pMood === m.id ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300'}`}>
+                {m.label}
+              </button>
+            ))}
+            <button onClick={() => setPTalk(t => !t)}
+              className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
+                pTalk ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300'}`}>
+              🗣 در حال حرف زدن
+            </button>
+          </div>
         </div>
       </div>
 
