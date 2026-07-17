@@ -66,6 +66,9 @@ export default function Home() {
           <Text style={styles.hello}>سلام {child.name} 👋</Text>
           <Text style={styles.sub}>امروز چی کار کنیم؟</Text>
         </View>
+        <Pressable onPress={() => router.push('/parent')} hitSlop={8}>
+          <Text style={{ fontSize: 22 }}>🔒</Text>
+        </Pressable>
       </View>
 
       <View style={styles.grid}>

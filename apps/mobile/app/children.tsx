@@ -65,6 +65,9 @@ export default function Children() {
           </Pressable>
         )}
       />
+      <Pressable style={styles.parentButton} onPress={() => router.push('/parent')}>
+        <Text style={styles.parentButtonText}>🔒 حالت والدین</Text>
+      </Pressable>
       <Pressable onPress={logout} hitSlop={8}>
         <Text style={styles.logout}>خروج از حساب</Text>
       </Pressable>
@@ -85,6 +88,11 @@ const styles = StyleSheet.create({
   avatar: { width: 56, height: 56, borderRadius: 28 },
   avatarFallback: { backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 19, fontFamily: fonts.medium, color: colors.text },
+  parentButton: {
+    alignSelf: 'center', backgroundColor: colors.card, borderRadius: 14,
+    paddingVertical: 10, paddingHorizontal: 24,
+  },
+  parentButtonText: { fontSize: 14, fontFamily: fonts.medium, color: colors.text },
   error: { color: colors.danger, fontFamily: fonts.regular },
   logout: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', fontSize: 14 },
 })
