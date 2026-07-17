@@ -1,0 +1,12 @@
+# Expo
+.expo/
+dist/
+web-build/
+
+# Native prebuild output (managed workflow — regenerate with `npx expo prebuild`)
+ios/
+android/
+
+# Env
+.env
+.env.local

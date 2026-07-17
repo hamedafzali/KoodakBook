@@ -1,4 +1,5 @@
 export * from './types'
+export * from './apiClient'
 export * from './constants'
 export * from './animation'
 export * from './scenes'
