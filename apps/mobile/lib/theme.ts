@@ -10,3 +10,11 @@ export const colors = {
   success: '#22c55e',
   danger: '#dc2626',
 }
+
+// Same face as web (next/font Vazirmatn). RN picks weight by family name,
+// not fontWeight, so each weight is its own family.
+export const fonts = {
+  regular: 'Vazirmatn_400Regular',
+  medium: 'Vazirmatn_500Medium',
+  bold: 'Vazirmatn_700Bold',
+}

@@ -2,14 +2,16 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Story } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import { toPersianDigits } from '@koodakbook/shared'
-import { colors } from '@/lib/theme'
+import { colors, fonts } from '@/lib/theme'
 
 export default function Stories() {
+  const insets = useSafeAreaInsets()
   const [stories, setStories] = useState<Story[] | null>(null)
   const [completed, setCompleted] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
@@ -46,10 +48,10 @@ export default function Stories() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.replace('/children')} hitSlop={8}>
-          <Text style={styles.switchChild}>🧒</Text>
+        <Pressable onPress={() => router.back()} hitSlop={10}>
+          <Text style={styles.back}>→</Text>
         </Pressable>
         <View>
           <Text style={styles.title}>همه داستان‌ها 📖</Text>
@@ -97,14 +99,14 @@ export default function Stories() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingTop: 64 },
+  container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 14 },
-  switchChild: { fontSize: 26 },
-  title: { fontSize: 22, fontWeight: 'bold', color: colors.text },
-  subtitle: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  back: { fontSize: 24, color: colors.muted },
+  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
+  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   grid: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
-  empty: { color: colors.muted, textAlign: 'center', marginTop: 60 },
+  empty: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', marginTop: 60 },
   card: { flex: 1, backgroundColor: colors.card, borderRadius: 16, overflow: 'hidden' },
   cover: { width: '100%', height: 120 },
   coverFallback: { backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
@@ -112,9 +114,9 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 8, left: 8, backgroundColor: colors.success,
     borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
   },
-  doneText: { color: '#fff', fontSize: 11, fontWeight: '600' },
+  doneText: { color: '#fff', fontSize: 11, fontFamily: fonts.medium },
   cardBody: { padding: 10, gap: 4 },
-  storyTitle: { fontSize: 14, fontWeight: 'bold', color: colors.text, lineHeight: 20 },
-  age: { fontSize: 11, color: colors.muted },
-  error: { color: colors.danger },
+  storyTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.text, lineHeight: 20 },
+  age: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
+  error: { color: colors.danger, fontFamily: fonts.regular },
 })

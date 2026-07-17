@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
 import { setActiveChildId, clearActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
-import { colors } from '@/lib/theme'
+import { colors, fonts } from '@/lib/theme'
 
 export default function Children() {
   const [children, setChildren] = useState<Child[] | null>(null)
@@ -22,7 +22,7 @@ export default function Children() {
 
   async function pick(child: Child) {
     await setActiveChildId(child.id)
-    router.replace('/stories')
+    router.replace('/home')
   }
 
   async function logout() {
@@ -75,16 +75,16 @@ export default function Children() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, paddingTop: 80, paddingBottom: 40, paddingHorizontal: 24, gap: 20 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  title: { fontSize: 26, fontWeight: 'bold', color: colors.text, textAlign: 'center' },
+  title: { fontSize: 26, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   list: { gap: 12, paddingVertical: 8 },
-  empty: { color: colors.muted, textAlign: 'center', lineHeight: 24, marginTop: 40 },
+  empty: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', lineHeight: 24, marginTop: 40 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: colors.card, borderRadius: 18, padding: 14,
   },
   avatar: { width: 56, height: 56, borderRadius: 28 },
   avatarFallback: { backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  name: { fontSize: 19, fontWeight: '600', color: colors.text },
-  error: { color: colors.danger },
-  logout: { color: colors.muted, textAlign: 'center', fontSize: 14 },
+  name: { fontSize: 19, fontFamily: fonts.medium, color: colors.text },
+  error: { color: colors.danger, fontFamily: fonts.regular },
+  logout: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', fontSize: 14 },
 })

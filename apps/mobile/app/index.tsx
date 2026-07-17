@@ -19,5 +19,5 @@ export default function Index() {
       </View>
     )
   }
-  return <Redirect href={state === 'in' ? '/children' : '/login'} />
+  return <Redirect href={state === 'in' ? '/home' : '/login'} />
 }
