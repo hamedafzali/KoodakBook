@@ -95,12 +95,14 @@ export default function LessonPage() {
   async function handleComplete(correct: number, total: number) {
     if (!childId || !lesson) return
     const score = total > 0 ? Math.round((correct / total) * 100) : 100
-    const res = await api.post<{ new_badges: Badge[]; promotions: Promotion[] }>(
+    // new_badges / promotions are top-level on the response, not under `data`
+    // (same contract as /api/progress/story).
+    const res = await api.post(
       '/api/progress/lesson',
       { child_id: childId, lesson_id: lesson.id, score }
-    )
-    if (res.data?.promotions?.length) setPromotions(res.data.promotions)
-    if (res.data?.new_badges?.[0]) setNewBadge(res.data.new_badges[0])
+    ) as { new_badges?: Badge[]; promotions?: Promotion[] }
+    if (res.promotions?.length) setPromotions(res.promotions)
+    if (res.new_badges?.[0]) setNewBadge(res.new_badges[0])
     else setCompleted(true)
   }
 

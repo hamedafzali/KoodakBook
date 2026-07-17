@@ -9,18 +9,14 @@ import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import { colors, fonts } from '@/lib/theme'
 
-/**
- * The child's landing hub — a simplified mobile take on web's /child/home.
- * Only قصه‌ها is live yet; the rest are visible-but-locked so the app already
- * feels like KoodakBook and kids see what's coming.
- */
+/** The child's landing hub — a simplified mobile take on web's /child/home. */
 const TILES = [
   { key: 'stories', emoji: '📖', title: 'قصه‌ها', href: '/stories' as const, tint: '#dcfce7' },
   { key: 'lessons', emoji: '📚', title: 'درس‌ها', href: '/lessons' as const, tint: '#dbeafe' },
   { key: 'review', emoji: '🔄', title: 'مرور', href: '/review' as const, tint: '#fef3c7' },
-  { key: 'rewards', emoji: '🏆', title: 'جایزه‌ها', href: null, tint: '#fce7f3' },
-  { key: 'friends', emoji: '🦊', title: 'دوست‌ها', href: null, tint: '#ffedd5' },
-  { key: 'math', emoji: '🔢', title: 'ریاضی', href: null, tint: '#ede9fe' },
+  { key: 'rewards', emoji: '🏆', title: 'جایزه‌ها', href: '/rewards' as const, tint: '#fce7f3' },
+  { key: 'friends', emoji: '🦊', title: 'دوست‌ها', href: '/friends' as const, tint: '#ffedd5' },
+  { key: 'math', emoji: '🔢', title: 'ریاضی', href: '/math' as const, tint: '#ede9fe' },
 ]
 
 export default function Home() {

@@ -10,6 +10,7 @@ import RewardPopup from '@/components/RewardPopup'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
+import { loadOfflineStory } from '@/lib/offline'
 import { colors, fonts } from '@/lib/theme'
 
 type FullStory = Story & { pages: StoryPage[] }
@@ -42,8 +43,11 @@ export default function StoryReader() {
 
   useEffect(() => {
     getActiveChildId().then(setChildId)
-    api.get<FullStory>(`/api/stories/${id}`).then((res) => {
-      if (res.data) setStory(res.data)
+    api.get<FullStory>(`/api/stories/${id}`).then(async (res) => {
+      if (res.data) { setStory(res.data); return }
+      // Network gone — try the downloaded offline pack.
+      const pack = await loadOfflineStory(id)
+      if (pack) setStory(pack)
       else setError(res.error)
     })
   }, [id])
