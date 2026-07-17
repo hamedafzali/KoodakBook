@@ -6,8 +6,8 @@ import { colors, fonts } from '@/lib/theme'
 /** دنیای اعداد — mobile hub for the math games (web: /child/math). */
 const GAMES = [
   { key: 'counting', emoji: '🍎', title: 'شمارش', sub: 'ضربه بزن و بشمار', href: '/math/counting' as const, tint: '#dcfce7' },
-  { key: 'digits', emoji: '۳', title: 'رقم‌ها', sub: 'به زودی', href: null, tint: '#dbeafe' },
-  { key: 'bazaar', emoji: '🧺', title: 'بازار', sub: 'به زودی', href: null, tint: '#fef3c7' },
+  { key: 'digits', emoji: '۳', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', href: '/math/digits' as const, tint: '#dbeafe' },
+  { key: 'bazaar', emoji: '🛒', title: 'بازار', sub: 'با تومان خرید کن', href: '/math/bazaar' as const, tint: '#fef3c7' },
 ]
 
 export default function MathHub() {

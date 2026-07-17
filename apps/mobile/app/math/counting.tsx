@@ -3,10 +3,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child } from '@koodakbook/shared'
-import { mathAudioUrl, numberToPersianWord, toPersianDigits } from '@koodakbook/shared'
+import { numberToPersianWord, toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
-import { playClip } from '@/lib/sound'
+import { childAge, distractors, sayNumber, sayPhrase, shuffle } from '@/lib/math'
 import { colors, fonts } from '@/lib/theme'
 
 /* شمارش (ages 3–5) — tap-to-count, ported from web /child/math/counting.
@@ -18,27 +18,6 @@ const ROUNDS = 5
 
 interface Round { emoji: string; count: number; options: number[] }
 
-const sayNumber = (n: number) => playClip(mathAudioUrl(`n${n}`))
-const sayPhrase = (slug: string) => playClip(mathAudioUrl(slug))
-
-function distractors(target: number, n: number, max: number): number[] {
-  const out = new Set<number>()
-  while (out.size < n) {
-    const v = 1 + Math.floor(Math.random() * max)
-    if (v !== target) out.add(v)
-  }
-  return [...out]
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
 export default function CountingPage() {
   const [maxN, setMaxN] = useState<number | null>(null)
   const [run, setRun] = useState(0)
@@ -48,8 +27,7 @@ export default function CountingPage() {
       const childId = await getActiveChildId()
       const res = await api.get<Child[]>('/api/children')
       const child = res.data?.find((c) => c.id === childId)
-      const age = child?.birth_year ? Math.max(2, new Date().getFullYear() - child.birth_year) : 4
-      setMaxN(age <= 4 ? 5 : 10)   // band-appropriate ceiling
+      setMaxN(childAge(child) <= 4 ? 5 : 10)   // band-appropriate ceiling
     }
     load()
   }, [])
