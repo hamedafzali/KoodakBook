@@ -17,6 +17,7 @@ const TILES = [
   { key: 'rewards', emoji: '🏆', title: 'جایزه‌ها', href: '/rewards' as const, tint: '#fce7f3' },
   { key: 'friends', emoji: '🦊', title: 'دوست‌ها', href: '/friends' as const, tint: '#ffedd5' },
   { key: 'math', emoji: '🔢', title: 'ریاضی', href: '/math' as const, tint: '#ede9fe' },
+  { key: 'games', emoji: '🃏', title: 'بازی‌ها', href: '/games/memory' as const, tint: '#e0e7ff' },
 ]
 
 export default function Home() {

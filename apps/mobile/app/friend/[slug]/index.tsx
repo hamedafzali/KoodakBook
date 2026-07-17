@@ -78,6 +78,17 @@ export default function FriendHome() {
         </View>
       )}
 
+      <Pressable
+        style={[styles.door, { backgroundColor: '#8b5cf6' }]}
+        onPress={() => router.push(`/games/memory?host=${character.slug}`)}
+      >
+        <Text style={styles.doorEmoji}>🃏</Text>
+        <View>
+          <Text style={styles.doorTitle}>با هم بازی کنیم!</Text>
+          <Text style={styles.doorSub}>بازی حافظه با {character.name_persian}</Text>
+        </View>
+      </Pressable>
+
       <Pressable style={[styles.door, { backgroundColor: '#22c55e' }]} onPress={() => router.push('/stories')}>
         <Text style={styles.doorEmoji}>📖</Text>
         <View>
