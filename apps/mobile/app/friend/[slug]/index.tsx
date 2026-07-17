@@ -86,13 +86,16 @@ export default function FriendHome() {
         </View>
       </Pressable>
 
-      <View style={[styles.door, styles.doorLocked]}>
+      <Pressable
+        style={[styles.door, { backgroundColor: '#0ea5e9' }]}
+        onPress={() => router.push(`/friend/${character.slug}/talk`)}
+      >
         <Text style={styles.doorEmoji}>💬</Text>
         <View>
           <Text style={styles.doorTitle}>حرف بزنیم!</Text>
-          <Text style={styles.doorSub}>به زودی روی موبایل</Text>
+          <Text style={styles.doorSub}>{character.name_persian} گوش می‌کنه و جواب می‌ده</Text>
         </View>
-      </View>
+      </Pressable>
     </ScrollView>
   )
 }
