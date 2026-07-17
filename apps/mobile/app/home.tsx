@@ -16,8 +16,8 @@ import { colors, fonts } from '@/lib/theme'
  */
 const TILES = [
   { key: 'stories', emoji: '📖', title: 'قصه‌ها', href: '/stories' as const, tint: '#dcfce7' },
-  { key: 'lessons', emoji: '📚', title: 'درس‌ها', href: null, tint: '#dbeafe' },
-  { key: 'review', emoji: '🔄', title: 'مرور', href: null, tint: '#fef3c7' },
+  { key: 'lessons', emoji: '📚', title: 'درس‌ها', href: '/lessons' as const, tint: '#dbeafe' },
+  { key: 'review', emoji: '🔄', title: 'مرور', href: '/review' as const, tint: '#fef3c7' },
   { key: 'rewards', emoji: '🏆', title: 'جایزه‌ها', href: null, tint: '#fce7f3' },
   { key: 'friends', emoji: '🦊', title: 'دوست‌ها', href: null, tint: '#ffedd5' },
   { key: 'math', emoji: '🔢', title: 'ریاضی', href: null, tint: '#ede9fe' },
