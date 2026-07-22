@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { router, useFocusEffect } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, DashboardSummary } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
@@ -18,6 +18,7 @@ type Me = { id: string; email: string; plan: string; has_pin: boolean }
  */
 export default function ParentHub() {
   const insets = useSafeAreaInsets()
+  const { reset } = useLocalSearchParams<{ reset?: string }>()
   const [me, setMe] = useState<Me | null>(null)
   const [unlocked, setUnlocked] = useState(isParentUnlocked())
   const [children, setChildren] = useState<Child[]>([])
@@ -27,6 +28,9 @@ export default function ParentHub() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false
+      // Re-sync lock state on focus — «تغییر پین» re-locks then returns here,
+      // and the gate must reappear (in reset mode via ?reset=1).
+      setUnlocked(isParentUnlocked())
       api.get<Me>('/api/auth/me').then((res) => {
         if (!cancelled && res.data) setMe(res.data)
       })
@@ -65,6 +69,7 @@ export default function ParentHub() {
     return (
       <PinGate
         hasPin={me.has_pin}
+        initialReset={reset === '1'}
         onUnlocked={() => { setParentUnlocked(true); setUnlocked(true); setMe({ ...me, has_pin: true }) }}
       />
     )
@@ -128,15 +133,34 @@ export default function ParentHub() {
         </>
       )}
 
-      <Pressable style={styles.linkCard} onPress={() => router.push('/parent/children')}>
-        <Text style={{ fontSize: 26 }}>🧒</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.linkTitle}>کودکان</Text>
-          <Text style={styles.linkSub}>افزودن کودک، نام کاربری ورود بچه‌ها</Text>
-        </View>
-        <Text style={{ fontSize: 18, color: colors.muted }}>←</Text>
-      </Pressable>
+      {/* Menu — the rest of the parent area */}
+      <View style={styles.menu}>
+        <MenuRow emoji="📈" label="پیشرفت کامل" sub="کلمات، درس‌ها، داستان‌ها، جلسات" onPress={() => router.push('/parent/progress')} />
+        <View style={styles.menuDivider} />
+        <MenuRow emoji="🧒" label="کودکان" sub="افزودن کودک، نام کاربری ورود بچه‌ها" onPress={() => router.push('/parent/children')} />
+        <View style={styles.menuDivider} />
+        <MenuRow emoji="💬" label="گفت‌وگوها" sub="بازبینی چت کودک با شخصیت‌ها" onPress={() => router.push('/parent/conversations')} />
+        <View style={styles.menuDivider} />
+        <MenuRow emoji="📤" label="اشتراک‌گذاری پیشرفت" onPress={() => router.push('/parent/share')} />
+        <View style={styles.menuDivider} />
+        <MenuRow emoji="💳" label="پلن و اشتراک" onPress={() => router.push('/parent/plan')} />
+        <View style={styles.menuDivider} />
+        <MenuRow emoji="⚙️" label="تنظیمات" sub="هدف روزانه، زبان ترجمه، پین، خروج" onPress={() => router.push('/parent/settings')} />
+      </View>
     </ScrollView>
+  )
+}
+
+function MenuRow({ emoji, label, sub, onPress }: { emoji: string; label: string; sub?: string; onPress: () => void }) {
+  return (
+    <Pressable style={styles.menuRow} onPress={onPress}>
+      <Text style={{ fontSize: 22 }}>{emoji}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.menuLabel}>{label}</Text>
+        {sub && <Text style={styles.menuSub}>{sub}</Text>}
+      </View>
+      <Text style={styles.menuChevron}>←</Text>
+    </Pressable>
   )
 }
 
@@ -187,10 +211,10 @@ const styles = StyleSheet.create({
   masteryLabel: { flex: 1, fontSize: 13, fontFamily: fonts.regular, color: colors.text },
   masteryValue: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
   badgeRow: { fontSize: 13, fontFamily: fonts.regular, color: colors.text },
-  linkCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.card, borderRadius: 18, padding: 16,
-  },
-  linkTitle: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
-  linkSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
+  menu: { backgroundColor: colors.card, borderRadius: 18, paddingHorizontal: 16 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  menuLabel: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
+  menuSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
+  menuChevron: { fontSize: 18, color: colors.muted },
+  menuDivider: { height: 1, backgroundColor: '#f1f5f9' },
 })

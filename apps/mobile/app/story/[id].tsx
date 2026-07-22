@@ -10,6 +10,7 @@ import RewardPopup from '@/components/RewardPopup'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
+import { getTranslationLang } from '@/lib/prefs'
 import { loadOfflineStory } from '@/lib/offline'
 import { colors, fonts } from '@/lib/theme'
 
@@ -43,7 +44,9 @@ export default function StoryReader() {
 
   useEffect(() => {
     getActiveChildId().then(setChildId)
-    api.get<FullStory>(`/api/stories/${id}`).then(async (res) => {
+    // ?lang attaches the family's translation per page (settings → زبان ترجمه).
+    const lang = getTranslationLang()
+    api.get<FullStory>(`/api/stories/${id}?lang=${lang}`).then(async (res) => {
       if (res.data) { setStory(res.data); return }
       // Network gone — try the downloaded offline pack.
       const pack = await loadOfflineStory(id)
@@ -154,6 +157,7 @@ export default function StoryReader() {
           />
         )}
         {page && <Text style={styles.pageText}>{page.text_persian}</Text>}
+        {page?.translation ? <Text style={styles.pageTranslation}>{page.translation}</Text> : null}
         {hasAudio && (
           <Pressable style={styles.audioButton} onPress={replay} hitSlop={8}>
             <Text style={styles.audioButtonText}>🔊 بشنو</Text>
@@ -195,6 +199,10 @@ const styles = StyleSheet.create({
   pageText: {
     fontSize: 22, lineHeight: 44, fontFamily: fonts.medium, color: colors.text,
     textAlign: 'center', writingDirection: 'rtl',
+  },
+  pageTranslation: {
+    fontSize: 15, lineHeight: 26, fontFamily: fonts.regular, color: colors.muted,
+    textAlign: 'center', writingDirection: 'ltr',
   },
   audioButton: { backgroundColor: colors.primarySoft, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 22 },
   audioButtonText: { color: colors.primary, fontSize: 16, fontFamily: fonts.medium },

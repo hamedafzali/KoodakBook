@@ -14,8 +14,14 @@ type State = 'enter_pin' | 'set_pin' | 'reset'
  * numeric keypad + PIN dots, auto-verify at 4 digits, mandatory first-run
  * set-PIN with a confirm step, and password reset that flows into set-PIN.
  */
-export default function PinGate({ hasPin, onUnlocked }: { hasPin: boolean; onUnlocked: () => void }) {
-  const [state, setState] = useState<State>(hasPin ? 'enter_pin' : 'set_pin')
+export default function PinGate({ hasPin, initialReset, onUnlocked }: {
+  hasPin: boolean
+  initialReset?: boolean
+  onUnlocked: () => void
+}) {
+  // «تغییر پین» from settings lands here straight in reset mode (password →
+  // set a new PIN), mirroring web's ?pin=reset.
+  const [state, setState] = useState<State>(initialReset ? 'reset' : hasPin ? 'enter_pin' : 'set_pin')
   const [step, setStep] = useState<'first' | 'confirm'>('first')
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')

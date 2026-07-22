@@ -8,6 +8,10 @@ import {
   Vazirmatn_500Medium,
   Vazirmatn_700Bold,
 } from '@expo-google-fonts/vazirmatn'
+import { ensurePrefs } from '@/lib/prefs'
+
+// Hydrate family prefs (daily goal, translation language) into their cache.
+void ensurePrefs()
 
 // Persian is RTL everywhere. app.json's extra.supportsRTL covers native
 // builds; this runtime call covers Expo Go (takes effect after one reload).
