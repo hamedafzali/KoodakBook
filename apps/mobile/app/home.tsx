@@ -37,6 +37,9 @@ export default function Home() {
         const active = res.data?.find((c) => c.id === childId)
         // Active child no longer exists (deleted on web) — repick.
         if (res.data && !active) { router.replace('/children'); return }
+        // First entry for a new child → run the placement probe (web: child/home
+        // redirects while placement_done is false).
+        if (active && active.placement_done === false) { router.replace('/placement'); return }
         if (active) setChild(active)
       }
       load()

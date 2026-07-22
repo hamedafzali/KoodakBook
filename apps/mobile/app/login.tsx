@@ -105,6 +105,12 @@ export default function Login() {
       >
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ورود</Text>}
       </Pressable>
+
+      {mode === 'parent' && (
+        <Pressable onPress={() => router.replace('/signup')} hitSlop={8}>
+          <Text style={styles.signupLink}>حساب ندارید؟ ثبت‌نام رایگان</Text>
+        </Pressable>
+      )}
     </KeyboardAvoidingView>
   )
 }
@@ -131,4 +137,5 @@ const styles = StyleSheet.create({
     width: '100%', maxWidth: 360, alignItems: 'center',
   },
   buttonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  signupLink: { color: '#059669', fontFamily: fonts.medium, fontSize: 14, marginTop: 4 },
 })
