@@ -8,10 +8,15 @@ import {
   Vazirmatn_500Medium,
   Vazirmatn_700Bold,
 } from '@expo-google-fonts/vazirmatn'
+import { setAudioModeAsync } from 'expo-audio'
 import { ensurePrefs } from '@/lib/prefs'
 
 // Hydrate family prefs (daily goal, translation language) into their cache.
 void ensurePrefs()
+
+// Configure the audio session so story/word clips actually play — without this
+// iOS honours the silent switch and produces no sound at all.
+setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false }).catch(() => {})
 
 // Persian is RTL everywhere. app.json's extra.supportsRTL covers native
 // builds; this runtime call covers Expo Go (takes effect after one reload).

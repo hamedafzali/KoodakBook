@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { createAudioPlayer, type AudioPlayer } from 'expo-audio'
-import type { Badge, Promotion, Story, StoryPage } from '@koodakbook/shared'
-import { toPersianDigits } from '@koodakbook/shared'
+import type { Badge, Promotion, SceneSlug, SceneTime, Story, StoryPage } from '@koodakbook/shared'
+import { parseSceneRef, toPersianDigits } from '@koodakbook/shared'
 import RewardPopup from '@/components/RewardPopup'
+import SceneBackdrop from '@/components/SceneBackdrop'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
@@ -42,6 +43,24 @@ export default function StoryReader() {
     return p
   }, [])
 
+  // Restart a page's clip from the top. seekTo can throw before the source has
+  // loaded, so guard it and fall back to a plain play().
+  function playFromStart(player: AudioPlayer) {
+    try { player.seekTo(0) } catch { /* not loaded yet */ }
+    player.play()
+  }
+
+  // Backdrop per page from scene_plan; a page without one inherits the previous
+  // page's scene, and the story falls back to a friendly default (web parity).
+  const scenes = useMemo<{ scene: SceneSlug; time: SceneTime }[]>(() => {
+    let last: { scene: SceneSlug; time: SceneTime } = { scene: 'park', time: 'day' }
+    return (story?.pages ?? []).map((pg) => {
+      const ref = parseSceneRef(pg.scene_plan?.scene, pg.scene_plan?.time)
+      if (ref) last = ref
+      return last
+    })
+  }, [story])
+
   useEffect(() => {
     getActiveChildId().then(setChildId)
     // ?lang attaches the family's translation per page (settings → زبان ترجمه).
@@ -61,10 +80,7 @@ export default function StoryReader() {
     const page = story.pages[pageIdx]
     if (!page) return
     const player = getPlayer(page)
-    if (player) {
-      player.seekTo(0)
-      player.play()
-    }
+    if (player) playFromStart(player)
     const next = story.pages[pageIdx + 1]
     if (next) getPlayer(next)
     return () => { player?.pause() }
@@ -79,10 +95,7 @@ export default function StoryReader() {
   function replay() {
     if (!story) return
     const player = getPlayer(story.pages[pageIdx])
-    if (player) {
-      player.seekTo(0)
-      player.play()
-    }
+    if (player) playFromStart(player)
   }
 
   function goTo(idx: number) {
@@ -148,12 +161,19 @@ export default function StoryReader() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.pageContent}>
-        {page && mediaUrl(page.image_url) && (
+        {/* A real page image wins; otherwise the scene library paints the page. */}
+        {page && mediaUrl(page.image_url) ? (
           <Image
             source={{ uri: mediaUrl(page.image_url)! }}
             style={styles.pageImage}
             contentFit="contain"
             transition={150}
+          />
+        ) : (
+          <SceneBackdrop
+            scene={scenes[pageIdx]?.scene ?? 'park'}
+            time={scenes[pageIdx]?.time ?? 'day'}
+            style={styles.pageImage}
           />
         )}
         {page && <Text style={styles.pageText}>{page.text_persian}</Text>}
