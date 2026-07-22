@@ -11,9 +11,11 @@ import {
   resolveLevel, toPersianDigits,
 } from '@koodakbook/shared'
 import HoldToParent from '@/components/HoldToParent'
+import Tutorial from '@/components/Tutorial'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
+import { ensurePrefs, hasSeenTutorial } from '@/lib/prefs'
 import { playClip } from '@/lib/sound'
 import { useChildSession } from '@/lib/useChildSession'
 import { colors, fonts } from '@/lib/theme'
@@ -53,9 +55,17 @@ export default function Home() {
   const [doneStories, setDoneStories] = useState<Set<string>>(new Set())
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
+  const [showTutorial, setShowTutorial] = useState(false)
 
   // Record a learning session so the parent dashboard's streak/time is real.
   useChildSession(child?.id ?? null)
+
+  // First-run walkthrough, once ever (flag in SecureStore).
+  useFocusEffect(
+    useCallback(() => {
+      ensurePrefs().then(() => { if (!hasSeenTutorial()) setShowTutorial(true) })
+    }, [])
+  )
 
   useFocusEffect(
     useCallback(() => {
@@ -127,6 +137,8 @@ export default function Home() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
     >
+      {showTutorial && <Tutorial childName={child.name} onClose={() => setShowTutorial(false)} />}
+
       {/* Hero */}
       <View style={[styles.hero, { paddingTop: insets.top + 20 }]}>
         <View style={{ flex: 1 }}>

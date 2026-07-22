@@ -123,6 +123,8 @@ export default function Settings() {
       {/* Account */}
       <Text style={styles.sectionLabel}>حساب کاربری</Text>
       <View style={styles.card}>
+        <MenuRow label="قوانین و حریم خصوصی" emoji="📄" onPress={() => router.push('/legal')} />
+        <View style={styles.divider} />
         <MenuRow label="تغییر پین والدین" emoji="🔒" onPress={changePin} />
         <View style={styles.divider} />
         {!confirmLogout ? (
