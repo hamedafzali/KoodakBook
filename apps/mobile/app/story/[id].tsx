@@ -31,6 +31,9 @@ export default function StoryReader() {
   // next page's player is created ahead of time so page-turn voice is instant
   // (mirrors web's prefetch in StoryReader).
   const playersRef = useRef<Map<string, AudioPlayer>>(new Map())
+  // Bumped whenever the intended clip changes (page turn / leaving), so a clip
+  // that finishes loading late doesn't start playing over a newer page.
+  const playGenRef = useRef(0)
 
   const getPlayer = useCallback((page: StoryPage): AudioPlayer | null => {
     const uri = mediaUrl(page.audio_url)
@@ -43,11 +46,21 @@ export default function StoryReader() {
     return p
   }, [])
 
-  // Restart a page's clip from the top. seekTo can throw before the source has
-  // loaded, so guard it and fall back to a plain play().
+  // Restart a page's clip from the top. The source loads asynchronously, so
+  // play immediately if it's ready, otherwise the moment loading completes —
+  // calling play() before the clip has loaded is a silent no-op.
   function playFromStart(player: AudioPlayer) {
-    try { player.seekTo(0) } catch { /* not loaded yet */ }
-    player.play()
+    const gen = ++playGenRef.current
+    const go = () => {
+      if (gen !== playGenRef.current) return
+      try { player.seekTo(0) } catch { /* not seekable yet */ }
+      player.play()
+    }
+    if (player.isLoaded) { go(); return }
+    const sub = player.addListener('playbackStatusUpdate', (status) => {
+      if (gen !== playGenRef.current) { sub.remove(); return }
+      if (status.isLoaded) { go(); sub.remove() }
+    })
   }
 
   // Backdrop per page from scene_plan; a page without one inherits the previous
@@ -83,7 +96,7 @@ export default function StoryReader() {
     if (player) playFromStart(player)
     const next = story.pages[pageIdx + 1]
     if (next) getPlayer(next)
-    return () => { player?.pause() }
+    return () => { playGenRef.current++; player?.pause() }
   }, [story, pageIdx, getPlayer])
 
   // Release every native player when leaving the story.
