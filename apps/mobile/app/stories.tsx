@@ -3,23 +3,26 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { Image } from 'expo-image'
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { Story } from '@koodakbook/shared'
-import { toPersianDigits } from '@koodakbook/shared'
+import type { SceneSlug, Story } from '@koodakbook/shared'
+import { SCENE_SLUGS, toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
-import { downloadStory, listDownloadedIds, listDownloadedStories, type FullStory } from '@/lib/offline'
+import SceneBackdrop from '@/components/SceneBackdrop'
 import { colors, fonts } from '@/lib/theme'
+
+/** Deterministic illustrated cover per story id (web parity for coverless stories). */
+function sceneFor(id: string): SceneSlug {
+  let h = 0
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return SCENE_SLUGS[h % SCENE_SLUGS.length]
+}
 
 export default function Stories() {
   const insets = useSafeAreaInsets()
   const [stories, setStories] = useState<Story[] | null>(null)
   const [myStories, setMyStories] = useState<Story[]>([])   // child's own AI stories
   const [completed, setCompleted] = useState<Set<string>>(new Set())
-  const [downloaded, setDownloaded] = useState<Set<string>>(new Set())
-  const [downloading, setDownloading] = useState<Set<string>>(new Set())
-  const [voicing, setVoicing] = useState<Set<string>>(new Set())
-  const [offline, setOffline] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Refetch on focus so «خوندم» badges appear right after finishing a story.
@@ -29,24 +32,14 @@ export default function Stories() {
       async function load() {
         const childId = await getActiveChildId()
         if (!childId) { router.replace('/children'); return }
-        const [storiesRes, progRes, mineRes, downloadedIds] = await Promise.all([
+        const [storiesRes, progRes, mineRes] = await Promise.all([
           api.get<Story[]>('/api/stories'),
           api.get<{ stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${childId}`),
           api.get<Story[]>(`/api/ai/stories/${childId}`),
-          listDownloadedIds(),
         ])
         if (cancelled) return
-        setDownloaded(new Set(downloadedIds))
-        if (storiesRes.data) {
-          setStories(storiesRes.data)
-          setOffline(false)
-        } else {
-          // No network — fall back to the downloaded packs as the catalogue.
-          const packs = await listDownloadedStories()
-          if (cancelled) return
-          if (packs.length) { setStories(packs); setOffline(true) }
-          else setError(storiesRes.error)
-        }
+        if (storiesRes.data) setStories(storiesRes.data)
+        else setError(storiesRes.error)
         if (progRes.data) {
           setCompleted(new Set(progRes.data.stories.filter((s) => s.completed).map((s) => s.story_id)))
         }
@@ -56,23 +49,6 @@ export default function Stories() {
       return () => { cancelled = true }
     }, [])
   )
-
-  async function download(id: string) {
-    if (downloading.has(id) || downloaded.has(id)) return
-    setDownloading((s) => new Set(s).add(id))
-    const res = await api.get<FullStory>(`/api/stories/${id}`)
-    if (res.data) {
-      await downloadStory(res.data)
-      setDownloaded((s) => new Set(s).add(id))
-    }
-    setDownloading((s) => { const n = new Set(s); n.delete(id); return n })
-  }
-
-  async function makeVoice(id: string) {
-    setVoicing((s) => new Set(s).add(id))
-    await api.post(`/api/ai/stories/${id}/audio`, {})
-    setVoicing((s) => { const n = new Set(s); n.delete(id); return n })
-  }
 
   if (!stories) {
     return (
@@ -84,50 +60,33 @@ export default function Stories() {
 
   function card(story: Story, isMine: boolean) {
     const done = completed.has(story.id)
-    const busy = voicing.has(story.id)
-    const isDownloading = downloading.has(story.id)
-    const isDownloaded = downloaded.has(story.id)
+    const cover = mediaUrl(story.cover_url)
     return (
-      <View key={story.id} style={styles.card}>
-        <Pressable onPress={() => router.push(`/story/${story.id}`)}>
-          {mediaUrl(story.cover_url) ? (
-            <Image source={{ uri: mediaUrl(story.cover_url)! }} style={styles.cover} contentFit="cover" />
-          ) : (
-            <View style={[styles.cover, styles.coverFallback, isMine && { backgroundColor: '#fae8ff' }]}>
-              <Text style={{ fontSize: 40 }}>{isMine ? '✨' : '📖'}</Text>
-            </View>
-          )}
-          {done && (
-            <View style={styles.doneBadge}>
-              <Text style={styles.doneText}>✅ خوندم</Text>
-            </View>
-          )}
-          <View style={styles.cardBody}>
-            <Text style={styles.storyTitle} numberOfLines={2}>{story.title_persian}</Text>
-            {isMine ? (
-              <Text style={styles.mine}>داستان من</Text>
-            ) : story.age_min != null ? (
-              <Text style={styles.age}>
-                {toPersianDigits(story.age_min)}–{toPersianDigits(story.age_max ?? story.age_min)} سال
-              </Text>
-            ) : null}
+      <Pressable key={story.id} style={styles.card} onPress={() => router.push(`/story/${story.id}`)}>
+        {cover ? (
+          <Image source={{ uri: cover }} style={styles.cover} contentFit="cover" />
+        ) : (
+          <SceneBackdrop scene={sceneFor(story.id)} style={styles.cover} />
+        )}
+        {done && (
+          <View style={styles.doneBadge}>
+            <Text style={styles.doneText}>✅ خوندم</Text>
           </View>
-        </Pressable>
-        <View style={styles.cardActions}>
-          {!offline && (
-            <Pressable onPress={() => download(story.id)} disabled={isDownloaded || isDownloading} hitSlop={6}>
-              <Text style={styles.action}>
-                {isDownloaded ? '📴 آفلاین دارمش' : isDownloading ? '⏳ در حال دریافت…' : '⬇️ آفلاین'}
-              </Text>
-            </Pressable>
-          )}
-          {isMine && (
-            <Pressable onPress={() => makeVoice(story.id)} disabled={busy} hitSlop={6}>
-              <Text style={styles.action}>{busy ? '⏳ در حال ساخت صدا…' : '🔊 ساخت صدا'}</Text>
-            </Pressable>
+        )}
+        {isMine && (
+          <View style={styles.mineBadge}>
+            <Text style={styles.mineBadgeText}>✨ مال من</Text>
+          </View>
+        )}
+        <View style={styles.cardBody}>
+          <Text style={styles.storyTitle} numberOfLines={2}>{story.title_persian}</Text>
+          {!isMine && story.age_min != null && (
+            <Text style={styles.age}>
+              {toPersianDigits(story.age_min)}–{toPersianDigits(story.age_max ?? story.age_min)} سال
+            </Text>
           )}
         </View>
-      </View>
+      </Pressable>
     )
   }
 
@@ -139,23 +98,19 @@ export default function Stories() {
         </Pressable>
         <View>
           <Text style={styles.title}>همه داستان‌ها 📖</Text>
-          <Text style={styles.subtitle}>
-            {offline ? 'حالت آفلاین — فقط دانلود شده‌ها 📴' : `${toPersianDigits(stories.length)} داستان موجود است`}
-          </Text>
+          <Text style={styles.subtitle}>{toPersianDigits(stories.length)} داستان موجود است</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body}>
-        {!offline && (
-          <Pressable style={styles.createButton} onPress={() => router.push('/story/new')}>
-            <Text style={{ fontSize: 26 }}>✨</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.createTitle}>یک داستان برای من بساز</Text>
-              <Text style={styles.createSub}>داستان مخصوص خودت با موضوع دلخواه</Text>
-            </View>
-            <Text style={{ fontSize: 20, color: '#fff' }}>←</Text>
-          </Pressable>
-        )}
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 24 }]}>
+        <Pressable style={styles.createButton} onPress={() => router.push('/story/new')}>
+          <Text style={{ fontSize: 26 }}>✨</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.createTitle}>یک داستان برای من بساز</Text>
+            <Text style={styles.createSub}>داستان مخصوص خودت با موضوع دلخواه</Text>
+          </View>
+          <Text style={{ fontSize: 20, color: '#fff' }}>←</Text>
+        </Pressable>
 
         {myStories.length > 0 && (
           <>
@@ -184,7 +139,7 @@ const styles = StyleSheet.create({
   back: { fontSize: 24, color: colors.muted },
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  body: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
+  body: { paddingHorizontal: 16, gap: 12 },
   createButton: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: '#a21caf', borderRadius: 20, padding: 16,
@@ -196,17 +151,18 @@ const styles = StyleSheet.create({
   empty: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', marginTop: 40 },
   card: { width: '48%', flexGrow: 1, backgroundColor: colors.card, borderRadius: 16, overflow: 'hidden' },
   cover: { width: '100%', height: 120 },
-  coverFallback: { backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   doneBadge: {
     position: 'absolute', top: 8, left: 8, backgroundColor: colors.success,
     borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
   },
   doneText: { color: '#fff', fontSize: 11, fontFamily: fonts.medium },
+  mineBadge: {
+    position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(162,28,175,0.9)',
+    borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2,
+  },
+  mineBadgeText: { color: '#fff', fontSize: 11, fontFamily: fonts.medium },
   cardBody: { padding: 10, gap: 4 },
   storyTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.text, lineHeight: 20 },
   age: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
-  mine: { fontSize: 11, fontFamily: fonts.medium, color: '#a21caf' },
-  cardActions: { paddingHorizontal: 10, paddingBottom: 10, gap: 6 },
-  action: { fontSize: 12, fontFamily: fonts.medium, color: colors.primary },
   error: { color: colors.danger, fontFamily: fonts.regular },
 })

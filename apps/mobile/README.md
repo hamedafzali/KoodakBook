@@ -31,11 +31,9 @@ Notes:
   bounce to login (shared `createApiClient` from `packages/shared`).
 - **Home hub**: activity grid — قصه‌ها، درس‌ها، مرور، جایزه‌ها، دوست‌ها، ریاضی.
 - **Stories**: catalogue + the child's AI «داستان‌های من» (create with theme
-  picker, «ساخت صدا»), reader with per-page audio + next-page prefetch,
+  picker), reader with illustrated scene backdrops, per-page audio + next-page
+  prefetch, and self-healing AI-story audio (built on open, no manual step);
   progress/badges via the same endpoints as web.
-- **Offline packs**: ⬇️ آفلاین on any story downloads JSON + images + audio to
-  the device ([lib/offline.ts](lib/offline.ts)); the reader and the list fall
-  back to packs when there's no network.
 - **Learning loop**: lessons (4 quiz modes, level-aware) + spaced-repetition
   review, feeding the same Leitner boxes as web.
 - **Rewards**: earned-badges gallery. **Friends**: character roster + greeting
@@ -62,8 +60,9 @@ Before a store release: add real icon/splash assets in app.json, set
 ## What lives where
 
 - `app/` — screens (expo-router file routing)
-- `components/` — QuizCard (4 quiz modes), RewardPopup
-- `lib/` — api (shared client + SecureStore), media (absolutizes `/uploads`,
-  passes `file://`), offline (story packs), sound (one-shot clips), theme
+- `components/` — QuizCard (4 quiz modes), RewardPopup, SceneBackdrop,
+  ScreenBackground, AuthScene
+- `lib/` — api (shared client + SecureStore), media (absolutizes `/uploads`),
+  sound (load-aware one-shot clips), prefs, theme
 - Anything that isn't rendering (rules, formatting, level math) belongs in
   `packages/shared` or the backend — never duplicated here and in `apps/web`.

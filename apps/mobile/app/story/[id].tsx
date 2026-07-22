@@ -12,7 +12,6 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import { getTranslationLang } from '@/lib/prefs'
-import { loadOfflineStory } from '@/lib/offline'
 import { colors, fonts } from '@/lib/theme'
 
 type FullStory = Story & { pages: StoryPage[] }
@@ -78,14 +77,30 @@ export default function StoryReader() {
     getActiveChildId().then(setChildId)
     // ?lang attaches the family's translation per page (settings → زبان ترجمه).
     const lang = getTranslationLang()
-    api.get<FullStory>(`/api/stories/${id}?lang=${lang}`).then(async (res) => {
-      if (res.data) { setStory(res.data); return }
-      // Network gone — try the downloaded offline pack.
-      const pack = await loadOfflineStory(id)
-      if (pack) setStory(pack)
+    api.get<FullStory>(`/api/stories/${id}?lang=${lang}`).then((res) => {
+      if (res.data) setStory(res.data)
       else setError(res.error)
     })
   }, [id])
+
+  // Self-heal: an AI story (created for this child) with any silent page builds
+  // its own audio (free Piper), then we refetch so بشنو plays — no manual step.
+  // In the premium plan this happens at generation time; this is the fallback.
+  useEffect(() => {
+    if (!story) return
+    const isAi = !!(story as { created_for_child?: string | null }).created_for_child
+    if (!isAi || !story.pages.some((p) => !p.audio_url)) return
+    let cancelled = false
+    api.post(`/api/ai/stories/${story.id}/audio`, {})
+      .then(async () => {
+        if (cancelled) return
+        const r = await api.get<FullStory>(`/api/stories/${story.id}?lang=${getTranslationLang()}`)
+        if (r.data && !cancelled) setStory(r.data)
+      })
+      .catch(() => { /* leave text-only; nothing breaks */ })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story?.id])
 
   // Autoplay the current page's clip and warm the next page's player.
   useEffect(() => {
