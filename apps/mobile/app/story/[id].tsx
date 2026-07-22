@@ -10,6 +10,7 @@ import RewardPopup from '@/components/RewardPopup'
 import SceneBackdrop from '@/components/SceneBackdrop'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
+import { localAudio } from '@/lib/audioCache'
 import { mediaUrl } from '@/lib/media'
 import { getTranslationLang } from '@/lib/prefs'
 import { colors, fonts } from '@/lib/theme'
@@ -38,21 +39,31 @@ export default function StoryReader() {
   // for us — no manual player bookkeeping (which was crashing).
   const page = story?.pages[pageIdx]
   const audioUri = page ? mediaUrl(page.audio_url) : null
-  // downloadFirst: fetch the clip to a local file, then play it. Remote HTTP
-  // streaming doesn't reliably report loaded in Expo Go (the bar sat on «در حال
-  // بارگذاری»); a downloaded local file plays reliably.
-  const player = useAudioPlayer(audioUri ? { uri: audioUri } : undefined, { downloadFirst: true })
+  // Download the clip to a local file, then play that — remote HTTP streaming
+  // doesn't reliably load in Expo Go (the bar sat on «در حال بارگذاری»), but a
+  // local file plays reliably.
+  const [localUri, setLocalUri] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    setLocalUri(null)
+    if (!audioUri) return
+    localAudio(audioUri)
+      .then((u) => { if (!cancelled) setLocalUri(u) })
+      .catch(() => { if (!cancelled) setLocalUri(audioUri) })   // fall back to streaming
+    return () => { cancelled = true }
+  }, [audioUri])
+  const player = useAudioPlayer(localUri ? { uri: localUri } : undefined)
   const status = useAudioPlayerStatus(player)
 
   // Autoplay each page's clip once it has loaded (playing before load no-ops).
   const playedUriRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!audioUri) return
-    if (status.isLoaded && playedUriRef.current !== audioUri) {
-      playedUriRef.current = audioUri
+    if (!localUri) return
+    if (status.isLoaded && playedUriRef.current !== localUri) {
+      playedUriRef.current = localUri
       try { player.seekTo(0); player.play() } catch { /* not ready */ }
     }
-  }, [audioUri, status.isLoaded, player])
+  }, [localUri, status.isLoaded, player])
 
   const scenes = useMemo<{ scene: SceneSlug; time: SceneTime }[]>(() => {
     let last: { scene: SceneSlug; time: SceneTime } = { scene: 'park', time: 'day' }
@@ -156,6 +167,13 @@ export default function StoryReader() {
         {page && <Text style={styles.pageText}>{page.text_persian}</Text>}
         {page?.translation ? <Text style={styles.pageTranslation}>{page.translation}</Text> : null}
         {audioUri && <AudioBar player={player} status={status} />}
+        {/* TEMP diagnostic — remove once audio is confirmed. Shows the download
+            stage + raw player state so we can see where it stalls on-device. */}
+        {audioUri && (
+          <Text style={styles.diag}>
+            dl:{localUri ? (localUri.startsWith('file') ? 'local✓' : 'remote') : '…'} · loaded:{String(status.isLoaded)} · buf:{String(status.isBuffering)} · dur:{Math.round(status.duration || 0)} · playing:{String(status.playing)}
+          </Text>
+        )}
       </ScrollView>
 
       <View style={[styles.nav, { paddingBottom: insets.bottom + 16 }]}>
@@ -251,6 +269,7 @@ const styles = StyleSheet.create({
   knob: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: colors.primary, marginLeft: -8, top: -4 },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
   time: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
+  diag: { fontSize: 9, color: '#94a3b8', writingDirection: 'ltr' },
   nav: { flexDirection: 'row', gap: 12, padding: 20 },
   navButton: { flex: 1, borderRadius: 16, paddingVertical: 14, alignItems: 'center', backgroundColor: colors.card },
   nextButton: { backgroundColor: colors.primary },
