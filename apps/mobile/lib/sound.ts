@@ -1,50 +1,58 @@
+import { Asset } from 'expo-asset'
 import { createAudioPlayer, type AudioPlayer } from 'expo-audio'
 import { mediaUrl } from './media'
 
-// One module-level player for short one-shot clips (word/letter/math prompts).
-// Each play replaces the source; screens that need overlap-free long audio
-// (the story reader) manage their own players.
+// One module-level player for short one-shot clips (word/letter/math/phonics).
+// Remote HTTP streaming doesn't reliably load in Expo Go, so each clip is
+// downloaded to a local file first (cached by URL), then played — the same
+// approach the story reader uses via useAudioPlayer's downloadFirst.
 let player: AudioPlayer | null = null
-// Bumped on every call so a slow load from an earlier clip can't play over a
-// newer one once it finally finishes loading.
 let token = 0
+const localCache = new Map<string, string>()
 
-// expo-audio players are native "shared objects": touching one whose native
-// side isn't ready (fresh handle) or was torn down (Fast Refresh) throws
-// "Unable to find the native shared object". Every access is therefore guarded,
-// and a dead player is recreated on the next play.
+// expo-audio players are native shared objects; touching one whose native side
+// isn't ready or was torn down (Fast Refresh) throws. Guard every access.
 function safe<T>(fn: () => T): T | undefined {
   try { return fn() } catch { return undefined }
 }
 
-export function playClip(url: string | null | undefined): void {
-  const uri = mediaUrl(url)
-  if (!uri) return
-
+function playLocal(uri: string, mine: number) {
+  if (mine !== token) return
   if (!player) player = safe(() => createAudioPlayer({ uri })) ?? null
   else if (safe(() => player!.replace({ uri })) === undefined) {
-    // The existing player is dead — replace() threw; make a fresh one.
     player = safe(() => createAudioPlayer({ uri })) ?? null
   }
   const p = player
   if (!p) return
-
-  const mine = ++token
-  let played = false
   const go = () => {
-    if (played || mine !== token) return
-    played = true
+    if (mine !== token) return
     safe(() => p.seekTo(0))
     safe(() => p.play())
   }
-
-  // Play the moment the source is loaded (playing before load is a no-op).
-  const sub = safe(() =>
-    p.addListener('playbackStatusUpdate', (status) => {
-      if (mine !== token) { sub?.remove(); return }
-      if (status.isLoaded) { go(); sub?.remove() }
-    })
-  )
-  // …or right away if it was already cached.
   if (safe(() => p.isLoaded)) go()
+  else {
+    const sub = safe(() =>
+      p.addListener('playbackStatusUpdate', (status) => {
+        if (mine !== token) { sub?.remove(); return }
+        if (status.isLoaded) { go(); sub?.remove() }
+      })
+    )
+  }
+}
+
+export function playClip(url: string | null | undefined): void {
+  const remote = mediaUrl(url)
+  if (!remote) return
+  const mine = ++token
+
+  const cached = localCache.get(remote)
+  if (cached) { playLocal(cached, mine); return }
+
+  Asset.fromURI(remote).downloadAsync()
+    .then((a) => {
+      const local = a.localUri ?? a.uri
+      localCache.set(remote, local)
+      playLocal(local, mine)
+    })
+    .catch(() => playLocal(remote, mine))   // fall back to streaming the URL
 }

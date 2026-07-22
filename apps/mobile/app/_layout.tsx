@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
 import { I18nManager } from 'react-native'
 import * as SplashScreen from 'expo-splash-screen'
@@ -31,6 +31,13 @@ export default function RootLayout() {
     Vazirmatn_500Medium,
     Vazirmatn_700Bold,
   })
+  // Hold the branded launch screen for a beat so it registers as a real moment
+  // (fonts often load in <100ms, which would flash it past).
+  const [minShown, setMinShown] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setMinShown(true), 1100)
+    return () => clearTimeout(t)
+  }, [])
 
   // Configure the audio session once mounted (not at module-eval, when the
   // native module may not be ready) so clips play even with the silent switch.
@@ -44,7 +51,7 @@ export default function RootLayout() {
     SplashScreen.hideAsync().catch(() => {})
   }, [])
 
-  if (!fontsLoaded) return <LaunchScreen />
+  if (!fontsLoaded || !minShown) return <LaunchScreen />
 
   return <Stack screenOptions={{ headerShown: false }} />
 }

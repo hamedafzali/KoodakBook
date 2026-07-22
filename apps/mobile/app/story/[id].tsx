@@ -38,7 +38,10 @@ export default function StoryReader() {
   // for us — no manual player bookkeeping (which was crashing).
   const page = story?.pages[pageIdx]
   const audioUri = page ? mediaUrl(page.audio_url) : null
-  const player = useAudioPlayer(audioUri ?? undefined)
+  // downloadFirst: fetch the clip to a local file, then play it. Remote HTTP
+  // streaming doesn't reliably report loaded in Expo Go (the bar sat on «در حال
+  // بارگذاری»); a downloaded local file plays reliably.
+  const player = useAudioPlayer(audioUri ? { uri: audioUri } : undefined, { downloadFirst: true })
   const status = useAudioPlayerStatus(player)
 
   // Autoplay each page's clip once it has loaded (playing before load no-ops).
