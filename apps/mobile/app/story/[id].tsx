@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native'
 import { Image } from 'expo-image'
+import Svg, { Path, Rect } from 'react-native-svg'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAudioPlayer, useAudioPlayerStatus, type AudioPlayer, type AudioStatus } from 'expo-audio'
@@ -167,13 +168,6 @@ export default function StoryReader() {
         {page && <Text style={styles.pageText}>{page.text_persian}</Text>}
         {page?.translation ? <Text style={styles.pageTranslation}>{page.translation}</Text> : null}
         {audioUri && <AudioBar player={player} status={status} />}
-        {/* TEMP diagnostic — remove once audio is confirmed. Shows the download
-            stage + raw player state so we can see where it stalls on-device. */}
-        {audioUri && (
-          <Text style={styles.diag}>
-            dl:{localUri ? (localUri.startsWith('file') ? 'local✓' : 'remote') : '…'} · loaded:{String(status.isLoaded)} · buf:{String(status.isBuffering)} · dur:{Math.round(status.duration || 0)} · playing:{String(status.playing)}
-          </Text>
-        )}
       </ScrollView>
 
       <View style={[styles.nav, { paddingBottom: insets.bottom + 16 }]}>
@@ -222,7 +216,18 @@ function AudioBar({ player, status }: { player: AudioPlayer; status: AudioStatus
   return (
     <View style={styles.audioBar}>
       <Pressable style={styles.playButton} onPress={toggle} hitSlop={6}>
-        {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.playIcon}>{status.playing ? '⏸' : '▶'}</Text>}
+        {loading ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : status.playing ? (
+          <Svg width={22} height={22} viewBox="0 0 24 24">
+            <Rect x="6" y="5" width="4" height="14" rx="1.5" fill="#fff" />
+            <Rect x="14" y="5" width="4" height="14" rx="1.5" fill="#fff" />
+          </Svg>
+        ) : (
+          <Svg width={22} height={22} viewBox="0 0 24 24">
+            <Path d="M8 5v14l11-7z" fill="#fff" />
+          </Svg>
+        )}
       </Pressable>
       <View style={{ flex: 1, gap: 5 }}>
         <Pressable onLayout={(e: LayoutChangeEvent) => setTrackW(e.nativeEvent.layout.width)} onPress={seek} hitSlop={10} style={styles.track}>
@@ -263,13 +268,11 @@ const styles = StyleSheet.create({
     width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  playIcon: { color: '#fff', fontSize: 20 },
   track: { height: 8, borderRadius: 999, backgroundColor: '#e5e7eb', justifyContent: 'center' },
   trackFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.primary, borderRadius: 999 },
   knob: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: colors.primary, marginLeft: -8, top: -4 },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
   time: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
-  diag: { fontSize: 9, color: '#94a3b8', writingDirection: 'ltr' },
   nav: { flexDirection: 'row', gap: 12, padding: 20 },
   navButton: { flex: 1, borderRadius: 16, paddingVertical: 14, alignItems: 'center', backgroundColor: colors.card },
   nextButton: { backgroundColor: colors.primary },
