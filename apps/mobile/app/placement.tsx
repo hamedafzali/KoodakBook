@@ -7,6 +7,7 @@ import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { playClip } from '@/lib/sound'
+import ScreenBackground from '@/components/ScreenBackground'
 import { colors, fonts } from '@/lib/theme'
 
 /**
@@ -109,27 +110,31 @@ export default function Placement() {
 
   if (phase === 'intro') {
     return (
-      <View style={[styles.center, { padding: 24, gap: 14 }]}>
-        <Text style={{ fontSize: 90 }}>🦅</Text>
-        <Text style={styles.introTitle}>سلام {child?.name}! من سیمرغم 🌟</Text>
-        <Text style={styles.introText}>
-          بیا با هم یک بازی کوچولو کنیم تا ببینم چی بلدی — امتحان نیست، فقط بازیه!
-        </Text>
-        <Pressable style={styles.bigButton} onPress={() => setPhase('question')}>
-          <Text style={styles.bigButtonText}>بزن بریم! 🎈</Text>
-        </Pressable>
-      </View>
+      <ScreenBackground variant="warm" decor>
+        <View style={[styles.center, styles.transparent, { padding: 24, gap: 14 }]}>
+          <Text style={{ fontSize: 90 }}>🦅</Text>
+          <Text style={styles.introTitle}>سلام {child?.name}! من سیمرغم 🌟</Text>
+          <Text style={styles.introText}>
+            بیا با هم یک بازی کوچولو کنیم تا ببینم چی بلدی — امتحان نیست، فقط بازیه!
+          </Text>
+          <Pressable style={styles.bigButton} onPress={() => setPhase('question')}>
+            <Text style={styles.bigButtonText}>بزن بریم! 🎈</Text>
+          </Pressable>
+        </View>
+      </ScreenBackground>
     )
   }
 
   if (phase === 'done') {
     return (
-      <View style={[styles.center, { padding: 24, gap: 12 }]}>
-        <Text style={{ fontSize: 72 }}>🎉</Text>
-        <Text style={styles.introTitle}>آفرین {child?.name}!</Text>
-        <Text style={styles.introText}>از اینجا شروع می‌کنیم: {LEVEL_LABELS[finalLevel]}</Text>
-        <Text style={styles.goingHome}>در حال رفتن به خانه…</Text>
-      </View>
+      <ScreenBackground variant="warm" decor>
+        <View style={[styles.center, styles.transparent, { padding: 24, gap: 12 }]}>
+          <Text style={{ fontSize: 72 }}>🎉</Text>
+          <Text style={styles.introTitle}>آفرین {child?.name}!</Text>
+          <Text style={styles.introText}>از اینجا شروع می‌کنیم: {LEVEL_LABELS[finalLevel]}</Text>
+          <Text style={styles.goingHome}>در حال رفتن به خانه…</Text>
+        </View>
+      </ScreenBackground>
     )
   }
 
@@ -203,6 +208,7 @@ export default function Placement() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
+  transparent: { backgroundColor: 'transparent' },
   introTitle: { fontSize: 24, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   introText: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', lineHeight: 26, maxWidth: 300 },
   goingHome: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 8 },

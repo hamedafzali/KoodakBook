@@ -6,6 +6,8 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { api } from '@/lib/api'
 import { setToken } from '@/lib/auth'
 import { setActiveChildId } from '@/lib/activeChild'
+import ScreenBackground from '@/components/ScreenBackground'
+import { StoryScene } from '@/components/AuthScene'
 import { colors, fonts } from '@/lib/theme'
 
 type Mode = 'parent' | 'kid'
@@ -42,10 +44,12 @@ export default function Login() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <ScreenBackground variant="warm" decor>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+      <StoryScene />
       <Text style={styles.title}>کودک‌ بوک</Text>
       {expired === '1' && <Text style={styles.expired}>نشست شما تمام شد — دوباره وارد شوید</Text>}
 
@@ -111,12 +115,13 @@ export default function Login() {
           <Text style={styles.signupLink}>حساب ندارید؟ ثبت‌نام رایگان</Text>
         </Pressable>
       )}
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 },
   title: { fontSize: 34, fontFamily: fonts.bold, color: colors.text },
   expired: { color: colors.danger, fontFamily: fonts.regular, fontSize: 14 },
   tabs: { flexDirection: 'row', backgroundColor: colors.primarySoft, borderRadius: 14, padding: 4, gap: 4 },

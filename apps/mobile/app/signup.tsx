@@ -5,6 +5,8 @@ import {
 import { router } from 'expo-router'
 import { api } from '@/lib/api'
 import { setToken } from '@/lib/auth'
+import ScreenBackground from '@/components/ScreenBackground'
+import { BalloonScene } from '@/components/AuthScene'
 import { colors, fonts } from '@/lib/theme'
 
 /** New-account signup (web: /(auth)/signup). Lands in onboarding to create
@@ -26,8 +28,9 @@ export default function Signup() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.emoji}>🎈</Text>
+    <ScreenBackground variant="warm" decor>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <BalloonScene />
       <Text style={styles.title}>شروع ماجراجویی فارسی</Text>
       <Text style={styles.subtitle}>رایگان است — نه کارت بانکی، نه تعهدی</Text>
 
@@ -63,13 +66,13 @@ export default function Signup() {
       <Pressable onPress={() => router.replace('/login')} hitSlop={8}>
         <Text style={styles.link}>حساب دارید؟ ورود</Text>
       </Pressable>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 },
-  emoji: { fontSize: 40 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   title: { fontSize: 24, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   form: { width: '100%', maxWidth: 360, gap: 10, marginTop: 6 },

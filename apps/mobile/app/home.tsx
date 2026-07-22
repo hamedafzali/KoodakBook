@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type {
@@ -11,6 +12,7 @@ import {
   resolveLevel, toPersianDigits,
 } from '@koodakbook/shared'
 import HoldToParent from '@/components/HoldToParent'
+import ScreenBackground from '@/components/ScreenBackground'
 import Tutorial from '@/components/Tutorial'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
@@ -133,14 +135,15 @@ export default function Home() {
   }
 
   return (
+    <ScreenBackground variant="warm">
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1 }}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
     >
       {showTutorial && <Tutorial childName={child.name} onClose={() => setShowTutorial(false)} />}
 
       {/* Hero */}
-      <View style={[styles.hero, { paddingTop: insets.top + 20 }]}>
+      <LinearGradient colors={['#FBBF24', '#F59E0B', '#F97316']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.hero, { paddingTop: insets.top + 20 }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.greeting}>{greeting()} 👋</Text>
           <Text style={styles.heroName}>{child.name}</Text>
@@ -160,7 +163,7 @@ export default function Home() {
             <Text style={{ fontSize: 26 }}>🧒</Text>
           )}
         </Pressable>
-      </View>
+      </LinearGradient>
 
       <View style={styles.body}>
         {/* THE button — the app already decided what's next */}
@@ -199,6 +202,7 @@ export default function Home() {
         </View>
       </View>
     </ScrollView>
+    </ScreenBackground>
   )
 }
 
@@ -215,7 +219,7 @@ const styles = StyleSheet.create({
   content: { gap: 0 },
   hero: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    backgroundColor: '#f59e0b', paddingHorizontal: 20, paddingBottom: 56,
+    paddingHorizontal: 20, paddingBottom: 56,
     borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
   },
   greeting: { fontSize: 14, fontFamily: fonts.regular, color: 'rgba(255,255,255,0.9)' },

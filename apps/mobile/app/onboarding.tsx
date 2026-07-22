@@ -6,6 +6,7 @@ import { router } from 'expo-router'
 import type { Child } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { setActiveChildId } from '@/lib/activeChild'
+import ScreenBackground from '@/components/ScreenBackground'
 import { colors, fonts } from '@/lib/theme'
 
 /**
@@ -39,7 +40,8 @@ export default function Onboarding() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <ScreenBackground variant="warm" decor>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Text style={styles.emoji}>🚀</Text>
       <Text style={styles.title}>معرفی کودک</Text>
       <Text style={styles.subtitle}>بیایید با هم شروع کنیم</Text>
@@ -80,12 +82,13 @@ export default function Onboarding() {
       <Pressable style={[styles.button, (busy || !name.trim()) && { opacity: 0.5 }]} disabled={busy || !name.trim()} onPress={submit}>
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>بریم بازی کنیم! 🚀</Text>}
       </Pressable>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   emoji: { fontSize: 40 },
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted },
