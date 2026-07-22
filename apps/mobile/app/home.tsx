@@ -27,6 +27,8 @@ const TILES = [
   { key: 'math', emoji: '🔢', title: 'ریاضی', href: '/math' as const, tint: '#ede9fe' },
   { key: 'games', emoji: '🃏', title: 'بازی‌ها', href: '/games/memory' as const, tint: '#e0e7ff' },
   { key: 'phonics', emoji: '🎵', title: 'صداها', href: '/phonics' as const, tint: '#ffe4e6' },
+  { key: 'speak', emoji: '🎤', title: 'بگو ببینم!', href: '/speak' as const, tint: '#fce7f3' },
+  { key: 'write', emoji: '✍️', title: 'بنویس', href: '/write' as const, tint: '#e0f2fe' },
 ]
 
 function greeting() {
@@ -170,10 +172,6 @@ export default function Home() {
                   <Text style={styles.letterName}>{l.name_persian}</Text>
                 </Pressable>
               ))}
-              <Pressable style={[styles.letterTile, styles.writeTile]} onPress={() => router.push('/write')}>
-                <Text style={{ fontSize: 30 }}>✍️</Text>
-                <Text style={styles.letterName}>بنویس!</Text>
-              </Pressable>
             </ScrollView>
           </View>
         )}
@@ -239,7 +237,6 @@ const styles = StyleSheet.create({
   },
   letterChar: { fontSize: 40, fontFamily: fonts.bold, color: '#0284c7', lineHeight: 48 },
   letterName: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
-  writeTile: { backgroundColor: '#e0f2fe' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
     width: '48%', flexGrow: 1, aspectRatio: 1.3, borderRadius: 22,
