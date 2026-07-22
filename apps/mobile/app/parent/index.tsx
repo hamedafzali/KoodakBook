@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react'
-import {
-  ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
-} from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, DashboardSummary } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
+import PinGate from '@/components/PinGate'
 import { api } from '@/lib/api'
 import { isParentUnlocked, setParentUnlocked } from '@/lib/parentGate'
 import { colors, fonts } from '@/lib/theme'
@@ -13,9 +12,9 @@ import { colors, fonts } from '@/lib/theme'
 type Me = { id: string; email: string; plan: string; has_pin: boolean }
 
 /**
- * Parent hub (web: /parent/dashboard) behind the account PIN. The PIN is a
- * local lock on the parent area only, never a login — wrong PIN answers 200
- * {ok:false} so it can't trip the 401 session-revoked handler.
+ * Parent hub (web: /parent/dashboard) behind the account PIN gate. First run
+ * (no PIN yet) forces the set-PIN flow, like web. Leaving the parent area
+ * re-locks it (see parent/_layout.tsx).
  */
 export default function ParentHub() {
   const insets = useSafeAreaInsets()
@@ -29,11 +28,7 @@ export default function ParentHub() {
     useCallback(() => {
       let cancelled = false
       api.get<Me>('/api/auth/me').then((res) => {
-        if (cancelled) return
-        if (res.data) {
-          setMe(res.data)
-          if (!res.data.has_pin) { setParentUnlocked(true); setUnlocked(true) }
-        }
+        if (!cancelled && res.data) setMe(res.data)
       })
       api.get<Child[]>('/api/children').then((res) => {
         if (cancelled) return
@@ -67,7 +62,12 @@ export default function ParentHub() {
   }
 
   if (!unlocked) {
-    return <PinGate onUnlocked={() => { setParentUnlocked(true); setUnlocked(true) }} />
+    return (
+      <PinGate
+        hasPin={me.has_pin}
+        onUnlocked={() => { setParentUnlocked(true); setUnlocked(true); setMe({ ...me, has_pin: true }) }}
+      />
+    )
   }
 
   return (
@@ -136,8 +136,6 @@ export default function ParentHub() {
         </View>
         <Text style={{ fontSize: 18, color: colors.muted }}>←</Text>
       </Pressable>
-
-      {!me.has_pin && <SetPinCard onSet={() => setMe({ ...me, has_pin: true })} />}
     </ScrollView>
   )
 }
@@ -162,120 +160,13 @@ function MasteryRow({ label, value, tint }: { label: string; value: number; tint
   )
 }
 
-/** PIN entry, with password-based reset for forgotten PINs. */
-function PinGate({ onUnlocked }: { onUnlocked: () => void }) {
-  const insets = useSafeAreaInsets()
-  const [pin, setPin] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [forgot, setForgot] = useState(false)
-  const [password, setPassword] = useState('')
-
-  async function verify(value: string) {
-    setPin(value)
-    if (value.length < 4) return
-    const res = await api.post<{ ok: boolean; locked?: boolean }>('/api/auth/pin/verify', { pin: value })
-    if (res.data?.ok) { onUnlocked(); return }
-    setPin('')
-    setError(res.data?.locked ? 'قفل شد — ۱۵ دقیقه دیگر امتحان کنید' : 'رمز درست نبود')
-  }
-
-  async function reset() {
-    const res = await api.post<{ ok: boolean }>('/api/auth/pin/reset', { password })
-    if (res.data?.ok) onUnlocked()   // PIN cleared → area open; parent can set a new one inside
-    else setError(res.error ?? 'رمز عبور درست نبود')
-  }
-
-  return (
-    <View style={[styles.center, { gap: 14, padding: 24, paddingTop: insets.top + 24 }]}>
-      <Text style={{ fontSize: 44 }}>🔒</Text>
-      <Text style={styles.title}>حالت والدین</Text>
-      {!forgot ? (
-        <>
-          <Text style={styles.subtitle}>رمز ۴ رقمی را وارد کنید</Text>
-          <TextInput
-            style={styles.pinInput}
-            value={pin}
-            onChangeText={verify}
-            keyboardType="number-pad"
-            maxLength={4}
-            secureTextEntry
-            autoFocus
-          />
-          {error && <Text style={styles.error}>{error}</Text>}
-          <Pressable onPress={() => setForgot(true)} hitSlop={8}>
-            <Text style={styles.forgot}>رمز را فراموش کردم</Text>
-          </Pressable>
-        </>
-      ) : (
-        <>
-          <Text style={styles.subtitle}>رمز عبور حساب را وارد کنید تا PIN پاک شود</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="رمز عبور"
-            placeholderTextColor={colors.muted}
-          />
-          {error && <Text style={styles.error}>{error}</Text>}
-          <Pressable style={styles.button} onPress={reset}>
-            <Text style={styles.buttonText}>پاک کردن PIN</Text>
-          </Pressable>
-        </>
-      )}
-      <Pressable onPress={() => router.back()} hitSlop={8}>
-        <Text style={styles.forgot}>برگشت</Text>
-      </Pressable>
-    </View>
-  )
-}
-
-/** First-run PIN setup — optional, offered once the area is open with no PIN. */
-function SetPinCard({ onSet }: { onSet: () => void }) {
-  const [pin, setPin] = useState('')
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function save() {
-    if (!/^\d{4}$/.test(pin)) { setError('PIN باید ۴ رقم باشد'); return }
-    const res = await api.post<{ ok: boolean }>('/api/auth/pin/set', { pin })
-    if (res.data?.ok) { setSaved(true); onSet() }
-    else setError(res.error ?? 'ذخیره نشد')
-  }
-
-  if (saved) return null
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>قفل والدین 🔒</Text>
-      <Text style={styles.linkSub}>
-        یک رمز ۴ رقمی بگذارید تا بچه‌ها وارد این بخش نشوند
-      </Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-        <TextInput
-          style={[styles.input, { flex: 1, textAlign: 'center' }]}
-          value={pin}
-          onChangeText={setPin}
-          keyboardType="number-pad"
-          maxLength={4}
-          placeholder="۱۲۳۴"
-          placeholderTextColor={colors.muted}
-        />
-        <Pressable style={styles.button} onPress={save}>
-          <Text style={styles.buttonText}>ذخیره</Text>
-        </Pressable>
-      </View>
-      {error && <Text style={styles.error}>{error}</Text>}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   content: { paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   back: { fontSize: 24, color: colors.muted },
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2, textAlign: 'center' },
+  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   chip: {
     paddingHorizontal: 18, paddingVertical: 8, borderRadius: 999,
     backgroundColor: colors.card, borderWidth: 1, borderColor: '#e5e7eb',
@@ -302,16 +193,4 @@ const styles = StyleSheet.create({
   },
   linkTitle: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
   linkSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  pinInput: {
-    backgroundColor: colors.card, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 12,
-    fontSize: 28, letterSpacing: 12, color: colors.text, textAlign: 'center', minWidth: 160,
-  },
-  input: {
-    backgroundColor: colors.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
-    fontSize: 16, fontFamily: fonts.regular, color: colors.text, textAlign: 'right', minWidth: 200,
-  },
-  button: { backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 20, justifyContent: 'center' },
-  buttonText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
-  error: { color: colors.danger, fontFamily: fonts.regular, fontSize: 13 },
-  forgot: { color: colors.muted, fontFamily: fonts.regular, fontSize: 13, textDecorationLine: 'underline' },
 })

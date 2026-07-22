@@ -6,6 +6,7 @@ import type { Child } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
 import { setActiveChildId, clearActiveChildId } from '@/lib/activeChild'
+import HoldToParent from '@/components/HoldToParent'
 import { mediaUrl } from '@/lib/media'
 import { colors, fonts } from '@/lib/theme'
 
@@ -65,9 +66,9 @@ export default function Children() {
           </Pressable>
         )}
       />
-      <Pressable style={styles.parentButton} onPress={() => router.push('/parent')}>
+      <HoldToParent style={styles.parentButton}>
         <Text style={styles.parentButtonText}>🔒 حالت والدین</Text>
-      </Pressable>
+      </HoldToParent>
       <Pressable onPress={logout} hitSlop={8}>
         <Text style={styles.logout}>خروج از حساب</Text>
       </Pressable>
