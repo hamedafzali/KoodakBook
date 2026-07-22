@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { createAudioPlayer, type AudioPlayer } from 'expo-audio'
+import { useAudioPlayer, useAudioPlayerStatus, type AudioPlayer, type AudioStatus } from 'expo-audio'
 import type { Badge, Promotion, SceneSlug, SceneTime, Story, StoryPage } from '@koodakbook/shared'
 import { parseSceneRef, toPersianDigits } from '@koodakbook/shared'
 import RewardPopup from '@/components/RewardPopup'
@@ -16,6 +16,13 @@ import { colors, fonts } from '@/lib/theme'
 
 type FullStory = Story & { pages: StoryPage[] }
 
+function fmtTime(sec: number): string {
+  if (!Number.isFinite(sec) || sec < 0) sec = 0
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  return toPersianDigits(`${m}:${String(s).padStart(2, '0')}`)
+}
+
 export default function StoryReader() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const insets = useSafeAreaInsets()
@@ -26,51 +33,24 @@ export default function StoryReader() {
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
   const [showUnlock, setShowUnlock] = useState(false)
 
-  // One player per page, created lazily and kept for the whole visit — the
-  // next page's player is created ahead of time so page-turn voice is instant
-  // (mirrors web's prefetch in StoryReader).
-  const playersRef = useRef<Map<string, AudioPlayer>>(new Map())
-  // Bumped whenever the intended clip changes (page turn / leaving), so a clip
-  // that finishes loading late doesn't start playing over a newer page.
-  const playGenRef = useRef(0)
+  // The current page's audio. useAudioPlayer recreates (and releases the old)
+  // when the URI changes, so page turns swap the clip and lifecycle is managed
+  // for us — no manual player bookkeeping (which was crashing).
+  const page = story?.pages[pageIdx]
+  const audioUri = page ? mediaUrl(page.audio_url) : null
+  const player = useAudioPlayer(audioUri ?? undefined)
+  const status = useAudioPlayerStatus(player)
 
-  const getPlayer = useCallback((page: StoryPage): AudioPlayer | null => {
-    const uri = mediaUrl(page.audio_url)
-    if (!uri) return null
-    let p = playersRef.current.get(page.id)
-    if (!p) {
-      // createAudioPlayer can throw if the native module isn't ready; degrade
-      // to silent rather than crashing the reader.
-      try { p = createAudioPlayer({ uri }) } catch { return null }
-      playersRef.current.set(page.id, p)
+  // Autoplay each page's clip once it has loaded (playing before load no-ops).
+  const playedUriRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!audioUri) return
+    if (status.isLoaded && playedUriRef.current !== audioUri) {
+      playedUriRef.current = audioUri
+      try { player.seekTo(0); player.play() } catch { /* not ready */ }
     }
-    return p
-  }, [])
+  }, [audioUri, status.isLoaded, player])
 
-  // Restart a page's clip from the top. The source loads asynchronously, so
-  // play immediately if it's ready, otherwise the moment loading completes —
-  // calling play() before the clip has loaded is a silent no-op.
-  function playFromStart(player: AudioPlayer) {
-    const gen = ++playGenRef.current
-    const go = () => {
-      if (gen !== playGenRef.current) return
-      try { player.seekTo(0) } catch { /* not seekable yet */ }
-      try { player.play() } catch { /* released */ }
-    }
-    // All shared-object access guarded — the native handle may not be ready.
-    let loaded = false
-    try { loaded = player.isLoaded } catch { /* not ready */ }
-    if (loaded) { go(); return }
-    try {
-      const sub = player.addListener('playbackStatusUpdate', (status) => {
-        if (gen !== playGenRef.current) { sub.remove(); return }
-        if (status.isLoaded) { go(); sub.remove() }
-      })
-    } catch { /* player unavailable */ }
-  }
-
-  // Backdrop per page from scene_plan; a page without one inherits the previous
-  // page's scene, and the story falls back to a friendly default (web parity).
   const scenes = useMemo<{ scene: SceneSlug; time: SceneTime }[]>(() => {
     let last: { scene: SceneSlug; time: SceneTime } = { scene: 'park', time: 'day' }
     return (story?.pages ?? []).map((pg) => {
@@ -82,7 +62,6 @@ export default function StoryReader() {
 
   useEffect(() => {
     getActiveChildId().then(setChildId)
-    // ?lang attaches the family's translation per page (settings → زبان ترجمه).
     const lang = getTranslationLang()
     api.get<FullStory>(`/api/stories/${id}?lang=${lang}`).then((res) => {
       if (res.data) setStory(res.data)
@@ -90,9 +69,8 @@ export default function StoryReader() {
     })
   }, [id])
 
-  // Self-heal: an AI story (created for this child) with any silent page builds
-  // its own audio (free Piper), then we refetch so بشنو plays — no manual step.
-  // In the premium plan this happens at generation time; this is the fallback.
+  // Self-heal: an AI story with any silent page builds its own audio, then we
+  // refetch so it plays — no manual step (premium builds it at generation time).
   useEffect(() => {
     if (!story) return
     const isAi = !!(story as { created_for_child?: string | null }).created_for_child
@@ -104,38 +82,13 @@ export default function StoryReader() {
         const r = await api.get<FullStory>(`/api/stories/${story.id}?lang=${getTranslationLang()}`)
         if (r.data && !cancelled) setStory(r.data)
       })
-      .catch(() => { /* leave text-only; nothing breaks */ })
+      .catch(() => { /* leave text-only */ })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story?.id])
 
-  // Autoplay the current page's clip and warm the next page's player.
-  useEffect(() => {
-    if (!story) return
-    const page = story.pages[pageIdx]
-    if (!page) return
-    const player = getPlayer(page)
-    if (player) playFromStart(player)
-    const next = story.pages[pageIdx + 1]
-    if (next) getPlayer(next)
-    return () => { playGenRef.current++; player?.pause() }
-  }, [story, pageIdx, getPlayer])
-
-  // Release every native player when leaving the story.
-  useEffect(() => {
-    const players = playersRef.current
-    return () => { players.forEach((p) => { try { p.release() } catch { /* already gone */ } }) }
-  }, [])
-
-  function replay() {
-    if (!story) return
-    const player = getPlayer(story.pages[pageIdx])
-    if (player) playFromStart(player)
-  }
-
   function goTo(idx: number) {
     setPageIdx(idx)
-    // Fire-and-forget: losing one progress ping must never block a page turn.
     if (childId && story) {
       void api.post('/api/progress/story', { child_id: childId, story_id: story.id, last_page: idx })
     }
@@ -144,8 +97,6 @@ export default function StoryReader() {
   async function finish() {
     if (!childId || !story) { router.back(); return }
     try {
-      // new_badges / promotions are top-level on the response, not under `data`
-      // (same contract web's reader relies on).
       const res = await api.post('/api/progress/story', {
         child_id: childId, story_id: story.id, last_page: story.pages.length - 1, completed: true,
       }) as { new_badges?: Badge[]; promotions?: Promotion[] }
@@ -155,7 +106,7 @@ export default function StoryReader() {
         setTimeout(() => router.back(), 2600)
         return
       }
-    } catch { /* never leave the child stuck on the last page */ }
+    } catch { /* never leave the child stuck */ }
     router.back()
   }
 
@@ -177,8 +128,6 @@ export default function StoryReader() {
     )
   }
 
-  const page = story.pages[pageIdx]
-  const hasAudio = !!(page && mediaUrl(page.audio_url))
   const isLast = pageIdx === story.pages.length - 1
 
   return (
@@ -196,36 +145,18 @@ export default function StoryReader() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.pageContent}>
-        {/* A real page image wins; otherwise the scene library paints the page. */}
         {page && mediaUrl(page.image_url) ? (
-          <Image
-            source={{ uri: mediaUrl(page.image_url)! }}
-            style={styles.pageImage}
-            contentFit="contain"
-            transition={150}
-          />
+          <Image source={{ uri: mediaUrl(page.image_url)! }} style={styles.pageImage} contentFit="contain" transition={150} />
         ) : (
-          <SceneBackdrop
-            scene={scenes[pageIdx]?.scene ?? 'park'}
-            time={scenes[pageIdx]?.time ?? 'day'}
-            style={styles.pageImage}
-          />
+          <SceneBackdrop scene={scenes[pageIdx]?.scene ?? 'park'} time={scenes[pageIdx]?.time ?? 'day'} style={styles.pageImage} />
         )}
         {page && <Text style={styles.pageText}>{page.text_persian}</Text>}
         {page?.translation ? <Text style={styles.pageTranslation}>{page.translation}</Text> : null}
-        {hasAudio && (
-          <Pressable style={styles.audioButton} onPress={replay} hitSlop={8}>
-            <Text style={styles.audioButtonText}>🔊 بشنو</Text>
-          </Pressable>
-        )}
+        {audioUri && <AudioBar player={player} status={status} />}
       </ScrollView>
 
       <View style={[styles.nav, { paddingBottom: insets.bottom + 16 }]}>
-        <Pressable
-          style={[styles.navButton, pageIdx === 0 && styles.navDisabled]}
-          disabled={pageIdx === 0}
-          onPress={() => goTo(pageIdx - 1)}
-        >
+        <Pressable style={[styles.navButton, pageIdx === 0 && styles.navDisabled]} disabled={pageIdx === 0} onPress={() => goTo(pageIdx - 1)}>
           <Text style={styles.navText}>قبلی</Text>
         </Pressable>
         {isLast ? (
@@ -237,6 +168,50 @@ export default function StoryReader() {
             <Text style={[styles.navText, { color: '#fff' }]}>بعدی</Text>
           </Pressable>
         )}
+      </View>
+    </View>
+  )
+}
+
+/** Play/pause + seekable progress + time, so the child (and we) can see the
+ *  voice status: buffering, playing position, and duration. */
+function AudioBar({ player, status }: { player: AudioPlayer; status: AudioStatus }) {
+  const [trackW, setTrackW] = useState(0)
+  const dur = status.duration || 0
+  const cur = Math.min(status.currentTime || 0, dur || Infinity)
+  const frac = dur > 0 ? Math.max(0, Math.min(1, cur / dur)) : 0
+  const loading = !status.isLoaded || status.isBuffering
+
+  function toggle() {
+    try {
+      if (status.playing) player.pause()
+      else {
+        if (dur > 0 && cur >= dur - 0.05) player.seekTo(0)
+        player.play()
+      }
+    } catch { /* not ready */ }
+  }
+
+  function seek(e: GestureResponderEvent) {
+    if (!trackW || dur <= 0) return
+    const f = Math.max(0, Math.min(1, e.nativeEvent.locationX / trackW))
+    try { player.seekTo(f * dur) } catch { /* not ready */ }
+  }
+
+  return (
+    <View style={styles.audioBar}>
+      <Pressable style={styles.playButton} onPress={toggle} hitSlop={6}>
+        {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.playIcon}>{status.playing ? '⏸' : '▶'}</Text>}
+      </Pressable>
+      <View style={{ flex: 1, gap: 5 }}>
+        <Pressable onLayout={(e: LayoutChangeEvent) => setTrackW(e.nativeEvent.layout.width)} onPress={seek} hitSlop={10} style={styles.track}>
+          <View style={[styles.trackFill, { width: `${frac * 100}%` }]} />
+          <View style={[styles.knob, { left: `${frac * 100}%` }]} />
+        </Pressable>
+        <View style={styles.timeRow}>
+          <Text style={styles.time}>{fmtTime(cur)}</Text>
+          <Text style={styles.time}>{loading ? 'در حال بارگذاری…' : fmtTime(dur)}</Text>
+        </View>
       </View>
     </View>
   )
@@ -259,13 +234,22 @@ const styles = StyleSheet.create({
     fontSize: 15, lineHeight: 26, fontFamily: fonts.regular, color: colors.muted,
     textAlign: 'center', writingDirection: 'ltr',
   },
-  audioButton: { backgroundColor: colors.primarySoft, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 22 },
-  audioButtonText: { color: colors.primary, fontSize: 16, fontFamily: fonts.medium },
-  nav: { flexDirection: 'row', gap: 12, padding: 20 },
-  navButton: {
-    flex: 1, borderRadius: 16, paddingVertical: 14, alignItems: 'center',
-    backgroundColor: colors.card,
+  audioBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 14, width: '100%',
+    backgroundColor: colors.card, borderRadius: 20, padding: 14,
   },
+  playButton: {
+    width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  playIcon: { color: '#fff', fontSize: 20 },
+  track: { height: 8, borderRadius: 999, backgroundColor: '#e5e7eb', justifyContent: 'center' },
+  trackFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.primary, borderRadius: 999 },
+  knob: { position: 'absolute', width: 16, height: 16, borderRadius: 8, backgroundColor: colors.primary, marginLeft: -8, top: -4 },
+  timeRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  time: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
+  nav: { flexDirection: 'row', gap: 12, padding: 20 },
+  navButton: { flex: 1, borderRadius: 16, paddingVertical: 14, alignItems: 'center', backgroundColor: colors.card },
   nextButton: { backgroundColor: colors.primary },
   finishButton: { backgroundColor: colors.success },
   navDisabled: { opacity: 0.4 },

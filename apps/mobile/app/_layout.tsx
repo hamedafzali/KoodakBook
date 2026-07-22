@@ -9,6 +9,7 @@ import {
   Vazirmatn_700Bold,
 } from '@expo-google-fonts/vazirmatn'
 import { setAudioModeAsync } from 'expo-audio'
+import LaunchScreen from '@/components/LaunchScreen'
 import { ensurePrefs } from '@/lib/prefs'
 
 // Hydrate family prefs (daily goal, translation language) into their cache.
@@ -37,11 +38,13 @@ export default function RootLayout() {
     setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false }).catch(() => {})
   }, [])
 
+  // Hand off from the native splash to our own branded launch screen right
+  // away, so font-loading shows the illustration rather than a blank/text flash.
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync()
-  }, [fontsLoaded])
+    SplashScreen.hideAsync().catch(() => {})
+  }, [])
 
-  if (!fontsLoaded) return null
+  if (!fontsLoaded) return <LaunchScreen />
 
   return <Stack screenOptions={{ headerShown: false }} />
 }
