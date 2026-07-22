@@ -14,10 +14,6 @@ import { ensurePrefs } from '@/lib/prefs'
 // Hydrate family prefs (daily goal, translation language) into their cache.
 void ensurePrefs()
 
-// Configure the audio session so story/word clips actually play — without this
-// iOS honours the silent switch and produces no sound at all.
-setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false }).catch(() => {})
-
 // Persian is RTL everywhere. app.json's extra.supportsRTL covers native
 // builds; this runtime call covers Expo Go (takes effect after one reload).
 if (!I18nManager.isRTL) {
@@ -34,6 +30,12 @@ export default function RootLayout() {
     Vazirmatn_500Medium,
     Vazirmatn_700Bold,
   })
+
+  // Configure the audio session once mounted (not at module-eval, when the
+  // native module may not be ready) so clips play even with the silent switch.
+  useEffect(() => {
+    setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync()

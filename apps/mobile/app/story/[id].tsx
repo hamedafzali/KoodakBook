@@ -39,7 +39,9 @@ export default function StoryReader() {
     if (!uri) return null
     let p = playersRef.current.get(page.id)
     if (!p) {
-      p = createAudioPlayer({ uri })
+      // createAudioPlayer can throw if the native module isn't ready; degrade
+      // to silent rather than crashing the reader.
+      try { p = createAudioPlayer({ uri }) } catch { return null }
       playersRef.current.set(page.id, p)
     }
     return p
@@ -53,13 +55,18 @@ export default function StoryReader() {
     const go = () => {
       if (gen !== playGenRef.current) return
       try { player.seekTo(0) } catch { /* not seekable yet */ }
-      player.play()
+      try { player.play() } catch { /* released */ }
     }
-    if (player.isLoaded) { go(); return }
-    const sub = player.addListener('playbackStatusUpdate', (status) => {
-      if (gen !== playGenRef.current) { sub.remove(); return }
-      if (status.isLoaded) { go(); sub.remove() }
-    })
+    // All shared-object access guarded — the native handle may not be ready.
+    let loaded = false
+    try { loaded = player.isLoaded } catch { /* not ready */ }
+    if (loaded) { go(); return }
+    try {
+      const sub = player.addListener('playbackStatusUpdate', (status) => {
+        if (gen !== playGenRef.current) { sub.remove(); return }
+        if (status.isLoaded) { go(); sub.remove() }
+      })
+    } catch { /* player unavailable */ }
   }
 
   // Backdrop per page from scene_plan; a page without one inherits the previous
@@ -117,7 +124,7 @@ export default function StoryReader() {
   // Release every native player when leaving the story.
   useEffect(() => {
     const players = playersRef.current
-    return () => { players.forEach((p) => p.release()) }
+    return () => { players.forEach((p) => { try { p.release() } catch { /* already gone */ } }) }
   }, [])
 
   function replay() {
