@@ -6,8 +6,7 @@ import { colors, fonts } from '@/lib/theme'
 
 const GAMES = [
   { key: 'memory', emoji: '🃏', title: 'بازی حافظه', sub: 'جفت هر کلمه را پیدا کن', href: '/games/memory' as const, tint: '#e0e7ff' },
-  { key: 'marpele', emoji: '🎲', title: 'مارپله', sub: 'تاس بینداز و کلمه‌ها را یاد بگیر', href: '/games/marpele' as const, tint: '#dcfce7' },
-  { key: 'marpele-race', emoji: '🦅', title: 'مارپله با سیمرغ', sub: 'با سیمرغ مسابقه بده و اول به بالا برس', href: '/games/marpele-race' as const, tint: '#fef3c7' },
+  { key: 'marpele', emoji: '🎲', title: 'مارپله', sub: 'تنها، با خواهر و برادر، یا با دوستان بازی کن', href: '/games/marpele' as const, tint: '#dcfce7' },
 ]
 
 export default function GamesHub() {

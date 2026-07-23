@@ -1,44 +1,59 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { Child, Word } from '@koodakbook/shared'
+import type { AppCharacter, Child, Word } from '@koodakbook/shared'
 import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import QuizCard, { type QuizQuestion } from '@/components/QuizCard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
+import { characterEmoji } from '@/lib/characterEmoji'
 import { LADDERS, SIZE, SNAKES, boardRows, buildQuestion, preferVisual, sleep } from '@/lib/marpele'
 import { colors, fonts } from '@/lib/theme'
 
-/* مارپله برای یادگیری فارسی (V1, solo) — roll the die and move, but Persian
- * knowledge drives the board: land on a ladder foot and answer right to climb;
- * land on a snake head and answer right to escape the bite. Every challenge is
- * a QuizCard and posts to the same Leitner progress as lessons/review. */
+/* مارپله برای یادگیری فارسی — one game, three ways: solo, pass-and-play with
+ * other kids, or race the app's characters. Humans use Persian to climb ladders
+ * / escape snakes (a QuizCard); characters ride pure luck. Every challenge the
+ * active child answers posts to the same Leitner progress as lessons/review. */
 
-type Challenge = { question: QuizQuestion; kind: 'ladder' | 'snake'; target: number }
+const EXTRA_HUMAN_EMOJI = ['👧', '👦', '🧑']
+const MAX_PLAYERS = 4
+
+type Player = {
+  key: string
+  kind: 'human' | 'character'
+  name: string
+  emoji: string
+  isActiveChild: boolean
+}
 
 export default function Marpele() {
   const insets = useSafeAreaInsets()
   const [pool, setPool] = useState<Word[] | null>(null)
   const [level, setLevel] = useState(1)
   const [childId, setChildId] = useState('')
+  const [childName, setChildName] = useState('من')
+  const [characters, setCharacters] = useState<AppCharacter[]>([])
+  const [players, setPlayers] = useState<Player[] | null>(null)
   const [run, setRun] = useState(0)
 
   useEffect(() => {
     async function load() {
       const id = await getActiveChildId()
       if (id) setChildId(id)
-      const [wordsRes, childRes] = await Promise.all([
+      const [wordsRes, childRes, charsRes] = await Promise.all([
         api.get<Word[]>('/api/words'),
         api.get<Child[]>('/api/children'),
+        api.get<AppCharacter[]>('/api/characters'),
       ])
       const child = childRes.data?.find((c) => c.id === id)
       const lv = child?.level ?? 1
       setLevel(lv)
+      setChildName(child?.name ?? 'من')
+      setCharacters(charsRes.data ?? [])
       const all = wordsRes.data ?? []
       const filtered = all.filter((w) => w.stage <= lv + 1)
       const base = filtered.length >= 4 ? filtered : all
-      // Prefer words with a picture so match/name prompts aren't a «؟».
       setPool(preferVisual(base, (w) => !!(wordEmoji(w.english) || w.image_url)))
     }
     load()
@@ -51,86 +66,242 @@ export default function Marpele() {
       </View>
     )
   }
-  return <Game key={run} pool={pool} level={level} childId={childId} insets={insets} onReplay={() => setRun((x) => x + 1)} />
+
+  if (!players) {
+    return (
+      <Setup
+        insets={insets}
+        childName={childName}
+        characters={characters}
+        onStart={setPlayers}
+      />
+    )
+  }
+
+  return (
+    <Game
+      key={run}
+      players={players}
+      pool={pool}
+      level={level}
+      childId={childId}
+      insets={insets}
+      onReplay={() => setRun((x) => x + 1)}
+      onChangePlayers={() => setPlayers(null)}
+    />
+  )
 }
 
-function Game({ pool, level, childId, insets, onReplay }: {
+/* ── Setup: pick who's playing ─────────────────────────────────────────── */
+function Setup({ insets, childName, characters, onStart }: {
+  insets: { top: number; bottom: number }
+  childName: string
+  characters: AppCharacter[]
+  onStart: (players: Player[]) => void
+}) {
+  const [extraHumans, setExtraHumans] = useState(0)
+  const [chosen, setChosen] = useState<string[]>([])   // character slugs
+
+  const total = 1 + extraHumans + chosen.length
+  const full = total >= MAX_PLAYERS
+
+  function toggleChar(slug: string) {
+    setChosen((c) => (c.includes(slug) ? c.filter((s) => s !== slug) : full ? c : [...c, slug]))
+  }
+
+  function start() {
+    const players: Player[] = [{ key: 'me', kind: 'human', name: childName, emoji: '🧒', isActiveChild: true }]
+    for (let i = 0; i < extraHumans; i++) {
+      players.push({ key: `h${i}`, kind: 'human', name: `بازیکن ${toPersianDigits(i + 2)}`, emoji: EXTRA_HUMAN_EMOJI[i] ?? '🧑', isActiveChild: false })
+    }
+    for (const slug of chosen) {
+      const ch = characters.find((c) => c.slug === slug)
+      if (ch) players.push({ key: slug, kind: 'character', name: ch.name_persian, emoji: characterEmoji(ch), isActiveChild: false })
+    }
+    onStart(players)
+  }
+
+  return (
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.setup, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} hitSlop={10}>
+          <Text style={styles.back}>→</Text>
+        </Pressable>
+        <View>
+          <Text style={styles.title}>مارپله 🎲</Text>
+          <Text style={styles.subtitle}>با کی بازی می‌کنی؟</Text>
+        </View>
+      </View>
+
+      <Text style={styles.sectionLabel}>بازیکن‌های دیگر (خواهر و برادر)</Text>
+      <View style={styles.stepper}>
+        <Pressable style={styles.stepBtn} onPress={() => setExtraHumans((n) => Math.max(0, n - 1))}>
+          <Text style={styles.stepBtnText}>−</Text>
+        </Pressable>
+        <Text style={styles.stepValue}>{toPersianDigits(extraHumans)}</Text>
+        <Pressable
+          style={[styles.stepBtn, full && { opacity: 0.4 }]}
+          disabled={full}
+          onPress={() => setExtraHumans((n) => Math.min(MAX_PLAYERS - 1 - chosen.length, n + 1))}
+        >
+          <Text style={styles.stepBtnText}>+</Text>
+        </Pressable>
+      </View>
+
+      <Text style={styles.sectionLabel}>یا با دوستانت مسابقه بده</Text>
+      <View style={styles.charGrid}>
+        {characters.map((ch) => {
+          const on = chosen.includes(ch.slug)
+          return (
+            <Pressable
+              key={ch.slug}
+              style={[styles.charChip, on && styles.charChipOn, !on && full && { opacity: 0.4 }]}
+              disabled={!on && full}
+              onPress={() => toggleChar(ch.slug)}
+            >
+              <Text style={{ fontSize: 30 }}>{characterEmoji(ch)}</Text>
+              <Text style={[styles.charName, on && { color: '#fff' }]} numberOfLines={1}>{ch.name_persian}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
+
+      <Text style={styles.lineup}>
+        {toPersianDigits(total)} بازیکن {total === 1 ? '· تنها بازی می‌کنی' : ''}
+      </Text>
+
+      <Pressable style={styles.startButton} onPress={start}>
+        <Text style={styles.startText}>شروع بازی 🎲</Text>
+      </Pressable>
+    </ScrollView>
+  )
+}
+
+/* ── Game: N players take turns ────────────────────────────────────────── */
+type Challenge = { question: QuizQuestion; kind: 'ladder' | 'snake'; target: number; playerIdx: number }
+
+function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers }: {
+  players: Player[]
   pool: Word[]
   level: number
   childId: string
   insets: { top: number; bottom: number }
   onReplay: () => void
+  onChangePlayers: () => void
 }) {
-  const [pos, setPos] = useState(0)          // 0 = start (off board); 1..SIZE
+  const [positions, setPositions] = useState<number[]>(() => players.map(() => 0))
+  const [current, setCurrent] = useState(0)
   const [die, setDie] = useState<number | null>(null)
-  const [rolling, setRolling] = useState(false)
+  const [animating, setAnimating] = useState(false)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [stars, setStars] = useState(0)
-  const [won, setWon] = useState(false)
+  const [winner, setWinner] = useState<number | null>(null)
   const mounted = useRef(true)
+  const winnerRef = useRef(false)
   useEffect(() => () => { mounted.current = false }, [])
 
   const rows = useMemo(boardRows, [])
-  const busy = rolling || challenge !== null || won
+  const cur = players[current]
+  const canRoll = cur?.kind === 'human' && !animating && !challenge && winner === null
 
-  function report(word: Word, correct: boolean) {
-    if (!childId) return
-    void api.post('/api/progress/word', {
-      child_id: childId, word_id: word.id, status: 'practiced', result: correct ? 'correct' : 'incorrect',
-    })
+  function setPos(idx: number, val: number) {
+    setPositions((p) => { const n = [...p]; n[idx] = val; return n })
   }
 
-  async function roll() {
-    if (busy) return
+  async function stepTo(idx: number, from: number, to: number) {
+    for (let p = from + 1; p <= to; p++) {
+      if (!mounted.current) return
+      setPos(idx, p)
+      await sleep(150)
+    }
+  }
+
+  function win(idx: number) {
+    winnerRef.current = true
+    setWinner(idx)
+  }
+
+  function advance(fromIdx: number) {
+    if (winnerRef.current) return
+    const next = (fromIdx + 1) % players.length
+    setCurrent(next)
+    if (players[next].kind === 'character') characterTurn(next)
+  }
+
+  async function characterTurn(idx: number) {
+    setAnimating(true)
+    await sleep(650)
     const r = 1 + Math.floor(Math.random() * 6)
     setDie(r)
-    setRolling(true)
-    const target = Math.min(pos + r, SIZE)
-    for (let p = pos + 1; p <= target; p++) {
-      if (!mounted.current) return
-      setPos(p)
-      await sleep(180)
+    const from = positions[idx]
+    const target = Math.min(from + r, SIZE)
+    await stepTo(idx, from, target)
+    if (!mounted.current) return
+    if (target >= SIZE) { setAnimating(false); win(idx); return }
+    if (LADDERS[target]) {
+      await sleep(380); setPos(idx, LADDERS[target])
+      if (LADDERS[target] >= SIZE) { setAnimating(false); win(idx); return }
+    } else if (SNAKES[target]) {
+      await sleep(380); setPos(idx, SNAKES[target])
     }
     if (!mounted.current) return
-    setRolling(false)
+    setAnimating(false)
+    advance(idx)
+  }
 
-    if (target >= SIZE) { setWon(true); return }
+  async function humanRoll() {
+    if (!canRoll) return
+    const idx = current
+    setAnimating(true)
+    const r = 1 + Math.floor(Math.random() * 6)
+    setDie(r)
+    const from = positions[idx]
+    const target = Math.min(from + r, SIZE)
+    await stepTo(idx, from, target)
+    if (!mounted.current) return
+    setAnimating(false)
+    if (target >= SIZE) { win(idx); return }
     const ladder = LADDERS[target]
     const snake = SNAKES[target]
     if (ladder || snake) {
       const q = buildQuestion(pool, level)
-      if (q) {
-        setChallenge({ question: q, kind: ladder ? 'ladder' : 'snake', target: ladder ?? snake! })
-      }
+      if (q) { setChallenge({ question: q, kind: ladder ? 'ladder' : 'snake', target: ladder ?? snake!, playerIdx: idx }); return }
     }
+    advance(idx)
   }
 
   function resolve(correct: boolean) {
     const c = challenge
     if (!c) return
-    if (c.question.correctWord) report(c.question.correctWord, correct)
-    setChallenge(null)
-    if (correct) setStars((s) => s + 1)
-    // Ladder: correct climbs. Snake: correct stays (rescued), wrong slides down.
-    if (c.kind === 'ladder' && correct) {
-      setPos(c.target)
-      if (c.target >= SIZE) setWon(true)
-    } else if (c.kind === 'snake' && !correct) {
-      setPos(c.target)
+    // Only the logged-in child's answers feed mastery; siblings just play.
+    if (players[c.playerIdx].isActiveChild && c.question.correctWord && childId) {
+      void api.post('/api/progress/word', {
+        child_id: childId, word_id: c.question.correctWord.id, status: 'practiced', result: correct ? 'correct' : 'incorrect',
+      })
     }
+    setChallenge(null)
+    if (correct && players[c.playerIdx].isActiveChild) setStars((s) => s + 1)
+    let next = positions[c.playerIdx]
+    if (c.kind === 'ladder' && correct) next = c.target
+    else if (c.kind === 'snake' && !correct) next = c.target
+    setPos(c.playerIdx, next)
+    if (next >= SIZE) { win(c.playerIdx); return }
+    advance(c.playerIdx)
   }
 
-  if (won) {
+  if (winner !== null) {
+    const w = players[winner]
+    const childWon = w.isActiveChild
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
-        <Text style={{ fontSize: 64 }}>🏁</Text>
-        <Text style={styles.doneTitle}>رسیدی به بالا! 🎉</Text>
-        <Text style={styles.doneSub}>{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</Text>
+        <Text style={{ fontSize: 64 }}>{childWon ? '🏆' : w.emoji}</Text>
+        <Text style={styles.doneTitle}>{childWon ? 'تو بردی! 🎉' : `${w.name} برد!`}</Text>
+        {stars > 0 && <Text style={styles.doneSub}>{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</Text>}
         <Pressable style={styles.primaryButton} onPress={onReplay}>
           <Text style={styles.primaryText}>دوباره بازی کن 🔁</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
-          <Text style={styles.secondaryText}>برگشت 🏠</Text>
+        <Pressable style={styles.secondaryButton} onPress={onChangePlayers}>
+          <Text style={styles.secondaryText}>تغییر بازیکن‌ها</Text>
         </Pressable>
       </View>
     )
@@ -144,25 +315,31 @@ function Game({ pool, level, childId, insets, onReplay }: {
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>مارپله 🎲</Text>
-          <Text style={styles.subtitle}>تاس بینداز و کلمه‌ها را یاد بگیر</Text>
+          <Text style={[styles.turn, { color: cur?.kind === 'human' ? colors.primary : '#d97706' }]}>
+            نوبت {cur?.emoji} {cur?.name}
+          </Text>
         </View>
-        <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text>
+        {stars > 0 && <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text>}
       </View>
 
-      {/* Board */}
       <View style={styles.board}>
         {rows.map((row, ri) => (
           <View key={ri} style={styles.row}>
             {row.map((n) => {
               const isLadder = n in LADDERS
               const isSnake = n in SNAKES
-              const here = pos === n
+              const hereTokens = players.map((p, i) => (positions[i] === n ? p.emoji : null)).filter(Boolean) as string[]
+              const occupied = hereTokens.length > 0
               return (
-                <View key={n} style={[styles.cell, isLadder && styles.ladderCell, isSnake && styles.snakeCell, here && styles.hereCell]}>
+                <View key={n} style={[styles.cell, isLadder && styles.ladderCell, isSnake && styles.snakeCell, occupied && styles.hereCell]}>
                   <Text style={styles.cellNum}>{toPersianDigits(n)}</Text>
-                  {isLadder && !here && <Text style={styles.mark}>🪜</Text>}
-                  {isSnake && !here && <Text style={styles.mark}>🐍</Text>}
-                  {here && <Text style={styles.token}>🧒</Text>}
+                  {isLadder && !occupied && <Text style={styles.mark}>🪜</Text>}
+                  {isSnake && !occupied && <Text style={styles.mark}>🐍</Text>}
+                  {occupied && (
+                    <View style={styles.tokens}>
+                      {hereTokens.map((e, i) => <Text key={i} style={styles.token}>{e}</Text>)}
+                    </View>
+                  )}
                 </View>
               )
             })}
@@ -170,21 +347,20 @@ function Game({ pool, level, childId, insets, onReplay }: {
         ))}
       </View>
 
-      {/* Dice + roll */}
       <View style={styles.controls}>
         <View style={styles.die}>
-          <Text style={styles.dieText}>{rolling ? '🎲' : die ? toPersianDigits(die) : '🎲'}</Text>
+          <Text style={styles.dieText}>{animating ? '🎲' : die ? toPersianDigits(die) : '🎲'}</Text>
         </View>
-        <Pressable style={[styles.rollButton, busy && { opacity: 0.5 }]} disabled={busy} onPress={roll}>
-          <Text style={styles.rollText}>{pos === 0 ? 'شروع! 🎲' : 'تاس بینداز 🎲'}</Text>
+        <Pressable style={[styles.rollButton, !canRoll && { opacity: 0.5 }]} disabled={!canRoll} onPress={humanRoll}>
+          <Text style={styles.rollText}>{cur?.kind === 'human' ? 'تاس بینداز 🎲' : 'صبر کن…'}</Text>
         </Pressable>
       </View>
 
-      {/* Challenge */}
       <Modal transparent visible={challenge !== null} animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.challengePrompt}>
+              {challenge && `${players[challenge.playerIdx].name}: `}
               {challenge?.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی! 🪜' : 'جواب بده تا از مار فرار کنی! 🐍'}
             </Text>
             {challenge && (
@@ -206,28 +382,40 @@ function Game({ pool, level, childId, insets, onReplay }: {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 16, gap: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
+  setup: { paddingHorizontal: 20, gap: 14 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4 },
   back: { fontSize: 24, color: colors.muted },
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
+  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
+  turn: { fontSize: 13, fontFamily: fonts.bold, marginTop: 2 },
   stars: { fontSize: 15, fontFamily: fonts.bold, color: '#d97706' },
+  sectionLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, marginTop: 6 },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 18, alignSelf: 'flex-start', backgroundColor: colors.card, borderRadius: 16, padding: 10 },
+  stepBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  stepBtnText: { fontSize: 22, fontFamily: fonts.bold, color: colors.primary },
+  stepValue: { fontSize: 20, fontFamily: fonts.bold, color: colors.text, minWidth: 24, textAlign: 'center' },
+  charGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  charChip: {
+    width: '30%', flexGrow: 1, backgroundColor: colors.card, borderRadius: 16, padding: 12,
+    alignItems: 'center', gap: 4, borderWidth: 2, borderColor: 'transparent',
+  },
+  charChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  charName: { fontSize: 12, fontFamily: fonts.medium, color: colors.text },
+  lineup: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', marginTop: 4 },
+  startButton: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
+  startText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
   board: { gap: 6 },
   row: { flexDirection: 'row', gap: 6 },
-  cell: {
-    flex: 1, aspectRatio: 1, borderRadius: 12, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  cell: { flex: 1, aspectRatio: 1, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   ladderCell: { backgroundColor: '#dcfce7' },
   snakeCell: { backgroundColor: '#fee2e2' },
-  hereCell: { backgroundColor: colors.primary },
-  cellNum: { position: 'absolute', top: 4, right: 6, fontSize: 10, fontFamily: fonts.regular, color: colors.muted },
-  mark: { fontSize: 20 },
-  token: { fontSize: 24 },
+  hereCell: { backgroundColor: colors.primarySoft },
+  cellNum: { position: 'absolute', top: 3, right: 5, fontSize: 9, fontFamily: fonts.regular, color: colors.muted },
+  mark: { fontSize: 18 },
+  tokens: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
+  token: { fontSize: 17 },
   controls: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 'auto' },
-  die: {
-    width: 60, height: 60, borderRadius: 16, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  die: { width: 60, height: 60, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   dieText: { fontSize: 30, fontFamily: fonts.bold, color: colors.text },
   rollButton: { flex: 1, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   rollText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
