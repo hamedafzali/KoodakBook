@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter, Child, Word } from '@koodakbook/shared'
 import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import QuizCard, { type QuizQuestion } from '@/components/QuizCard'
-import MarpeleBoard, { Dice } from '@/components/MarpeleBoard'
+import MarpeleBoard, { Confetti, Dice } from '@/components/MarpeleBoard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { characterEmoji } from '@/lib/characterEmoji'
@@ -178,6 +178,29 @@ function Setup({ insets, childName, characters, onStart }: {
   )
 }
 
+/* ── A player's leaderboard card; the current player pulses ────────────── */
+function PlayerCard({ player, square, active }: { player: Player; square: number; active: boolean }) {
+  const pulse = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    if (!active) { pulse.setValue(1); return }
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 1.08, duration: 600, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ]))
+    loop.start()
+    return () => loop.stop()
+  }, [active])
+  return (
+    <Animated.View style={[styles.pcard, active && styles.pcardActive, { transform: [{ scale: active ? pulse : 1 }] }]}>
+      <Text style={styles.pcardEmoji}>{player.emoji}</Text>
+      <Text style={[styles.pcardName, active && { color: '#fff' }]} numberOfLines={1}>{player.name}</Text>
+      <View style={[styles.pcardBadge, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+        <Text style={[styles.pcardBadgeText, active && { color: '#fff' }]}>{square > 0 ? toPersianDigits(square) : '۰'}</Text>
+      </View>
+    </Animated.View>
+  )
+}
+
 /* ── Game: N players take turns ────────────────────────────────────────── */
 type Challenge = { question: QuizQuestion; kind: 'ladder' | 'snake'; target: number; playerIdx: number }
 
@@ -294,7 +317,8 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
     const childWon = w.isActiveChild
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
-        <Text style={{ fontSize: 64 }}>{childWon ? '🏆' : w.emoji}</Text>
+        <Confetti />
+        <Text style={{ fontSize: 80 }}>{childWon ? '🏆' : w.emoji}</Text>
         <Text style={styles.doneTitle}>{childWon ? 'تو بردی! 🎉' : `${w.name} برد!`}</Text>
         {stars > 0 && <Text style={styles.doneSub}>{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</Text>}
         <Pressable style={styles.primaryButton} onPress={onReplay}>
@@ -313,13 +337,15 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
         <Pressable onPress={() => router.back()} hitSlop={10}>
           <Text style={styles.back}>→</Text>
         </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>مارپله 🎲</Text>
-          <Text style={[styles.turn, { color: cur?.kind === 'human' ? colors.primary : '#d97706' }]}>
-            نوبت {cur?.emoji} {cur?.name}
-          </Text>
-        </View>
+        <Text style={styles.title}>مارپله 🎲</Text>
         {stars > 0 && <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text>}
+      </View>
+
+      {/* Players leaderboard — avatars + square; current player glows */}
+      <View style={styles.strip}>
+        {players.map((p, i) => (
+          <PlayerCard key={p.key} player={p} square={positions[i]} active={i === current} />
+        ))}
       </View>
 
       <View style={styles.boardArea}>
@@ -328,8 +354,10 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
 
       <View style={styles.controls}>
         <Dice value={die} rolling={animating} />
-        <Pressable style={[styles.rollButton, !canRoll && { opacity: 0.5 }]} disabled={!canRoll} onPress={humanRoll}>
-          <Text style={styles.rollText}>{cur?.kind === 'human' ? 'تاس بینداز 🎲' : 'صبر کن…'}</Text>
+        <Pressable style={[styles.rollButton, !canRoll && styles.rollDisabled]} disabled={!canRoll} onPress={humanRoll}>
+          <Text style={styles.rollText}>
+            {cur?.kind === 'human' ? 'تاس بینداز! 🎲' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}
+          </Text>
         </Pressable>
       </View>
 
@@ -364,8 +392,17 @@ const styles = StyleSheet.create({
   back: { fontSize: 24, color: colors.muted },
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  turn: { fontSize: 13, fontFamily: fonts.bold, marginTop: 2 },
-  stars: { fontSize: 15, fontFamily: fonts.bold, color: '#d97706' },
+  stars: { fontSize: 16, fontFamily: fonts.bold, color: '#d97706' },
+  strip: { flexDirection: 'row', gap: 8, justifyContent: 'center', flexWrap: 'wrap' },
+  pcard: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card,
+    borderRadius: 999, paddingVertical: 5, paddingHorizontal: 8, borderWidth: 2, borderColor: 'transparent',
+  },
+  pcardActive: { backgroundColor: colors.primary, borderColor: '#fde047' },
+  pcardEmoji: { fontSize: 20 },
+  pcardName: { fontSize: 12, fontFamily: fonts.bold, color: colors.text, maxWidth: 70 },
+  pcardBadge: { backgroundColor: colors.bg, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1, minWidth: 22, alignItems: 'center' },
+  pcardBadgeText: { fontSize: 12, fontFamily: fonts.bold, color: colors.text },
   sectionLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, marginTop: 6 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 18, alignSelf: 'flex-start', backgroundColor: colors.card, borderRadius: 16, padding: 10 },
   stepBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
@@ -383,7 +420,12 @@ const styles = StyleSheet.create({
   startText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
   boardArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   controls: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  rollButton: { flex: 1, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
+  rollButton: {
+    flex: 1, backgroundColor: colors.primary, borderRadius: 20, paddingVertical: 18, alignItems: 'center',
+    borderBottomWidth: 4, borderBottomColor: '#5b21b6',
+    shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
+  },
+  rollDisabled: { backgroundColor: '#cbd5e1', borderBottomColor: '#94a3b8', shadowOpacity: 0 },
   rollText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   modalCard: { backgroundColor: colors.bg, borderRadius: 24, padding: 20, width: '100%', maxWidth: 380, gap: 12 },
