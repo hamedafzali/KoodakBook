@@ -139,6 +139,8 @@ export default function ParentHub() {
         <View style={styles.menuDivider} />
         <MenuRow emoji="🧒" label="کودکان" sub="افزودن کودک، نام کاربری ورود بچه‌ها" onPress={() => router.push('/parent/children')} />
         <View style={styles.menuDivider} />
+        <MenuRow emoji="🤝" label="دوستان" sub="کد دوستی و تأیید — برای بازی آنلاین" onPress={() => router.push('/parent/friends')} />
+        <View style={styles.menuDivider} />
         <MenuRow emoji="💬" label="گفت‌وگوها" sub="بازبینی چت کودک با شخصیت‌ها" onPress={() => router.push('/parent/conversations')} />
         <View style={styles.menuDivider} />
         <MenuRow emoji="📤" label="اشتراک‌گذاری پیشرفت" onPress={() => router.push('/parent/share')} />
