@@ -10,14 +10,15 @@ import { getActiveChildId } from '@/lib/activeChild'
 import { LADDERS, SIZE, SNAKES, boardRows, buildQuestion, preferVisual, sleep } from '@/lib/marpele'
 import { colors, fonts } from '@/lib/theme'
 
-/* مارپله برای یادگیری فارسی (V1, solo) — roll the die and move, but Persian
- * knowledge drives the board: land on a ladder foot and answer right to climb;
- * land on a snake head and answer right to escape the bite. Every challenge is
- * a QuizCard and posts to the same Leitner progress as lessons/review. */
+/* مارپله با سیمرغ (V2) — a turn-based race to the top. The child rolls and
+ * uses Persian to climb ladders / escape snakes (answer a challenge); Simorgh
+ * rolls too but is at the mercy of pure luck. So knowing the words is the
+ * child's edge. Same board + progress posting as the solo game. */
 
+type Turn = 'child' | 'simorgh'
 type Challenge = { question: QuizQuestion; kind: 'ladder' | 'snake'; target: number }
 
-export default function Marpele() {
+export default function MarpeleRace() {
   const insets = useSafeAreaInsets()
   const [pool, setPool] = useState<Word[] | null>(null)
   const [level, setLevel] = useState(1)
@@ -38,7 +39,6 @@ export default function Marpele() {
       const all = wordsRes.data ?? []
       const filtered = all.filter((w) => w.stage <= lv + 1)
       const base = filtered.length >= 4 ? filtered : all
-      // Prefer words with a picture so match/name prompts aren't a «؟».
       setPool(preferVisual(base, (w) => !!(wordEmoji(w.english) || w.image_url)))
     }
     load()
@@ -51,27 +51,29 @@ export default function Marpele() {
       </View>
     )
   }
-  return <Game key={run} pool={pool} level={level} childId={childId} insets={insets} onReplay={() => setRun((x) => x + 1)} />
+  return <Race key={run} pool={pool} level={level} childId={childId} insets={insets} onReplay={() => setRun((x) => x + 1)} />
 }
 
-function Game({ pool, level, childId, insets, onReplay }: {
+function Race({ pool, level, childId, insets, onReplay }: {
   pool: Word[]
   level: number
   childId: string
   insets: { top: number; bottom: number }
   onReplay: () => void
 }) {
-  const [pos, setPos] = useState(0)          // 0 = start (off board); 1..SIZE
+  const [pos, setPos] = useState(0)         // child
+  const [sPos, setSPos] = useState(0)       // simorgh
+  const [turn, setTurn] = useState<Turn>('child')
   const [die, setDie] = useState<number | null>(null)
-  const [rolling, setRolling] = useState(false)
+  const [animating, setAnimating] = useState(false)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [stars, setStars] = useState(0)
-  const [won, setWon] = useState(false)
+  const [winner, setWinner] = useState<Turn | null>(null)
   const mounted = useRef(true)
   useEffect(() => () => { mounted.current = false }, [])
 
   const rows = useMemo(boardRows, [])
-  const busy = rolling || challenge !== null || won
+  const canRoll = turn === 'child' && !animating && !challenge && !winner
 
   function report(word: Word, correct: boolean) {
     if (!childId) return
@@ -80,29 +82,56 @@ function Game({ pool, level, childId, insets, onReplay }: {
     })
   }
 
-  async function roll() {
-    if (busy) return
+  async function step(from: number, to: number, set: (n: number) => void) {
+    for (let p = from + 1; p <= to; p++) {
+      if (!mounted.current) return
+      set(p)
+      await sleep(160)
+    }
+  }
+
+  async function simorghTurn() {
+    setTurn('simorgh')
+    setAnimating(true)
+    await sleep(700)
     const r = 1 + Math.floor(Math.random() * 6)
     setDie(r)
-    setRolling(true)
-    const target = Math.min(pos + r, SIZE)
-    for (let p = pos + 1; p <= target; p++) {
-      if (!mounted.current) return
-      setPos(p)
-      await sleep(180)
+    const cur = sPos
+    const target = Math.min(cur + r, SIZE)
+    await step(cur, target, setSPos)
+    if (!mounted.current) return
+    if (target >= SIZE) { setAnimating(false); setWinner('simorgh'); return }
+    // Simorgh has no challenge — pure luck applies ladders/snakes.
+    if (LADDERS[target]) {
+      await sleep(400); setSPos(LADDERS[target])
+      if (LADDERS[target] >= SIZE) { setAnimating(false); setWinner('simorgh'); return }
+    } else if (SNAKES[target]) {
+      await sleep(400); setSPos(SNAKES[target])
     }
     if (!mounted.current) return
-    setRolling(false)
+    setAnimating(false)
+    setTurn('child')
+  }
 
-    if (target >= SIZE) { setWon(true); return }
+  async function childRoll() {
+    if (!canRoll) return
+    setAnimating(true)
+    const r = 1 + Math.floor(Math.random() * 6)
+    setDie(r)
+    const cur = pos
+    const target = Math.min(cur + r, SIZE)
+    await step(cur, target, setPos)
+    if (!mounted.current) return
+    setAnimating(false)
+
+    if (target >= SIZE) { setWinner('child'); return }
     const ladder = LADDERS[target]
     const snake = SNAKES[target]
     if (ladder || snake) {
       const q = buildQuestion(pool, level)
-      if (q) {
-        setChallenge({ question: q, kind: ladder ? 'ladder' : 'snake', target: ladder ?? snake! })
-      }
+      if (q) { setChallenge({ question: q, kind: ladder ? 'ladder' : 'snake', target: ladder ?? snake! }); return }
     }
+    simorghTurn()
   }
 
   function resolve(correct: boolean) {
@@ -111,21 +140,23 @@ function Game({ pool, level, childId, insets, onReplay }: {
     if (c.question.correctWord) report(c.question.correctWord, correct)
     setChallenge(null)
     if (correct) setStars((s) => s + 1)
-    // Ladder: correct climbs. Snake: correct stays (rescued), wrong slides down.
-    if (c.kind === 'ladder' && correct) {
-      setPos(c.target)
-      if (c.target >= SIZE) setWon(true)
-    } else if (c.kind === 'snake' && !correct) {
-      setPos(c.target)
-    }
+    let next = pos
+    if (c.kind === 'ladder' && correct) next = c.target
+    else if (c.kind === 'snake' && !correct) next = c.target
+    setPos(next)
+    if (next >= SIZE) { setWinner('child'); return }
+    simorghTurn()
   }
 
-  if (won) {
+  if (winner) {
+    const childWon = winner === 'child'
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
-        <Text style={{ fontSize: 64 }}>🏁</Text>
-        <Text style={styles.doneTitle}>رسیدی به بالا! 🎉</Text>
-        <Text style={styles.doneSub}>{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</Text>
+        <Text style={{ fontSize: 64 }}>{childWon ? '🏆' : '🦅'}</Text>
+        <Text style={styles.doneTitle}>{childWon ? 'تو بردی! 🎉' : 'سیمرغ برد!'}</Text>
+        <Text style={styles.doneSub}>
+          {childWon ? `${toPersianDigits(stars)} پاسخ درست — عالی بود!` : 'دوباره تلاش کن، این بار تو می‌بری!'}
+        </Text>
         <Pressable style={styles.primaryButton} onPress={onReplay}>
           <Text style={styles.primaryText}>دوباره بازی کن 🔁</Text>
         </Pressable>
@@ -143,13 +174,14 @@ function Game({ pool, level, childId, insets, onReplay }: {
           <Text style={styles.back}>→</Text>
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>مارپله 🎲</Text>
-          <Text style={styles.subtitle}>تاس بینداز و کلمه‌ها را یاد بگیر</Text>
+          <Text style={styles.title}>مارپله با سیمرغ 🦅</Text>
+          <Text style={[styles.turn, { color: turn === 'child' ? colors.primary : '#d97706' }]}>
+            {turn === 'child' ? 'نوبت توست! 🧒' : 'نوبت سیمرغ… 🦅'}
+          </Text>
         </View>
         <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text>
       </View>
 
-      {/* Board */}
       <View style={styles.board}>
         {rows.map((row, ri) => (
           <View key={ri} style={styles.row}>
@@ -157,12 +189,16 @@ function Game({ pool, level, childId, insets, onReplay }: {
               const isLadder = n in LADDERS
               const isSnake = n in SNAKES
               const here = pos === n
+              const sHere = sPos === n
               return (
-                <View key={n} style={[styles.cell, isLadder && styles.ladderCell, isSnake && styles.snakeCell, here && styles.hereCell]}>
+                <View key={n} style={[styles.cell, isLadder && styles.ladderCell, isSnake && styles.snakeCell, (here || sHere) && styles.hereCell]}>
                   <Text style={styles.cellNum}>{toPersianDigits(n)}</Text>
-                  {isLadder && !here && <Text style={styles.mark}>🪜</Text>}
-                  {isSnake && !here && <Text style={styles.mark}>🐍</Text>}
-                  {here && <Text style={styles.token}>🧒</Text>}
+                  {isLadder && !here && !sHere && <Text style={styles.mark}>🪜</Text>}
+                  {isSnake && !here && !sHere && <Text style={styles.mark}>🐍</Text>}
+                  <View style={styles.tokens}>
+                    {here && <Text style={styles.token}>🧒</Text>}
+                    {sHere && <Text style={styles.token}>🦅</Text>}
+                  </View>
                 </View>
               )
             })}
@@ -170,17 +206,15 @@ function Game({ pool, level, childId, insets, onReplay }: {
         ))}
       </View>
 
-      {/* Dice + roll */}
       <View style={styles.controls}>
         <View style={styles.die}>
-          <Text style={styles.dieText}>{rolling ? '🎲' : die ? toPersianDigits(die) : '🎲'}</Text>
+          <Text style={styles.dieText}>{animating ? '🎲' : die ? toPersianDigits(die) : '🎲'}</Text>
         </View>
-        <Pressable style={[styles.rollButton, busy && { opacity: 0.5 }]} disabled={busy} onPress={roll}>
-          <Text style={styles.rollText}>{pos === 0 ? 'شروع! 🎲' : 'تاس بینداز 🎲'}</Text>
+        <Pressable style={[styles.rollButton, !canRoll && { opacity: 0.5 }]} disabled={!canRoll} onPress={childRoll}>
+          <Text style={styles.rollText}>{turn === 'child' ? 'تاس بینداز 🎲' : 'صبر کن…'}</Text>
         </Pressable>
       </View>
 
-      {/* Challenge */}
       <Modal transparent visible={challenge !== null} animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
@@ -208,8 +242,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 4 },
   back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
+  title: { fontSize: 20, fontFamily: fonts.bold, color: colors.text },
+  turn: { fontSize: 13, fontFamily: fonts.bold, marginTop: 2 },
   stars: { fontSize: 15, fontFamily: fonts.bold, color: '#d97706' },
   board: { gap: 6 },
   row: { flexDirection: 'row', gap: 6 },
@@ -219,15 +253,13 @@ const styles = StyleSheet.create({
   },
   ladderCell: { backgroundColor: '#dcfce7' },
   snakeCell: { backgroundColor: '#fee2e2' },
-  hereCell: { backgroundColor: colors.primary },
+  hereCell: { backgroundColor: colors.primarySoft },
   cellNum: { position: 'absolute', top: 4, right: 6, fontSize: 10, fontFamily: fonts.regular, color: colors.muted },
   mark: { fontSize: 20 },
-  token: { fontSize: 24 },
+  tokens: { flexDirection: 'row' },
+  token: { fontSize: 20 },
   controls: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 'auto' },
-  die: {
-    width: 60, height: 60, borderRadius: 16, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  die: { width: 60, height: 60, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   dieText: { fontSize: 30, fontFamily: fonts.bold, color: colors.text },
   rollButton: { flex: 1, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   rollText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
