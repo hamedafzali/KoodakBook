@@ -29,7 +29,7 @@ const TILES = [
   { key: 'rewards', emoji: '🏆', title: 'جایزه‌ها', href: '/rewards' as const, tint: '#fce7f3' },
   { key: 'friends', emoji: '🦊', title: 'دوست‌ها', href: '/friends' as const, tint: '#ffedd5' },
   { key: 'math', emoji: '🔢', title: 'ریاضی', href: '/math' as const, tint: '#ede9fe' },
-  { key: 'games', emoji: '🃏', title: 'بازی‌ها', href: '/games/memory' as const, tint: '#e0e7ff' },
+  { key: 'games', emoji: '🃏', title: 'بازی‌ها', href: '/games' as const, tint: '#e0e7ff' },
   { key: 'phonics', emoji: '🎵', title: 'صداها', href: '/phonics' as const, tint: '#ffe4e6' },
   { key: 'speak', emoji: '🎤', title: 'بگو ببینم!', href: '/speak' as const, tint: '#fce7f3' },
   { key: 'write', emoji: '✍️', title: 'بنویس', href: '/write' as const, tint: '#e0f2fe' },
