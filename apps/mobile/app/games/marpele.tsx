@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter, Child, Word } from '@koodakbook/shared'
 import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import QuizCard, { type QuizQuestion } from '@/components/QuizCard'
+import MarpeleBoard, { Dice } from '@/components/MarpeleBoard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { characterEmoji } from '@/lib/characterEmoji'
-import { LADDERS, SIZE, SNAKES, boardRows, buildQuestion, preferVisual, sleep } from '@/lib/marpele'
+import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep } from '@/lib/marpele'
 import { colors, fonts } from '@/lib/theme'
 
 /* مارپله برای یادگیری فارسی — one game, three ways: solo, pass-and-play with
@@ -200,7 +201,6 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
   const winnerRef = useRef(false)
   useEffect(() => () => { mounted.current = false }, [])
 
-  const rows = useMemo(boardRows, [])
   const cur = players[current]
   const canRoll = cur?.kind === 'human' && !animating && !challenge && winner === null
 
@@ -322,35 +322,12 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
         {stars > 0 && <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text>}
       </View>
 
-      <View style={styles.board}>
-        {rows.map((row, ri) => (
-          <View key={ri} style={styles.row}>
-            {row.map((n) => {
-              const isLadder = n in LADDERS
-              const isSnake = n in SNAKES
-              const hereTokens = players.map((p, i) => (positions[i] === n ? p.emoji : null)).filter(Boolean) as string[]
-              const occupied = hereTokens.length > 0
-              return (
-                <View key={n} style={[styles.cell, isLadder && styles.ladderCell, isSnake && styles.snakeCell, occupied && styles.hereCell]}>
-                  <Text style={styles.cellNum}>{toPersianDigits(n)}</Text>
-                  {isLadder && !occupied && <Text style={styles.mark}>🪜</Text>}
-                  {isSnake && !occupied && <Text style={styles.mark}>🐍</Text>}
-                  {occupied && (
-                    <View style={styles.tokens}>
-                      {hereTokens.map((e, i) => <Text key={i} style={styles.token}>{e}</Text>)}
-                    </View>
-                  )}
-                </View>
-              )
-            })}
-          </View>
-        ))}
+      <View style={styles.boardArea}>
+        <MarpeleBoard positions={positions} emojis={players.map((p) => p.emoji)} />
       </View>
 
       <View style={styles.controls}>
-        <View style={styles.die}>
-          <Text style={styles.dieText}>{animating ? '🎲' : die ? toPersianDigits(die) : '🎲'}</Text>
-        </View>
+        <Dice value={die} rolling={animating} />
         <Pressable style={[styles.rollButton, !canRoll && { opacity: 0.5 }]} disabled={!canRoll} onPress={humanRoll}>
           <Text style={styles.rollText}>{cur?.kind === 'human' ? 'تاس بینداز 🎲' : 'صبر کن…'}</Text>
         </Pressable>
@@ -404,19 +381,8 @@ const styles = StyleSheet.create({
   lineup: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', marginTop: 4 },
   startButton: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
   startText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
-  board: { gap: 6 },
-  row: { flexDirection: 'row', gap: 6 },
-  cell: { flex: 1, aspectRatio: 1, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  ladderCell: { backgroundColor: '#dcfce7' },
-  snakeCell: { backgroundColor: '#fee2e2' },
-  hereCell: { backgroundColor: colors.primarySoft },
-  cellNum: { position: 'absolute', top: 3, right: 5, fontSize: 9, fontFamily: fonts.regular, color: colors.muted },
-  mark: { fontSize: 18 },
-  tokens: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
-  token: { fontSize: 17 },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 'auto' },
-  die: { width: 60, height: 60, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  dieText: { fontSize: 30, fontFamily: fonts.bold, color: colors.text },
+  boardArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   rollButton: { flex: 1, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   rollText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 20 },
