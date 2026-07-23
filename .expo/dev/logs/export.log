@@ -1,0 +1,7 @@
+{"_e":"root:init","_t":1784786209379,"format":"v0-jsonl","version":"57.0.8"}
+{"_e":"env:mode","_t":1784786209485,"nodeEnv":"production","babelEnv":"production","mode":"production"}
+{"_e":"env:load","_t":1784786209486,"mode":"production","files":["../../../.env"],"env":{"DB_PASSWORD":"changeme","JWT_SECRET":"2123ea8c371327762175d134242614d94d2ebff26c9baa70115b97e112fc6ba16f53258af52ad085f57aff39dcbe8d2d","NEXT_PUBLIC_BACKEND_URL":"http://localhost:4000","WEB_URL":"http://localhost:3000"}}
+{"_e":"devserver:start","_t":1784786209492,"mode":"production","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":true}
+{"_e":"metro:config","_t":1784786209637,"serverRoot":"../../..","projectRoot":"../../..","exporting":true,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:instantiate","_t":1784786209723,"atlas":false,"workers":6,"host":null,"port":null}
+{"_e":"metro:bundling:started","_t":1784786210030,"id":"1","platform":"ios","environment":null,"entry":"node_modules/expo/AppEntry.js"}

@@ -3,7 +3,7 @@ import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'rea
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, Word } from '@koodakbook/shared'
-import { toPersianDigits } from '@koodakbook/shared'
+import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import QuizCard, { type QuizMode, type QuizQuestion } from '@/components/QuizCard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
@@ -69,7 +69,10 @@ export default function Marpele() {
       setLevel(lv)
       const all = wordsRes.data ?? []
       const filtered = all.filter((w) => w.stage <= lv + 1)
-      setPool(filtered.length >= 4 ? filtered : all)
+      // Prefer words with a picture so match/name challenges show a real visual,
+      // not a «؟» prompt.
+      const withVisual = filtered.filter((w) => wordEmoji(w.english) || w.image_url)
+      setPool(withVisual.length >= 4 ? withVisual : filtered.length >= 4 ? filtered : all)
     }
     load()
   }, [])

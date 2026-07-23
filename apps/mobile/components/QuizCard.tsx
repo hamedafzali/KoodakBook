@@ -165,8 +165,10 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
         options={options} correctId={correctWord.id} selected={selected} feedback={feedback}
         render={(w) => {
           const v = wordVisual(w)
+          // Fall back to the word text when there's no picture, so an option is
+          // never a blank white card (many words have no image/emoji).
           return {
-            label: feedback !== null ? w.persian : undefined,
+            label: feedback !== null || !v ? w.persian : undefined,
             emoji: v?.type === 'emoji' ? v.value : undefined,
             imageUrl: v?.type === 'img' ? v.value : undefined,
             bigVisual: true,
