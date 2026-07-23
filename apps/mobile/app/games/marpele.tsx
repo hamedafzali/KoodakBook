@@ -220,6 +220,7 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [stars, setStars] = useState(0)
   const [winner, setWinner] = useState<number | null>(null)
+  const [boardArea, setBoardArea] = useState({ w: 0, h: 0 })
   const mounted = useRef(true)
   const winnerRef = useRef(false)
   useEffect(() => () => { mounted.current = false }, [])
@@ -348,8 +349,18 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
         ))}
       </View>
 
-      <View style={styles.boardArea}>
-        <MarpeleBoard positions={positions} emojis={players.map((p) => p.emoji)} />
+      <View
+        style={styles.boardArea}
+        onLayout={(e) => setBoardArea({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+      >
+        {boardArea.h > 0 && (
+          <MarpeleBoard
+            positions={positions}
+            emojis={players.map((p) => p.emoji)}
+            maxWidth={boardArea.w}
+            maxHeight={boardArea.h}
+          />
+        )}
       </View>
 
       <View style={styles.controls}>

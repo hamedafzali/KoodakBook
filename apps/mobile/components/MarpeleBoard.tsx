@@ -120,7 +120,7 @@ function Token({ emoji, square, index, cell }: { emoji: string; square: number; 
       style={{
         position: 'absolute', width: size, height: size, left: -size / 2, top: -size / 2,
         alignItems: 'center', justifyContent: 'center',
-        transform: [{ translateX: ax }, { translateY: Animated.add(ay, arc) }, { scaleX }, { scaleY }, { rotateX: '-18deg' }],
+        transform: [{ translateX: ax }, { translateY: Animated.add(ay, arc) }, { scaleX }, { scaleY }],
       }}
     >
       <View style={[styles.tokenDisc, { width: size, height: size, borderRadius: size / 2 }]}>
@@ -130,10 +130,15 @@ function Token({ emoji, square, index, cell }: { emoji: string; square: number; 
   )
 }
 
-export default function MarpeleBoard({ positions, emojis }: { positions: number[]; emojis: string[] }) {
-  const { width } = useWindowDimensions()
-  const boardW = Math.min(width - 20, 420)
-  const cell = boardW / COLS
+export default function MarpeleBoard({ positions, emojis, maxWidth, maxHeight }: {
+  positions: number[]
+  emojis: string[]
+  maxWidth: number
+  maxHeight: number
+}) {
+  // Fill the available area: size cells to the smaller of the width/height fit.
+  const cell = Math.floor(Math.min((maxWidth - 6) / COLS, (maxHeight - 6) / ROWS))
+  const boardW = cell * COLS
   const boardH = cell * ROWS
 
   const tiles = Array.from({ length: SIZE }, (_, i) => ({ n: i + 1, ...centre(i + 1, cell) }))
@@ -268,8 +273,8 @@ export function Confetti() {
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center', transform: [{ perspective: 1000 }, { rotateX: '14deg' }] },
-  depth: { position: 'absolute', backgroundColor: '#b98a5e', borderRadius: 22, top: 12 },
+  stage: { alignItems: 'center', justifyContent: 'center' },
+  depth: { position: 'absolute', backgroundColor: '#b98a5e', borderRadius: 22, top: 8 },
   board: {
     backgroundColor: '#d9b892', borderRadius: 22, overflow: 'hidden',
     borderWidth: 4, borderColor: '#b98a5e',
