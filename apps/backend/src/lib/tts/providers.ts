@@ -64,10 +64,16 @@ export async function ttsElevenLabs(s: TtsSettings, text: string, apiKey: string
   // Persian is only supported by the eleven_v3 model family (multilingual_v2
   // does NOT include fa) — keep that the default for this fa-only app.
   const format = opts.wav ? 'pcm_22050' : 'mp3_44100_128'
+  const model = s.model || 'eleven_v3'
+  // Force Persian. Without language_code ElevenLabs auto-detects from context,
+  // which misfires on our short clips (single words/letters/numbers/syllables).
+  // Not supported on multilingual_v2, so omit it there.
+  const body: Record<string, unknown> = { text, model_id: model }
+  if (model !== 'eleven_multilingual_v2') body.language_code = 'fa'
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=${format}`, {
     method: 'POST',
     headers: { 'xi-api-key': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, model_id: s.model || 'eleven_v3' }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`ElevenLabs TTS ${res.status}: ${await res.text().catch(() => '')}`)
   const buf = Buffer.from(await res.arrayBuffer())
