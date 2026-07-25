@@ -1,7 +1,10 @@
 import 'dotenv/config'
 import express from 'express'
+import http from 'http'
+import { Server as SocketServer } from 'socket.io'
 import { migrate } from './lib/migrate'
 import { seedAdmin } from './lib/seedAdmin'
+import { setupRealtime } from './lib/realtime'
 import cors from 'cors'
 import path from 'path'
 import authRouter     from './routes/auth'
@@ -88,7 +91,13 @@ app.use('/api/friends',   friendsRouter)
 app.use('/api/leads',     leadsRouter)
 app.use('/api/ai',        aiRouter)
 
-app.listen(PORT, async () => {
+// Wrap Express in an HTTP server so Socket.IO can share the port. Native app
+// clients send no Origin, so allow any (the JWT handshake is the real gate).
+const server = http.createServer(app)
+const io = new SocketServer(server, { cors: { origin: '*' } })
+setupRealtime(io)
+
+server.listen(PORT, async () => {
   console.log(`Backend running on http://localhost:${PORT}`)
   await migrate()
   await seedAdmin()
