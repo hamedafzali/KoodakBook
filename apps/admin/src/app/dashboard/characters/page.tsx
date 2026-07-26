@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { PageHeader, Field, Input, Select, Badge, Spinner, Button } from '@/components/ui'
 import CharacterAvatar, { type CharacterMood } from '@/components/CharacterAvatar'
+import { useActing } from '@/lib/useActing'
 import { SCENE_SLUGS, SCENE_LABELS, type AppCharacter, type SceneSlug } from '@koodakbook/shared'
 
 /* شخصیت‌ها — the character registry (docs/character-system-plan.md).
@@ -68,11 +69,13 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
-  // Acting preview: mood + talking, exactly the two inputs the app (and a
-  // future Rive state machine) drives. Remount on change replays one-shot moods.
+  // Acting preview: a static mood picker + a live performer. The performer turns
+  // a sentence into lip-sync (mouth follows the words) + the emotion's body mood,
+  // synced to the line's audio when it has one. Remount replays one-shot moods.
   const [pMood, setPMood] = useState<CharacterMood>('idle')
-  const [pTalk, setPTalk] = useState(false)
   const [pKey, setPKey] = useState(0)
+  const [sayText, setSayText] = useState((c.lines ?? [])[0]?.text_persian ?? '')
+  const { mouth: actMouth, mood: actMood, playing, play } = useActing()
 
   const voiced = lines.filter(l => l.audio_url).length
 
@@ -112,28 +115,38 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
         </div>
       </div>
 
-      {/* Acting preview — same artwork + states the child app renders */}
-      <div className="flex items-center gap-4 bg-slate-50 rounded-xl p-3">
+      {/* Acting preview — real performance: the avatar lip-syncs the sentence */}
+      <div className="flex items-start gap-4 bg-slate-50 rounded-xl p-3">
         <div className="shrink-0 w-[104px] h-[104px] flex items-center justify-center">
-          <CharacterAvatar key={pKey} slug={c.slug} size={96} mood={pMood} talking={pTalk} />
+          <CharacterAvatar key={pKey} slug={c.slug} size={96}
+            mood={playing ? actMood : pMood}
+            talking={playing}
+            mouth={playing ? actMouth : undefined} />
         </div>
-        <div className="space-y-2 min-w-0">
+        <div className="space-y-2 min-w-0 flex-1">
           <p className="text-xs font-semibold text-slate-500">
-            پیش‌نمایش حرکت‌ها — همان حالت‌هایی که کودک در اپ می‌بیند (ستون emotion جمله‌ها به همین حالت‌ها وصل است)
+            پیش‌نمایش حرکت‌ها — یک جمله بنویس تا شخصیت با همان کلمه‌ها لب بزند و حسِ جمله را بازی کند
           </p>
+          {/* say a sentence → it performs; mouth tracks the actual Persian sounds */}
+          <div className="flex gap-2">
+            <input value={sayText} onChange={e => setSayText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') play(sayText) }}
+              placeholder="یک جمله بنویس…"
+              className="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-1.5 text-sm" />
+            <button onClick={() => play(sayText)} disabled={!sayText.trim()}
+              className="text-xs rounded-lg px-3 py-1.5 bg-amber-500 text-white font-semibold shrink-0 disabled:opacity-50">
+              {playing ? '● در حال اجرا' : '▶ اجرا'}
+            </button>
+          </div>
+          {/* static mood preview (the emotion column of a line maps onto these) */}
           <div className="flex flex-wrap gap-1.5">
             {MOODS.map(m => (
               <button key={m.id} onClick={() => { setPMood(m.id); setPKey(k => k + 1) }}
                 className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
-                  pMood === m.id ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300'}`}>
+                  !playing && pMood === m.id ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-amber-300'}`}>
                 {m.label}
               </button>
             ))}
-            <button onClick={() => setPTalk(t => !t)}
-              className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
-                pTalk ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300'}`}>
-              🗣 در حال حرف زدن
-            </button>
           </div>
         </div>
       </div>
@@ -183,6 +196,9 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
                 className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white shrink-0" dir="ltr">
                 {EMOTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
+              <button type="button" onClick={() => play(l.text_persian, l.emotion, l.audio_url)}
+                disabled={!l.text_persian.trim()} title="اجرا با همین حس و صدا"
+                className="shrink-0 text-amber-600 hover:text-amber-700 disabled:opacity-30 px-1">▶</button>
               <span title={l.audio_url ? 'صدا دارد' : 'بدون صدا'} className="shrink-0 text-sm">{l.audio_url ? '🔊' : '—'}</span>
               <button onClick={() => setLines(ls => ls.filter((_, j) => j !== i))} className="text-red-400 px-1 shrink-0" aria-label="حذف">✕</button>
             </div>

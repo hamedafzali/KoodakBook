@@ -20,6 +20,9 @@ interface Props {
   size?: number
   mood?: CharacterMood
   talking?: boolean
+  /** Driven viseme openness 0..1 from a performance track (useActing). When set,
+   *  the mouth follows the actual words instead of the generic `talking` loop. */
+  mouth?: number
   className?: string
 }
 type CharProps = Omit<Props, 'slug'>
@@ -75,8 +78,15 @@ function TalkMouth({ cx, cy, color }: { cx: number; cy: number; color: string })
   )
 }
 
+/** Driven viseme mouth: openness comes from a performance track (0..1), so the
+ *  mouth matches the actual words. Beats the generic `talking` loop when set. */
+function Mouth({ cx, cy, color, open }: { cx: number; cy: number; color: string; open: number }) {
+  const o = Math.max(0, Math.min(1, open))
+  return <ellipse cx={cx} cy={cy} rx={4.8} ry={1 + o * 4} fill={color} />
+}
+
 /** Roozi the fox — vocabulary teacher. */
-function Roozi({ size = 120, mood = 'idle', talking, className }: CharProps) {
+function Roozi({ size = 120, mood = 'idle', talking, mouth, className }: CharProps) {
   return (
     <MoodWrap mood={mood} talking={talking} size={size} className={className}>
       <svg viewBox="0 0 120 120" fill="none" width={size} height={size}>
@@ -97,7 +107,8 @@ function Roozi({ size = 120, mood = 'idle', talking, className }: CharProps) {
         <Blink x={44} y={38} w={12} h={9} color="#fb923c" />
         <Blink x={64} y={38} w={12} h={9} color="#fb923c" />
         <ellipse cx="60" cy="52" rx="3.5" ry="2.8" fill="#431407" />
-        {talking ? <TalkMouth cx={60} cy={59} color="#431407" />
+        {mouth != null ? <Mouth cx={60} cy={59} color="#431407" open={mouth} />
+          : talking ? <TalkMouth cx={60} cy={59} color="#431407" />
           : mood === 'idle'
             ? <path d="M56 58 Q60 61 64 58" stroke="#431407" strokeWidth="2" strokeLinecap="round" fill="none" />
             : <path d="M54 57 Q60 64 66 57" stroke="#431407" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
@@ -110,7 +121,7 @@ function Roozi({ size = 120, mood = 'idle', talking, className }: CharProps) {
 }
 
 /** آوا — the speaking buddy. */
-function Ava({ size = 120, mood = 'idle', talking, className }: CharProps) {
+function Ava({ size = 120, mood = 'idle', talking, mouth, className }: CharProps) {
   return (
     <MoodWrap mood={mood} talking={talking} size={size} className={className}>
       <svg viewBox="0 0 120 120" fill="none" width={size} height={size}>
@@ -131,7 +142,8 @@ function Ava({ size = 120, mood = 'idle', talking, className }: CharProps) {
         <Blink x={63} y={47} w={12} h={9} color="#fde2c8" />
         <ellipse cx="45" cy="60" rx="4" ry="2.5" fill="#fda4af" opacity="0.7" />
         <ellipse cx="75" cy="60" rx="4" ry="2.5" fill="#fda4af" opacity="0.7" />
-        {talking ? <TalkMouth cx={60} cy={65} color="#b45309" />
+        {mouth != null ? <Mouth cx={60} cy={65} color="#b45309" open={mouth} />
+          : talking ? <TalkMouth cx={60} cy={65} color="#b45309" />
           : mood === 'idle'
             ? <path d="M55 64 Q60 68 65 64" stroke="#b45309" strokeWidth="2" strokeLinecap="round" fill="none" />
             : <path d="M53 63 Q60 71 67 63" stroke="#b45309" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
@@ -143,7 +155,7 @@ function Ava({ size = 120, mood = 'idle', talking, className }: CharProps) {
 }
 
 /** پشمک — fluffy cat, phonics teacher. */
-function Pashmak({ size = 120, mood = 'idle', talking, className }: CharProps) {
+function Pashmak({ size = 120, mood = 'idle', talking, mouth, className }: CharProps) {
   return (
     <MoodWrap mood={mood} talking={talking} size={size} className={className}>
       <svg viewBox="0 0 120 120" fill="none" width={size} height={size}>
@@ -166,7 +178,8 @@ function Pashmak({ size = 120, mood = 'idle', talking, className }: CharProps) {
         <Blink x={42} y={39} w={12} h={9} color="#cbd5e1" />
         <Blink x={62} y={39} w={12} h={9} color="#cbd5e1" />
         <path d="M55 52 L61 52 L58 56 Z" fill="#f472b6" />
-        {talking ? <TalkMouth cx={58} cy={61} color="#334155" />
+        {mouth != null ? <Mouth cx={58} cy={61} color="#334155" open={mouth} />
+          : talking ? <TalkMouth cx={58} cy={61} color="#334155" />
           : mood === 'idle'
             ? <path d="M54 60 Q58 62 62 60" stroke="#334155" strokeWidth="2" strokeLinecap="round" fill="none" />
             : <path d="M52 59 Q58 65 64 59" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
@@ -181,7 +194,7 @@ function Pashmak({ size = 120, mood = 'idle', talking, className }: CharProps) {
 }
 
 /** لاکی — the tortoise, numbers teacher. */
-function Laki({ size = 120, mood = 'idle', talking, className }: CharProps) {
+function Laki({ size = 120, mood = 'idle', talking, mouth, className }: CharProps) {
   return (
     <MoodWrap mood={mood} talking={talking} size={size} className={className}>
       <svg viewBox="0 0 120 120" fill="none" width={size} height={size}>
@@ -196,7 +209,8 @@ function Laki({ size = 120, mood = 'idle', talking, className }: CharProps) {
         <circle cx="67" cy="29.8" r="1" fill="#fff" />
         <Blink x={49} y={27} w={10} h={8} color="#86efac" />
         <Blink x={61} y={27} w={10} h={8} color="#86efac" />
-        {talking ? <TalkMouth cx={60} cy={40} color="#14532d" />
+        {mouth != null ? <Mouth cx={60} cy={40} color="#14532d" open={mouth} />
+          : talking ? <TalkMouth cx={60} cy={40} color="#14532d" />
           : mood === 'idle'
             ? <path d="M55 39 Q60 42 65 39" stroke="#14532d" strokeWidth="2" strokeLinecap="round" fill="none" />
             : <path d="M53 38 Q60 45 67 38" stroke="#14532d" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
@@ -213,11 +227,11 @@ function Laki({ size = 120, mood = 'idle', talking, className }: CharProps) {
   )
 }
 
-export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, className }: Props) {
-  if (slug === 'roozi') return <Roozi size={size} mood={mood} talking={talking} className={className} />
-  if (slug === 'ava') return <Ava size={size} mood={mood} talking={talking} className={className} />
-  if (slug === 'pashmak') return <Pashmak size={size} mood={mood} talking={talking} className={className} />
-  if (slug === 'laki') return <Laki size={size} mood={mood} talking={talking} className={className} />
+export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, className }: Props) {
+  if (slug === 'roozi') return <Roozi size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
+  if (slug === 'ava') return <Ava size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
+  if (slug === 'pashmak') return <Pashmak size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
+  if (slug === 'laki') return <Laki size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
   // Simorgh (and unknown slugs) → the mascot artwork; talking = speech bob.
   const mascotMood = mood === 'excited' ? 'excited' : mood === 'happy' ? 'happy' : 'idle'
   return (
