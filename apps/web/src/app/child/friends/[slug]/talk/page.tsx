@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import { speakOrPlay, stopSpeaking, initSpeech } from '@/lib/speech'
-import { useSpeaking } from '@/lib/useSpeaking'
+import { useActing } from '@/lib/useActing'
 import { recognitionSupported, dictateOnce } from '@/lib/recognition'
 import { playTap } from '@/lib/sounds'
 import LoadingScreen from '@/components/child/LoadingScreen'
@@ -34,7 +34,7 @@ export default function TalkPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const canListen = useMemo(() => recognitionSupported(), [])
-  const speaking = useSpeaking()   // drives the talking mouth/bob
+  const { mouth: actMouth, speaking } = useActing()   // sentence-matched lip-sync + bob
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -104,6 +104,7 @@ export default function TalkPage() {
         <SceneBackdrop scene={scene} className="w-full h-44 !rounded-none rounded-b-[2rem]" />
         <div className="absolute inset-x-0 bottom-0 flex justify-center">
           <CharacterAvatar slug={character.slug} size={110} talking={speaking}
+            mouth={speaking ? actMouth : undefined}
             mood={busy === 'think' ? 'thinking' : mood} className="-mb-1 drop-shadow-lg" />
         </div>
         <Link href={`/child/friends/${slug}`} aria-label="برگشت"

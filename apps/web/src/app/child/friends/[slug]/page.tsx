@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { speakOrPlay, stopSpeaking, initSpeech } from '@/lib/speech'
-import { useSpeaking } from '@/lib/useSpeaking'
+import { useActing } from '@/lib/useActing'
 import { playTap } from '@/lib/sounds'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
@@ -29,7 +29,7 @@ export default function CharacterHomePage() {
   const { slug } = useParams<{ slug: string }>()
   const [chars, setChars] = useState<AppCharacter[] | null>(null)
   const [mood, setMood] = useState<CharacterMood>('happy')
-  const speaking = useSpeaking()
+  const { mouth: actMouth, speaking } = useActing()
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -71,7 +71,8 @@ export default function CharacterHomePage() {
           aria-label={`دوباره سلام کن به ${character.name_persian}`}
           className="absolute inset-x-0 bottom-0 flex justify-center"
         >
-          <CharacterAvatar slug={character.slug} size={150} mood={mood} talking={speaking} className="-mb-2 drop-shadow-lg" />
+          <CharacterAvatar slug={character.slug} size={150} mood={mood} talking={speaking}
+            mouth={speaking ? actMouth : undefined} className="-mb-2 drop-shadow-lg" />
         </button>
         <Link href="/child/home" aria-label="برگشت به خانه"
           className="absolute top-3 right-3 w-11 h-11 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-slate-500">

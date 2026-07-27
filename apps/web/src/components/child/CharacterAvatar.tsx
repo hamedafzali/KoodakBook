@@ -227,11 +227,115 @@ function Laki({ size = 120, mood = 'idle', talking, mouth, className }: CharProp
   )
 }
 
+/** تندپا — the hare, colors teacher (fast, playful; learns patience from Laki). */
+function Tondpa({ size = 120, mood = 'idle', talking, mouth, className }: CharProps) {
+  return (
+    <MoodWrap mood={mood} talking={talking} size={size} className={className}>
+      <svg viewBox="0 0 120 120" fill="none" width={size} height={size}>
+        <ellipse cx="60" cy="92" rx="24" ry="20" fill="#e2e8f0" />
+        <ellipse cx="60" cy="96" rx="14" ry="12" fill="#f8fafc" />
+        <ellipse cx="49" cy="108" rx="8" ry="5" fill="#e2e8f0" />
+        <ellipse cx="71" cy="108" rx="8" ry="5" fill="#e2e8f0" />
+        <ellipse cx="50" cy="24" rx="6.5" ry="20" fill="#e2e8f0" />
+        <ellipse cx="70" cy="24" rx="6.5" ry="20" fill="#e2e8f0" />
+        <ellipse cx="50" cy="26" rx="3" ry="14" fill="#fbcfe8" />
+        <ellipse cx="70" cy="26" rx="3" ry="14" fill="#fbcfe8" />
+        <circle cx="60" cy="52" r="24" fill="#f1f5f9" />
+        <circle cx="40" cy="58" r="8" fill="#f1f5f9" />
+        <circle cx="80" cy="58" r="8" fill="#f1f5f9" />
+        <circle cx="51" cy="48" r={mood === 'excited' ? 4.5 : 3.6} fill="#334155" />
+        <circle cx="69" cy="48" r={mood === 'excited' ? 4.5 : 3.6} fill="#334155" />
+        <circle cx="52.4" cy="46.6" r="1.2" fill="#fff" />
+        <circle cx="70.4" cy="46.6" r="1.2" fill="#fff" />
+        <Blink x={45} y={43} w={12} h={9} color="#f1f5f9" />
+        <Blink x={63} y={43} w={12} h={9} color="#f1f5f9" />
+        <ellipse cx="44" cy="58" rx="4" ry="2.6" fill="#fda4af" opacity="0.7" />
+        <ellipse cx="76" cy="58" rx="4" ry="2.6" fill="#fda4af" opacity="0.7" />
+        <path d="M57 55 L63 55 L60 59 Z" fill="#f472b6" />
+        {mouth != null ? <Mouth cx={60} cy={64} color="#9d174d" open={mouth} />
+          : talking ? <TalkMouth cx={60} cy={64} color="#9d174d" />
+          : mood === 'idle'
+            ? <path d="M56 62 Q60 65 64 62" stroke="#9d174d" strokeWidth="2" strokeLinecap="round" fill="none" />
+            : <path d="M54 61 Q60 67 66 61" stroke="#9d174d" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
+        {mood === 'excited' && !talking && <text x="86" y="30" fontSize="15">🌈</text>}
+      </svg>
+    </MoodWrap>
+  )
+}
+
+/** بومی — the owl, letters teacher (wise, calm, sees in the dark). */
+function Boomi({ size = 120, mood = 'idle', talking, mouth, className }: CharProps) {
+  return (
+    <MoodWrap mood={mood} talking={talking} size={size} className={className}>
+      <svg viewBox="0 0 120 120" fill="none" width={size} height={size}>
+        <path d="M50 106 l-4 6 M50 106 v7 M50 106 l4 6" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M70 106 l-4 6 M70 106 v7 M70 106 l4 6" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
+        <ellipse cx="60" cy="72" rx="30" ry="34" fill="#6366f1" />
+        <ellipse cx="60" cy="80" rx="19" ry="24" fill="#c7d2fe" />
+        <path d="M30 64 q-7 18 5 31 q-10 -4 -12 -18 q-1 -9 7 -13z" fill="#4f46e5" />
+        <path d="M90 64 q7 18 -5 31 q10 -4 12 -18 q1 -9 -7 -13z" fill="#4f46e5" />
+        <path d="M36 40 L30 20 L48 34 Z" fill="#6366f1" />
+        <path d="M84 40 L90 20 L72 34 Z" fill="#6366f1" />
+        <circle cx="49" cy="50" r="15" fill="#eef2ff" />
+        <circle cx="71" cy="50" r="15" fill="#eef2ff" />
+        <circle cx="49" cy="50" r={mood === 'excited' ? 7 : 6} fill="#1e293b" />
+        <circle cx="71" cy="50" r={mood === 'excited' ? 7 : 6} fill="#1e293b" />
+        <circle cx="51" cy="48" r="2" fill="#fff" />
+        <circle cx="73" cy="48" r="2" fill="#fff" />
+        <Blink x={35} y={43} w={28} h={14} color="#eef2ff" />
+        <Blink x={57} y={43} w={28} h={14} color="#eef2ff" />
+        {mouth != null ? <Mouth cx={60} cy={62} color="#f59e0b" open={mouth} />
+          : talking ? <TalkMouth cx={60} cy={62} color="#f59e0b" />
+          : <path d="M55 58 L65 58 L60 67 Z" fill="#f59e0b" />}
+        {mood === 'excited' && !talking && <text x="84" y="28" fontSize="13" fontWeight="bold" fill="#c7d2fe">الف</text>}
+      </svg>
+    </MoodWrap>
+  )
+}
+
+/** خرسی — the bear, feelings teacher (warm, gentle, gives big hugs). */
+function Khersi({ size = 120, mood = 'idle', talking, mouth, className }: CharProps) {
+  return (
+    <MoodWrap mood={mood} talking={talking} size={size} className={className}>
+      <svg viewBox="0 0 120 120" fill="none" width={size} height={size}>
+        <circle cx="42" cy="30" r="11" fill="#a16207" />
+        <circle cx="78" cy="30" r="11" fill="#a16207" />
+        <circle cx="42" cy="30" r="6" fill="#d4a373" />
+        <circle cx="78" cy="30" r="6" fill="#d4a373" />
+        <ellipse cx="60" cy="92" rx="26" ry="22" fill="#b08968" />
+        <ellipse cx="60" cy="96" rx="15" ry="14" fill="#d4b996" />
+        <ellipse cx="46" cy="108" rx="8" ry="5" fill="#b08968" />
+        <ellipse cx="74" cy="108" rx="8" ry="5" fill="#b08968" />
+        <circle cx="60" cy="50" r="25" fill="#c8a06a" />
+        <ellipse cx="60" cy="60" rx="15" ry="11" fill="#e7d3b8" />
+        <circle cx="51" cy="46" r={mood === 'excited' ? 4 : 3.2} fill="#3b2314" />
+        <circle cx="69" cy="46" r={mood === 'excited' ? 4 : 3.2} fill="#3b2314" />
+        <circle cx="52.2" cy="44.8" r="1.1" fill="#fff" />
+        <circle cx="70.2" cy="44.8" r="1.1" fill="#fff" />
+        <Blink x={45} y={41} w={12} h={9} color="#c8a06a" />
+        <Blink x={63} y={41} w={12} h={9} color="#c8a06a" />
+        <ellipse cx="43" cy="56" rx="4.5" ry="3" fill="#f0a6a6" opacity="0.6" />
+        <ellipse cx="77" cy="56" rx="4.5" ry="3" fill="#f0a6a6" opacity="0.6" />
+        <ellipse cx="60" cy="56" rx="4.5" ry="3.2" fill="#3b2314" />
+        {mouth != null ? <Mouth cx={60} cy={66} color="#5b3a1e" open={mouth} />
+          : talking ? <TalkMouth cx={60} cy={66} color="#5b3a1e" />
+          : mood === 'idle'
+            ? <path d="M55 64 Q60 68 65 64" stroke="#5b3a1e" strokeWidth="2" strokeLinecap="round" fill="none" />
+            : <path d="M53 63 Q60 70 67 63" stroke="#5b3a1e" strokeWidth="2.5" strokeLinecap="round" fill="none" />}
+        {mood === 'excited' && !talking && <text x="86" y="30" fontSize="15">💛</text>}
+      </svg>
+    </MoodWrap>
+  )
+}
+
 export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, className }: Props) {
   if (slug === 'roozi') return <Roozi size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
   if (slug === 'ava') return <Ava size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
   if (slug === 'pashmak') return <Pashmak size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
   if (slug === 'laki') return <Laki size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
+  if (slug === 'tondpa') return <Tondpa size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
+  if (slug === 'boomi') return <Boomi size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
+  if (slug === 'khersi') return <Khersi size={size} mood={mood} talking={talking} mouth={mouth} className={className} />
   // Simorgh (and unknown slugs) → the mascot artwork; talking = speech bob.
   const mascotMood = mood === 'excited' ? 'excited' : mood === 'happy' ? 'happy' : 'idle'
   return (
