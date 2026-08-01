@@ -70,6 +70,21 @@ export interface AudioSectionConfig {
 }
 
 // ── Interactive characters (mig 042) ───────────────────────
+/** Per-emotion tuning stored in `characters.animation.emotions` and applied by
+ *  the `pixel-wizards-charachters` rig. Sparse — only changed channels. */
+export interface EmotionOverride {
+  squint?: number
+  wide?: number
+  mouth?: 'soft' | 'big' | 'frown' | 'o'
+  brow?: 'idle' | 'happy' | 'excited' | 'thinking' | 'encouraging' | 'sad' | 'surprised' | 'sleepy' | 'confused' | 'proud' | 'shy'
+  /** where the emotion itself points the eyes, each axis -1..1 (added to gaze) */
+  gaze?: { x: number; y: number }
+}
+export interface CharacterAnimation {
+  emotions?: Record<string, EmotionOverride>
+  [key: string]: unknown
+}
+
 export interface AppCharacter {
   id: string
   slug: string
@@ -80,7 +95,7 @@ export interface AppCharacter {
   level: number
   voice_engine: string
   voice_id: string
-  animation: Record<string, unknown>
+  animation: CharacterAnimation
   topics: string[]
   teaching_role: string
   home_scene: string

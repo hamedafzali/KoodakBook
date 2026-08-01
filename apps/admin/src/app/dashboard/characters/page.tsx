@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { PageHeader, Field, Input, Select, Badge, Spinner, Button } from '@/components/ui'
 import CharacterAvatar, { type CharacterMood } from '@/components/CharacterAvatar'
+import EmotionEditor from '@/components/EmotionEditor'
 import { useActing } from '@/lib/useActing'
 import { SCENE_SLUGS, SCENE_LABELS, type AppCharacter, type SceneSlug } from '@koodakbook/shared'
+import type { EmotionOverrides } from 'pixel-wizards-charachters'
 
 /* شخصیت‌ها — the character registry (docs/character-system-plan.md).
  * The whole point: adding/changing a character is DATA — a row, a voice, and
@@ -66,6 +68,8 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
   })
   const [lines, setLines] = useState<LineDraft[]>(
     (c.lines ?? []).map(l => ({ trigger: l.trigger, text_persian: l.text_persian, emotion: l.emotion, audio_url: l.audio_url })))
+  // Per-emotion tuning (animation.emotions) — sparse override map, live-previewed.
+  const [emo, setEmo] = useState<EmotionOverrides>((c.animation?.emotions as EmotionOverrides) ?? {})
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -85,6 +89,8 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
       ...f,
       age_band: Number(f.age_band), level: Number(f.level),
       topics: f.topics.split(',').map(t => t.trim()).filter(Boolean),
+      // Preserve any other animation keys; overwrite only the emotion tuning.
+      animation: { ...(c.animation ?? {}), emotions: emo },
     }
     const r1 = await api.patch(`/api/characters/admin/${c.id}`, body)
     const r2 = await api.put(`/api/characters/admin/${c.id}/lines`, {
@@ -121,7 +127,8 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
           <CharacterAvatar key={pKey} slug={c.slug} size={96}
             mood={playing ? actMood : pMood}
             talking={playing}
-            mouth={playing ? actMouth : undefined} />
+            mouth={playing ? actMouth : undefined}
+            emotions={emo} />
         </div>
         <div className="space-y-2 min-w-0 flex-1">
           <p className="text-xs font-semibold text-slate-500">
@@ -150,6 +157,9 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
           </div>
         </div>
       </div>
+
+      {/* Emotion parameters — tune each emotion; saved with «ذخیره» below */}
+      <EmotionEditor slug={c.slug} value={emo} onChange={setEmo} />
 
       <div className="grid sm:grid-cols-2 gap-3">
         <Field label="نام"><Input value={f.name_persian} onChange={e => setF({ ...f, name_persian: e.target.value })} /></Field>

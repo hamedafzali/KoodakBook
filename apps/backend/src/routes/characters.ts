@@ -42,6 +42,26 @@ router.get('/admin/list', requireAdmin, requirePermission('content.read'), async
   res.json({ data: await withLines(chars), error: null })
 })
 
+// Per-emotion tuning saved into the character's `animation` JSON column, under
+// `animation.emotions`. Mirrors the library's EmotionSpec (partial — only the
+// changed channels are stored). The web app renders characters with these.
+const EMOTION_NAMES = [
+  'neutral', 'happy', 'excited', 'thinking',
+  'encouraging', 'sad', 'surprised', 'sleepy', 'love',
+  'confused', 'proud', 'shy',
+] as const
+const axis = z.number().min(-1).max(1)
+const emotionPatchSchema = z.object({
+  squint: z.number().min(0).max(1).optional(),
+  wide: z.number().min(0).max(1).optional(),
+  mouth: z.enum(['soft', 'big', 'frown', 'o']).optional(),
+  brow: z.enum(['idle', 'happy', 'excited', 'thinking', 'encouraging', 'sad', 'surprised', 'sleepy', 'confused', 'proud', 'shy']).optional(),
+  gaze: z.object({ x: axis, y: axis }).optional(),
+}).strict()
+const animationSchema = z.object({
+  emotions: z.record(z.enum(EMOTION_NAMES), emotionPatchSchema).optional(),
+}).passthrough()
+
 const charSchema = z.object({
   name_persian: z.string().trim().min(1).max(60).optional(),
   type: z.enum(['child', 'animal', 'fantasy']).optional(),
@@ -55,6 +75,7 @@ const charSchema = z.object({
   home_scene: z.string().trim().max(30).optional(),
   system_prompt: z.string().max(4000).optional(),
   is_active: z.boolean().optional(),
+  animation: animationSchema.optional(),
 })
 
 router.patch('/admin/:id', requireAdmin, requirePermission('content.edit'), async (req, res) => {
@@ -68,12 +89,13 @@ router.patch('/admin/:id', requireAdmin, requirePermission('content.edit'), asyn
        level = coalesce($5, level), voice_engine = coalesce($6, voice_engine),
        voice_id = coalesce($7, voice_id), topics = coalesce($8, topics),
        teaching_role = coalesce($9, teaching_role), home_scene = coalesce($10, home_scene),
-       system_prompt = coalesce($11, system_prompt), is_active = coalesce($12, is_active)
-     where id = $13 returning ${PUBLIC_COLS}, system_prompt`,
+       system_prompt = coalesce($11, system_prompt), is_active = coalesce($12, is_active),
+       animation = coalesce($13::jsonb, animation)
+     where id = $14 returning ${PUBLIC_COLS}, system_prompt`,
     [d.name_persian ?? null, d.type ?? null, d.personality ?? null, d.age_band ?? null,
      d.level ?? null, d.voice_engine ?? null, d.voice_id ?? null, d.topics ?? null,
      d.teaching_role ?? null, d.home_scene ?? null, d.system_prompt ?? null,
-     d.is_active ?? null, req.params.id])
+     d.is_active ?? null, d.animation ? JSON.stringify(d.animation) : null, req.params.id])
   if (!row) { res.status(404).json({ data: null, error: 'Character not found' }); return }
   res.json({ data: row, error: null })
 })
