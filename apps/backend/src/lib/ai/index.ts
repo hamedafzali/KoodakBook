@@ -34,6 +34,12 @@ const STORY_JSON_SCHEMA = {
   required: ['title_persian', 'title_english', 'pages'],
 } as const
 
+// Text form of the story shape for OpenAI-compatible providers (Anthropic uses
+// the JSON schema above). Passed only on the story surface — see openaiCompat.ts.
+const STORY_JSON_INSTRUCTION =
+  'Respond ONLY with a JSON object of this shape (no markdown, no commentary): ' +
+  '{ "title_persian": string, "title_english": string, "pages": [ { "text_persian": string, "text_english": string, "scene": string, "time": "day"|"night" } ] }'
+
 const StorySchema = z.object({
   title_persian: z.string().min(1),
   title_english: z.string().min(1),
@@ -89,7 +95,7 @@ export async function generateStory(settings: AiSettings, vars: StoryVars): Prom
     raw = await generateAnthropic({ apiKey, model: settings.model, maxTokens: settings.max_tokens, system, prompt, schema: STORY_JSON_SCHEMA as unknown as Record<string, unknown> })
   } else {
     if (!settings.base_url) throw new Error('base_url required for openai_compatible provider')
-    raw = await generateOpenAICompatible({ apiKey, baseURL: settings.base_url, model: settings.model, maxTokens: settings.max_tokens, system, prompt })
+    raw = await generateOpenAICompatible({ apiKey, baseURL: settings.base_url, model: settings.model, maxTokens: settings.max_tokens, system, prompt, jsonInstruction: STORY_JSON_INSTRUCTION })
   }
 
   const parsed = StorySchema.safeParse(extractJson(raw))

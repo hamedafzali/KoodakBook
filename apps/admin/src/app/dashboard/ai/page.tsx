@@ -12,6 +12,7 @@ interface Settings {
   system_prompt: string
   user_prompt_template: string
   max_tokens: number
+  ai_enabled: boolean
   updated_at?: string
   updated_by?: string | null
 }
@@ -119,6 +120,8 @@ export default function AiSettingsPage() {
         <p className="text-sm text-slate-500 mt-0.5">ارائه‌دهنده و مدلِ ساختِ داستان‌های شخصی‌سازی‌شده</p>
       </div>
 
+      <KillSwitchCard />
+
       {/* Key status */}
       <div className={`rounded-xl border px-4 py-3 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
         {keySet
@@ -203,6 +206,58 @@ export default function AiSettingsPage() {
       </div>
 
       <TtsCard />
+    </div>
+  )
+}
+
+// ── Kill switch ───────────────────────────────────────────
+// Self-contained on purpose: loads + flips ONLY ai_enabled via the dedicated
+// endpoint, so it works reliably in an incident and never rides along unsaved
+// edits from the settings form above.
+function KillSwitchCard() {
+  const [enabled, setEnabled] = useState<boolean | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    const r = await api.get<{ settings: { ai_enabled: boolean } | null }>('/api/admin/ai-settings')
+    if (r.data?.settings) setEnabled(r.data.settings.ai_enabled)
+  }, [])
+  useEffect(() => { load() }, [load])
+
+  if (enabled === null) return null
+
+  async function toggle() {
+    const confirmMsg = enabled
+      ? 'هوش مصنوعی برای همه‌ی بچه‌ها خاموش شود؟ گفت‌وگوی شخصیت‌ها به جمله‌های آماده برمی‌گردد و ساخت/ترجمه‌ی داستان با هوش مصنوعی موقتاً متوقف می‌شود.'
+      : 'هوش مصنوعی دوباره روشن شود؟'
+    if (!window.confirm(confirmMsg)) return
+    setBusy(true); setErr(null)
+    const r = await api.patch<{ ok: boolean; ai_enabled: boolean }>('/api/admin/ai-settings/enabled', { ai_enabled: !enabled })
+    setBusy(false)
+    if (r.error) { setErr(r.error); return }
+    setEnabled(r.data?.ai_enabled ?? !enabled)
+  }
+
+  return (
+    <div className={`rounded-2xl border p-5 ${enabled ? 'bg-white border-slate-200' : 'bg-red-50 border-red-300'}`}>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-slate-800">کلید اضطراری هوش مصنوعی</h3>
+            <Badge tone={enabled ? 'green' : 'red'}>{enabled ? 'روشن' : 'خاموش'}</Badge>
+          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            {enabled
+              ? 'همه‌ی بخش‌های هوش مصنوعی فعال‌اند. اگر پاسخ نامناسبی دیدید، همین‌جا فوراً خاموش کنید — بدون نیاز به استقرار.'
+              : 'هوش مصنوعی خاموش است: گفت‌وگوها با جمله‌های آماده پاسخ داده می‌شوند و ساخت/ترجمه‌ی داستان با هوش مصنوعی متوقف است.'}
+          </p>
+          {err && <p className="text-sm text-red-600 mt-1">{err}</p>}
+        </div>
+        <Button variant={enabled ? 'danger' : 'primary'} onClick={toggle} disabled={busy}>
+          {busy ? '...' : enabled ? 'خاموش کن' : 'روشن کن'}
+        </Button>
+      </div>
     </div>
   )
 }
