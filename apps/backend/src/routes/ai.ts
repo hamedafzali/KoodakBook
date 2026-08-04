@@ -23,6 +23,7 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
 
   const settings = await getAiSettings()
   if (!settings) { res.status(503).json({ data: null, error: 'هوش مصنوعی هنوز پیکربندی نشده است' }); return }
+  if (!settings.ai_enabled) { res.status(503).json({ data: null, error: 'ساختن داستان با هوش مصنوعی موقتاً خاموش است' }); return }
 
   const { child_id, theme } = parsed.data
 
@@ -172,6 +173,7 @@ router.post('/stories/:id/translate', requireAuth, async (req, res) => {
   }
   const settings = await getAiSettings()
   if (!settings) { res.status(503).json({ data: null, error: 'ترجمه فعلاً در دسترس نیست' }); return }
+  if (!settings.ai_enabled) { res.status(503).json({ data: null, error: 'ترجمه با هوش مصنوعی موقتاً خاموش است' }); return }
 
   const pages = await query<{ id: string; text_persian: string; translations: Record<string, string> }>(
     'select id, text_persian, translations from story_pages where story_id = $1 order by page_number', [storyId])

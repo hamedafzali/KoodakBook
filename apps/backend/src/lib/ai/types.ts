@@ -7,6 +7,7 @@ export interface AiSettings {
   system_prompt: string
   user_prompt_template: string
   max_tokens: number
+  ai_enabled: boolean   // global kill switch (migration 047); false = serve fallbacks, no provider calls
 }
 
 /** Values substituted into the user-prompt template ({{name}}, {{vocab}}, …). */

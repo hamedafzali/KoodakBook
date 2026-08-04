@@ -160,8 +160,9 @@ router.post('/admin/:id/audio', requireAdmin, requirePermission('ai.manage'), as
 const EMOTIONS = new Set(['happy', 'excited', 'encouraging'])
 
 /** Form validation only (length/script); the vocabulary constraint lives in
- *  the prompt — a strict lexicon check would reject normal function words. */
-function validReply(reply: string): boolean {
+ *  the prompt — a strict lexicon check would reject normal function words.
+ *  Exported so the safety harness can drive the real gate (Item 3). */
+export function validReply(reply: string): boolean {
   if (reply.length < 2 || reply.length > 220) return false
   if (/[A-Za-z]|https?:|www\./.test(reply)) return false                 // Persian only, no links
   if ((reply.match(/[.!؟?]/g) ?? []).length > 3) return false            // ≤ ~2-3 sentences
@@ -234,7 +235,7 @@ router.post('/:slug/chat', requireAuth, requireChildOwner, async (req, res) => {
   let emotion = 'happy'
   let lineAudio: string | null = null
 
-  if (settings) {
+  if (settings && settings.ai_enabled) {   // kill switch off ⇒ skip the model, scripted fallback below
     // one retry on validation failure, then scripted fallback
     for (let attempt = 0; attempt < 2 && !reply; attempt++) {
       try {
