@@ -57,16 +57,14 @@ export type CreateChildInput = Pick<Child, 'name' | 'birth_year' | 'level' | 'av
 
 // ── Audio (per-section TTS voices) ─────────────────────────
 export type AudioSection = 'story' | 'letter' | 'word' | 'phonics' | 'math'
-/** piper/edge run on the free sidecar; the rest are keyed cloud engines. */
-export type AudioEngine = 'piper' | 'edge' | 'azure' | 'openai' | 'google' | 'elevenlabs'
+/** Keyed cloud engines only. The free sidecar (piper/edge) was removed in the
+ *  single-tier collapse (migration 048) — one voice per section, served to all. */
+export type AudioEngine = 'azure' | 'openai' | 'google' | 'elevenlabs'
 
 export interface AudioSectionConfig {
   section: AudioSection
   engine: AudioEngine
   voice: string
-  /** Optional paid tier (cloud engines only); null = premium hears the free voice. */
-  premium_engine?: AudioEngine | null
-  premium_voice?: string | null
 }
 
 // ── Interactive characters (mig 042) ───────────────────────
@@ -124,7 +122,6 @@ export interface Word {
   /** Diacritized pronunciation override used only for TTS (homographs). */
   tts_text?: string | null
   audio_url: string | null
-  audio_url_premium?: string | null
   image_url: string | null
   // ── Animation (Phase 0) ──
   animation_template?: AnimationTemplate | null
@@ -151,7 +148,6 @@ export interface Letter {
   /** Diacritized pronunciation override used only for TTS (letter names). */
   tts_text?: string | null
   audio_url: string | null
-  audio_url_premium?: string | null
   example_word_id: string | null
   animation_template?: AnimationTemplate | null
   animation_params?: AnimationParams
@@ -201,7 +197,6 @@ export interface StoryPage {
   text_english: string | null
   image_url: string | null
   audio_url: string | null
-  audio_url_premium?: string | null
   /** Chosen family-language translation for this page (attached per request). */
   translation?: string | null
   scene_plan?: ScenePlan | null

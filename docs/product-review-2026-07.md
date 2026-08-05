@@ -51,6 +51,20 @@ Refined model, implemented with this review:
   removing the container buys nothing; removing it from the *experience* is
   the actual intent.
 
+> **Follow-up (Aug 2026, mig 048): the sidecar was fully removed and the tier
+> collapsed.** Keeping a demoted "free engine" concept after the experience went
+> single-voice left the exact mis-configuration surface that produced the
+> quality inversion (§13) — a free column that can be pointed at the wrong
+> engine. So the split itself is gone: one `engine`/`voice` per section,
+> `audio_url_premium` folded into `audio_url`, cloud engines only. This is a
+> **structural guarantee against recurrence, not a fix** — the inversion bug was
+> already fixed separately; this change makes that class of bug unrepresentable
+> because there is no second tier left to invert. Generation-time resilience is
+> now the client's browser Web-Speech fallback (null audio ≠ silence), not a
+> second server engine. Paired guardrail: "unlimited" plans get a hard 20
+> stories / 200 turns daily ceiling (shown as unlimited), plus MTD character
+> metering that is **inert until Phase 0 alerting closes**.
+
 ## 2–3. Scores
 
 - **Current: 5.5 / 10.** Engineering breadth 8; product completeness for a

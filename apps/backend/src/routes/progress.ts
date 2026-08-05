@@ -2,7 +2,6 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
-import { userIsPremium, promoteAudio, AUDIO_QUALITY_FOR_ALL } from '../lib/premiumAudio'
 import { requireChildOwner } from '../middleware/childOwner'
 import { checkAndAwardBadges } from './badges'
 import { promoteStrands } from '../lib/strands'
@@ -155,10 +154,7 @@ router.get('/:child_id/review', requireAuth, requireChildOwner, async (req, res)
      limit 20`,
     [req.params.child_id]
   )
-  // Paid accounts hear the premium variant everywhere — including review,
-  // where a child hears words most often.
-  const premium = AUDIO_QUALITY_FOR_ALL ? true : await userIsPremium(res.locals.userId)
-  res.json({ data: (rows as { word: unknown }[]).map(r => ({ ...r, word: promoteAudio(r.word, premium) })), error: null })
+  res.json({ data: rows, error: null })
 })
 
 // ── Lesson progress ───────────────────────────────────────

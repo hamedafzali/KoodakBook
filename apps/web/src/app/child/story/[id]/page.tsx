@@ -38,7 +38,7 @@ export default function StoryPage() {
   }, [id, router, lang])
 
   // Self-heal: an AI story (created for this child) with any silent page builds
-  // its own audio (free Piper), then we refetch so بشنو plays — no manual step.
+  // its own audio (single cloud voice), then we refetch so بشنو plays — no manual step.
   useEffect(() => {
     if (!story) return
     const isAi = !!(story as { created_for_child?: string | null }).created_for_child

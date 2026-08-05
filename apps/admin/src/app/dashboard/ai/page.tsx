@@ -272,7 +272,6 @@ interface Tts {
   language: string
   region: string | null
   format: string
-  piper_voice: string
 }
 
 const TTS_PROVIDERS: { id: Tts['provider']; label: string; voices: string[]; models: string[]; needs: ('voice' | 'model' | 'base_url' | 'region')[] }[] = [
@@ -310,7 +309,7 @@ function TtsCard() {
     const r = await api.patch<{ ok: boolean }>('/api/admin/tts-settings', {
       enabled: t.enabled, provider: t.provider, base_url: t.base_url || null,
       model: t.model, voice: t.voice, language: t.language, region: t.region || null,
-      format: t.format, piper_voice: t.piper_voice,
+      format: t.format,
     })
     setSaving(false)
     if (r.error) { setErr(r.error); return }
@@ -321,18 +320,18 @@ function TtsCard() {
     <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-slate-800">صدای داستان‌ها (TTS)</h3>
-        <Badge tone="green">صدای رایگان همیشه فعال</Badge>
+        <Badge tone={t.enabled ? 'green' : 'gray'}>{t.enabled ? 'صدای ابری فعال' : 'صدای ابری خاموش'}</Badge>
       </div>
       <p className="text-sm text-slate-500">
         انتخاب موتور و صدای هر بخش (داستان، حروف، کلمات، صداکشی) به بخش{' '}
         <a href="/dashboard/audio" className="text-amber-600 font-semibold hover:underline">«صداها»</a>{' '}
-        منتقل شده است. اینجا فقط تنظیمات ارائه‌دهنده‌ی ابری (کلید، ریجن، مدل) و فعال‌سازی آن برای حساب‌های پرمیوم است.</p>
+        منتقل شده است. اینجا فقط تنظیمات ارائه‌دهنده‌ی ابری (کلید، ریجن، مدل) و فعال‌سازی کلیِ آن است. صدا برای همه‌ی حساب‌ها یکسان است.</p>
 
       <div className={`rounded-xl border px-4 py-2.5 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-        {keySet ? '✓ کلید TTS_API_KEY تنظیم شده است.' : '⚠ کلید TTS_API_KEY در ACM تنظیم نشده — صدای ابری پرمیوم تا آن زمان کار نمی‌کند (Piper همچنان فعال است).'}
+        {keySet ? '✓ کلید TTS_API_KEY تنظیم شده است.' : '⚠ کلید TTS_API_KEY در ACM تنظیم نشده — تا آن زمان صدای تولیدی ساخته نمی‌شود و اپ با صدای مرورگر می‌خواند.'}
       </div>
 
-      <Toggle checked={t.enabled} onChange={v => setT({ ...t, enabled: v })} label="فعال‌سازی صدای ابری برای پرمیوم" />
+      <Toggle checked={t.enabled} onChange={v => setT({ ...t, enabled: v })} label="فعال‌سازی صدای ابری" />
 
       <Field label="ارائه‌دهنده‌ی صدای ابری">
         <Select value={t.provider} onChange={e => choose(e.target.value as Tts['provider'])}>
