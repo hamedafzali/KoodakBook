@@ -949,6 +949,16 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - [ ] Scale to ~1,000 items (illustration + TTS long-tail + batched native for core)
 - [ ] Full freemium packaging + annual/gift pricing + billing
 - [ ] Co-read / record-voice premium + print PDF companion
+      **[SECURITY constraint — read before building record-voice]** `/uploads` is
+      served as static files, **world-readable by exact URL with no auth** (index.ts;
+      randomized filenames only). It is benign *today* solely because nothing
+      child-identifying lands there (verified 2026-08: only generated TTS + content
+      audio, no photos, no recordings, no names in paths). A record-voice feature
+      breaks that assumption: a child's recorded voice is PII, and dropping it under
+      `/uploads` would make it publicly retrievable by anyone who learns the URL.
+      Do NOT reuse the open `/uploads` path for it — store child recordings behind an
+      auth + ownership gate (a route that checks `requireAuth`/child-owner before
+      streaming the file), not on the static mount. *(security — tunnel/auth audit 2026-08)*
 - [ ] B2B school pilot (seat licensing) — after teacher curriculum validation
 
 ### 11.7 Standing tradeoffs
