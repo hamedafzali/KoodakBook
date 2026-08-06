@@ -939,7 +939,9 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       promotion (BUG-C): mastery-gated unlock, bidirectional (damped) gate, placement
       as a decaying prior, `gate_recompute_log` instrumentation *(code, mig-048;
       branch `progression-rebuild-impl`, stacks on tier2/PR#2; design
-      `docs/placement-progression-rebuild.md`. Pending blast-radius review → deploy)*
+      `docs/placement-progression-rebuild.md`. Blast-radius reviewed on live data
+      (n=2, test children — mechanism validated, cohort-scale behavior unmeasured;
+      see Phase B re-run item). Merge order: PR#2 → this → PR#3; hold at approve-prod)*
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
@@ -961,6 +963,18 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       progression rebuild fixes for V/F) **and** a per-strand prior half-life `k`.
       Tracked gap, not a footnote — see `docs/placement-progression-rebuild.md` §7
       (A8/A9). *(code + schema)*
+- [ ] **Re-run `gateBlastRadius` against a real pilot cohort** (≥20 children with
+      genuine usage history). The pre-merge prod run was **n=2** (test children):
+      it established that the recompute *executes correctly against live data and
+      behaves as designed*, and **nothing more**. It did NOT answer the original
+      distribution question ("does this move a few children by one stage or most by
+      three") — that question is only answerable at cohort scale — **and** it did
+      NOT exercise the A8/A9 D-strand completion-fallback gap in either direction
+      (no child had contradicting phonics-completion history). This re-run is the
+      point at which (a) the distribution question becomes answerable and (b) the
+      D-strand gap will surface or not. Do not remember the n=2 run as having
+      cleared either. Script is committed + read-only (`apps/backend/src/scripts/
+      gateBlastRadius.ts`, `'placement'` prior mode). *(ops)*
 - [ ] Own numeracy difficulty track — decouple math/memory-game difficulty from
       `children.level` (the literacy coarse level), so a strong-at-math /
       still-learning-to-read heritage child is not mis-served (rebuild §6.2). *(code)*
