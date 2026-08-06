@@ -8,6 +8,12 @@
  * computeGateResults path) and prints a report. It never persists a gate, never
  * logs a recompute, never deploys.
  *
+ * BASELINE IT MODELS: the prior is derived in-query the way migration 048 would
+ * backfill it (earliest placement_history snapshot, else current level) via the
+ * 'placement' prior mode — because prod does not yet have the prior_level column.
+ * So these numbers are the POST-migration baseline, NOT prod exactly as it stands
+ * today. That is deliberate and is stated in the printed header too.
+ *
  * It reports two numbers per strand, which differ by design:
  *   • EVENTUAL delta  = undamped target − current gate. The full correction a
  *                       child converges to over repeated sessions. This is the
@@ -35,10 +41,12 @@ function histogram(m: Bucket): string {
 
 async function main() {
   const children = await query<{ id: string }>('select id from children')
+  const total = children.length
 
   let scanned = 0
   let noBaseline = 0            // strands with no existing gate row (brand-new / pre-placement)
   const affectedChildren = new Set<string>()
+  const droppedMoreThanOneStage = new Set<string>() // any strand with eventual delta <= -2
 
   // per-strand eventual + first-step delta histograms
   const eventual: Record<EarnableStrand, Bucket> = { V: new Map(), D: new Map(), F: new Map() }
@@ -47,7 +55,7 @@ async function main() {
   let worstDrop = { delta: 0, strand: '' as string, childId: '' } // most-negative eventual delta
 
   for (const { id } of children) {
-    const results = await computeGateResults(id)
+    const results = await computeGateResults(id, 'placement')
     if (!results) continue
     scanned++
 
@@ -60,6 +68,7 @@ async function main() {
       bump(eventual[r.strand], evDelta)
       bump(firstStep[r.strand], stepDelta)
       if (evDelta !== 0) affectedChildren.add(id)
+      if (evDelta <= -2) droppedMoreThanOneStage.add(id)
       if (evDelta < worstDrop.delta) worstDrop = { delta: evDelta, strand: r.strand, childId: id }
     }
   }
@@ -68,8 +77,13 @@ async function main() {
   line('═══════════════════════════════════════════════════════════')
   line(' Progression rebuild — blast-radius report (READ-ONLY)')
   line('═══════════════════════════════════════════════════════════')
+  line(' Baseline: POST-migration (placement-derived priors as 048 would')
+  line(' install them), NOT prod as it stands today. No writes performed.')
+  line('───────────────────────────────────────────────────────────')
+  line(`Total children (denominator): ${total}`)
   line(`Children scanned:            ${scanned}`)
-  line(`Children with any change:    ${affectedChildren.size}  (${scanned ? Math.round(100 * affectedChildren.size / scanned) : 0}%)`)
+  line(`Children with any change:    ${affectedChildren.size}  (${total ? Math.round(100 * affectedChildren.size / total) : 0}% of total)`)
+  line(`Children dropping >1 stage:  ${droppedMoreThanOneStage.size}  (any strand, eventual delta ≤ −2)`)
   line(`Strand-rows with no baseline: ${noBaseline}  (new/pre-placement — establish silently, no regression)`)
   line('')
   for (const strand of EARNABLE) {

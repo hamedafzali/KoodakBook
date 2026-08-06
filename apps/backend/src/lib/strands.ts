@@ -43,23 +43,40 @@ function gateConfig(): GateConfig {
 }
 
 /**
+ * How the decaying placement PRIOR is sourced:
+ *   • 'stored'    — production: the retained prior_level column (migration 048).
+ *   • 'placement' — measurement-only: derive it in-query exactly as 048's backfill
+ *                   does (earliest placement_history snapshot, else current level),
+ *                   against tables that already exist PRE-migration. This lets the
+ *                   blast-radius script model the POST-migration baseline on
+ *                   current prod WITHOUT reading the not-yet-added prior_level
+ *                   column. The numbers it yields are the migrated baseline's, not
+ *                   prod-as-it-stands-today's.
+ */
+export type PriorMode = 'stored' | 'placement'
+
+/**
  * READ-ONLY: gather a child's evidence + prior and run the recompute, WITHOUT
  * persisting or logging. This is the exact computation recomputeChildGates
  * applies — factored out so the blast-radius script (scripts/gateBlastRadius.ts)
  * measures precisely what a live recompute would do, with no risk of divergence
  * and no writes. Returns null if the child does not exist.
  */
-export async function computeGateResults(childId: string): Promise<GateResult[] | null> {
+export async function computeGateResults(
+  childId: string,
+  priorMode: PriorMode = 'stored',
+): Promise<GateResult[] | null> {
   const child = await queryOne<{ level: number }>('select level from children where id = $1', [childId])
   if (!child) return null
   const config = gateConfig()
 
-  // Current per-strand rows: level = the stored gate (previousGate), prior_level =
-  // the retained placement prior. Missing strand → fall back to children.level.
-  const rows = await query<{ strand: string; level: number; prior_level: number | null }>(
-    'select strand, level, prior_level from child_strand_levels where child_id = $1', [childId]
+  // Current per-strand rows: level = the stored gate (previousGate). Missing
+  // strand → previousGate null and the prior falls back to children.level.
+  const rows = await query<{ strand: string; level: number }>(
+    'select strand, level from child_strand_levels where child_id = $1', [childId]
   )
   const rowByStrand = new Map(rows.map(r => [r.strand, r]))
+  const priorByStrand = await loadPriors(childId, priorMode)
 
   const content = await loadEvidence(childId, config.masteryThreshold)
   const n = await interactionCounts(childId)
@@ -68,13 +85,38 @@ export async function computeGateResults(childId: string): Promise<GateResult[] 
   for (const strand of EARNABLE) {
     const row = rowByStrand.get(strand)
     inputs[strand] = {
-      prior: row?.prior_level ?? row?.level ?? child.level,
+      prior: priorByStrand.get(strand) ?? row?.level ?? child.level,
       previousGate: row ? row.level : null,
       n: n[strand],
     }
   }
 
   return recomputeGates(inputs, content, config)
+}
+
+// Prior resolution per strand — see PriorMode. 'placement' mirrors migration 048's
+// backfill so the measurement equals what 048 would install; the coalesce-to-
+// current-level fallback lives at the call site (priorByStrand.get ?? row.level).
+async function loadPriors(childId: string, mode: PriorMode): Promise<Map<string, number>> {
+  if (mode === 'stored') {
+    const rows = await query<{ strand: string; prior_level: number | null }>(
+      'select strand, prior_level from child_strand_levels where child_id = $1', [childId]
+    )
+    return new Map(rows.filter(r => r.prior_level != null).map(r => [r.strand, r.prior_level as number]))
+  }
+  // 'placement': earliest placement_history snapshot per strand — identical to the
+  // 048 backfill's `(ph.strand_levels ->> strand)::int order by ph.taken_at asc`.
+  const rows = await query<{ strand: string; prior: number | null }>(
+    `select s.strand,
+            (select (ph.strand_levels ->> s.strand)::int
+               from placement_history ph
+              where ph.child_id = $1 and ph.strand_levels ? s.strand
+              order by ph.taken_at asc
+              limit 1) as prior
+       from (values ('V'), ('D'), ('F')) as s(strand)`,
+    [childId]
+  )
+  return new Map(rows.filter(r => r.prior != null).map(r => [r.strand, r.prior as number]))
 }
 
 async function recomputeChildGates(childId: string, trigger: string): Promise<Promotion[]> {
