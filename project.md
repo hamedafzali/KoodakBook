@@ -990,6 +990,11 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - [ ] Story generator with controlled-vocabulary constraints
 - [ ] Scale to ~1,000 items (illustration + TTS long-tail + batched native for core)
 - [ ] Full freemium packaging + annual/gift pricing + billing
+- [ ] **Register a real (owned) domain** — the pilot runs on `koodakbook.eu.cc`,
+      a free eu.cc subdomain (not an owned TLD). Fine for a pilot; **not** a base
+      to run payments (Stripe), email deliverability, or an app-store listing on.
+      Register + own the TLD before billing or store submission; re-point the
+      Cloudflare tunnel ingress and update `WEB_URL`/`NEXT_PUBLIC_BACKEND_URL`. *(ops)*
 - [ ] Co-read / record-voice premium + print PDF companion
       **[SECURITY constraint — read before building record-voice]** `/uploads` is
       served as static files, **world-readable by exact URL with no auth** (index.ts;
