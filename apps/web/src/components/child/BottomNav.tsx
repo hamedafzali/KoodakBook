@@ -1,10 +1,8 @@
 'use client'
-import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import ParentDoorNav from './ParentDoorNav'
-import { ensurePremiumFlag } from '@/lib/premium'
 
 const NAV_ITEMS = [
   { href: '/child/home',    emoji: '🏠', label: 'خانه',    ariaLabel: 'صفحه اصلی' },
@@ -14,8 +12,6 @@ const NAV_ITEMS = [
 ]
 
 export default function BottomNav() {
-  // Warm the premium-audio flag once per session — every child page mounts this.
-  useEffect(() => { ensurePremiumFlag() }, [])
   const pathname = usePathname()
 
   return (
