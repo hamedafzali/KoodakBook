@@ -456,7 +456,20 @@ All are runtime-configurable or replaceable **without a schema change** unless n
 | A5 | A decaying prior makes the 4-item probe good-enough | probe unchanged this rebuild | Trajectory logs show the first-few-lessons-too-hard window frustrates children badly enough to churn before self-correction | probe rework (§6.5, separate effort) |
 | A6 | `demonstrated_X` from *contiguous* cleared stages models real progression | contiguous-run rule (§2.1) | Content graphs with gaps (a missing stage) wrongly cap a capable child | §2.1 rule change (code) |
 | A7 | Placement `C` (comprehension) is a trustworthy-enough prior to open stories early | `max(F,C)` unlock kept | Children opened into stories by a `C` prior they didn't really have flounder in reading with no fallback | unlock-rule change (code + UX) |
+| A8 | Completion is an acceptable mastery proxy for the **D strand** (alphabet/phonics) | D lessons = letters, which have **no per-letter SR/mastery signal**, so a completed D lesson counts as "mastered" | Children complete phonics lessons without decoding skill and get gated up in D anyway (the exact "clicked through" failure §6.1 fixes elsewhere, still live for D) | add letter-level mastery tracking, then treat D like V (schema + code) |
+| A9 | `n` (prior-decay evidence count) is comparable enough across strands | V/F = distinct words practised; **D = completed D-lesson count** (coarser) | `k=8` paces V/F correction well but D's prior decays on a different scale, so D self-corrects too fast or too slow relative to V/F | per-strand `k`, or a uniform `n` definition (code) |
+
+> **A8/A9 discovered during implementation, not design.** The D strand
+> (decoding — alphabet/phonics) is built from *letters*, and letters are not
+> SR-tracked the way words are (`child_word_progress` is word-only). So D cannot be
+> mastery-scored the way V and F are: a completed D lesson is treated as mastered
+> (A8), and D's evidence count `n` is a lesson count rather than a word-rep count
+> (A9). Both are honest consequences of the current content model, isolated to D,
+> and flagged here rather than hidden in `strands.ts`. The clean fix is per-letter
+> mastery tracking — out of scope for this rebuild, recorded as a roadmap gap
+> alongside the numeracy track (§6.2).
 
 None of these blocks a correct *build*; A1–A3 block a correct *tuning*, which is
-exactly what §3.3's instrumentation exists to inform. Revisit this table against the
-first pilot cohort's `gate_recompute_log`.
+exactly what §3.3's instrumentation exists to inform, and A8–A9 flag where the
+D strand is weaker than V/F until letter-level mastery exists. Revisit this table
+against the first pilot cohort's `gate_recompute_log`.
