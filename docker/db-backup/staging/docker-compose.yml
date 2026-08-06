@@ -1,0 +1,98 @@
+# Local staging harness for the db-backup sidecar (approved plan §10).
+#
+# Stands up the real DB schema, a MinIO stand-in for Cloudflare R2, the dataless
+# drill target, and the sidecar image — so the §10 table can be exercised locally
+# WITHOUT real R2 credentials or the real age key. MinIO here plays the S3 role;
+# rows that genuinely need hosted R2 / hosted healthchecks.io are reported as
+# such by run-tests.sh rather than skipped.
+#
+# Usage:  ./docker/db-backup/staging/run-tests.sh
+name: dbbackup-staging
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: koodakbook
+      POSTGRES_USER: koodakbook
+      POSTGRES_PASSWORD: secret
+    # Real schema + seed → realistic object count and sentinel admin row.
+    volumes:
+      - ../../../supabase/migrations/001_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ../../../supabase/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./fixture.sql:/docker-entrypoint-initdb.d/03_fixture.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U koodakbook"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  db-drill:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: drillsecret
+      POSTGRES_DB: postgres
+    command: ["postgres", "-c", "fsync=off"]
+    tmpfs: ["/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+
+  # Waits for MinIO, then provisions the bucket + two least-privilege service
+  # accounts: a writer DENIED DeleteObject (so a leaked key cannot wipe history)
+  # and a read-only account for the restore-drill.
+  minio-setup:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "/setup.sh"]
+    volumes:
+      - ./minio-setup.sh:/setup.sh:ro
+
+  db-backup:
+    build:
+      context: ..
+    read_only: true
+    tmpfs: ["/tmp"]
+    environment:
+      TZ: UTC
+      PGHOST: db
+      PGDATABASE: koodakbook
+      PGUSER: backup                 # least-privilege role created by fixture.sql
+      PGPASSWORD: backuppw
+      BACKUP_S3_ENDPOINT: http://minio:9000
+      BACKUP_S3_PROVIDER: Minio
+      BACKUP_S3_REGION: us-east-1
+      BACKUP_BUCKET: koodakbook-backups
+      BACKUP_PREFIX: staging
+      BACKUP_KEY_ID: backupwriter
+      BACKUP_KEY_SECRET: backupwriterpw
+      RESTORE_KEY_ID: backupreader
+      RESTORE_KEY_SECRET: backupreaderpw
+      # AGE_RECIPIENT / AGE_IDENTITY injected per-run by run-tests.sh (ephemeral key).
+      HEARTBEAT_BACKUP_URL: ""       # blank → DRY-RUN pings (logged, not sent)
+      HEARTBEAT_DRILL_URL: ""
+      DRILL_PGHOST: db-drill
+      DRILL_PGPASSWORD: drillsecret
+      LOCAL_KEEP: "2"
+    volumes:
+      - backup_staging:/staging
+    depends_on:
+      db:
+        condition: service_healthy
+      db-drill:
+        condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
+
+volumes:
+  backup_staging:

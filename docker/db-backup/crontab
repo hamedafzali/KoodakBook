@@ -1,0 +1,11 @@
+# db-backup schedule (supercronic; TZ from the container's TZ env).
+#
+# Twice-daily backups → ≤12h loss window (approved §12.4), 12h apart, both off
+# the drill window. Weekly restore-drill Sunday 04:00, deliberately clear of the
+# 02:00/14:00 backups so the scratch restore never contends with a live dump
+# (approved §12.3: off-peak, no overlap).
+#
+# min hour dom mon dow  command
+  0   2    *   *   *    /app/backup.sh
+  0   14   *   *   *    /app/backup.sh
+  0   4    *   *   0    /app/restore-drill.sh
