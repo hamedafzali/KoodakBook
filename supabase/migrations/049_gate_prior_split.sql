@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════
--- KoodakBook — Migration 048: gate / prior split (progression rebuild)
+-- KoodakBook — Migration 049: gate / prior split (progression rebuild)
 --
 -- See docs/placement-progression-rebuild.md. child_strand_levels.level stops
 -- being an ever-ratcheting "auto-promoted level" (BUG-C) and becomes a GATE that
