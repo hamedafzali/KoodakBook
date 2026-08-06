@@ -250,8 +250,47 @@ debugging ("V gate 2, confidence 0.75").
   current consumers (AI, character, math, memory). Deliberately *not* derived from
   the gate, to keep numeracy difficulty decoupled from reading ability (§6.2).
 
-Net new schema: **at most one or two optional columns** on `child_strand_levels`.
-The recompute reads evidence that already exists.
+Net new schema: **at most one or two optional columns** on `child_strand_levels`,
+plus one instrumentation table (§3.3). The recompute reads evidence that already
+exists.
+
+### 3.3 Runtime config & instrumentation (decision 6.3)
+
+`k` — and any other tuning number the pilot will revisit (§7) — is **not a source
+constant.** It is read at recompute time from runtime config so it can change while
+families use the app, with no release cycle:
+
+- **Config source:** the existing settings mechanism — an ACM project variable
+  (`PROGRESSION_PRIOR_K`) or a row in the `app_settings`/settings table, read with a
+  safe default of `8` if unset. The recompute core stays pure (takes `k` as a
+  parameter); only the calling route reads config and passes it in, so tests pin `k`
+  explicitly and production stays tunable.
+- **Same treatment for:** the mastery threshold (`0.85`, §2.1/§6.1) and the
+  asymmetric downward-damping cap (§6.4). All three are config-read with documented
+  defaults, so pilot tuning never needs a deploy.
+
+**Instrumentation — what to log (so `k` is evaluated, not re-guessed).** Every gate
+recompute appends one row to a `gate_recompute_log` table (append-only, never
+mutated):
+
+| Column | Meaning |
+|---|---|
+| `child_id`, `strand` | who / which strand |
+| `at` | timestamp |
+| `n` | scored-interaction count for the strand at recompute time |
+| `prior` | the placement prior `prior_X` (constant per strand until re-placement) |
+| `demonstrated` | evidence level `demonstrated_X` at this recompute |
+| `w`, `k` | the weight applied and the `k` in force (so a later `k` change is legible in the trace) |
+| `gate_before`, `gate_after` | gate value pre/post — **direction and magnitude of the move** |
+| `damped` | bool — whether the asymmetric cap (§6.4) clipped a downward move |
+| `trigger` | what caused it (word rep / lesson complete / migration / manual) |
+
+This captures each child's **gate trajectory** — initial prior, the value across
+the first ~20 reps per strand, and every recompute's direction/magnitude — which is
+exactly what's needed to ask "did `k=8` self-correct over- and under-placements at
+the right speed, or did it over/undershoot?" against real behavior. Retention:
+pilot-scoped; can be pruned once tuning settles. Not surfaced to child/parent; admin
++ analytics only.
 
 ---
 
@@ -366,13 +405,17 @@ and the literacy consumers alike; the gate lives only in `child_strand_levels`
 (§1.2, §3.2). **"Own numeracy track" is recorded as a known roadmap gap** — not
 built here, and this rebuild must not make the coupling worse on the way past.
 
-**6.3 — Prior half-life `k`. ⛔ OPEN.** Proposed `k=8` reps/strand (prior/evidence
-parity at ≈1 lesson, prior minor by ≈5 lessons — see the §3 table). This sets how
-long a child lives with their placement guess before their own performance takes
-over. Pure tuning; wants a real number, ideally pilot-validated. `k` too high = a
-bad placement traps a child longer; too low = the gate is jumpy on thin early
-evidence. Not blocking to *build* (it's one constant), but blocking to *ship
-correctly*.
+**6.3 — Prior half-life `k`. ✅ DECIDED: build with `k=8`, provisional.** `k=8`
+reps/strand (prior/evidence parity at ≈1 lesson, prior minor by ≈5 — §3 table) is a
+starting value, **not a settled decision**. Two binding requirements follow from
+that (both are design decisions, specified in §3.3):
+- **(a) runtime-configurable** — `k` is a runtime setting (ACM variable / settings
+  table), *not* a source constant, because pilot validation means changing it while
+  families use the app, with no release cycle.
+- **(b) instrumented** — log enough per-child gate-trajectory data that `k` can be
+  evaluated against real behavior instead of guessed twice (§3.3). Blind tuning is
+  not tuning. `k` and everything in its category are listed in §7 as explicitly
+  unvalidated, so pilot data lands against a visible target.
 
 **6.4 — Downward speed (decision ii). ✅ DECIDED: asymmetric damping.** Cap
 per-session downward movement; let upward respond faster. A tired child at the end
@@ -380,20 +423,40 @@ of a session shouldn't lose earned ground, and one bad session on unfamiliar
 content shouldn't read as regression. *(Exact cap — 1 level/session vs. requiring N
 sustained sessions — folds into 6.3's tuning; the asymmetry itself is settled.)*
 
-**6.5 — Probe priority. ⛔ OPEN.** Even as a decaying prior, a 4-item probe pinning
-`prior=4` means an over-placed child spends their first lessons in too-hard content
-before it self-corrects. The decaying-prior design makes the probe *no longer
-load-bearing* (a bad guess washes out in a few lessons), so improving it is now a
-comfort optimization, not a correctness fix. **The call: where does probe rework sit
-on the roadmap** — before, alongside, or after this rebuild? My read: after, since
-the rebuild removes its ability to do lasting harm.
+**6.5 — Probe priority. ✅ DECIDED: rebuild first, probe after.** The decaying prior
+makes the probe no longer load-bearing (a bad 4-item guess washes out in a few
+lessons), so probe rework is a comfort optimization sequenced *after* this rebuild,
+which removes its ability to do lasting harm.
 
-**6.6 — `C` opening stories ahead of `F`. ⛔ OPEN (confirmation).** With `F`
-decoupled as a pure reading signal (decision i), I've designed gate *position* to
-keep `max(F,C)` — so `C` (comprehension, audio-supported) still opens stories a
-stage ahead of independent fluency per §11.1, while the `F` *signal* reflects only
-mastered reading. This is the subtle half of decision (i) and I resolved it in the
-"yes, keep `max(F,C)` for unlocking" direction **by default** — flagging it so you
-can veto. If instead you want stories gated on `F` alone (no comprehension
-head-start), that's a different unlock rule and changes what pre-fluent children can
-reach. I believe §11.1 wants the head-start kept, but it's your call to confirm.
+**6.6 — `C` opening stories ahead of `F`. ✅ DECIDED: keep `max(F,C)` for
+unlocking.** Gate *position* stays `max(F,C)` — `C` (comprehension, audio-supported)
+still opens stories a stage ahead of independent fluency per §11.1, while the `F`
+*signal* reflects only mastered reading (decision i). Rationale confirmed by product:
+the audio-supported head-start is what lets a pre-fluent heritage child reach stories
+at all, and stories are the product's stated heart; gating on `F` alone would lock
+out precisely the target learner.
+
+---
+
+## 7. Unvalidated assumptions
+
+This rebuild is **structurally** sound — idempotence, bidirectionality, and the
+trophy/gate split are provable and tested (§5). But several **numbers and shapes**
+inside that structure are reasoned guesses, not values derived from observing real
+children. They are listed here so that when pilot data arrives it is obvious which
+knobs to turn, rather than having them buried in the code as if they were derived.
+All are runtime-configurable or replaceable **without a schema change** unless noted.
+
+| # | Assumption | Current value | What would falsify it | Adjust via |
+|---|---|---|---|---|
+| A1 | Prior half-life `k` correctly paces self-correction | `k = 8` reps/strand | Gate-trajectory logs (§3.3) show over/under-placements correcting too slowly (children stuck in wrong content) or too fast (jumpy gate on noise) | runtime config |
+| A2 | 85% is the right mastery bar for clearing a stage | `0.85` | Children who clear at 85% still fail the next stage's content (bar too low), or stall despite real readiness (too high) | runtime config |
+| A3 | Asymmetric damping cap protects "one bad day" without freezing real regressions | 1 level/session down (proposed) | Legit weakening takes too many sessions to reflect, or a cap of 1 still lets fatigue drop a gate visibly | runtime config |
+| A4 | "Mastered" = ≥85% words receptively mastered captures lesson/story readiness | receptive-only | Productive-weak children read as "mastered" and then can't produce; or receptive mastery under-counts real ability | §6.1 definition change (code, no schema) |
+| A5 | A decaying prior makes the 4-item probe good-enough | probe unchanged this rebuild | Trajectory logs show the first-few-lessons-too-hard window frustrates children badly enough to churn before self-correction | probe rework (§6.5, separate effort) |
+| A6 | `demonstrated_X` from *contiguous* cleared stages models real progression | contiguous-run rule (§2.1) | Content graphs with gaps (a missing stage) wrongly cap a capable child | §2.1 rule change (code) |
+| A7 | Placement `C` (comprehension) is a trustworthy-enough prior to open stories early | `max(F,C)` unlock kept | Children opened into stories by a `C` prior they didn't really have flounder in reading with no fallback | unlock-rule change (code + UX) |
+
+None of these blocks a correct *build*; A1–A3 block a correct *tuning*, which is
+exactly what §3.3's instrumentation exists to inform. Revisit this table against the
+first pilot cohort's `gate_recompute_log`.
