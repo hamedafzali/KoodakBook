@@ -163,11 +163,15 @@ router.post('/result', requireAuth, requireChildOwner, async (req, res) => {
   if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
 
   for (const [strand, lvl] of Object.entries(strands)) {
+    // Placement seeds BOTH the gate (level) and the retained prior (prior_level):
+    // the gate is where the child starts; the prior is what later recomputes decay
+    // away from as real evidence accrues (docs/placement-progression-rebuild.md §3).
     await query(
-      `insert into child_strand_levels (child_id, strand, level, source, updated_at)
-       values ($1, $2, $3, 'placement', now())
+      `insert into child_strand_levels (child_id, strand, level, prior_level, source, updated_at)
+       values ($1, $2, $3, $3, 'placement', now())
        on conflict (child_id, strand) do update
-         set level = excluded.level, source = 'placement', updated_at = now()`,
+         set level = excluded.level, prior_level = excluded.prior_level,
+             source = 'placement', updated_at = now()`,
       [child_id, strand, lvl]
     )
   }
