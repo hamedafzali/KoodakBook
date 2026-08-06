@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
+import { clientIp } from '../lib/clientIp'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 
 const router = Router()
@@ -19,7 +20,10 @@ const leadSchema = z.object({
   website: z.string().max(200).optional(),   // honeypot
 })
 
-// Tiny in-memory rate limit — the form is low-traffic; this just blunts bursts.
+// Tiny in-memory per-client rate limit — the form is low-traffic; this blunts
+// bursts. Keyed on the real client IP (clientIp), NOT req.ip: behind the tunnel
+// req.ip is nginx's address for every request, which would make this a single
+// global 5/min bucket (one abuser denies everyone). See lib/clientIp.
 const recent = new Map<string, number[]>()
 function allow(ip: string): boolean {
   const now = Date.now()
@@ -34,7 +38,7 @@ router.post('/', async (req, res) => {
   const p = leadSchema.safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: 'اطلاعات فرم کامل نیست' }); return }
   if (p.data.website) { res.json({ data: { ok: true }, error: null }); return }   // honeypot hit
-  if (!allow(req.ip ?? 'unknown')) { res.status(429).json({ data: null, error: 'کمی بعد دوباره تلاش کنید' }); return }
+  if (!allow(clientIp(req))) { res.status(429).json({ data: null, error: 'کمی بعد دوباره تلاش کنید' }); return }
   const { type, name, email, phone, country, quantity, message } = p.data
   await query(
     'insert into leads (type, name, email, phone, country, quantity, message) values ($1,$2,$3,$4,$5,$6,$7)',
