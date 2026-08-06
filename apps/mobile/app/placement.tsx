@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { Child, PlacementProbe, ProbeChoice, ProbeQuestion, Strand } from '@koodakbook/shared'
-import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
+import type { Child, PlacementProbe, ProbeChoice, ProbeQuestion } from '@koodakbook/shared'
+import { toPersianDigits, wordEmoji, scorePlacement } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { playClip } from '@/lib/sound'
@@ -66,17 +66,7 @@ export default function Placement() {
   }, [phase, q])
 
   async function finish(answers: boolean[]) {
-    // Consecutive passes from the start → starting stage (1–4).
-    let streak = 0
-    for (const ok of answers) { if (ok) streak++; else break }
-    const level = Math.min(4, 1 + streak) as 1 | 2 | 3 | 4
-    // One probe item per strand: a pass lifts that strand to level 2, else 1.
-    const strands: Record<Exclude<Strand, 'P'>, number> = {
-      V: answers[0] ? 2 : 1,
-      D: answers[1] ? 2 : 1,
-      F: answers[2] ? 2 : 1,
-      C: answers[3] ? 2 : 1,
-    }
+    const { level, strands } = scorePlacement(answers)
     setFinalLevel(level)
     setPhase('done')
     if (child) await api.post('/api/placement/result', { child_id: child.id, level, strands })

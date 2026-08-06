@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { query, queryOne } from '../lib/db'
+import { query, queryOne, withTransaction } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { userIsPremium, promoteAudio, AUDIO_QUALITY_FOR_ALL } from '../lib/premiumAudio'
 import { requireChildOwner } from '../middleware/childOwner'
 import { checkAndAwardBadges } from './badges'
 import { promoteStrands } from '../lib/strands'
+import { planWordProgress, type WordProgressPrev } from '../lib/wordProgress'
 
 const router = Router()
 
@@ -65,75 +66,71 @@ router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
 
   const { child_id, word_id, status, result, track } = parsed.data
   const correct = result !== 'incorrect'
+  const trackVal = track ?? 'receptive'
 
-  // Leitner: a correct rep promotes the word one box (max 5) and schedules the
-  // next review further out; a miss drops it back to box 1 and resurfaces it soon.
-  // Box 5 == mastered. Day intervals per destination box: 1,2,4,7,16.
-  const [row] = await query(
-    `insert into child_word_progress
-       (child_id, word_id, status, box, due_at, last_reviewed_at, replay_count, mastered_at)
-     values ($1, $2, $3, 1, now() + interval '1 day', now(), 1,
-             case when $3 = 'mastered' then now() else null end)
-     on conflict (child_id, word_id) do update set
-       replay_count     = child_word_progress.replay_count + 1,
-       last_reviewed_at = now(),
-       box = case when $4 then least(child_word_progress.box + 1, 5) else 1 end,
-       due_at = now() + (case
-         when not $4 then interval '1 day'
-         when least(child_word_progress.box + 1, 5) <= 1 then interval '1 day'
-         when least(child_word_progress.box + 1, 5) = 2 then interval '2 days'
-         when least(child_word_progress.box + 1, 5) = 3 then interval '4 days'
-         when least(child_word_progress.box + 1, 5) = 4 then interval '7 days'
-         else interval '16 days' end),
-       status = case
-         when $4 and least(child_word_progress.box + 1, 5) >= 5 then 'mastered'
-         when child_word_progress.status = 'mastered' then 'mastered'
-         else 'practiced' end,
-       mastered_at = case
-         when $4 and least(child_word_progress.box + 1, 5) >= 5
-              and child_word_progress.mastered_at is null then now()
-         else child_word_progress.mastered_at end
-     returning *`,
-    [child_id, word_id, status, correct]
-  )
+  // Dual-track SR (mig-016). The routing — which track's box/due this interaction
+  // moves — lives in planWordProgress (pure, unit-tested in wordProgress.test.ts).
+  // BUG-A: a productive rep must NEVER touch the receptive schedule, and vice
+  // versa; the planner guarantees exactly one of plan.receptive/plan.productive
+  // is set. Read-then-write under a row lock keeps the two writes atomic.
+  const row = await withTransaction(async (c) => {
+    const prev =
+      (await c.query<WordProgressPrev>(
+        `select box, status, mastered_at, box_productive, mastery
+           from child_word_progress
+          where child_id = $1 and word_id = $2
+          for update`,
+        [child_id, word_id]
+      )).rows[0] ?? null
 
-  // ── Parallel SR-split maintenance (mig-016) ──────────────
-  // Additive: legacy box/due_at/status above stay authoritative for current
-  // readers. Here we keep the new receptive/productive tracks + mastery state
-  // in sync so the cutover (project.md §11.1) has truthful data to read.
-  if (track === 'productive') {
-    // The child produced the word. Advance the productive Leitner box on its own
-    // schedule (day intervals per destination box: 1,2,4,7,16). Mastery never
-    // gates on this track — it only bumps practicing upward, never downgrades.
-    await query(
+    const plan = planWordProgress(prev, { track: trackVal, correct, status })
+
+    if (!prev) {
+      // Establish the row with column defaults (box 1, due_at null, status
+      // 'introduced', box_productive null, mastery 'introduced'); the plan below
+      // writes only the track this interaction actually exercised. A productive
+      // first-ever rep therefore does NOT schedule a receptive review (BUG-A).
+      await c.query(
+        `insert into child_word_progress (child_id, word_id, replay_count)
+           values ($1, $2, 0)
+         on conflict (child_id, word_id) do nothing`,
+        [child_id, word_id]
+      )
+    }
+
+    if (plan.receptive) {
+      const r = plan.receptive
+      return (await c.query(
+        `update child_word_progress set
+           replay_count     = replay_count + 1,
+           last_reviewed_at = now(),
+           box           = $3,
+           due_at        = now() + make_interval(days => $4),
+           status        = $5,
+           mastered_at   = case when $6 and mastered_at is null then now() else mastered_at end,
+           box_receptive = $3,
+           due_receptive = now() + make_interval(days => $4),
+           mastery       = $7
+         where child_id = $1 and word_id = $2
+         returning *`,
+        [child_id, word_id, r.box, r.intervalDays, r.status, r.stampMasteredAt, plan.mastery]
+      )).rows[0]
+    }
+
+    // Productive: legacy box/due_at/status are deliberately left untouched.
+    const p = plan.productive!
+    return (await c.query(
       `update child_word_progress set
-         box_productive = case when $3 then least(coalesce(box_productive, 0) + 1, 5) else 1 end,
-         due_productive = now() + (case
-           when not $3 then interval '1 day'
-           when least(coalesce(box_productive, 0) + 1, 5) <= 1 then interval '1 day'
-           when least(coalesce(box_productive, 0) + 1, 5) = 2 then interval '2 days'
-           when least(coalesce(box_productive, 0) + 1, 5) = 3 then interval '4 days'
-           when least(coalesce(box_productive, 0) + 1, 5) = 4 then interval '7 days'
-           else interval '16 days' end),
-         mastery = case when mastery in ('mastered', 'consolidated') then mastery else 'practicing' end
-       where child_id = $1 and word_id = $2`,
-      [child_id, word_id, correct]
-    )
-  } else {
-    // Receptive track mirrors the legacy single track we just wrote. mastery is
-    // derived from the (monotonic) legacy status, so it never downgrades.
-    await query(
-      `update child_word_progress set
-         box_receptive = box,
-         due_receptive = due_at,
-         mastery = case status
-           when 'mastered'  then 'mastered'
-           when 'practiced' then 'practicing'
-           else 'introduced' end
-       where child_id = $1 and word_id = $2`,
-      [child_id, word_id]
-    )
-  }
+         replay_count     = replay_count + 1,
+         last_reviewed_at = now(),
+         box_productive = $3,
+         due_productive = now() + make_interval(days => $4),
+         mastery        = $5
+       where child_id = $1 and word_id = $2
+       returning *`,
+      [child_id, word_id, p.box, p.intervalDays, plan.mastery]
+    )).rows[0]
+  })
 
   const newBadges = await checkAndAwardBadges(child_id)
   res.json({ data: row, new_badges: newBadges, error: null })
