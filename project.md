@@ -942,6 +942,16 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       `docs/placement-progression-rebuild.md`. Blast-radius reviewed on live data
       (n=2, test children — mechanism validated, cohort-scale behavior unmeasured;
       see Phase B re-run item). Merge order: PR#2 → this → PR#3; hold at approve-prod)*
+- [ ] **[SECURITY] Lock down the ACM control plane** — Advanced Container Manager
+      answers on `0.0.0.0:5003` with **no authentication**: its deploy/stop/restart/
+      logs API is reachable by anything on the LAN, and a stray tunnel-ingress edit
+      could expose it to the public internet by accident. This is a standing risk
+      independent of what any tunnel points at today (an unauthenticated *deploy*
+      API is the whole keys-to-the-kingdom). Fix options, cheapest first: (a) bind
+      the published port to `127.0.0.1` and reach it only via SSH tunnel / a fronting
+      proxy; (b) add real auth (token/JWT) to the ACM API; (c) put Cloudflare Access
+      in front if it must be remotely reachable. Pick one before the pilot opens.
+      *(ops/security — Finding A, tunnel/auth audit 2026-08)*
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
