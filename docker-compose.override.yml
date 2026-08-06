@@ -1,0 +1,41 @@
+# Finding C — restrict the LAN-exposed services to loopback (tunnel/auth audit 2026-08).
+#
+# `docker compose up` auto-merges this file over docker-compose.yml, so the live
+# stack keeps its images, env, piper sidecar, and 3001=web mapping untouched — the
+# ONLY change here is re-binding two published ports from 0.0.0.0 to 127.0.0.1.
+#
+# NOTE the `!override` tags: Compose CONCATENATES `ports` across merged files by
+# default, so a plain override would ADD `127.0.0.1:4000` while KEEPING the base
+# `0.0.0.0:4000` — leaving the port exposed and defeating the purpose. `!override`
+# replaces the base list instead. (Requires Compose >= 2.24; prod runs 2.25.0.)
+#
+#   • backend 4000 — nothing on the LAN should hit the raw API; the tunnel/nginx
+#                    reach it over the docker network, not the host port.
+#   • admin   3002 — the admin UI should be reached via the tunnel, not by anyone
+#                    on 192.168.178.34:3002.
+#
+# 3001=web is DELIBERATELY left published on 0.0.0.0 as in docker-compose.yml, so
+# the ACM pipeline health gate (`docker run --network host busybox wget
+# http://localhost:3001/api/lessons`, .acm/pipeline.yml) is completely unaffected.
+#
+# This does NOT adopt docker-compose.prod.yml — that file is a dormant, drifted,
+# pre-tunnel architecture (stock db image + DB_PASSWORD rename, no piper service /
+# no PIPER_URL, no cloud-TTS keys, NEXT_PUBLIC_BACKEND_URL browser-direct model,
+# an nginx+letsencrypt TLS terminator that conflicts with the cloudflared tunnel,
+# and — critically — it drops web's published port so host 3001 becomes admin,
+# which would make the health gate probe 404 and trip rollback). Loopback-hardening
+# via this override reaches the same goal without inheriting any of that drift.
+#
+# PRECONDITION before merging: confirm every Cloudflare tunnel Public-Hostname
+# origin is http://localhost:PORT (or 127.0.0.1:PORT). If any ingress points at
+# http://192.168.178.34:PORT, this loopback bind breaks that route — fix the origin
+# to localhost first.
+
+services:
+  backend:
+    ports: !override
+      - "127.0.0.1:4000:4000"
+
+  admin:
+    ports: !override
+      - "127.0.0.1:3002:3001"
