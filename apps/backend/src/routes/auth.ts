@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { signToken } from '../lib/jwt'
+import { clientIp } from '../lib/clientIp'
 import { requireAuth } from '../middleware/auth'
 
 const router = Router()
@@ -35,6 +36,10 @@ router.post('/signup', async (req, res) => {
 // child mode. No password — kids can't type them; the parent area stays behind
 // the PIN. Rate-limited so names can't be enumerated quickly. Future: this is
 // the hook point for face recognition.
+// Keyed on the real client IP (clientIp), NOT req.ip: behind cloudflared→nginx
+// req.ip is nginx's address for every request, so a req.ip bucket would be
+// global — one caller could lock out all child logins, and per-attacker
+// name-enumeration throttling would be absent. See lib/clientIp.
 const kidAttempts = new Map<string, number[]>()
 function kidAllowed(ip: string): boolean {
   const now = Date.now()
@@ -46,7 +51,7 @@ function kidAllowed(ip: string): boolean {
 }
 
 router.post('/child-login', async (req, res) => {
-  if (!kidAllowed(req.ip ?? 'unknown')) {
+  if (!kidAllowed(clientIp(req))) {
     res.status(429).json({ data: null, error: 'کمی صبر کن و دوباره امتحان کن' }); return
   }
   const username = String(req.body?.username ?? '').trim().toLowerCase()
