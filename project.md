@@ -935,6 +935,11 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       it. "It's dormant" is not discoverable from reading the file — that's the trap.
       *(ops — tunnel/auth audit 2026-08; loopback hardening was done via
       docker-compose.override.yml instead, see branch `harden-loopback-binds`)*
+- [ ] **Progression rebuild** — evidence-recompute gate replacing the ratcheting
+      promotion (BUG-C): mastery-gated unlock, bidirectional (damped) gate, placement
+      as a decaying prior, `gate_recompute_log` instrumentation *(code, mig-048;
+      branch `progression-rebuild-impl`, stacks on tier2/PR#2; design
+      `docs/placement-progression-rebuild.md`. Pending blast-radius review → deploy)*
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
@@ -950,6 +955,15 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       probe (V→D→F→C) that sets `children.level` + per-strand `child_strand_levels`.
       Verified end-to-end (heritage profile captured as high-V / low-D). Upgrade
       to IRT-adaptive once pilot data calibrates `content_items.difficulty`.
+- [ ] **Per-letter mastery tracking** (SR for letters, as words have) — unblocks
+      D-strand *mastery* gating (today D falls back to completion, so a phonics
+      lesson clicked-through still gates the child up — the exact weakness the
+      progression rebuild fixes for V/F) **and** a per-strand prior half-life `k`.
+      Tracked gap, not a footnote — see `docs/placement-progression-rebuild.md` §7
+      (A8/A9). *(code + schema)*
+- [ ] Own numeracy difficulty track — decouple math/memory-game difficulty from
+      `children.level` (the literacy coarse level), so a strong-at-math /
+      still-learning-to-read heritage child is not mis-served (rebuild §6.2). *(code)*
 - [ ] Session engine (Warm-up→Teach→Apply→Stretch→Win) + journey-map child UX
 - [ ] Parent literacy-gain model + predictive milestone + 1 intervention (focus area)
 - [ ] Grandparent read-aloud loop

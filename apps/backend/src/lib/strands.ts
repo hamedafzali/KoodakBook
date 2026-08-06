@@ -42,9 +42,16 @@ function gateConfig(): GateConfig {
   }
 }
 
-async function recomputeChildGates(childId: string, trigger: string): Promise<Promotion[]> {
+/**
+ * READ-ONLY: gather a child's evidence + prior and run the recompute, WITHOUT
+ * persisting or logging. This is the exact computation recomputeChildGates
+ * applies — factored out so the blast-radius script (scripts/gateBlastRadius.ts)
+ * measures precisely what a live recompute would do, with no risk of divergence
+ * and no writes. Returns null if the child does not exist.
+ */
+export async function computeGateResults(childId: string): Promise<GateResult[] | null> {
   const child = await queryOne<{ level: number }>('select level from children where id = $1', [childId])
-  if (!child) return []
+  if (!child) return null
   const config = gateConfig()
 
   // Current per-strand rows: level = the stored gate (previousGate), prior_level =
@@ -67,7 +74,12 @@ async function recomputeChildGates(childId: string, trigger: string): Promise<Pr
     }
   }
 
-  const results = recomputeGates(inputs, content, config)
+  return recomputeGates(inputs, content, config)
+}
+
+async function recomputeChildGates(childId: string, trigger: string): Promise<Promotion[]> {
+  const results = await computeGateResults(childId)
+  if (!results) return []
   await persistGates(childId, results)
   await logRecompute(childId, results, trigger)
   return promotionsFrom(results)
