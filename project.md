@@ -921,6 +921,20 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       argv, so it never appears in `ps`. Do this the next time the tunnel config is
       touched; rotate the tokens afterward since the old ones were exposed.
       *(ops/security — tunnel/auth audit 2026-08, sibling of the ACM item above)*
+- [ ] **[DECISION] Reconcile or delete `docker-compose.prod.yml`** — it reads like
+      the production compose file but is **dormant**: the pipeline deploys plain
+      `docker compose up` (docker-compose.yml + docker-compose.override.yml), never
+      this file. It has drifted into a different, pre-tunnel architecture — stock db
+      image + `DB_PASSWORD` rename, **no piper service / no `PIPER_URL`**, no cloud-TTS
+      keys, `NEXT_PUBLIC_BACKEND_URL` browser-direct model, an nginx+Let's Encrypt TLS
+      terminator that conflicts with the cloudflared tunnel, and it drops web's
+      published port so host 3001 becomes admin — which would make the pipeline health
+      gate (`localhost:3001/api/lessons`) 404 and **trip rollback if anyone "cleaned
+      up" by switching the deploy to it**. This is a decision, not a task: either
+      reconcile it to the live topology (tunnel, piper, TTS keys, 3001=web) or delete
+      it. "It's dormant" is not discoverable from reading the file — that's the trap.
+      *(ops — tunnel/auth audit 2026-08; loopback hardening was done via
+      docker-compose.override.yml instead, see branch `harden-loopback-binds`)*
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
