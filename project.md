@@ -902,6 +902,39 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - [x] Move parent door out of the child grid → discreet hold-to-enter corner gate *(code)*
 - [x] Mastery state machine + receptive/productive Leitner split — schema + route wiring *(code, mig-016)*
 - [x] Content-scaling foundation: `content_items` spine + versioned `audio_assets` *(code, mig-017)*
+- [ ] **[SECURITY] Lock down the ACM control plane** — Advanced Container Manager
+      answers on `0.0.0.0:5003` with **no authentication**: its deploy/stop/restart/
+      logs API is reachable by anything on the LAN, and a stray tunnel-ingress edit
+      could expose it to the public internet by accident. This is a standing risk
+      independent of what any tunnel points at today (an unauthenticated *deploy*
+      API is the whole keys-to-the-kingdom). Fix options, cheapest first: (a) bind
+      the published port to `127.0.0.1` and reach it only via SSH tunnel / a fronting
+      proxy; (b) add real auth (token/JWT) to the ACM API; (c) put Cloudflare Access
+      in front if it must be remotely reachable. Pick one before the pilot opens.
+      *(ops/security — Finding A, tunnel/auth audit 2026-08)*
+- [ ] **[SECURITY] Stop passing the tunnel token on the cloudflared command line** —
+      the three `cloudflared … run --token <JWT>` processes expose the full tunnel
+      credentials in `ps`, on a host shared with ~10 other projects. Any account that
+      can read the process list gets a token that is sufficient to run the connector
+      for our tunnels. Fix: invoke cloudflared with a **credentials-file** (or an
+      `--token`-from-env-file / systemd `EnvironmentFile`) instead of the token as an
+      argv, so it never appears in `ps`. Do this the next time the tunnel config is
+      touched; rotate the tokens afterward since the old ones were exposed.
+      *(ops/security — tunnel/auth audit 2026-08, sibling of the ACM item above)*
+- [ ] **[DECISION] Reconcile or delete `docker-compose.prod.yml`** — it reads like
+      the production compose file but is **dormant**: the pipeline deploys plain
+      `docker compose up` (docker-compose.yml + docker-compose.override.yml), never
+      this file. It has drifted into a different, pre-tunnel architecture — stock db
+      image + `DB_PASSWORD` rename, **no piper service / no `PIPER_URL`**, no cloud-TTS
+      keys, `NEXT_PUBLIC_BACKEND_URL` browser-direct model, an nginx+Let's Encrypt TLS
+      terminator that conflicts with the cloudflared tunnel, and it drops web's
+      published port so host 3001 becomes admin — which would make the pipeline health
+      gate (`localhost:3001/api/lessons`) 404 and **trip rollback if anyone "cleaned
+      up" by switching the deploy to it**. This is a decision, not a task: either
+      reconcile it to the live topology (tunnel, piper, TTS keys, 3001=web) or delete
+      it. "It's dormant" is not discoverable from reading the file — that's the trap.
+      *(ops — tunnel/auth audit 2026-08; loopback hardening was done via
+      docker-compose.override.yml instead, see branch `harden-loopback-binds`)*
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
@@ -930,6 +963,16 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - [ ] Scale to ~1,000 items (illustration + TTS long-tail + batched native for core)
 - [ ] Full freemium packaging + annual/gift pricing + billing
 - [ ] Co-read / record-voice premium + print PDF companion
+      **[SECURITY constraint — read before building record-voice]** `/uploads` is
+      served as static files, **world-readable by exact URL with no auth** (index.ts;
+      randomized filenames only). It is benign *today* solely because nothing
+      child-identifying lands there (verified 2026-08: only generated TTS + content
+      audio, no photos, no recordings, no names in paths). A record-voice feature
+      breaks that assumption: a child's recorded voice is PII, and dropping it under
+      `/uploads` would make it publicly retrievable by anyone who learns the URL.
+      Do NOT reuse the open `/uploads` path for it — store child recordings behind an
+      auth + ownership gate (a route that checks `requireAuth`/child-owner before
+      streaming the file), not on the static mount. *(security — tunnel/auth audit 2026-08)*
 - [ ] B2B school pilot (seat licensing) — after teacher curriculum validation
 
 ### 11.7 Standing tradeoffs
