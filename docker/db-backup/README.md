@@ -51,6 +51,24 @@ network blip must NOT abort an otherwise-good job (a missed ping is itself the
 alert). With `HEARTBEAT_*_URL` blank the pings are **logged, not sent**
 (DRY-RUN), so the image is safe to run before the hosted monitor exists.
 
+## age identity & drills
+
+Backups are encrypted to a single age recipient. Decryption needs the **private**
+key, so the two drill cadences source it differently — deliberately:
+
+- **Weekly automated drill** (`0 4 * * 0`) decrypts with `AGE_IDENTITY` — an
+  **operational copy** of the private key held in ACM. This is a conscious
+  trade-off (an on-box copy) in exchange for *continuous* proof of restorability:
+  a weekly drill that fail-closed at decrypt would be a cron job that reliably
+  does nothing. Canonical custody still lives **off-server** (password manager +
+  physical copy); ACM holds only an operational duplicate.
+- **Quarterly manual drill** (human-run, not cron) must leave `AGE_IDENTITY`
+  unset and mount the **off-server** private key via `AGE_IDENTITY_FILE`. This
+  keeps the cold-custody recovery path — "the server and its ACM secrets are
+  gone, restore from the off-site key alone" — genuinely exercised, not assumed.
+  `lib.sh:age_identity_file()` prefers `AGE_IDENTITY_FILE` over `AGE_IDENTITY`, so
+  the same `restore-drill` job covers both by which var is set.
+
 ## Configuration
 
 All real values live in **ACM project variables**; `.env.example` carries
@@ -78,6 +96,20 @@ the full wiring. Key vars:
 4. Apply [`backup-role.sql`](backup-role.sql) to prod, set `BACKUP_DB_PASSWORD`.
 5. Deploy; watch the first `02:00`/`14:00` backups and the Sunday `04:00` drill.
    Soak 48h under observation before declaring Phase 1B live (§12.6).
+
+## R2 rehearsal watch (provider-specific, verify don't assume)
+
+The scripts have **no provider branches** — MinIO→R2 is config only. But MinIO
+can't reproduce two R2-specific behaviours, so watch for them during the Phase 0
+rehearsal and apply the matching flag (staged, commented, in `lib.sh`) only if
+seen:
+
+- **Post-upload `rclone size` verify returns stale/empty** on a just-written
+  object → add `--s3-no-head`.
+- **Large dumps stall/error on multipart upload** → add `--s3-upload-cutoff=200M`.
+
+Both are one-line edits into `rclone_remote_flags()`. Left unapplied on purpose:
+enabling them speculatively could mask a genuine fault.
 
 ## Local verification (no real secrets)
 

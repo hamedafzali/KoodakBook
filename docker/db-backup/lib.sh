@@ -76,6 +76,15 @@ rclone_remote_flags() {
     "--s3-secret-access-key=${secret}" \
     "--s3-acl=private" \
     "--s3-no-check-bucket"
+  # ── R2-specific flags: READY BUT UNAPPLIED (see README "R2 rehearsal watch") ──
+  # The code is provider-agnostic; these are needed ONLY if the Phase 0 rehearsal
+  # shows R2 misbehaving. Enable per symptom by moving the line into the printf
+  # above (append as an extra "…" argument):
+  #   • post-upload `rclone size` verify returns stale/empty  →  --s3-no-head
+  #   • large dumps stall or error on multipart upload        →  --s3-upload-cutoff=200M
+  # Left off deliberately: adding them speculatively would mask a real problem and
+  # they may be unnecessary. MinIO can't reproduce either symptom, so this is a
+  # rehearsal decision, not a code default.
 }
 
 # rclone <role> <rclone-subcommand> [args…]  — remote path is "store:" mapped to :s3:bucket

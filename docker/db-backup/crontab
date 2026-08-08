@@ -5,6 +5,12 @@
 # 02:00/14:00 backups so the scratch restore never contends with a live dump
 # (approved §12.3: off-peak, no overlap).
 #
+# The WEEKLY restore-drill decrypts with the machine key (AGE_IDENTITY, held as
+# an operational copy in ACM) so restorability is proven continuously. The
+# QUARTERLY manual drill is human-run (NOT cron) and must instead mount the
+# off-server private key via AGE_IDENTITY_FILE, leaving AGE_IDENTITY unset, so the
+# cold-custody recovery path stays exercised. See README "age identity & drills".
+#
 # min hour dom mon dow  command
   0   2    *   *   *    /app/backup.sh
   0   14   *   *   *    /app/backup.sh
