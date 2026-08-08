@@ -9,14 +9,23 @@
 # `0.0.0.0:4000` — leaving the port exposed and defeating the purpose. `!override`
 # replaces the base list instead. (Requires Compose >= 2.24; prod runs 2.25.0.)
 #
-#   • backend 4000 — nothing on the LAN should hit the raw API; the tunnel/nginx
-#                    reach it over the docker network, not the host port.
-#   • admin   3002 — the admin UI should be reached via the tunnel, not by anyone
-#                    on 192.168.178.34:3002.
+#   • backend 4000 — nothing on the LAN should hit the raw API. The public API is
+#                    served SAME-ORIGIN (koodakbook.eu.cc/api/*): the web container
+#                    proxies to `backend:4000` over the internal koodakbook docker
+#                    network (BACKEND_URL=http://backend:4000). That internal path
+#                    does not use the host port, so dropping the host-published
+#                    4000 to loopback removes only LAN reach, not app function.
+#   • admin   3002 — the admin UI is reached via SSH tunnel, not by anyone on
+#                    192.168.178.34:3002. Losing that LAN address is INTENDED (see
+#                    the access-path note below).
 #
 # 3001=web is DELIBERATELY left published on 0.0.0.0 as in docker-compose.yml, so
 # the ACM pipeline health gate (`docker run --network host busybox wget
 # http://localhost:3001/api/lessons`, .acm/pipeline.yml) is completely unaffected.
+#
+# admin SSH-tunnel access path (unchanged by this file — documenting so the loss of
+# 192.168.178.34:3002 is not a surprise):
+#     ssh -L 3002:127.0.0.1:3002 hamed@192.168.178.34   →   http://localhost:3002
 #
 # This does NOT adopt docker-compose.prod.yml — that file is a dormant, drifted,
 # pre-tunnel architecture (stock db image + DB_PASSWORD rename, no piper service /
@@ -26,10 +35,28 @@
 # which would make the health gate probe 404 and trip rollback). Loopback-hardening
 # via this override reaches the same goal without inheriting any of that drift.
 #
-# PRECONDITION before merging: confirm every Cloudflare tunnel Public-Hostname
-# origin is http://localhost:PORT (or 127.0.0.1:PORT). If any ingress points at
-# http://192.168.178.34:PORT, this loopback bind breaks that route — fix the origin
-# to localhost first.
+# ── WHY THIS IS SAFE, AND THE MODEL TO CHECK BEFORE REUSING IT ────────────────
+# cloudflared does NOT run on the host — it runs INSIDE the ACM container (the
+# `run --token` connectors are children of `advanced-container-manager`). From
+# that namespace, `127.0.0.1` is ACM's OWN loopback, not the host, so a
+# `127.0.0.1:PORT` origin is UNREACHABLE — verified: 127.0.0.1:3001/4000/3002 all
+# refuse from inside the connector. cloudflared reaches host-published apps only
+# via the host gateway `host.docker.internal` → 172.17.0.1 (captured live: the
+# KoodakBook web origin dials 172.17.0.1:3001). So the rule for ANY service that
+# IS tunnel-exposed is: it must stay reachable at the host gateway (0.0.0.0 or a
+# 172.17.0.1 bind) — NEVER 127.0.0.1, which would sever the tunnel.
+#
+# This override is safe specifically because backend:4000 and admin:3002 have NO
+# tunnel ingress at all: only `koodakbook.eu.cc` exists (→ web:3001); `api.` and
+# `admin.` do not resolve, so nothing routes to 4000/3002 from the edge. Web (the
+# one service that IS tunnel-exposed) is left on 0.0.0.0 above. The safety comes
+# from "these two ports aren't tunnel-exposed," NOT from "origins are localhost"
+# (they are not — they are the host gateway).
+#
+# PRECONDITION before reusing this pattern on ANOTHER service: check its ingress
+# first (`cloudflared`/dashboard, or just whether its hostname resolves). If a
+# Public Hostname routes to it, do NOT bind it to 127.0.0.1 — keep it on 0.0.0.0
+# (or bind 172.17.0.1) or you break that route.
 
 services:
   backend:
