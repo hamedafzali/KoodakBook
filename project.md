@@ -902,16 +902,52 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - [x] Move parent door out of the child grid → discreet hold-to-enter corner gate *(code)*
 - [x] Mastery state machine + receptive/productive Leitner split — schema + route wiring *(code, mig-016)*
 - [x] Content-scaling foundation: `content_items` spine + versioned `audio_assets` *(code, mig-017)*
-- [ ] **[SECURITY] Lock down the ACM control plane** — Advanced Container Manager
-      answers on `0.0.0.0:5003` with **no authentication**: its deploy/stop/restart/
-      logs API is reachable by anything on the LAN, and a stray tunnel-ingress edit
-      could expose it to the public internet by accident. This is a standing risk
-      independent of what any tunnel points at today (an unauthenticated *deploy*
-      API is the whole keys-to-the-kingdom). Fix options, cheapest first: (a) bind
-      the published port to `127.0.0.1` and reach it only via SSH tunnel / a fronting
-      proxy; (b) add real auth (token/JWT) to the ACM API; (c) put Cloudflare Access
-      in front if it must be remotely reachable. Pick one before the pilot opens.
-      *(ops/security — Finding A, tunnel/auth audit 2026-08)*
+- [ ] **[SECURITY] Lock down the ACM control plane + UI + Redis** — Advanced
+      Container Manager publishes three services to `0.0.0.0` with **no auth**, all
+      reachable by anything on the LAN (and one stray tunnel-ingress edit from the
+      public internet). Verified server-side 2026-08-08. **Tracked here on purpose:**
+      the ACM repo (`hamedafzali/AdvancedContainerManager`) is **public**, so a
+      world-readable issue describing an unauthenticated control plane is a roadmap
+      for anyone who locates the box — this stays in the private roadmap. The fix
+      itself lands in the ACM repo, outside KoodakBook's branch/PR flow (see sequencing).
+      - **`:5003` backend — unauthenticated `/mcp`.** The deploy/stop/restart/logs/exec
+        MCP surface is mounted at the app level (`backend/src/index.ts`
+        `this.app.post("/mcp", …)`), *separate from and before* the authed `/api`
+        router. The auth middleware lives inside `/api` and is itself gated by a
+        `security.requireAuth` setting — so **`/mcp` is not covered even when that
+        toggle is on**. Keys-to-the-kingdom: an unauthenticated *deploy* API.
+      - **`:3000` frontend** — `vite preview --host 0.0.0.0`, management UI, no gate.
+      - **`:6379` Redis** (`advanced-manager-redis`) — published `0.0.0.0`, **no
+        `requirepass`**. Contents are metrics-only (`advanced_manager:system:metrics`),
+        no secrets/sessions/tokens — but still an open, writable cache on the LAN.
+      - **At-rest encryption exists but is not the protection here.** Project env vars
+        are AES-256-GCM encrypted (`backend/src/utils/encryption.ts`) in
+        `manager.sqlite`; auth sessions live in the same sqlite; Redis holds no secrets.
+        **But** the key (`data/db/.encryption.key`, `0600`) sits in the same dir as the
+        DB, and the API/MCP layer **decrypts on read** — so an unauthenticated caller
+        that reaches the control plane retrieves *plaintext* regardless. At-rest
+        encryption is not a substitute for network/auth controls; harden those first.
+        Consequence for provisioning: anything pasted into ACM variables (R2 creds,
+        DB passwords, and esp. the age backup key) is LAN-retrievable in plaintext
+        until `:5003` is closed.
+      - **Remediation.** *Option 1 (now, reversible):* loopback-bind `5003`+`3000`+`6379`
+        in ACM's `docker-compose.yml` (`127.0.0.1:…`) + `docker compose up -d`; off-host
+        access becomes SSH-tunnel only. Set Redis `requirepass` in the same edit. No
+        code change; revert = edit + recreate. Verified unaffected: the backend
+        healthcheck is container-internal, inter-project probing is outbound, and no
+        other project connects to the control plane (only a commented example).
+        *Option 2 (follow-up, code change):* auth middleware in front of the app-level
+        `/mcp` mount so it's protected independently of `security.requireAuth`; MCP
+        clients send a bearer token. *Option 3:* Cloudflare Access only if it must be
+        remotely reachable — adds a public surface where none exists today, so avoid
+        unless needed.
+      - **Sequencing.** Option 1 before Option 2 (don't change the control plane's auth
+        and its bind at once). Apply host-side (compose edit + `up -d`), **not** through
+        ACM's own pipeline — don't depend on the control plane to reconfigure itself.
+        Fold in before provisioning R2/age/DB secrets and before the pilot opens.
+      *(ops/security — Finding A, tunnel/auth audit 2026-08; verified 2026-08-08.
+      Loopback hardening for KoodakBook's own ports was done separately via
+      docker-compose.override.yml, branch `harden-loopback-binds`)*
 - [ ] **[SECURITY] Stop passing the tunnel token on the cloudflared command line** —
       the three `cloudflared … run --token <JWT>` processes expose the full tunnel
       credentials in `ps`, on a host shared with ~10 other projects. Any account that
