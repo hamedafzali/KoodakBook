@@ -935,6 +935,13 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       it. "It's dormant" is not discoverable from reading the file — that's the trap.
       *(ops — tunnel/auth audit 2026-08; loopback hardening was done via
       docker-compose.override.yml instead, see branch `harden-loopback-binds`)*
+- [ ] **Progression rebuild** — evidence-recompute gate replacing the ratcheting
+      promotion (BUG-C): mastery-gated unlock, bidirectional (damped) gate, placement
+      as a decaying prior, `gate_recompute_log` instrumentation *(code, mig-048;
+      branch `progression-rebuild-impl`, stacks on tier2/PR#2; design
+      `docs/placement-progression-rebuild.md`. Blast-radius reviewed on live data
+      (n=2, test children — mechanism validated, cohort-scale behavior unmeasured;
+      see Phase B re-run item). Merge order: PR#2 → this → PR#3; hold at approve-prod)*
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**
@@ -950,6 +957,27 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       probe (V→D→F→C) that sets `children.level` + per-strand `child_strand_levels`.
       Verified end-to-end (heritage profile captured as high-V / low-D). Upgrade
       to IRT-adaptive once pilot data calibrates `content_items.difficulty`.
+- [ ] **Per-letter mastery tracking** (SR for letters, as words have) — unblocks
+      D-strand *mastery* gating (today D falls back to completion, so a phonics
+      lesson clicked-through still gates the child up — the exact weakness the
+      progression rebuild fixes for V/F) **and** a per-strand prior half-life `k`.
+      Tracked gap, not a footnote — see `docs/placement-progression-rebuild.md` §7
+      (A8/A9). *(code + schema)*
+- [ ] **Re-run `gateBlastRadius` against a real pilot cohort** (≥20 children with
+      genuine usage history). The pre-merge prod run was **n=2** (test children):
+      it established that the recompute *executes correctly against live data and
+      behaves as designed*, and **nothing more**. It did NOT answer the original
+      distribution question ("does this move a few children by one stage or most by
+      three") — that question is only answerable at cohort scale — **and** it did
+      NOT exercise the A8/A9 D-strand completion-fallback gap in either direction
+      (no child had contradicting phonics-completion history). This re-run is the
+      point at which (a) the distribution question becomes answerable and (b) the
+      D-strand gap will surface or not. Do not remember the n=2 run as having
+      cleared either. Script is committed + read-only (`apps/backend/src/scripts/
+      gateBlastRadius.ts`, `'placement'` prior mode). *(ops)*
+- [ ] Own numeracy difficulty track — decouple math/memory-game difficulty from
+      `children.level` (the literacy coarse level), so a strong-at-math /
+      still-learning-to-read heritage child is not mis-served (rebuild §6.2). *(code)*
 - [ ] Session engine (Warm-up→Teach→Apply→Stretch→Win) + journey-map child UX
 - [ ] Parent literacy-gain model + predictive milestone + 1 intervention (focus area)
 - [ ] Grandparent read-aloud loop
@@ -962,6 +990,11 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - [ ] Story generator with controlled-vocabulary constraints
 - [ ] Scale to ~1,000 items (illustration + TTS long-tail + batched native for core)
 - [ ] Full freemium packaging + annual/gift pricing + billing
+- [ ] **Register a real (owned) domain** — the pilot runs on `koodakbook.eu.cc`,
+      a free eu.cc subdomain (not an owned TLD). Fine for a pilot; **not** a base
+      to run payments (Stripe), email deliverability, or an app-store listing on.
+      Register + own the TLD before billing or store submission; re-point the
+      Cloudflare tunnel ingress and update `WEB_URL`/`NEXT_PUBLIC_BACKEND_URL`. *(ops)*
 - [ ] Co-read / record-voice premium + print PDF companion
       **[SECURITY constraint — read before building record-voice]** `/uploads` is
       served as static files, **world-readable by exact URL with no auth** (index.ts;

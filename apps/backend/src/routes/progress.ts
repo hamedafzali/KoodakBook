@@ -181,7 +181,7 @@ router.post('/lesson', requireAuth, requireChildOwner, async (req, res) => {
   )
 
   const newBadges = await checkAndAwardBadges(child_id)
-  const promotions = await promoteStrands(child_id)
+  const promotions = await promoteStrands(child_id, 'lesson')
   res.json({ data: row, new_badges: newBadges, promotions, error: null })
 })
 
@@ -212,7 +212,7 @@ router.post('/story', requireAuth, requireChildOwner, async (req, res) => {
   )
 
   const newBadges = await checkAndAwardBadges(child_id)
-  const promotions = completed ? await promoteStrands(child_id) : []
+  const promotions = completed ? await promoteStrands(child_id, 'story') : []
   res.json({ data: row, new_badges: newBadges, promotions, error: null })
 })
 
