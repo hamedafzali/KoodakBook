@@ -78,8 +78,8 @@ export default function LessonPlayer() {
     if (!childId || !lesson) { setCompleted(true); return }
     const score = total > 0 ? Math.round((correct / total) * 100) : 100
     try {
-      // new_badges / promotions arrive top-level on the response (same
-      // contract as /api/progress/story; web's data.promotions read is a bug).
+      // new_badges / promotions arrive top-level on the response, not under
+      // `data` — same contract as /api/progress/story.
       const res = await api.post('/api/progress/lesson', {
         child_id: childId, lesson_id: lesson.id, score,
       }) as { new_badges?: Badge[]; promotions?: Promotion[] }
