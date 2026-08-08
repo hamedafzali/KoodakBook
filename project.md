@@ -730,7 +730,7 @@ MVP is fully built and running. All core features are implemented.
 - PWA icons and manifest
 - Docker dev (hot reload) + prod (Nginx + SSL)
 - Deployment guide (DEPLOY.md) + deploy.sh (auto-migrate/seed)
-- Playwright E2E suite (smoke + learning-loop + UI journeys) and ACM CI/CD pipeline (e2e → deploy)
+- Playwright E2E suite (smoke + learning-loop + UI journeys) and ACM pipeline (e2e → deploy), invoked explicitly — merging to main does not deploy (see CONTRIBUTING.md "Deploy model")
 - Content audit pass (migrations 011–013): fixed transliteration/gloss/register
   and kinship defects, added 7 Critical categories (opposites, question words,
   prepositions, clothes, transportation, weather, school) + numbers 11–20,
@@ -937,11 +937,14 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       docker-compose.override.yml instead, see branch `harden-loopback-binds`)*
 - [ ] **Progression rebuild** — evidence-recompute gate replacing the ratcheting
       promotion (BUG-C): mastery-gated unlock, bidirectional (damped) gate, placement
-      as a decaying prior, `gate_recompute_log` instrumentation *(code, mig-048;
-      branch `progression-rebuild-impl`, stacks on tier2/PR#2; design
-      `docs/placement-progression-rebuild.md`. Blast-radius reviewed on live data
-      (n=2, test children — mechanism validated, cohort-scale behavior unmeasured;
-      see Phase B re-run item). Merge order: PR#2 → this → PR#3; hold at approve-prod)*
+      as a decaying prior, `gate_recompute_log` instrumentation *(code, mig-049
+      `049_gate_prior_split.sql`; branch `progression-rebuild-impl`, stacks on
+      tier2/PR#2; design `docs/placement-progression-rebuild.md`. Blast-radius
+      reviewed on live data (n=2, test children — mechanism validated, cohort-scale
+      behavior unmeasured; see Phase B re-run item). Merge order: PR#2 → this → PR#3.
+      Now merged to main; merging changed nothing in prod — it ships on the next
+      explicit ACM deploy, which pushes whatever main then holds. See the deploy
+      model in CONTRIBUTING.md.)*
 - **Gate:** one polished, voiced, illustrated Stage-1→3 path exists.
 
 **Phase B — 30–90 days · "Prove the engine" (system + pilot)**

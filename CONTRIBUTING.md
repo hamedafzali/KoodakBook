@@ -28,6 +28,27 @@ individual findings. A single audit that turns up eight observations should
 produce roughly three branches (behavior fixes, one docs branch, anything held
 on an external check) — not eight PRs.
 
+## Deploy model
+
+Merging to `main` and deploying to production are **separate steps**. Be precise
+about the boundary — we have gotten it wrong twice.
+
+- **Merging to `main` changes nothing in production.** There is no push-triggered
+  pipeline; a merge only updates the repository.
+- **A deploy happens only when ACM is explicitly invoked** (an
+  AdvancedContainerManager pipeline run / deploy call). Nothing deploys on its own,
+  and there is no per-PR "approve-prod" gate that a merge trips.
+- **A deploy ships whatever `main` holds at that moment** — not the one PR you had
+  in mind. It builds from the current tip and runs every pending migration in
+  filename order.
+
+That last point is the one that bites: once a change is on `main`, the *next*
+deploy carries it to prod — even a deploy triggered for something unrelated. So a
+destructive or backup-dependent change (e.g. a data-dropping migration) must be
+**held out of `main`**, not merely "held at deploy": merging it arms it for the
+next deploy by anyone. This is why such PRs stay unmerged until their precondition
+(e.g. live backups) is met — see the Migrations note below.
+
 ## Migrations
 
 - Migrations live in `supabase/migrations/` and are applied in **filename sort
