@@ -12,8 +12,8 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import { speakOrPlay, speakPersian, stopSpeaking, initSpeech } from '@/lib/speech'
 import { useSpeaking } from '@/lib/useSpeaking'
 import { playTap, playSuccess } from '@/lib/sounds'
-import { wordEmoji } from '@koodakbook/shared'
-import type { Child, PlacementProbe, ProbeQuestion, ProbeChoice, Strand } from '@koodakbook/shared'
+import { wordEmoji, scorePlacement } from '@koodakbook/shared'
+import type { Child, PlacementProbe, ProbeQuestion, ProbeChoice } from '@koodakbook/shared'
 
 type Phase = 'loading' | 'intro' | 'question' | 'feedback' | 'done'
 
@@ -78,17 +78,7 @@ export default function PlacementPage() {
   }, [phase, q])
 
   async function finish(answers: boolean[]) {
-    // Consecutive passes from the start → starting stage (1–4).
-    let streak = 0
-    for (const ok of answers) { if (ok) streak++; else break }
-    const level = Math.min(4, 1 + streak) as 1 | 2 | 3 | 4
-    // One probe item per strand: a pass lifts that strand to level 2, else 1.
-    const strands: Record<Exclude<Strand, 'P'>, number> = {
-      V: answers[0] ? 2 : 1,
-      D: answers[1] ? 2 : 1,
-      F: answers[2] ? 2 : 1,
-      C: answers[3] ? 2 : 1,
-    }
+    const { level, strands } = scorePlacement(answers)
     setFinalLevel(level)
     setPhase('done')
     if (child) {
