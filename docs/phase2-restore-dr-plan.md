@@ -18,6 +18,49 @@ runbook a human can follow under pressure.**
 > decrypt→restore proof happens only at the **quarterly manual** drill, fed the
 > private key from human custody. See the key-loss failure mode in §3.
 
+## 0. Current state — offsite destination deferred
+
+**R2 provisioning is deferred, not abandoned.** As of this writing the sidecar
+runs in **local-only mode** (`BACKUP_OFFSITE=0`, see `docker/db-backup/README.md`
+"Local-only mode"): backup, age encryption, local retention, and the heartbeat
+all run; nothing leaves the host. This changes what's true elsewhere in this
+document until an offsite destination is picked:
+
+- The weekly drill in the table below (§1) runs `verify-local.sh`, a reduced
+  check against `backup_staging` — **not** `verify-offsite.sh`. It cannot make
+  any offsite-chain claim (existence-elsewhere, Object Lock, off-host
+  retrievability); it only sanity-checks the local ciphertext + manifest.
+- `VERIFIED_OFFSITE` is never emitted in local-only mode, so **Item 2's future
+  pre-migration hook cannot treat a local-only copy as a restore point** — by
+  design, it should keep blocking until a real offsite destination exists.
+- The quarterly manual drill (`restore-drill.sh`) needs an offsite target and
+  is **not scheduled** while local-only; §4's "4 consecutive weeks green" and
+  "one quarterly drill completed" acceptance criteria are on hold until then.
+- `backup_staging` is a Docker volume on the **same host disk** as
+  `postgres_data`. Local-only is a rollback safety net (bad migration,
+  accidental delete) — it is explicitly **not** disaster recovery. A disk
+  failure, theft, ransomware, or volume deletion takes the "backup" with it.
+
+**Recommended path when a destination is picked:** an S3-compatible target
+(Cloudflare R2, or self-hosted MinIO in front of a NAS/second machine/external
+disk) is a **config-only** change — `rclone_remote_flags()` in `lib.sh` emits
+generic `--s3-*` flags, so any S3-compatible endpoint works via ACM variables
+alone, no code change. A raw rclone `sftp:`/`local:` remote (no S3 gateway in
+front of it) is possible but needs the `:s3:` remote-path scheme abstracted
+out of 4 places it's currently hardcoded, so whoever picks that path up knows
+the scope going in:
+
+1. `docker/db-backup/lib.sh` — `store_path()` (builds `:s3:bucket/prefix/key`)
+2. `docker/db-backup/lib.sh` — `rclone_remote_flags()` (emits `--s3-*` flags only)
+3. `docker/db-backup/verify-offsite.sh` — the offsite listing line
+   (`rclone_do read lsf … ":s3:${BACKUP_BUCKET}/${BACKUP_PREFIX}/"`)
+4. `docker/db-backup/restore-drill.sh` — the listing line **and** the copy-down
+   line (both build a `:s3:${BACKUP_BUCKET}/${BACKUP_PREFIX}/…` path directly)
+
+Given that, MinIO-in-front-of-a-NAS/disk is the cheaper path to "actually
+offsite" than doing the sftp/local abstraction work — it reuses all four
+locations unchanged.
+
 ## 1. Restore-drill topology (confirmed decision)
 
 The plan's §7.1 literal wording ("spin up an ephemeral `postgres:16-alpine`
