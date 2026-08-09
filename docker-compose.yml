@@ -81,7 +81,22 @@ services:
   # One image, three roles. Scheduler runs twice-daily backups + a weekly
   # restore-drill; the same image also serves Item 2's on-demand pre-migration
   # dump. Secrets come from ACM project variables, never committed.
+  #
+  # CURRENTLY DISABLED (profiles: ["backup"], not in the default profile set).
+  # See docker/db-backup/README.md "Backup sidecar is currently DISABLED" for
+  # what that means and the risk while it's off. Re-enable: set
+  # COMPOSE_PROFILES=backup plus AGE_RECIPIENT, BACKUP_DB_PASSWORD,
+  # DRILL_PGPASSWORD, and the two HEARTBEAT_*_URL vars in ACM.
+  #
+  # The three vars below are soft-defaulted (${VAR:-}) so `docker compose up`
+  # resolves cleanly with the profile inactive — that is a COMPOSE-level
+  # convenience only, not a runtime exemption: require_backup_config() in
+  # lib.sh still hard-fails (FATAL + a dead-man's-switch FAIL ping) the moment
+  # the profile IS active and any of them is actually missing. A blank default
+  # here must never be mistaken for "backups quietly skip" — see backup.sh's
+  # on_err trap and lib.sh:require_backup_config.
   db-backup:
+    profiles: ["backup"]
     build:
       context: ./docker/db-backup
     restart: unless-stopped
@@ -95,7 +110,7 @@ services:
       PGPORT:            "5432"
       PGDATABASE:        koodakbook
       PGUSER:            backup
-      PGPASSWORD:        ${BACKUP_DB_PASSWORD:?required}
+      PGPASSWORD:        ${BACKUP_DB_PASSWORD:-}
       # Offsite destination — DEFERRED (see docker/db-backup/README.md "Local-only
       # mode"). BACKUP_OFFSITE defaults to 1 (offsite required); set explicitly to
       # 0 to run local-only. That flag — NOT leaving these blank — is what
@@ -114,14 +129,14 @@ services:
       RESTORE_KEY_ID:     ${RESTORE_KEY_ID:-}               # read only
       RESTORE_KEY_SECRET: ${RESTORE_KEY_SECRET:-}
       # Encryption — PUBLIC key only lives here; private key stays off-server.
-      AGE_RECIPIENT:      ${AGE_RECIPIENT:?required}
+      AGE_RECIPIENT:      ${AGE_RECIPIENT:-}
       AGE_IDENTITY:       ${AGE_IDENTITY:-}                # machine-drill decrypt key (ACM var)
       # Dead-man's switch (healthchecks.io) — absence of a ping alerts.
       HEARTBEAT_BACKUP_URL: ${HEARTBEAT_BACKUP_URL:-}
       HEARTBEAT_DRILL_URL:  ${HEARTBEAT_DRILL_URL:-}
       # Scratch restore target (see db-drill below)
       DRILL_PGHOST:       db-drill
-      DRILL_PGPASSWORD:   ${DRILL_PGPASSWORD:?required}
+      DRILL_PGPASSWORD:   ${DRILL_PGPASSWORD:-}
     volumes:
       - backup_staging:/staging
     depends_on:
@@ -135,11 +150,19 @@ services:
   # separate from `db` so a restore can never contend with or corrupt prod's
   # server. (See restore-drill.sh header for why this is not a socket-spawned
   # container.)
+  #
+  # CURRENTLY DISABLED — see db-backup above. POSTGRES_PASSWORD is soft-defaulted
+  # for the same compose-resolves-clean reason; if the profile is ever active
+  # with DRILL_PGPASSWORD blank, the official postgres image itself refuses to
+  # start ("Database is uninitialized and superuser password is not specified"),
+  # which is its own loud, fail-closed behavior — not something this compose
+  # file needs to re-implement.
   db-drill:
     image: postgres:16-alpine
+    profiles: ["backup"]
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${DRILL_PGPASSWORD:?required}
+      POSTGRES_PASSWORD: ${DRILL_PGPASSWORD:-}
       POSTGRES_DB:       postgres
     command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=20", "-c", "fsync=off"]
     tmpfs:

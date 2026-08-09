@@ -1,5 +1,36 @@
 # db-backup — encrypted offsite Postgres backups (Phase 1B)
 
+> ## ⚠️ Backup sidecar is currently DISABLED
+>
+> `db-backup` and `db-drill` are gated behind the Compose profile `backup`,
+> which is **not** in the default profile set — a plain `docker compose up`
+> (what the ACM pipeline runs) starts neither service. **The database has no
+> restore point of any kind right now** — not offsite, not local-only. A bad
+> migration, an accidental `DELETE`, a disk failure: none of them are
+> recoverable while this is off.
+>
+> **Re-enable:** set `COMPOSE_PROFILES=backup` in ACM, plus the five variables
+> both services need (`AGE_RECIPIENT`, `BACKUP_DB_PASSWORD`,
+> `DRILL_PGPASSWORD`, `HEARTBEAT_BACKUP_URL`, `HEARTBEAT_DRILL_URL`), then
+> redeploy. Leaving `COMPOSE_PROFILES` unset with those variables set does
+> **nothing** — the profile gate, not the variables, controls whether the
+> services exist at all.
+>
+> **The soft `${VAR:-}` defaults on `AGE_RECIPIENT`/`BACKUP_DB_PASSWORD`/
+> `DRILL_PGPASSWORD` in `docker-compose.yml` exist only so `docker compose
+> config` resolves cleanly while the profile is inactive.** They are not a
+> runtime exemption: the moment the profile *is* active, `lib.sh:
+> require_backup_config()` still hard-fails (`FATAL: missing required config`
+> + a dead-man's-switch FAIL ping) if any of them is actually blank — verified
+> directly, this doesn't silently no-op into a fake backup.
+>
+> **[Piper removal (PR #1) stays blocked while this is off](../../project.md)**
+> — it drops four columns irreversibly, and there is nothing to restore from
+> if that goes wrong with backups disabled.
+>
+> Everything below describes the sidecar's *behavior once enabled* (including
+> the separate, narrower local-only mode) — it does not apply while it's off.
+
 A single sidecar image that gives KoodakBook a **tested, encrypted, offsite**
 restore point. One image, several roles (approved plan §3):
 

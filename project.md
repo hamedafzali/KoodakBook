@@ -902,6 +902,32 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
 - [x] Move parent door out of the child grid → discreet hold-to-enter corner gate *(code)*
 - [x] Mastery state machine + receptive/productive Leitner split — schema + route wiring *(code, mig-016)*
 - [x] Content-scaling foundation: `content_items` spine + versioned `audio_assets` *(code, mig-017)*
+- [ ] **[OPS] Backup sidecar is currently DISABLED — no restore point exists** —
+      `db-backup`/`db-drill` are gated behind Compose profile `backup` (not in the
+      default profile set), so a plain `docker compose up` — what the ACM pipeline
+      runs — starts neither service. Deliberate, reversible (2026-08-09): the offsite
+      destination (R2/S3-compatible) was never provisioned, so keeping the sidecar
+      "on" in local-only mode was giving false confidence — local-only is not a
+      restore point against disk failure. **While this is off: no backup of any
+      kind, offsite or local. A bad migration, an accidental `DELETE`, or a disk
+      failure is unrecoverable.** Re-enable: set `COMPOSE_PROFILES=backup` in ACM
+      plus `AGE_RECIPIENT`, `BACKUP_DB_PASSWORD`, `DRILL_PGPASSWORD`,
+      `HEARTBEAT_BACKUP_URL`, `HEARTBEAT_DRILL_URL`, then redeploy — see
+      `docker/db-backup/README.md`. The three DB/encryption vars are soft-defaulted
+      in `docker-compose.yml` only so `docker compose config` resolves cleanly with
+      the profile inactive; `lib.sh:require_backup_config()` still hard-fails at
+      runtime the moment the profile is active and any of them is blank, so this
+      can't silently degrade into a fake backup. **PR #1 already merged with
+      this off — see below, urgent, not just a pre-merge gate.**
+- [ ] **[URGENT] PR #1 (Piper removal / collapse audio to single cloud tier,
+      migration 048) merged into `main` 2026-08-09 while the backup sidecar was
+      disabled** — migration 048 dropped/folded the free/premium audio columns
+      irreversibly (see commit 07772ba), and per the item directly above there is
+      currently no restore point, offsite or local, to fall back to if anything
+      about that fold turns out wrong once deployed. This is no longer a
+      pre-merge gate — it already happened. **Re-enabling the backup sidecar
+      (`COMPOSE_PROFILES=backup` + the five vars) and exercising a verified
+      restore is now a priority, not a precondition.**
 - [ ] **[SECURITY] Lock down the ACM control plane + UI + Redis** — Advanced
       Container Manager publishes three services to `0.0.0.0` with **no auth**, all
       reachable by anything on the LAN (and one stray tunnel-ingress edit from the
