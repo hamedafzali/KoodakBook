@@ -72,6 +72,11 @@ services:
     environment:
       - DOMAIN=${DOMAIN}
 
+  # NOTE: db-backup + db-drill (Phase 1B) and the backup_staging volume now live
+  # in the base docker-compose.yml — that is the file the ACM pipeline deploys.
+  # Do not re-add them here; this prod override is dormant (pre-tunnel nginx+SSL)
+  # and tracked for separate reconcile-or-delete.
+
 volumes:
   postgres_data:
   uploads:
