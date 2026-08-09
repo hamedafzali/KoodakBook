@@ -23,7 +23,21 @@ case "$role" in
     ;;
   verify-offsite)
     heartbeat_preflight verify-offsite
-    shift; exec "${HERE}/verify-offsite.sh" "$@"
+    shift
+    # LOCAL-ONLY (BACKUP_OFFSITE=0): no offsite target exists to verify against,
+    # so the crontab's weekly verify-offsite slot runs the reduced LOCAL check
+    # instead — same schedule, same HEARTBEAT_DRILL_URL, no ACM/crontab edit
+    # needed. Re-enabling BACKUP_OFFSITE=1 routes this straight back.
+    if offsite_enabled; then
+      exec "${HERE}/verify-offsite.sh" "$@"
+    else
+      log "BACKUP_OFFSITE=0 — running verify-local.sh instead of verify-offsite.sh"
+      exec "${HERE}/verify-local.sh" "$@"
+    fi
+    ;;
+  verify-local)
+    heartbeat_preflight verify-local
+    shift; exec "${HERE}/verify-local.sh" "$@"
     ;;
   restore-drill)
     heartbeat_preflight restore-drill

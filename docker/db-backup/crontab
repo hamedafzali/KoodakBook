@@ -12,7 +12,14 @@
 # human who supplies the off-server key via AGE_IDENTITY_FILE — it is deliberately
 # NOT in this crontab. See README "age identity & drills".
 #
+# LOCAL-ONLY (BACKUP_OFFSITE=0, README "Local-only mode"): no offsite target is
+# provisioned, so the weekly slot below runs verify-local.sh instead — same
+# schedule, same HEARTBEAT_DRILL_URL, no separate healthchecks.io check needed.
+# supercronic execs crontab lines directly (not through entrypoint.sh), so the
+# choice is made HERE, at cron-fire time, not just in entrypoint.sh's dispatch
+# (which only covers manual/staging invocations).
+#
 # min hour dom mon dow  command
   0   2    *   *   *    /app/backup.sh
   0   14   *   *   *    /app/backup.sh
-  0   4    *   *   0    /app/verify-offsite.sh
+  0   4    *   *   0    sh -c '[ "${BACKUP_OFFSITE:-1}" = "0" ] && /app/verify-local.sh || /app/verify-offsite.sh'

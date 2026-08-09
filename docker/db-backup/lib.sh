@@ -60,6 +60,15 @@ _SECRET_KEYS='BACKUP_KEY_SECRET RESTORE_KEY_SECRET AGE_IDENTITY BACKUP_TRIGGER_S
 : "${LOCAL_KEEP:=2}"                  # number of encrypted local copies to retain
 : "${ANOMALY_DROP_PCT:=40}"           # size-drop % vs trailing median that trips an anomaly ping
 
+# ── offsite destination: EXPLICIT opt-out only ────────────────────────────────
+# Default is 1 (offsite required) — this is the one place a missing S3 destination
+# must NOT silently degrade to "well, local is fine". An operator who wants
+# local-only (no offsite target provisioned yet) must say so on purpose by setting
+# BACKUP_OFFSITE=0; leaving the S3 vars blank with BACKUP_OFFSITE unset (or =1) is
+# still a hard error. See require_backup_config() and README "Local-only mode".
+: "${BACKUP_OFFSITE:=1}"
+offsite_enabled() { [ "${BACKUP_OFFSITE}" != "0" ]; }
+
 # ── rclone remote, built from env (no config file with secrets on disk) ───────
 # Emits the --s3-* flags that configure the on-the-fly `:s3:` backend. The
 # remote PATH itself (":s3:bucket/…") is passed as an argument by the caller,
@@ -228,15 +237,21 @@ manifest_get() {  # <file> <key>
 manifest_row() { grep -oE "\"$2\"[[:space:]]*:[[:space:]]*[0-9]+" "$1" | head -n1 | grep -oE '[0-9]+$'; }
 
 # ── preflight: fail loudly and early if config is incoherent ─────────────────
+# offsite_enabled(): the S3 destination is required, same as always.
+# BACKUP_OFFSITE=0 (explicit opt-out, see above): S3 vars are NOT required, but
+# the encryption identity + DB credential still are — local-only still means
+# "encrypted local retention", never "unencrypted, unattended".
 require_backup_config() {
   local missing=()
-  [ -n "$BACKUP_S3_ENDPOINT" ] || missing+=(BACKUP_S3_ENDPOINT)
-  [ -n "$BACKUP_BUCKET" ]      || missing+=(BACKUP_BUCKET)
-  [ -n "$BACKUP_KEY_ID" ]      || missing+=(BACKUP_KEY_ID)
-  [ -n "$BACKUP_KEY_SECRET" ]  || missing+=(BACKUP_KEY_SECRET)
+  if offsite_enabled; then
+    [ -n "$BACKUP_S3_ENDPOINT" ] || missing+=(BACKUP_S3_ENDPOINT)
+    [ -n "$BACKUP_BUCKET" ]      || missing+=(BACKUP_BUCKET)
+    [ -n "$BACKUP_KEY_ID" ]      || missing+=(BACKUP_KEY_ID)
+    [ -n "$BACKUP_KEY_SECRET" ]  || missing+=(BACKUP_KEY_SECRET)
+  fi
   [ -n "$AGE_RECIPIENT" ]      || missing+=(AGE_RECIPIENT)
   [ -n "${PGPASSWORD:-}" ]     || missing+=(PGPASSWORD)
-  [ ${#missing[@]} -eq 0 ] || die "missing required config: ${missing[*]}"
+  [ ${#missing[@]} -eq 0 ] || die "missing required config: ${missing[*]}$(offsite_enabled || printf ' (BACKUP_OFFSITE=0 — offsite creds not required, but these still are)')"
   mkdir -p "$STAGING_DIR"
 }
 

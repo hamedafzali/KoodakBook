@@ -109,16 +109,23 @@ services:
       PGDATABASE:        koodakbook
       PGUSER:            backup
       PGPASSWORD:        ${BACKUP_DB_PASSWORD:?required}
-      # Offsite object store (Cloudflare R2)
-      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:?required}
-      BACKUP_S3_PROVIDER: Cloudflare
-      BACKUP_S3_REGION:   auto
-      BACKUP_BUCKET:      ${BACKUP_BUCKET:?required}
+      # Offsite destination — DEFERRED (see docker/db-backup/README.md "Local-only
+      # mode"). BACKUP_OFFSITE defaults to 1 (offsite required); set explicitly to
+      # 0 to run local-only. That flag — NOT leaving these blank — is what
+      # controls the mode: with BACKUP_OFFSITE unset/1, lib.sh:require_backup_config
+      # still hard-fails on missing S3 vars, so a real destination must be wired
+      # back up (Cloudflare R2, or any S3-compatible target — MinIO in front of a
+      # NAS/disk is config-only, see README "R2 rehearsal watch" / roadmap).
+      BACKUP_OFFSITE:     ${BACKUP_OFFSITE:-1}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      BACKUP_S3_PROVIDER: ${BACKUP_S3_PROVIDER:-Cloudflare}
+      BACKUP_S3_REGION:   ${BACKUP_S3_REGION:-auto}
+      BACKUP_BUCKET:      ${BACKUP_BUCKET:-}
       BACKUP_PREFIX:      ${BACKUP_PREFIX:-koodakbook}
-      BACKUP_KEY_ID:      ${BACKUP_KEY_ID:?required}       # write+list only
-      BACKUP_KEY_SECRET:  ${BACKUP_KEY_SECRET:?required}
-      RESTORE_KEY_ID:     ${RESTORE_KEY_ID:?required}      # read only
-      RESTORE_KEY_SECRET: ${RESTORE_KEY_SECRET:?required}
+      BACKUP_KEY_ID:      ${BACKUP_KEY_ID:-}                # write+list only
+      BACKUP_KEY_SECRET:  ${BACKUP_KEY_SECRET:-}
+      RESTORE_KEY_ID:     ${RESTORE_KEY_ID:-}               # read only
+      RESTORE_KEY_SECRET: ${RESTORE_KEY_SECRET:-}
       # Encryption — PUBLIC key only lives here; private key stays off-server.
       AGE_RECIPIENT:      ${AGE_RECIPIENT:?required}
       AGE_IDENTITY:       ${AGE_IDENTITY:-}                # machine-drill decrypt key (ACM var)

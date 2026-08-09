@@ -7,9 +7,10 @@ restore point. One image, several roles (approved plan §3):
 | ------------------------------- | -------------------------------------------------------------- |
 | _(default)_ / `scheduler`       | `supercronic` on `crontab` — the long-running service          |
 | `backup`                        | one scheduled full dump                                         |
-| `backup --label <label>`        | one on-demand labelled dump (e.g. `pre-migrate`); prints `VERIFIED_OFFSITE <key>` on success |
-| `verify-offsite`                | **weekly, keyless** — prove the offsite copy is intact WITHOUT the private key (the scheduled drill) |
-| `restore-drill`                 | **quarterly, manual** — the full decrypt→restore proof, using the off-server key |
+| `backup --label <label>`        | one on-demand labelled dump (e.g. `pre-migrate`); prints `VERIFIED_OFFSITE <key>` on success **— only when offsite (see "Local-only mode")** |
+| `verify-offsite`                | **weekly, keyless** — prove the offsite copy is intact WITHOUT the private key. Auto-routes to `verify-local.sh` when `BACKUP_OFFSITE=0` |
+| `verify-local`                  | the local-only weekly check directly (also what the crontab and the `verify-offsite` auto-route call) |
+| `restore-drill`                 | **quarterly, manual** — the full decrypt→restore proof, using the off-server key. **Needs an offsite target; not usable in local-only mode.** |
 | `sh` / `bash` / _anything else_ | exec-through, for debugging                                     |
 
 ## Design rules (baked into every script)
@@ -31,6 +32,94 @@ restore point. One image, several roles (approved plan §3):
   is >`ANOMALY_DROP_PCT`% below the trailing-7 median size, or the row-count
   regressed, the job fires a `fail` ping — this is the "ran but captured a
   truncated DB" signature.
+
+## Local-only mode (offsite destination deferred) ⚠️
+
+> **The sharp edge, first:** `backup_staging` — where the local-only encrypted
+> copies live — is a Docker volume on the **same host disk** as `postgres_data`.
+> If that disk fails, is stolen, is hit by ransomware, or the volume is deleted,
+> **you lose the database and every "backup" in the same event.** Local-only is a
+> **rollback safety net** (bad migration, accidental `DELETE`), **not disaster
+> recovery.** Do not report this as "backups are working" without that caveat.
+
+No offsite destination (R2, MinIO, or otherwise) is provisioned yet. Rather than
+let the sidecar quietly skip the parts it can't do, this is an **explicit,
+config-driven mode**:
+
+- **`BACKUP_OFFSITE`** — defaults to `1` (offsite required, the historical
+  behaviour). Set to `0` on purpose to run local-only. **This is the only knob
+  that changes behaviour.** Leaving the S3 vars blank with `BACKUP_OFFSITE`
+  unset or `1` is still a hard error (`require_backup_config` in `lib.sh`) — a
+  missing destination can never silently degrade into local-only.
+- **What still runs:** dump → integrity precheck → age-encrypt → shred plaintext
+  → **local encrypted retention** (`LOCAL_KEEP` copies on `backup_staging`) →
+  backup heartbeat. The manifest is still written, just kept locally instead of
+  uploaded.
+- **What's disabled:** the upload + remote-size-verify step, the manifest
+  upload, and the quarterly `restore-drill` (nothing offsite to restore from —
+  don't schedule it while local-only).
+- **Every local-only run says so, loudly, in three places** — you should never
+  have to infer the mode from absence of an error: the backup log prints a
+  boxed `LOCAL-ONLY MODE (BACKUP_OFFSITE=0) — NOT SHIPPED OFFSITE` banner; the
+  success **heartbeat payload itself** carries `[LOCAL-ONLY — NOT shipped
+  offsite]` (so it's visible in the healthchecks.io history, not just the
+  container log); and the weekly drill runs as `verify-local.sh` — its own
+  heartbeat payload is tagged `[LOCAL-ONLY — NOT verified offsite]` too.
+- **`VERIFIED_OFFSITE <key>` is never emitted in this mode.** That marker is
+  what Item 2's future pre-migration hook will treat as "a real restore point
+  exists, safe to run a destructive migration." A local-only copy on the same
+  disk as the live DB is not that — see the comment at the emission site in
+  `backup.sh` for why re-enabling it here would be actively dangerous.
+
+**What local-only protects against:**
+- ✅ a bad migration or an accidental `DELETE`/`DROP` (roll back to the last
+  local encrypted copy)
+- ✅ human/application-layer mistakes short of touching the disk itself
+
+**What it does NOT protect against** (all of these take `backup_staging` down
+with `postgres_data`, because they're the same disk):
+- ❌ disk failure
+- ❌ theft of the server
+- ❌ ransomware / host compromise that touches the volume
+- ❌ accidental Docker volume deletion
+
+### Weekly check in local-only mode: `verify-local.sh`
+
+The weekly slot can't run `verify-offsite.sh` (nothing offsite to check), so it
+runs a reduced **local** verification instead — same cadence, same
+`HEARTBEAT_DRILL_URL`, no separate healthchecks.io check to create. It checks
+the newest local `.dump.age` + its manifest: existence, size trend, a
+well-formed age header, the recipient fingerprint, checksum/size, and manifest
+row/size sanity — everything `verify-offsite.sh` does **except** object-lock
+retention and "is this actually retrievable from somewhere other than this
+host," which are meaningless without an offsite target. See the header comment
+in `verify-local.sh` for the exact list.
+
+### Getting back to offsite when a destination is picked
+
+The scripts have **no provider branches** — `rclone_remote_flags()` in `lib.sh`
+emits generic `--s3-*` flags, so **any S3-compatible target is a config change
+only**: set `BACKUP_OFFSITE=1` and point `BACKUP_S3_ENDPOINT` /
+`BACKUP_S3_PROVIDER` / bucket / keys at it. This covers Cloudflare R2 (prod
+target), MinIO run in front of a NAS or an external disk, or any other S3-
+compatible gateway — verified by the local harness, which already does exactly
+this against MinIO.
+
+A **raw rclone `local:` or `sftp:` remote** (no S3 gateway in front of the
+NAS/disk) is a different story: `:s3:` is hardcoded as the remote scheme in
+four places, and supporting a non-S3 backend means abstracting the remote
+scheme + path prefix at each:
+
+1. `lib.sh` — `store_path()` (builds `:s3:bucket/prefix/key`)
+2. `lib.sh` — `rclone_remote_flags()` (emits `--s3-*` flags only)
+3. `verify-offsite.sh` — the offsite listing line (`rclone_do read lsf … ":s3:${BACKUP_BUCKET}/${BACKUP_PREFIX}/"`)
+4. `restore-drill.sh` — the listing line **and** the copy-down line (both build a `:s3:${BACKUP_BUCKET}/${BACKUP_PREFIX}/…` path directly)
+
+**Recommendation:** when a LAN target is picked, run an S3 gateway (MinIO is
+the obvious choice, already proven by the harness) in front of the NAS/disk
+rather than doing the sftp/local abstraction work — it stays a pure
+provisioning change and reuses the entire tested path. Reserve the four-site
+refactor for if keyless sftp/local with no gateway is specifically wanted.
 
 ## Restore isolation — why db-drill, not a socket-spawned container
 
@@ -132,9 +221,13 @@ All real values live in **ACM project variables**; `.env.example` carries
 placeholders only. See the `db-backup` service in `docker-compose.prod.yml` for
 the full wiring. Key vars:
 
+- `BACKUP_OFFSITE` — `1` (default) requires an offsite destination; `0` is the
+  explicit local-only opt-out (see "Local-only mode" above). Never implicit.
 - `BACKUP_S3_*`, `BACKUP_BUCKET`, `BACKUP_PREFIX` — S3-compatible endpoint
-  (Cloudflare R2 in prod, MinIO in the local harness).
+  (Cloudflare R2 in prod, MinIO in the local harness). Required only when
+  `BACKUP_OFFSITE=1`.
 - `BACKUP_KEY_ID/SECRET` (write+list) · `RESTORE_KEY_ID/SECRET` (read-only).
+  Same — required only when offsite is enabled.
 - `AGE_RECIPIENT` — **public** key; the only age key on the server. `AGE_IDENTITY`
   is **not set in prod**; the quarterly **manual** drill mounts the off-server key
   via `AGE_IDENTITY_FILE` for that run only.
@@ -144,22 +237,44 @@ the full wiring. Key vars:
   the quarterly `restore-drill` share the drill heartbeat).
 - `DRILL_PGPASSWORD` — the throwaway db-drill server's password (quarterly drill).
 
-## Provisioning checklist (needs real secrets — do at deploy time)
+## Provisioning checklist — LOCAL-ONLY (current state, `BACKUP_OFFSITE=0`)
 
-1. Create the R2 bucket with **object-lock ON**, in an account **separate** from
-   the age-key store. Mint two scoped tokens (write+list, read-only).
-2. Generate the age keypair (`age-keygen`). Put **only the public key** in
-   `AGE_RECIPIENT`. Store the private key in a password manager **and** a physical
-   off-site copy — **never on the server** (`AGE_IDENTITY` stays unset in prod).
-   The key is the master secret for every backup; protect it accordingly and plan
-   to verify the custody copy is readable at each quarterly drill.
-3. Create the two healthchecks.io checks; set their ping URLs.
-4. Apply [`backup-role.sql`](backup-role.sql) to prod, set `BACKUP_DB_PASSWORD`.
-5. Deploy; watch the first `02:00`/`14:00` backups (each must upload a `.age` **and**
-   its `.manifest.json`) and the Sunday `04:00` **keyless** `verify-offsite`. Soak
-   48h under observation before declaring Phase 1B live (§12.6).
-6. Schedule the first **quarterly** `restore-drill` (manual, off-server key) — the
-   full decrypt→restore proof and the custody-copy read test.
+Deferring the offsite destination on purpose (see "Local-only mode" above).
+Reduced provisioning to go live in this mode:
+
+1. Generate the age keypair (`age-keygen`). Put **only the public key** in
+   `AGE_RECIPIENT`. Store the private key in a password manager **and** a
+   physical off-site copy — **never on the server**. Encryption stays valuable
+   regardless of where the ciphertext ends up.
+2. Apply [`backup-role.sql`](backup-role.sql) to prod, set `BACKUP_DB_PASSWORD`.
+3. Create **one** healthchecks.io check (the backup/drill heartbeat is shared);
+   set `HEARTBEAT_BACKUP_URL` and `HEARTBEAT_DRILL_URL`. Blank fails closed —
+   see the entrypoint's heartbeat preflight.
+4. Set `BACKUP_OFFSITE=0` explicitly and `DRILL_PGPASSWORD` (the `db-drill`
+   service stays deployed so the switch back to offsite needs no compose
+   change).
+5. Deploy; watch the first `02:00`/`14:00` backups log the `LOCAL-ONLY MODE`
+   banner and a heartbeat payload tagged `[LOCAL-ONLY — NOT shipped offsite]`,
+   and the Sunday `04:00` slot run `verify-local.sh` (payload tagged
+   `[LOCAL-ONLY — NOT verified offsite]`).
+6. **Do not** schedule the quarterly `restore-drill` while local-only — there is
+   nothing offsite for it to fetch.
+
+## Provisioning checklist — OFFSITE (do this when a destination is picked)
+
+**Not required today.** MinIO-on-LAN or any other S3-compatible target is a
+config-only change (see "Getting back to offsite" above) — no code, no PR.
+
+1. Provision the destination with **object-lock ON** if it supports it (R2:
+   in an account **separate** from the age-key store). Mint two scoped tokens
+   (write+list, read-only).
+2. Set `BACKUP_OFFSITE=1` and the six `BACKUP_S3_*`/`BACKUP_BUCKET`/
+   `BACKUP_KEY_*`/`RESTORE_KEY_*` vars.
+3. Deploy; watch the first backups upload a `.age` **and** its
+   `.manifest.json`, and the Sunday `04:00` slot switch back to the real
+   **keyless** `verify-offsite.sh`. Soak 48h under observation (§12.6).
+4. Schedule the first **quarterly** `restore-drill` (manual, off-server key) —
+   the full decrypt→restore proof and the custody-copy read test.
 
 ## R2 rehearsal watch (provider-specific, verify don't assume)
 
@@ -185,6 +300,42 @@ reason) rather than skipped:
 ```
 bash docker/db-backup/staging/run-tests.sh
 ```
+
+`staging/run-tests-local.sh` is the local-only companion — it brings up only
+`db`+`db-drill` (no MinIO; local-only mode never touches S3) and runs a
+separate 7-row table proving the local-only path end to end:
+
+```
+bash docker/db-backup/staging/run-tests-local.sh
+```
+
+| # | Row | Result (last run) |
+|---|-----|--------|
+| L1 | Missing S3 creds WITHOUT `BACKUP_OFFSITE=0` still hard-fails (no silent local-only fallback) | PASS |
+| L2 | Local-only backup: LOCAL-ONLY banner in the **log** | PASS |
+| L3 | Local-only backup: LOCAL-ONLY tag in the **heartbeat payload** | PASS |
+| L4 | Encrypted `.dump.age` + its `.manifest.json` both land on `backup_staging` | PASS |
+| L5 | `VERIFIED_OFFSITE` withheld for a `--label pre-migrate` local-only backup | PASS |
+| L6 | Weekly `verify-offsite` slot auto-routes to `verify-local.sh` | PASS |
+| L7 | `verify-local.sh`'s own heartbeat payload is tagged LOCAL-ONLY | PASS |
+
+The rest of the approved §10 table (below) doesn't apply in local-only mode —
+there's no offsite object to upload/verify/lock, so those rows are **N/A by
+design**, not silently skipped: object-lock retention, upload-size
+cross-check, R2 rehearsal, and the quarterly `restore-drill` (which needs an
+offsite target and is not scheduled while `BACKUP_OFFSITE=0` — see
+"Local-only mode" above). Everything else in the §10 table below —
+image build, encryption round-trip, manifest content, local retention
+pruning, dead-man's-switch wiring — is mode-independent and unaffected.
+
+Fixing L4/L6/L7 above surfaced one real bug during this pass: the local-only
+manifest filename was `NAME.manifest.json`, but retention pruning and
+`verify-local.sh` both derive the manifest path from the `.dump.age` file's
+own name (`NAME.dump.age.manifest.json`). Harmless before local-only mode
+existed (the local file was transient, deleted right after upload under a
+different, offsite-only key name) — now load-bearing, since the file
+persists. Fixed at the source in `backup.sh` so the name matches everywhere
+it's read.
 
 The harness now also covers the **manifest** (backup emits it; contents sane) and
 the **keyless weekly `verify-offsite`** (existence, header, recipient fingerprint,

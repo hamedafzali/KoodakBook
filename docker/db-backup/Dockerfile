@@ -30,7 +30,7 @@ RUN set -eux; \
 # Non-root. Only the staging volume is writable; root fs can be mounted read-only.
 RUN adduser -D -H -u 10001 backup
 WORKDIR /app
-COPY --chmod=0755 lib.sh backup.sh verify-offsite.sh restore-drill.sh entrypoint.sh /app/
+COPY --chmod=0755 lib.sh backup.sh verify-offsite.sh verify-local.sh restore-drill.sh entrypoint.sh /app/
 COPY crontab /app/crontab
 RUN mkdir -p /staging && chown backup:backup /staging /app/crontab
 VOLUME ["/staging"]

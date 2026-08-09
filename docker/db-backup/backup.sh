@@ -87,19 +87,41 @@ SIZE="$(stat -c %s "$ENC" 2>/dev/null || wc -c < "$ENC")"
 SHA="$(sha256_of "$ENC")"
 
 # 5. Upload, then verify the remote object actually exists at the right size.
+#    LOCAL-ONLY MODE (BACKUP_OFFSITE=0): no offsite destination is provisioned
+#    yet. The encrypted object and its manifest stay ONLY on the backup_staging
+#    volume — same disk as postgres_data (see README "Local-only mode" for the
+#    sharp edge). Every log line and the heartbeat payload say LOCAL-ONLY loudly;
+#    this must never read like a normal, offsite-verified backup.
 KEY="$(date -u '+%Y/%m/%d')/${NAME}.age"
-log "upload → $(store_path "$KEY")"
-rclone_do write copyto "$ENC" "$(store_path "$KEY")"
-REMOTE_SIZE="$(rclone_do write size "$(store_path "$KEY")" --json 2>/dev/null | grep -oE '"bytes":[0-9]+' | grep -oE '[0-9]+' || echo 0)"
-[ "$REMOTE_SIZE" = "$SIZE" ] || die "remote size ${REMOTE_SIZE} != local ${SIZE} — upload not verified"
-log "upload verified (${SIZE} bytes offsite at ${KEY})"
+if offsite_enabled; then
+  log "upload → $(store_path "$KEY")"
+  rclone_do write copyto "$ENC" "$(store_path "$KEY")"
+  REMOTE_SIZE="$(rclone_do write size "$(store_path "$KEY")" --json 2>/dev/null | grep -oE '"bytes":[0-9]+' | grep -oE '[0-9]+' || echo 0)"
+  [ "$REMOTE_SIZE" = "$SIZE" ] || die "remote size ${REMOTE_SIZE} != local ${SIZE} — upload not verified"
+  log "upload verified (${SIZE} bytes offsite at ${KEY})"
+else
+  log "############################################################"
+  log "# LOCAL-ONLY MODE (BACKUP_OFFSITE=0) — NOT SHIPPED OFFSITE  #"
+  log "# ${ENC##*/} exists ONLY on backup_staging (same disk as    #"
+  log "# postgres_data). Does not survive disk failure, theft,     #"
+  log "# ransomware, or volume deletion. See README.                #"
+  log "############################################################"
+fi
 
 # 5b. Manifest — plaintext metadata sidecar next to the .age (off-server-key
 #     model). Lets the weekly keyless drill sanity-check the ciphertext (recipient,
-#     checksum, sizes, row counts) WITHOUT the private key. Uploaded + verified
-#     before the success ping, so a missing/failed manifest fails the backup.
+#     checksum, sizes, row counts) WITHOUT the private key. Offsite: uploaded +
+#     verified before the success ping, so a missing/failed manifest fails the
+#     backup. Local-only: written next to the .age on backup_staging instead, for
+#     verify-local.sh to read.
 MKEY="$(manifest_key "$KEY")"
-MANIFEST="${STAGING_DIR}/${NAME}.manifest.json"
+# Local filename MUST be `${ENC basename}.manifest.json` (i.e. NAME.dump.age.manifest.json),
+# not NAME.manifest.json — retention pruning (step 6, `rm -f "$old" "${old}.manifest.json"`
+# where $old is a .dump.age path) and verify-local.sh (`MAN="${LATEST}.manifest.json"`,
+# same convention) both derive the manifest path from the .age file's own name. Offsite
+# naming (MKEY, above) is independent and unaffected — this only matters for what
+# survives on backup_staging in local-only mode.
+MANIFEST="${STAGING_DIR}/${ENC##*/}.manifest.json"
 {
   printf '{\n'
   printf '  "schema_version": 1,\n'
@@ -116,20 +138,28 @@ MANIFEST="${STAGING_DIR}/${NAME}.manifest.json"
   printf '  "tables": [%s]\n'               "$TABLES_JSON"
   printf '}\n'
 } > "$MANIFEST"
-log "upload manifest → $(store_path "$MKEY")"
-rclone_do write copyto "$MANIFEST" "$(store_path "$MKEY")"
-MREMOTE="$(rclone_do write size "$(store_path "$MKEY")" --json 2>/dev/null | grep -oE '"bytes":[0-9]+' | grep -oE '[0-9]+' || echo 0)"
-MLOCAL="$(stat -c %s "$MANIFEST" 2>/dev/null || wc -c < "$MANIFEST")"
-[ "$MREMOTE" = "$MLOCAL" ] || die "manifest upload not verified (remote ${MREMOTE} != local ${MLOCAL})"
-rm -f "$MANIFEST"
-log "manifest verified offsite (${MLOCAL} bytes at ${MKEY})"
+if offsite_enabled; then
+  log "upload manifest → $(store_path "$MKEY")"
+  rclone_do write copyto "$MANIFEST" "$(store_path "$MKEY")"
+  MREMOTE="$(rclone_do write size "$(store_path "$MKEY")" --json 2>/dev/null | grep -oE '"bytes":[0-9]+' | grep -oE '[0-9]+' || echo 0)"
+  MLOCAL="$(stat -c %s "$MANIFEST" 2>/dev/null || wc -c < "$MANIFEST")"
+  [ "$MREMOTE" = "$MLOCAL" ] || die "manifest upload not verified (remote ${MREMOTE} != local ${MLOCAL})"
+  rm -f "$MANIFEST"
+  log "manifest verified offsite (${MLOCAL} bytes at ${MKEY})"
+else
+  log "manifest written locally (LOCAL-ONLY, not shipped offsite) → ${MANIFEST##*/}"
+fi
 
 # 6. Local retention — keep the last N encrypted copies (encrypted, per decision).
-#    Never keep the labelled on-demand dumps in the rotation.
+#    Never keep the labelled on-demand dumps in the rotation. Local-only mode
+#    accumulates a .manifest.json next to each .age (§5b) — prune those in step
+#    with their .age so they don't pile up forever on backup_staging.
 ls -1t "${STAGING_DIR}/${BACKUP_PREFIX}-"*.dump.age 2>/dev/null \
   | grep -vE -- '-pre-migrate-|-manual-' \
   | tail -n +"$((LOCAL_KEEP + 1))" \
-  | while IFS= read -r old; do log "prune local ${old##*/}"; rm -f "$old"; done || true
+  | while IFS= read -r old; do
+      log "prune local ${old##*/}"; rm -f "$old" "${old}.manifest.json"
+    done || true
 
 # 7b. Record metrics + anomaly check (belt-and-suspenders on top of the dead-man's switch).
 printf '%s\t%s\t%s\n' "$TS" "$SIZE" "$ROWS" >> "$METRICS"
@@ -146,17 +176,33 @@ if [ -n "${PREV_ROWS:-}" ] && [ "$ROWS" -lt "$PREV_ROWS" ]; then
   ANOMALY="${ANOMALY:+$ANOMALY; }row-count regressed ${PREV_ROWS} → ${ROWS}"
 fi
 
-PAYLOAD="name=${NAME} size=${SIZE}B objects=${OBJ_COUNT} rows=${ROWS} key=${KEY} manifest=${MKEY}"
+# The heartbeat payload must reflect reality: a LOCAL-ONLY tag on the SAME
+# success ping (not a separate, easy-to-miss channel) so hc.io's own history/log
+# shows this run never left the host, not just "backup succeeded".
+OFFSITE_TAG=""; offsite_enabled || OFFSITE_TAG=" [LOCAL-ONLY — NOT shipped offsite]"
+PAYLOAD="name=${NAME} size=${SIZE}B objects=${OBJ_COUNT} rows=${ROWS} key=${KEY} manifest=${MKEY}${OFFSITE_TAG}"
 if [ -n "$ANOMALY" ]; then
-  # Job technically succeeded (verified offsite) but the data smells wrong:
-  # this is exactly the "ran but captured a truncated DB" signature. Fail LOUD.
+  # Job technically succeeded (verified offsite, or locally if BACKUP_OFFSITE=0)
+  # but the data smells wrong: this is exactly the "ran but captured a truncated
+  # DB" signature. Fail LOUD.
   log "ANOMALY: ${ANOMALY}"
   ping backup fail "backup ${NAME} succeeded but ANOMALY: ${ANOMALY} | ${PAYLOAD}"
 else
   ping backup success "$PAYLOAD"
 fi
 
-# On-demand contract: emit the verified-offsite marker Item 2 will parse/block on.
-if [ -n "$LABEL" ]; then echo "VERIFIED_OFFSITE ${KEY}"; fi
-log "backup ${NAME} complete"
+# On-demand contract: emit the verified-offsite marker Item 2's future pre-migrate
+# hook will parse and block on, treating its presence as proof a real *offsite*
+# restore point exists before letting a destructive migration proceed.
+#
+# DELIBERATELY WITHHELD IN LOCAL-ONLY MODE (BACKUP_OFFSITE=0). A local-only copy
+# living on backup_staging — the SAME disk as postgres_data — is not a restore
+# point a destructive-migration gate can trust: a disk failure that takes the DB
+# also takes the "backup". Emitting VERIFIED_OFFSITE here would let that hook
+# wave a migration through on a copy that cannot survive the failure mode it
+# exists to guard against. DO NOT "helpfully" re-enable this for local-only —
+# it must only ever fire once bytes have actually left this host and been
+# verified there (see the `offsite_enabled` branch above, §5).
+if [ -n "$LABEL" ] && offsite_enabled; then echo "VERIFIED_OFFSITE ${KEY}"; fi
+log "backup ${NAME} complete${OFFSITE_TAG}"
 trap - ERR
