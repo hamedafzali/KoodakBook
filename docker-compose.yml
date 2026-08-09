@@ -45,8 +45,6 @@ services:
       # Free-photo picker sources (admin words page) — optional, better results.
       PIXABAY_API_KEY:    ${PIXABAY_API_KEY:-}
       PEXELS_API_KEY:     ${PEXELS_API_KEY:-}
-      # Free baseline voice (Piper sidecar) — always available, no key.
-      PIPER_URL:          http://piper:5000
     volumes:
       - uploads:/app/uploads
     ports:
@@ -54,17 +52,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-
-  # Free, offline Persian TTS (all fa_IR Piper voices). Baseline story audio.
-  # Memory-capped so a long regeneration can't exhaust this small host and take
-  # the stack down — if it hits the cap it restarts (clients retry).
-  piper:
-    build:
-      context: .
-      dockerfile: apps/piper/Dockerfile
-    restart: unless-stopped
-    mem_limit: 900m
-    memswap_limit: 900m
 
   admin:
     build:

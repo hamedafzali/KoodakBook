@@ -1,8 +1,30 @@
 # Audio Module — Design Plan
 
+> **Update (Aug 2026) — collapsed to a single cloud tier (mig 048).** The
+> free/premium *engine split* below is **historical**. The free Piper/Edge
+> sidecar is removed; `audio_sections` now holds one `engine`/`voice` per
+> section, `audio_url_premium` is folded into `audio_url`, and every account
+> hears the same configured voice. Engines are keyed cloud only
+> (`elevenlabs`/`azure`/`openai`/`google`).
+>
+> This is a **structural guarantee, not a bug fix**: the earlier quality
+> inversion (premium content pointing at the robotic free engine) was a
+> separate, already-fixed bug. Deleting the free engine and the tier concept
+> makes that class of mis-configuration *unrepresentable* — there is no longer a
+> free-vs-premium column to invert — rather than fixing an instance of it.
+> Read the tier-split parts of §0–§3 as the pre-collapse design, kept for
+> context. When no free provider is configured/reachable, a synth failure
+> degrades to the browser Web-Speech voice on the client, not silence.
+>
+> Runaway-bill guardrail landed alongside: "unlimited" plans (family, yearly)
+> carry a hard daily ceiling (20 stories / 200 chat turns) presented as
+> unlimited in UX, plus month-to-date character metering (`tts_usage_monthly`,
+> `lib/tts/meter.ts`) whose budget alert is **inert until Phase 0 alerting
+> closes** — it records now and pages once alerting is live.
+
 **Status:** partially shipped — per-section engine/voice config + admin «صداها»
-page landed (mig 031, `lib/audio/`, `/dashboard/audio`). The asset/review
-pipeline below (§3.4–3.6) remains the follow-up.
+page landed (mig 031, `lib/audio/`, `/dashboard/audio`; collapsed to single tier
+in mig 048). The asset/review pipeline below (§3.4–3.6) remains the follow-up.
 
 ## 0. Persian TTS engine research (July 2026)
 

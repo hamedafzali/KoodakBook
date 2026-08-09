@@ -9,7 +9,7 @@ import BottomNav from '@/components/child/BottomNav'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { speakOrPlay, speakOrPlayFirst, initSpeech } from '@/lib/speech'
-import { audioCandidates, ensurePremiumFlag } from '@/lib/premium'
+import { audioCandidates } from '@/lib/premium'
 import {
   SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl,
   type Syllable,
@@ -85,7 +85,6 @@ export default function PhonicsPage() {
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
-    ensurePremiumFlag()
   }, [router])
 
   const [demo, setDemo] = useState<MergeDemo | null>(null)

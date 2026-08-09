@@ -6,8 +6,7 @@ import { logAudit } from '../lib/audit'
 import { keyConfigured } from '../lib/ai'
 import type { AiSettings } from '../lib/ai'
 import { getTtsSettings, ttsKeyConfigured } from '../lib/tts'
-import { startRegen, getRegenStatus, type RegenScope, type RegenTier, type RegenMode } from '../lib/tts/regenerate'
-import { getSectionConfigs } from '../lib/audio'
+import { startRegen, getRegenStatus, type RegenScope, type RegenMode } from '../lib/tts/regenerate'
 
 const router = Router()
 
@@ -34,21 +33,20 @@ const ttsSchema = z.object({
   language: z.string().trim().max(20).default('fa-IR'),
   region: z.string().trim().max(40).nullable().optional(),
   format: z.string().trim().max(10).default('mp3'),
-  piper_voice: z.string().trim().max(60).default('fa_IR-amir-medium'),
 })
 
 router.patch('/tts-settings', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
   const parsed = ttsSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.issues[0]?.message ?? 'Invalid' }); return }
-  const { enabled, provider, base_url, model, voice, language, region, format, piper_voice } = parsed.data
+  const { enabled, provider, base_url, model, voice, language, region, format } = parsed.data
   await query(
     `update tts_settings set enabled = $1, provider = $2, base_url = $3, model = $4,
-            voice = $5, language = $6, region = $7, format = $8, piper_voice = $9,
-            updated_at = now(), updated_by = $10
+            voice = $5, language = $6, region = $7, format = $8,
+            updated_at = now(), updated_by = $9
      where id = 1`,
-    [enabled, provider, base_url ?? null, model, voice, language, region ?? null, format, piper_voice, res.locals.adminEmail],
+    [enabled, provider, base_url ?? null, model, voice, language, region ?? null, format, res.locals.adminEmail],
   )
-  await logAudit(res.locals.adminEmail, 'tts.settings.update', 'tts_settings', null, { provider, voice, piper_voice, enabled })
+  await logAudit(res.locals.adminEmail, 'tts.settings.update', 'tts_settings', null, { provider, voice, enabled })
   res.json({ data: { ok: true }, error: null })
 })
 
@@ -99,28 +97,17 @@ router.patch('/ai-settings/enabled', requireAdmin, requirePermission('ai.manage'
   res.json({ data: { ok: true, ai_enabled }, error: null })
 })
 
-// ── Regenerate audio (Piper, current voice) for words / letters / stories ─────
+// ── Regenerate audio (single cloud voice) for words / letters / stories ───────
 const regenSchema = z.object({
   scope: z.enum(['words', 'letters', 'stories', 'phonics', 'math', 'all']),
-  tier: z.enum(['free', 'premium']).default('free'),
   mode: z.enum(['all', 'missing']).default('all'),
 })
-const SCOPE_SECTIONS: Record<string, string[]> = {
-  words: ['word'], letters: ['letter'], stories: ['story'], phonics: ['phonics'], math: ['math'],
-  all: ['word', 'letter', 'story', 'phonics', 'math'],
-}
 
 router.post('/tts/regenerate', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
   const parsed = regenSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: 'scope required' }); return }
-  const { scope, tier, mode } = parsed.data
-  if (tier === 'premium') {
-    const configs = await getSectionConfigs()
-    const wanted = SCOPE_SECTIONS[scope] ?? []
-    const ok = configs.some(c => wanted.includes(c.section) && c.premium_engine && c.premium_voice)
-    if (!ok) { res.status(400).json({ data: null, error: 'برای این بخش صدای پرمیوم تنظیم نشده است — اول در کارت بخش، موتور و صدای پرمیوم را ذخیره کنید.' }); return }
-  }
-  const started = startRegen(scope as RegenScope, tier as RegenTier, mode as RegenMode)
+  const { scope, mode } = parsed.data
+  const started = startRegen(scope as RegenScope, mode as RegenMode)
   if (!started) { res.status(409).json({ data: null, error: 'یک بازتولید در حال اجراست — صبر کنید تمام شود' }); return }
   res.json({ data: { started: true }, error: null })
 })

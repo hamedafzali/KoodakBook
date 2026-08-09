@@ -6,71 +6,49 @@ import { PageHeader, Field, Input, Select, Badge, Spinner, Button } from '@/comp
 import type { AudioSection, AudioEngine, AudioSectionConfig } from '@koodakbook/shared'
 
 // ── Engine catalog (what the admin can pick per section) ──
+// Cloud engines only — the free Piper/Edge sidecar was removed (single-tier
+// collapse, migration 048). Every account hears the one configured voice.
 // Ranked for Persian: research + community reports, not marketing pages.
-//   ElevenLabs (eleven_v3) — best Persian, needs paid key; voice_id from their panel.
-//   Azure / Edge — same fa-IR neural voices; Azure is the keyed/SLA variant,
-//     Edge runs free through our sidecar.
+//   ElevenLabs (eleven_v3) — best Persian; voice_id from their panel.
+//   Azure — fa-IR neural voices (Farid/Dilara) with a keyed SLA.
 //   OpenAI — speaks Persian but tends toward an Afghan accent (community reports).
 //   Google — classic voices have no fa-IR; only usable via custom setups.
-//   Piper — offline, robotic; the last-resort baseline.
 type EngineMeta = {
   label: string
   hint: string
   voices: { id: string; label: string }[]   // empty → free-text voice id
-  free: boolean                             // runs without an API key
 }
 const ENGINES: Record<AudioEngine, EngineMeta> = {
-  edge: {
-    label: 'Edge (مایکروسافت) — رایگان',
-    hint: 'صدای نورال مایکروسافت، رایگان از طریق سرور خودمان. بهترین گزینه‌ی بدون هزینه.',
-    voices: [
-      { id: 'fa-IR-FaridNeural', label: 'FaridNeural — مرد' },
-      { id: 'fa-IR-DilaraNeural', label: 'DilaraNeural — زن' },
-    ],
-    free: true,
-  },
   elevenlabs: {
-    label: 'ElevenLabs — بهترین کیفیت (پولی)',
+    label: 'ElevenLabs — بهترین کیفیت',
     hint: 'بهترین فارسی (فقط مدل eleven_v3). voice_id را از پنل ElevenLabs کپی کنید.',
     voices: [],
-    free: false,
   },
   azure: {
-    label: 'Azure Speech — کیفیت بالا (کلید)',
-    hint: 'همان صداهای Edge با کلید رسمی و پایداری بیشتر (سهمیه‌ی رایگان ماهانه دارد).',
+    label: 'Azure Speech — نورال (کلید)',
+    hint: 'صداهای نورال fa-IR مایکروسافت با کلید رسمی و پایداری بیشتر (سهمیه‌ی رایگان ماهانه دارد).',
     voices: [
       { id: 'fa-IR-FaridNeural', label: 'FaridNeural — مرد' },
       { id: 'fa-IR-DilaraNeural', label: 'DilaraNeural — زن' },
     ],
-    free: false,
   },
   openai: {
     label: 'OpenAI TTS (کلید)',
     hint: 'فارسی را می‌خواند اما لهجه گاهی افغانی می‌شود — قبل از انتخاب حتماً تست کنید.',
     voices: ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer', 'coral', 'sage'].map(v => ({ id: v, label: v })),
-    free: false,
   },
   google: {
     label: 'Google Cloud TTS (کلید)',
     hint: 'صدای کلاسیک fa-IR ندارد — فقط اگر می‌دانید چه می‌کنید.',
     voices: [],
-    free: false,
-  },
-  piper: {
-    label: 'Piper — آفلاین',
-    hint: 'کاملاً آفلاین و رایگان، ولی کیفیت ماشینی. فقط برای شرایط بدون اینترنت.',
-    voices: ['fa_IR-amir-medium', 'fa_IR-ganji-medium', 'fa_IR-ganji_adabi-medium', 'fa_IR-gyro-medium', 'fa_IR-reza_ibrahim-medium']
-      .map(v => ({ id: v, label: v })),
-    free: true,
   },
 }
-const ENGINE_ORDER: AudioEngine[] = ['edge', 'elevenlabs', 'azure', 'openai', 'google', 'piper']
-const PREMIUM_ENGINES: AudioEngine[] = ['elevenlabs', 'azure', 'openai', 'google']
+const ENGINE_ORDER: AudioEngine[] = ['elevenlabs', 'azure', 'openai', 'google']
 
 const SECTIONS: Record<AudioSection, { title: string; desc: string; sample: string; regenScope: string }> = {
   story: {
     title: 'داستان‌ها',
-    desc: 'متن صفحه‌های داستان (متن بلند و روان). موتورهای ابری فقط برای حساب‌های پرمیوم اجرا می‌شوند.',
+    desc: 'متن صفحه‌های داستان (متن بلند و روان). همان صدا برای همه‌ی حساب‌ها.',
     sample: 'یکی بود، یکی نبود. در جنگلی سرسبز، خرگوش کوچکی زندگی می‌کرد.',
     regenScope: 'stories',
   },
@@ -133,7 +111,7 @@ function voiceOptionsFor(engine: AudioEngine | '', eleven: VoiceOpt[] | null): V
   return ENGINES[engine].voices
 }
 
-interface RegenStatus { running: boolean; scope: string | null; tier?: 'free' | 'premium'; mode?: 'all' | 'missing'; voice: string; done: number; total: number; errors: number; finishedAt: number }
+interface RegenStatus { running: boolean; scope: string | null; mode?: 'all' | 'missing'; voice: string; done: number; total: number; errors: number; finishedAt: number }
 
 export default function AudioPage() {
   const [data, setData] = useState<SectionsResponse | null>(null)
@@ -169,12 +147,11 @@ export default function AudioPage() {
 
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900 space-y-1.5">
         <p className="font-bold">راهنمای کیفیت فارسی</p>
-        <p>۱. <b>ElevenLabs (eleven_v3)</b> — طبیعی‌ترین فارسی؛ پولی، برای حروف و هجاها ارزشش را دارد.</p>
-        <p>۲. <b>Edge / Azure</b> — صدای نورال مایکروسافت (Farid/Dilara)؛ Edge رایگان است و برای داستان‌ها معمولاً کافی است.</p>
+        <p>۱. <b>ElevenLabs (eleven_v3)</b> — طبیعی‌ترین فارسی؛ برای حروف و هجاها ارزشش را دارد.</p>
+        <p>۲. <b>Azure</b> — صدای نورال مایکروسافت (Farid/Dilara) با کلید رسمی.</p>
         <p>۳. <b>OpenAI</b> — روان اما با ته‌لهجه؛ قبل از انتخاب تست کنید.</p>
-        <p>۴. <b>Piper</b> — آفلاین و ماشینی؛ فقط وقتی اینترنت سرور قطع است.</p>
         <p className="pt-1 text-amber-800">
-          🎙 گزینه‌ی پنجم: <b>ضبط صدای انسانی</b> — برای حروف و هجاها از همه‌ی موتورها بهتر است. از دکمه‌ی ضبط در
+          🎙 بهتر از همه‌ی موتورها برای حروف و هجاها: <b>ضبط صدای انسانی</b>. از دکمه‌ی ضبط در
           {' '}<Link href="/dashboard/letters" className="underline font-semibold">صفحه‌ی حروف</Link> و
           {' '}<Link href="/dashboard/words" className="underline font-semibold">صفحه‌ی کلمات</Link> استفاده کنید؛
           صدای ضبط‌شده همیشه بر صدای تولیدی مقدم است.
@@ -197,8 +174,6 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
   const meta = SECTIONS[cfg.section]
   const [engine, setEngine] = useState<AudioEngine>(cfg.engine)
   const [voice, setVoice] = useState(cfg.voice)
-  const [pEngine, setPEngine] = useState<AudioEngine | ''>(cfg.premium_engine ?? '')
-  const [pVoice, setPVoice] = useState(cfg.premium_voice ?? '')
   const [sample, setSample] = useState(meta.sample)
   const [busy, setBusy] = useState<'preview' | 'save' | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -206,27 +181,26 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const em = ENGINES[engine]
-  const { voices: elevenVoices, error: elevenErr } = useElevenVoices(engines.elevenlabs && (engine === 'elevenlabs' || pEngine === 'elevenlabs'))
-  const dirty = engine !== cfg.engine || voice !== cfg.voice ||
-    pEngine !== (cfg.premium_engine ?? '') || pVoice !== (cfg.premium_voice ?? '')
+  const { voices: elevenVoices, error: elevenErr } = useElevenVoices(engines.elevenlabs && engine === 'elevenlabs')
+  const dirty = engine !== cfg.engine || voice !== cfg.voice
 
   const [onlyMissing, setOnlyMissing] = useState(true)
 
-  /** Kick off this section's regeneration for one tier (free ≠ premium runs). */
-  async function regen(tier: 'free' | 'premium') {
+  /** Kick off this section's regeneration (single cloud tier). */
+  async function regen() {
     if (dirty) { setErr('اول تغییرات را ذخیره کنید، بعد بازتولید'); return }
     setMsg(null); setErr(null)
     const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate',
-      { scope: meta.regenScope, tier, mode: onlyMissing ? 'missing' : 'all' })
+      { scope: meta.regenScope, mode: onlyMissing ? 'missing' : 'all' })
     if (r.error) { setErr(r.error); return }
-    setMsg(tier === 'premium' ? 'بازتولید پرمیوم شروع شد ⭐' : 'بازتولید رایگان شروع شد')
+    setMsg('بازتولید شروع شد')
   }
 
   function pick(e: AudioEngine) {
     setEngine(e)
     setMsg(null); setErr(null)
     const first = ENGINES[e].voices[0]
-    // keep the voice if it exists on the new engine (edge ↔ azure share ids)
+    // keep the voice if it exists on the new engine
     if (!ENGINES[e].voices.some(v => v.id === voice)) setVoice(first ? first.id : '')
   }
 
@@ -242,13 +216,10 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
 
   async function save() {
     setBusy('save'); setMsg(null); setErr(null)
-    const r = await api.patch<{ ok: boolean }>(`/api/admin/audio/sections/${cfg.section}`,
-      { engine, voice, premium_engine: pEngine || null, premium_voice: pVoice.trim() || null })
+    const r = await api.patch<{ ok: boolean }>(`/api/admin/audio/sections/${cfg.section}`, { engine, voice })
     setBusy(null)
     if (r.error) { setErr(r.error); return }
     cfg.engine = engine; cfg.voice = voice
-    cfg.premium_engine = (pEngine || null) as typeof cfg.premium_engine
-    cfg.premium_voice = pVoice.trim() || null
     setMsg('ذخیره شد ✅ — برای اعمال روی فایل‌های موجود، پایین صفحه بازتولید کنید.')
   }
 
@@ -256,8 +227,8 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
     <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-slate-800">{meta.title}</h3>
-        <Badge tone={em.free ? 'green' : engines[engine] ? 'blue' : 'red'}>
-          {em.free ? 'رایگان' : engines[engine] ? 'کلید تنظیم شده' : 'کلید ندارد'}
+        <Badge tone={engines[engine] ? 'blue' : 'red'}>
+          {engines[engine] ? 'کلید تنظیم شده' : 'کلید ندارد'}
         </Badge>
       </div>
       <p className="text-sm text-slate-500">{meta.desc}</p>
@@ -302,57 +273,14 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
         </Button>
       </div>
 
-      {/* Premium tier: paid accounts hear this instead; files are generated
-          side by side under /uploads/premium during regeneration. */}
-      <div className="border-t border-dashed border-slate-200 pt-3 space-y-3">
-        <p className="text-sm font-semibold text-slate-700">صدای پرمیوم (اختیاری) ⭐
-          <span className="text-xs font-normal text-slate-400 mr-2">فقط حساب‌های پولی این نسخه را می‌شنوند؛ خالی = همان صدای رایگان</span>
-        </p>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <Field label="موتور پرمیوم">
-            <Select value={pEngine} onChange={e => setPEngine(e.target.value as AudioEngine | '')}>
-              <option value="">— بدون صدای پرمیوم</option>
-              {PREMIUM_ENGINES.map(e => (
-                <option key={e} value={e} disabled={!engines[e]}>
-                  {ENGINES[e].label}{!engines[e] ? ' — کلید ندارد' : ''}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="صدای پرمیوم" hint={pEngine ? ENGINES[pEngine].hint : ''}>
-            <div className="flex gap-2">
-              {(() => {
-                const opts = voiceOptionsFor(pEngine, elevenVoices)
-                return opts.length > 0 ? (
-                  <Select value={pVoice} onChange={e => setPVoice(e.target.value)} dir="ltr">
-                    {!pVoice && <option value="">— انتخاب صدا</option>}
-                    {!opts.some(v => v.id === pVoice) && pVoice && <option value={pVoice}>{pVoice}</option>}
-                    {opts.map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
-                  </Select>
-                ) : (
-                  <Input value={pVoice} onChange={e => setPVoice(e.target.value)}
-                    placeholder={pEngine === 'elevenlabs' ? (elevenErr ? 'voice id — فهرست دریافت نشد' : 'در حال دریافت صداها…') : 'voice id'} dir="ltr" disabled={!pEngine} />
-                )
-              })()}
-              <Button variant="secondary" onClick={() => pEngine && preview(pEngine, pVoice)}
-                disabled={busy !== null || !pEngine || !pVoice || !engines[pEngine as AudioEngine]}>▶</Button>
-            </div>
-          </Field>
-        </div>
-      </div>
-
-      {/* Generation lives here, per tier: each run builds ONLY its own files */}
+      {/* Generation lives here, per section */}
       <label className="flex items-center gap-2 text-xs text-slate-600 border-t border-slate-100 pt-3 cursor-pointer">
         <input type="checkbox" checked={onlyMissing} onChange={e => setOnlyMissing(e.target.checked)} />
         فقط موارد بدون صدا (جدیدها) — چیزی که صدا دارد دوباره ساخته نمی‌شود
       </label>
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={() => regen('free')} disabled={busy !== null || regenSt?.running}>
-          🔄 بازتولید رایگان این بخش
-        </Button>
-        <Button variant="secondary" onClick={() => regen('premium')}
-          disabled={busy !== null || regenSt?.running || !pEngine || !pVoice}>
-          ⭐ بازتولید پرمیوم این بخش
+        <Button variant="secondary" onClick={regen} disabled={busy !== null || regenSt?.running}>
+          🔄 بازتولید این بخش
         </Button>
       </div>
 
@@ -361,7 +289,7 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-slate-600">
             <span>
-              در حال ساخت {regenSt.tier === 'premium' ? 'پرمیوم ⭐' : 'رایگان'}
+              در حال ساخت
               {regenSt.mode === 'missing' ? ' — فقط جدیدها' : ''}
               {regenSt.scope === 'all' ? ' (همه‌ی بخش‌ها)' : ''} — {regenSt.voice}
             </span>
@@ -374,7 +302,7 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
         </div>
       )}
 
-      {elevenErr && (engine === 'elevenlabs' || pEngine === 'elevenlabs') && (
+      {elevenErr && engine === 'elevenlabs' && (
         <p className="text-sm text-red-600">{elevenErr}</p>
       )}
       {msg && <p className="text-sm text-green-600">{msg}</p>}
@@ -388,19 +316,19 @@ function RegenCard({ st }: { st: RegenStatus | null }) {
   const [err, setErr] = useState<string | null>(null)
   const [onlyMissing, setOnlyMissing] = useState(true)
 
-  async function start(tier: 'free' | 'premium') {
+  async function start() {
     setErr(null)
     const r = await api.post<{ started: boolean }>('/api/admin/tts/regenerate',
-      { scope: 'all', tier, mode: onlyMissing ? 'missing' : 'all' })
+      { scope: 'all', mode: onlyMissing ? 'missing' : 'all' })
     if (r.error) setErr(r.error)
   }
 
   const [demoMsg, setDemoMsg] = useState<string | null>(null)
   async function makeDemo() {
-    setErr(null); setDemoMsg('در حال ساخت نمونه‌ها…')
-    const r = await api.post<{ free: string; premium: string }>('/api/admin/audio/demo', {})
+    setErr(null); setDemoMsg('در حال ساخت نمونه…')
+    const r = await api.post<{ url: string }>('/api/admin/audio/demo', {})
     if (r.error) { setDemoMsg(null); setErr(r.error); return }
-    setDemoMsg('نمونه‌ها ساخته شد ✅ — در بخش قیمتِ سایت پخش می‌شوند')
+    setDemoMsg('نمونه ساخته شد ✅ — در بخش قیمتِ سایت پخش می‌شود')
   }
 
   const running = st?.running
@@ -410,13 +338,13 @@ function RegenCard({ st }: { st: RegenStatus | null }) {
     <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
       <h3 className="font-bold text-slate-800">بازتولید همه‌ی بخش‌ها + پیشرفت</h3>
       <p className="text-sm text-slate-500">
-        بازتولید هر بخش، داخل کارت همان بخش است. اینجا می‌توانید همه را یک‌جا بسازید — رایگان و پرمیوم جدا از هم اجرا می‌شوند و فایل‌های هم را دست نمی‌زنند. صداهای ضبط‌شده‌ی انسانی همیشه دست‌نخورده می‌مانند.
+        بازتولید هر بخش، داخل کارت همان بخش است. اینجا می‌توانید همه را یک‌جا بسازید. صداهای ضبط‌شده‌ی انسانی همیشه دست‌نخورده می‌مانند.
       </p>
 
       {running ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">در حال ساخت {st?.tier === 'premium' ? 'پرمیوم ⭐' : 'رایگان'} ({st?.scope}) — {st?.voice}</span>
+            <span className="text-slate-600">در حال ساخت ({st?.scope}) — {st?.voice}</span>
             <span className="font-bold text-slate-800">{st?.done} / {st?.total}</span>
           </div>
           <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -430,8 +358,7 @@ function RegenCard({ st }: { st: RegenStatus | null }) {
             فقط موارد بدون صدا (جدیدها)
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => start('free')}>🔄 بازتولید همه — رایگان</Button>
-            <Button variant="secondary" onClick={() => start('premium')}>⭐ بازتولید همه — پرمیوم</Button>
+            <Button variant="secondary" onClick={start}>🔄 بازتولید همه</Button>
             <Button variant="secondary" onClick={makeDemo}>🎧 ساخت نمونه‌ی صدا برای سایت</Button>
           </div>
         </div>

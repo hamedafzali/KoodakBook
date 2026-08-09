@@ -9,6 +9,7 @@ import { requireChildOwner } from '../middleware/childOwner'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { synthesizeWith, type AudioEngine } from '../lib/audio'
 import { getAiSettings, chatTurn, AiNotConfiguredError } from '../lib/ai'
+import { validReply } from '../lib/ai/chatGuard'
 
 const router = Router()
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
@@ -159,17 +160,6 @@ router.post('/admin/:id/audio', requireAdmin, requirePermission('ai.manage'), as
 
 const EMOTIONS = new Set(['happy', 'excited', 'encouraging'])
 
-/** Form validation only (length/script); the vocabulary constraint lives in
- *  the prompt — a strict lexicon check would reject normal function words.
- *  Exported so the safety harness can drive the real gate (Item 3). */
-export function validReply(reply: string): boolean {
-  if (reply.length < 2 || reply.length > 220) return false
-  if (/[A-Za-z]|https?:|www\./.test(reply)) return false                 // Persian only, no links
-  if ((reply.match(/[.!؟?]/g) ?? []).length > 3) return false            // ≤ ~2-3 sentences
-  if (/آدرس|شماره|تلفن|رمز|پسورد|کجا زندگی/.test(reply)) return false   // never asks where/who
-  return true
-}
-
 async function scriptedFallback(characterId: string): Promise<{ reply: string; emotion: string; lineAudio: string | null }> {
   const line = await queryOne<{ text_persian: string; emotion: string; audio_url: string | null }>(
     `select text_persian, emotion, audio_url from character_lines
@@ -192,23 +182,27 @@ router.post('/:slug/chat', requireAuth, requireChildOwner, async (req, res) => {
   if (!character) { res.status(404).json({ data: null, error: 'Character not found' }); return }
 
   // Daily cap: child turns today across the whole family, from the plan.
+  // Plans without the feature ("unlimited": family / yearly) fall back to a HARD
+  // ceiling — with the free sidecar gone, each novel reply can be a paid TTS
+  // call, so an uncapped plan is a runaway-bill vector. 200/day stays
+  // "unlimited" in UX (no child reaches it) while stopping runaway/abuse.
+  const DAILY_TURN_HARD_CAP = 200
   const cap = await queryOne<{ value: string }>(
     `select pf.value from users u
        join plans p on p.key = u.plan
        join plan_features pf on pf.plan_id = p.id and pf.feature_key = 'conversations_per_day'
       where u.id = $1`, [res.locals.userId])
   const perDay = cap ? parseInt(cap.value, 10) : NaN
-  if (Number.isFinite(perDay)) {
-    const used = await queryOne<{ n: string }>(
-      `select count(*) as n from conversations c join children ch on ch.id = c.child_id
-        where ch.parent_id = $1 and c.role = 'child' and c.created_at >= date_trunc('day', now())`,
-      [res.locals.userId])
-    if (Number(used?.n ?? 0) >= perDay) {
-      const bye = await queryOne<{ text_persian: string; audio_url: string | null }>(
-        `select text_persian, audio_url from character_lines where character_id = $1 and trigger = 'bye' limit 1`, [character.id])
-      res.status(429).json({ data: null, error: bye?.text_persian ?? 'امروز خیلی حرف زدیم! فردا بازم بیا! 🌙' })
-      return
-    }
+  const turnCap = Number.isFinite(perDay) ? perDay : DAILY_TURN_HARD_CAP
+  const usedTurns = await queryOne<{ n: string }>(
+    `select count(*) as n from conversations c join children ch on ch.id = c.child_id
+      where ch.parent_id = $1 and c.role = 'child' and c.created_at >= date_trunc('day', now())`,
+    [res.locals.userId])
+  if (Number(usedTurns?.n ?? 0) >= turnCap) {
+    const bye = await queryOne<{ text_persian: string; audio_url: string | null }>(
+      `select text_persian, audio_url from character_lines where character_id = $1 and trigger = 'bye' limit 1`, [character.id])
+    res.status(429).json({ data: null, error: bye?.text_persian ?? 'امروز خیلی حرف زدیم! فردا بازم بیا! 🌙' })
+    return
   }
 
   const child = await queryOne<{ name: string; level: number }>('select name, level from children where id = $1', [child_id])

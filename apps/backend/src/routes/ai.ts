@@ -35,7 +35,11 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
 
   // Daily cap from the account's plan (ai_stories_per_day feature) — counts
   // today's AI stories across all the family's children. Plans without the
-  // feature are uncapped.
+  // feature ("unlimited": family / yearly) fall back to a HARD ceiling: with the
+  // free sidecar gone, every story narration is a paid ElevenLabs call, so an
+  // uncapped plan is the one real runaway-bill vector. 20/day stays "unlimited"
+  // in UX (no family reaches it) while stopping runaway/abuse.
+  const DAILY_STORY_HARD_CAP = 20
   const cap = await queryOne<{ value: string }>(
     `select pf.value from users u
        join plans p on p.key = u.plan
@@ -44,17 +48,19 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
     [res.locals.userId],
   )
   const perDay = cap ? parseInt(cap.value, 10) : NaN
-  if (Number.isFinite(perDay)) {
-    const used = await queryOne<{ n: string }>(
-      `select count(*) as n from stories s
-        join children c on c.id = s.created_for_child
-       where c.parent_id = $1 and s.ai_generated and s.created_at >= date_trunc('day', now())`,
-      [res.locals.userId],
-    )
-    if (Number(used?.n ?? 0) >= perDay) {
-      res.status(429).json({ data: null, error: `سهم امروزِ داستان‌های شخصی (${perDay} داستان) تمام شد — فردا دوباره بساز! 🌙` })
-      return
-    }
+  const storyLimited = Number.isFinite(perDay)
+  const storyCap = storyLimited ? perDay : DAILY_STORY_HARD_CAP
+  const usedStories = await queryOne<{ n: string }>(
+    `select count(*) as n from stories s
+      join children c on c.id = s.created_for_child
+     where c.parent_id = $1 and s.ai_generated and s.created_at >= date_trunc('day', now())`,
+    [res.locals.userId],
+  )
+  if (Number(usedStories?.n ?? 0) >= storyCap) {
+    res.status(429).json({ data: null, error: storyLimited
+      ? `سهم امروزِ داستان‌های شخصی (${perDay} داستان) تمام شد — فردا دوباره بساز! 🌙`
+      : 'امروز کلی داستان ساختی! 🌙 فردا دوباره بیا و باز هم بساز.' })
+    return
   }
 
   // Anchor vocabulary: a few words at or below the child's level so the story
@@ -109,11 +115,10 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
   }
 
   // Best-effort audio (so بشنو plays a real voice). Never blocks the story.
-  // Premium accounts get the cloud voice (when enabled+keyed); everyone gets Piper.
+  // Single cloud voice for every account; a synth failure just leaves the page
+  // audio-less and the client narrates it with the browser voice.
   try {
-    const acct = await queryOne<{ plan: string }>('select plan from users where id = $1', [res.locals.userId])
-    const premium = !!acct && acct.plan !== 'free'
-    const audioMap = await synthesizeStoryPages(row.id, inserted, { premium })
+    const audioMap = await synthesizeStoryPages(row.id, inserted)
     for (const [pageId, url] of Object.entries(audioMap)) {
       await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
     }
@@ -152,10 +157,7 @@ router.post('/stories/:id/audio', requireAuth, async (req, res) => {
   const pages = await query<{ id: string; text_persian: string }>(
     'select id, text_persian from story_pages where story_id = $1 order by page_number', [storyId])
 
-  const acct = await queryOne<{ plan: string }>('select plan from users where id = $1', [res.locals.userId])
-  const premium = !!acct && acct.plan !== 'free'
-
-  const audioMap = await synthesizeStoryPages(storyId, pages, { premium })
+  const audioMap = await synthesizeStoryPages(storyId, pages)
   for (const [pageId, url] of Object.entries(audioMap)) {
     await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
   }

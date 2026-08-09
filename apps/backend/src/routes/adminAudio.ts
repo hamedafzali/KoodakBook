@@ -6,8 +6,8 @@ import { logAudit } from '../lib/audit'
 import fs from 'fs'
 import path from 'path'
 import {
-  AUDIO_SECTIONS, AUDIO_ENGINES, CLOUD_ENGINES, getSectionConfigs, setSectionConfig,
-  engineAvailable, engineKey, synthesizeWith, synthesizeSection, synthesizeSectionPremium,
+  AUDIO_SECTIONS, AUDIO_ENGINES, getSectionConfigs, setSectionConfig,
+  engineAvailable, engineKey, synthesizeWith, synthesizeSection,
   type AudioSection, type AudioEngine,
 } from '../lib/audio'
 
@@ -26,8 +26,6 @@ router.get('/audio/sections', requireAdmin, requirePermission('ai.manage'), asyn
 const sectionSchema = z.object({
   engine: z.enum(AUDIO_ENGINES as [AudioEngine, ...AudioEngine[]]),
   voice: z.string().trim().min(1).max(120),
-  premium_engine: z.enum(CLOUD_ENGINES as [AudioEngine, ...AudioEngine[]]).nullable().optional(),
-  premium_voice: z.string().trim().max(120).nullable().optional(),
 })
 
 router.patch('/audio/sections/:section', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
@@ -35,11 +33,8 @@ router.patch('/audio/sections/:section', requireAdmin, requirePermission('ai.man
   if (!AUDIO_SECTIONS.includes(section)) { res.status(400).json({ data: null, error: 'Unknown section' }); return }
   const parsed = sectionSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.issues[0]?.message ?? 'Invalid' }); return }
-  const { engine, voice, premium_engine, premium_voice } = parsed.data
-  if (premium_engine && !premium_voice) {
-    res.status(400).json({ data: null, error: 'برای صدای پرمیوم، voice هم لازم است' }); return
-  }
-  await setSectionConfig(section, engine, voice, premium_engine ?? null, premium_voice ?? null, res.locals.adminEmail)
+  const { engine, voice } = parsed.data
+  await setSectionConfig(section, engine, voice, res.locals.adminEmail)
   await logAudit(res.locals.adminEmail, 'audio.section.update', 'audio_sections', section, parsed.data)
   res.json({ data: { ok: true }, error: null })
 })
@@ -90,65 +85,43 @@ router.get('/audio/voices', requireAdmin, requirePermission('ai.manage'), async 
 })
 
 // One-off generation for a single word — the cheap path after adding a word:
-// no need to run (or pay for) a whole batch.
-const wordGenSchema = z.object({ tier: z.enum(['free', 'premium']).default('free') })
-
+// no need to run (or pay for) a whole batch. Single cloud tier now.
 router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
-  const parsed = wordGenSchema.safeParse(req.body ?? {})
-  const tier = parsed.success ? parsed.data.tier : 'free'
   const w = await queryOne<{ id: string; text: string }>(
     'select id, coalesce(tts_text, persian) as text from words where id = $1', [req.params.id])
   if (!w) { res.status(404).json({ data: null, error: 'Word not found' }); return }
   try {
-    if (tier === 'premium') {
-      const clip = await synthesizeSectionPremium('word', w.text)
-      if (!clip) { res.status(400).json({ data: null, error: 'اول صدای پرمیوم بخش کلمات را تنظیم و ذخیره کنید' }); return }
-      const dir = path.resolve(UPLOADS_DIR, 'premium', 'words')
-      fs.mkdirSync(dir, { recursive: true })
-      const file = `${w.id}-${Date.now()}.${clip.ext}`
-      fs.writeFileSync(path.join(dir, file), clip.buf)
-      const url = `/uploads/premium/words/${file}`
-      await query('update words set audio_url_premium = $1 where id = $2', [url, w.id])
-      res.json({ data: { url }, error: null })
-    } else {
-      const clip = await synthesizeSection('word', w.text)
-      const dir = path.resolve(UPLOADS_DIR, 'words')
-      fs.mkdirSync(dir, { recursive: true })
-      const file = `${w.id}-${Date.now()}.${clip.ext}`
-      fs.writeFileSync(path.join(dir, file), clip.buf)
-      const url = `/uploads/words/${file}`
-      await query('update words set audio_url = $1 where id = $2', [url, w.id])
-      await query("delete from audio_assets where entity_type = 'word' and entity_id = $1", [w.id])
-      res.json({ data: { url }, error: null })
-    }
+    const clip = await synthesizeSection('word', w.text)
+    const dir = path.resolve(UPLOADS_DIR, 'words')
+    fs.mkdirSync(dir, { recursive: true })
+    const file = `${w.id}-${Date.now()}.${clip.ext}`
+    fs.writeFileSync(path.join(dir, file), clip.buf)
+    const url = `/uploads/words/${file}`
+    await query('update words set audio_url = $1 where id = $2', [url, w.id])
+    await query("delete from audio_assets where entity_type = 'word' and entity_id = $1", [w.id])
+    res.json({ data: { url }, error: null })
   } catch (err) {
     res.status(502).json({ data: null, error: `ساخت صدا ممکن نشد: ${(err as Error).message}` })
   }
 })
 
-// Public voice samples for the pricing page: the same story excerpt read by
-// the free voice and the premium voice, so families HEAR what they'd pay for.
-// Written to fixed paths the landing plays directly; regenerate any time the
-// voices change.
+// Public voice sample for the pricing page: a story excerpt in the single
+// storyteller voice every account hears (audio quality is not a paid tier).
+// Written to a fixed path (voice.wav) the landing plays directly; regenerate
+// when the voice changes.
 const DEMO_TEXT =
   'یکی بود، یکی نبود. پیرزن مهربانی بود که دلش برای دخترش تنگ شده بود. ' +
   'گفت: می‌روم به دیدنش! راه خانه‌ی دختر از جنگل می‌گذشت و یک ماجرای شیرین در راه بود…'
 
 router.post('/audio/demo', requireAdmin, requirePermission('ai.manage'), async (_req, res) => {
   try {
-    const premium = await synthesizeSectionPremium('story', DEMO_TEXT, { wav: true })
-    if (!premium) {
-      res.status(400).json({ data: null, error: 'اول صدای پرمیوم بخش داستان‌ها را تنظیم و ذخیره کنید' })
-      return
-    }
-    const free = await synthesizeSection('story', DEMO_TEXT, { wav: true })
+    const clip = await synthesizeSection('story', DEMO_TEXT, { wav: true })
     const dir = path.resolve(UPLOADS_DIR, 'demo')
     fs.mkdirSync(dir, { recursive: true })
-    fs.writeFileSync(path.join(dir, 'voice-free.wav'), free.buf)
-    fs.writeFileSync(path.join(dir, 'voice-premium.wav'), premium.buf)
+    fs.writeFileSync(path.join(dir, 'voice.wav'), clip.buf)
     await logAudit(res.locals.adminEmail, 'audio.demo.generate', 'audio_sections', 'story',
-      { free: `${free.engine}:${free.voice}`, premium: `${premium.engine}:${premium.voice}` })
-    res.json({ data: { free: '/uploads/demo/voice-free.wav', premium: '/uploads/demo/voice-premium.wav' }, error: null })
+      { voice: `${clip.engine}:${clip.voice}` })
+    res.json({ data: { url: '/uploads/demo/voice.wav' }, error: null })
   } catch (err) {
     res.status(502).json({ data: null, error: `ساخت نمونه ممکن نشد: ${(err as Error).message}` })
   }
