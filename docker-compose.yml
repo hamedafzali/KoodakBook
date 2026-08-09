@@ -90,6 +90,73 @@ services:
     depends_on:
       - backend
 
+  # ── Phase 1B: encrypted offsite backups + weekly tested restore ────────────
+  # One image, three roles. Scheduler runs twice-daily backups + a weekly
+  # restore-drill; the same image also serves Item 2's on-demand pre-migration
+  # dump. Secrets come from ACM project variables, never committed.
+  db-backup:
+    build:
+      context: ./docker/db-backup
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    environment:
+      TZ:                ${TZ:-Europe/Berlin}
+      # Source DB (least-privilege read-only role — see docker/db-backup/backup-role.sql)
+      PGHOST:            db
+      PGPORT:            "5432"
+      PGDATABASE:        koodakbook
+      PGUSER:            backup
+      PGPASSWORD:        ${BACKUP_DB_PASSWORD:?required}
+      # Offsite object store (Cloudflare R2)
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:?required}
+      BACKUP_S3_PROVIDER: Cloudflare
+      BACKUP_S3_REGION:   auto
+      BACKUP_BUCKET:      ${BACKUP_BUCKET:?required}
+      BACKUP_PREFIX:      ${BACKUP_PREFIX:-koodakbook}
+      BACKUP_KEY_ID:      ${BACKUP_KEY_ID:?required}       # write+list only
+      BACKUP_KEY_SECRET:  ${BACKUP_KEY_SECRET:?required}
+      RESTORE_KEY_ID:     ${RESTORE_KEY_ID:?required}      # read only
+      RESTORE_KEY_SECRET: ${RESTORE_KEY_SECRET:?required}
+      # Encryption — PUBLIC key only lives here; private key stays off-server.
+      AGE_RECIPIENT:      ${AGE_RECIPIENT:?required}
+      AGE_IDENTITY:       ${AGE_IDENTITY:-}                # machine-drill decrypt key (ACM var)
+      # Dead-man's switch (healthchecks.io) — absence of a ping alerts.
+      HEARTBEAT_BACKUP_URL: ${HEARTBEAT_BACKUP_URL:-}
+      HEARTBEAT_DRILL_URL:  ${HEARTBEAT_DRILL_URL:-}
+      # Scratch restore target (see db-drill below)
+      DRILL_PGHOST:       db-drill
+      DRILL_PGPASSWORD:   ${DRILL_PGPASSWORD:?required}
+    volumes:
+      - backup_staging:/staging
+    depends_on:
+      db:
+        condition: service_healthy
+      db-drill:
+        condition: service_healthy
+
+  # Dataless Postgres used ONLY as the weekly restore-drill target. Holds no real
+  # data; the drill creates and drops a scratch database inside it each run. Kept
+  # separate from `db` so a restore can never contend with or corrupt prod's
+  # server. (See restore-drill.sh header for why this is not a socket-spawned
+  # container.)
+  db-drill:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DRILL_PGPASSWORD:?required}
+      POSTGRES_DB:       postgres
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=20", "-c", "fsync=off"]
+    tmpfs:
+      - /var/lib/postgresql/data          # ephemeral — nothing here must survive a restart
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   postgres_data:
   uploads:
+  backup_staging:

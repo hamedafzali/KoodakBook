@@ -8,21 +8,28 @@
 #   sh|bash|<other>          exec through, for debugging
 set -Eeuo pipefail
 HERE="$(dirname "$0")"
+# shellcheck source=lib.sh
+. "${HERE}/lib.sh"   # for heartbeat_preflight (+ log/die); harmless to source early
 
-case "${1:-scheduler}" in
+role="${1:-scheduler}"
+case "$role" in
   scheduler)
+    heartbeat_preflight scheduler          # fails closed if the dead-man's switch is off
     exec supercronic -passthrough-logs "${HERE}/crontab"
     ;;
   backup)
+    heartbeat_preflight backup
     shift; exec "${HERE}/backup.sh" "$@"
     ;;
   verify-offsite)
+    heartbeat_preflight verify-offsite
     shift; exec "${HERE}/verify-offsite.sh" "$@"
     ;;
   restore-drill)
+    heartbeat_preflight restore-drill
     shift; exec "${HERE}/restore-drill.sh" "$@"
     ;;
   *)
-    exec "$@"
+    exec "$@"                               # debug passthrough (sh/bash/…) — no preflight
     ;;
 esac

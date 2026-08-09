@@ -126,6 +126,32 @@ ping() {
   fi
 }
 
+# ── heartbeat preflight: refuse to run the scheduler blind ────────────────────
+# The dead-man's switch is the whole point of this sidecar — alerting fires on the
+# ABSENCE of a success ping. If a heartbeat URL is blank, ping() silently DRY-RUNs
+# (logs, does not send), so a monitor would never learn the backups had stopped.
+# Shipping the long-running scheduler in that state is the one failure mode we must
+# not allow, so it fails closed. One-shot roles (manual/staging runs, which are
+# deliberate) get a loud warning and continue. ALLOW_HEARTBEAT_DRYRUN=1 is an
+# explicit, logged opt-out for intentional pre-provisioning bring-up.
+heartbeat_preflight() {
+  local role="${1:-}" blanks=()
+  [ -n "${HEARTBEAT_BACKUP_URL:-}" ] || blanks+=(HEARTBEAT_BACKUP_URL)
+  [ -n "${HEARTBEAT_DRILL_URL:-}" ]  || blanks+=(HEARTBEAT_DRILL_URL)
+  if [ ${#blanks[@]} -eq 0 ]; then
+    log "heartbeat preflight OK — dead-man's-switch URLs set (backup + drill)"
+    return 0
+  fi
+  log "################################################################"
+  log "# HEARTBEAT NOT CONFIGURED (${blanks[*]}) — DEAD-MAN'S SWITCH OFF"
+  log "# Pings are DRY-RUN (logged, not sent). If backups stop, NO alert fires."
+  log "################################################################"
+  if [ "$role" = "scheduler" ] && [ "${ALLOW_HEARTBEAT_DRYRUN:-}" != "1" ]; then
+    die "refusing to start the scheduler with the dead-man's switch disabled — set HEARTBEAT_BACKUP_URL + HEARTBEAT_DRILL_URL (or ALLOW_HEARTBEAT_DRYRUN=1 to override deliberately)"
+  fi
+  log "WARN continuing without heartbeats (role=${role}${ALLOW_HEARTBEAT_DRYRUN:+, ALLOW_HEARTBEAT_DRYRUN=1 set})"
+}
+
 # ── age helpers ──────────────────────────────────────────────────────────────
 age_encrypt() {  # age_encrypt <plaintext> <out.age>
   [ -n "$AGE_RECIPIENT" ] || die "AGE_RECIPIENT unset — refusing to write an unencrypted backup"
