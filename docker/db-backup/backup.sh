@@ -62,15 +62,29 @@ log "dump lists ${OBJ_COUNT} objects"
 # 7. Row-count sanity number (cheap signal a dump captured real data). Uses the
 #    same least-privilege role. Not fatal if it can't run — dump integrity is
 #    the load-bearing check; this only feeds the anomaly ping.
-ROWS="$(PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" \
-        -tAc "select coalesce((select count(*) from children),0) + coalesce((select count(*) from child_word_progress),0)" 2>/dev/null || echo 0)"
+bkp_psql() { PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -tAc "$1" 2>/dev/null; }
+ROWS="$(bkp_psql "select coalesce((select count(*) from children),0) + coalesce((select count(*) from child_word_progress),0)" || echo 0)"
 ROWS="$(printf '%s' "$ROWS" | tr -dc '0-9')"; ROWS="${ROWS:-0}"
+
+# 7a. Per-table metadata for the manifest sidecar (the weekly keyless drill reads
+#     this instead of decrypting). METADATA ONLY — table names + row counts,
+#     never row values. Best-effort: a missing table counts as 0, not fatal.
+TABLE_LIST="$(bkp_psql "select table_name from information_schema.tables where table_schema='public' and table_type='BASE TABLE' order by 1" | tr -d '\r')"
+TABLES_JSON="$(printf '%s\n' "$TABLE_LIST" | awk 'NF{a[++n]=$0} END{for(i=1;i<=n;i++) printf "%s\"%s\"",(i>1?",":""),a[i]}')"
+ROWS_JSON=""; ROWS_TOTAL=0
+for t in $MANIFEST_TABLES; do
+  c="$(bkp_psql "select count(*) from \"$t\"" | tr -dc '0-9')"; c="${c:-0}"
+  ROWS_JSON="${ROWS_JSON:+$ROWS_JSON,}\"${t}\":${c}"
+  ROWS_TOTAL=$(( ROWS_TOTAL + c ))
+done
 
 # 4. Encrypt (everything is encrypted, including local copies) then shred plaintext.
 log "age-encrypt → ${ENC}"
 age_encrypt "$DUMP" "$ENC"
+DUMP_BYTES="$(stat -c %s "$DUMP" 2>/dev/null || wc -c < "$DUMP")"   # capture BEFORE shred
 shred_file "$DUMP"
 SIZE="$(stat -c %s "$ENC" 2>/dev/null || wc -c < "$ENC")"
+SHA="$(sha256_of "$ENC")"
 
 # 5. Upload, then verify the remote object actually exists at the right size.
 KEY="$(date -u '+%Y/%m/%d')/${NAME}.age"
@@ -79,6 +93,36 @@ rclone_do write copyto "$ENC" "$(store_path "$KEY")"
 REMOTE_SIZE="$(rclone_do write size "$(store_path "$KEY")" --json 2>/dev/null | grep -oE '"bytes":[0-9]+' | grep -oE '[0-9]+' || echo 0)"
 [ "$REMOTE_SIZE" = "$SIZE" ] || die "remote size ${REMOTE_SIZE} != local ${SIZE} — upload not verified"
 log "upload verified (${SIZE} bytes offsite at ${KEY})"
+
+# 5b. Manifest — plaintext metadata sidecar next to the .age (off-server-key
+#     model). Lets the weekly keyless drill sanity-check the ciphertext (recipient,
+#     checksum, sizes, row counts) WITHOUT the private key. Uploaded + verified
+#     before the success ping, so a missing/failed manifest fails the backup.
+MKEY="$(manifest_key "$KEY")"
+MANIFEST="${STAGING_DIR}/${NAME}.manifest.json"
+{
+  printf '{\n'
+  printf '  "schema_version": 1,\n'
+  printf '  "name": "%s",\n'                "$NAME"
+  printf '  "key": "%s",\n'                 "$KEY"
+  printf '  "ts": "%s",\n'                  "$TS"
+  printf '  "age_recipient_fpr": "%s",\n'   "$(age_recipient_fpr)"
+  printf '  "plaintext_dump_bytes": %s,\n'  "$DUMP_BYTES"
+  printf '  "ciphertext_bytes": %s,\n'      "$SIZE"
+  printf '  "ciphertext_sha256": "%s",\n'   "$SHA"
+  printf '  "object_count": %s,\n'          "${OBJ_COUNT:-0}"
+  printf '  "rows_total": %s,\n'            "$ROWS_TOTAL"
+  printf '  "rows": {%s},\n'                "$ROWS_JSON"
+  printf '  "tables": [%s]\n'               "$TABLES_JSON"
+  printf '}\n'
+} > "$MANIFEST"
+log "upload manifest → $(store_path "$MKEY")"
+rclone_do write copyto "$MANIFEST" "$(store_path "$MKEY")"
+MREMOTE="$(rclone_do write size "$(store_path "$MKEY")" --json 2>/dev/null | grep -oE '"bytes":[0-9]+' | grep -oE '[0-9]+' || echo 0)"
+MLOCAL="$(stat -c %s "$MANIFEST" 2>/dev/null || wc -c < "$MANIFEST")"
+[ "$MREMOTE" = "$MLOCAL" ] || die "manifest upload not verified (remote ${MREMOTE} != local ${MLOCAL})"
+rm -f "$MANIFEST"
+log "manifest verified offsite (${MLOCAL} bytes at ${MKEY})"
 
 # 6. Local retention — keep the last N encrypted copies (encrypted, per decision).
 #    Never keep the labelled on-demand dumps in the rotation.
@@ -102,7 +146,7 @@ if [ -n "${PREV_ROWS:-}" ] && [ "$ROWS" -lt "$PREV_ROWS" ]; then
   ANOMALY="${ANOMALY:+$ANOMALY; }row-count regressed ${PREV_ROWS} → ${ROWS}"
 fi
 
-PAYLOAD="name=${NAME} size=${SIZE}B objects=${OBJ_COUNT} rows=${ROWS} key=${KEY}"
+PAYLOAD="name=${NAME} size=${SIZE}B objects=${OBJ_COUNT} rows=${ROWS} key=${KEY} manifest=${MKEY}"
 if [ -n "$ANOMALY" ]; then
   # Job technically succeeded (verified offsite) but the data smells wrong:
   # this is exactly the "ran but captured a truncated DB" signature. Fail LOUD.

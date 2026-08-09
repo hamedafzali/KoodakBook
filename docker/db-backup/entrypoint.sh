@@ -3,7 +3,8 @@
 #
 #   (no args) | scheduler   run supercronic on the crontab (the default service)
 #   backup [--label X]       run the backup job once (scheduled or on-demand)
-#   restore-drill            run the restore-drill once
+#   verify-offsite           run the WEEKLY keyless verification once (no key)
+#   restore-drill            run the QUARTERLY manual decrypt→restore (off-server key)
 #   sh|bash|<other>          exec through, for debugging
 set -Eeuo pipefail
 HERE="$(dirname "$0")"
@@ -14,6 +15,9 @@ case "${1:-scheduler}" in
     ;;
   backup)
     shift; exec "${HERE}/backup.sh" "$@"
+    ;;
+  verify-offsite)
+    shift; exec "${HERE}/verify-offsite.sh" "$@"
     ;;
   restore-drill)
     shift; exec "${HERE}/restore-drill.sh" "$@"

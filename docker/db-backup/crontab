@@ -1,17 +1,18 @@
 # db-backup schedule (supercronic; TZ from the container's TZ env).
 #
 # Twice-daily backups → ≤12h loss window (approved §12.4), 12h apart, both off
-# the drill window. Weekly restore-drill Sunday 04:00, deliberately clear of the
-# 02:00/14:00 backups so the scratch restore never contends with a live dump
-# (approved §12.3: off-peak, no overlap).
+# the verify window. Weekly verify-offsite Sunday 04:00, deliberately clear of
+# the 02:00/14:00 backups (approved §12.3: off-peak, no overlap).
 #
-# The WEEKLY restore-drill decrypts with the machine key (AGE_IDENTITY, held as
-# an operational copy in ACM) so restorability is proven continuously. The
-# QUARTERLY manual drill is human-run (NOT cron) and must instead mount the
-# off-server private key via AGE_IDENTITY_FILE, leaving AGE_IDENTITY unset, so the
-# cold-custody recovery path stays exercised. See README "age identity & drills".
+# Off-server-key model: the private key is NOT on this host, so the WEEKLY job is
+# KEYLESS (verify-offsite.sh) — it checks existence, size trend, a well-formed age
+# header with the right recipient stanza, checksum/size vs the manifest, object-lock
+# retention, and manifest row/size sanity, but never decrypts. The full
+# decrypt→restore proof is the QUARTERLY manual drill (restore-drill.sh), run by a
+# human who supplies the off-server key via AGE_IDENTITY_FILE — it is deliberately
+# NOT in this crontab. See README "age identity & drills".
 #
 # min hour dom mon dow  command
   0   2    *   *   *    /app/backup.sh
   0   14   *   *   *    /app/backup.sh
-  0   4    *   *   0    /app/restore-drill.sh
+  0   4    *   *   0    /app/verify-offsite.sh

@@ -152,6 +152,55 @@ age_decrypt() {  # age_decrypt <in.age> <out-plaintext>
 # Overwrite-then-remove a plaintext file so no unencrypted dump lingers.
 shred_file() { [ -f "$1" ] && { dd if=/dev/zero of="$1" bs=64k count=1 conv=notrunc 2>/dev/null || true; rm -f "$1"; }; }
 
+# ── manifest + keyless verification (off-server-key model, "Option C") ────────
+# The private key never lives on this host, so the WEEKLY drill cannot decrypt.
+# To still prove more than "an object exists", the backup job writes a PLAINTEXT
+# metadata manifest next to each .age object, and verify-offsite.sh checks the
+# ciphertext against it WITHOUT the key. The manifest carries only metadata —
+# table names, row counts, sizes, a checksum — NEVER row values.
+#
+# Trust boundary (stated honestly): the manifest is a pipeline-attested
+# OPERATIONAL aid, not a security control. A host that can forge a backup can
+# forge its manifest, so this catches operational failure (job stopped, 0-byte
+# or truncated upload, wrong recipient, checksum drift, row regression), not a
+# motivated attacker who already owns the box. The authoritative proof that the
+# ciphertext decrypts and restores is the QUARTERLY manual drill (off-server key).
+
+# Object key for the manifest that accompanies an .age object key.
+manifest_key() { printf '%s.manifest.json' "$1"; }
+
+: "${MANIFEST_TABLES:=users children words stories child_word_progress story_pages _migrations}"
+
+sha256_of() { sha256sum "$1" | cut -d' ' -f1; }
+
+# Fingerprint of the age recipient (public key). Lets the drill confirm a backup
+# was addressed to the EXPECTED recipient without the private key. With X25519 the
+# recipient pubkey is not recoverable from the age header by design, so this is an
+# intent/config-match check (catches a wrong or rotated recipient); the header
+# check verifies stanza TYPE and COUNT cryptographically.
+age_recipient_fpr() { printf '%s' "${1:-$AGE_RECIPIENT}" | sha256sum | cut -c1-16; }
+
+# Inspect an age HEADER only (first bytes of the file) — no decryption. Verifies
+# the v1 magic, that recipient stanzas are the expected type and exact count, and
+# that there is NO scrypt (passphrase) stanza. $1=header-file $2=type(def X25519)
+# $3=count(def 1).
+age_header_ok() {
+  local hdr="$1" want_type="${2:-X25519}" want_n="${3:-1}" first n
+  IFS= read -r first < "$hdr" || return 1
+  [ "$first" = "age-encryption.org/v1" ] || { log "age header: bad magic ('${first}')"; return 1; }
+  if grep -qE '^-> +scrypt ' "$hdr"; then log "age header: scrypt (passphrase) stanza present — unexpected"; return 1; fi
+  n="$(grep -cE "^-> +${want_type} " "$hdr" || true)"
+  [ "$n" = "$want_n" ] || { log "age header: expected ${want_n} ${want_type} stanza(s), found ${n}"; return 1; }
+  return 0
+}
+
+# Read a top-level scalar ("key": "val"  or  "key": 123) from a manifest file.
+manifest_get() {  # <file> <key>
+  grep -oE "\"$2\"[[:space:]]*:[[:space:]]*\"?[^,\"}]*" "$1" | head -n1 | sed -E "s/.*:[[:space:]]*\"?//"
+}
+# Read a per-table row count from the manifest's "rows" object ("table": N).
+manifest_row() { grep -oE "\"$2\"[[:space:]]*:[[:space:]]*[0-9]+" "$1" | head -n1 | grep -oE '[0-9]+$'; }
+
 # ── preflight: fail loudly and early if config is incoherent ─────────────────
 require_backup_config() {
   local missing=()
@@ -165,12 +214,28 @@ require_backup_config() {
   mkdir -p "$STAGING_DIR"
 }
 
+# Full decrypt→restore drill (quarterly, manual). Needs the read credential AND
+# an off-server identity (AGE_IDENTITY_FILE, or AGE_IDENTITY for local staging
+# tests only). AGE_IDENTITY is deliberately NOT a production input.
 require_restore_config() {
   local missing=()
   [ -n "$BACKUP_S3_ENDPOINT" ] || missing+=(BACKUP_S3_ENDPOINT)
   [ -n "$BACKUP_BUCKET" ]      || missing+=(BACKUP_BUCKET)
   [ -n "$RESTORE_KEY_ID" ]     || missing+=(RESTORE_KEY_ID)
   [ -n "$RESTORE_KEY_SECRET" ] || missing+=(RESTORE_KEY_SECRET)
+  [ ${#missing[@]} -eq 0 ] || die "missing required config: ${missing[*]}"
+  mkdir -p "$STAGING_DIR"
+}
+
+# Keyless weekly verification. Read credential + the recipient PUBLIC key only —
+# NEVER the private key. Live DB is optional (used for row/size sanity vs live).
+require_verify_config() {
+  local missing=()
+  [ -n "$BACKUP_S3_ENDPOINT" ] || missing+=(BACKUP_S3_ENDPOINT)
+  [ -n "$BACKUP_BUCKET" ]      || missing+=(BACKUP_BUCKET)
+  [ -n "$RESTORE_KEY_ID" ]     || missing+=(RESTORE_KEY_ID)
+  [ -n "$RESTORE_KEY_SECRET" ] || missing+=(RESTORE_KEY_SECRET)
+  [ -n "$AGE_RECIPIENT" ]      || missing+=(AGE_RECIPIENT)
   [ ${#missing[@]} -eq 0 ] || die "missing required config: ${missing[*]}"
   mkdir -p "$STAGING_DIR"
 }

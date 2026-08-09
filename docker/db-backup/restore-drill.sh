@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# db-backup — the RESTORE-DRILL job (approved plan §7)
+# db-backup — the QUARTERLY MANUAL restore-drill (approved plan §7)
 #
-# "Tested, not assumed." Proves the OFFSITE copy is restorable and intact, using
-# the READ credential (never the local copy, never the write key).
+# "Tested, not assumed." The full decrypt→restore proof: the ONE place the
+# ciphertext is actually decrypted and restored. Under the off-server-key model
+# this is human-run (NOT cron) and is supplied ONLY the off-server private key
+# via AGE_IDENTITY_FILE — AGE_IDENTITY is never set in production. The WEEKLY
+# automated job is keyless (verify-offsite.sh) and does everything EXCEPT decrypt;
+# this quarterly run closes that gap and simultaneously rehearses reading the cold
+# key from custody (see README "age identity & drills" / DR plan §11.6).
 #
-#   fetch latest offsite .age (read cred) → decrypt → restore into an isolated
-#   scratch database → run assertions → drop scratch → PASS/FAIL heartbeat
+#   fetch latest offsite .age (read cred) → decrypt (off-server key) → restore into
+#   an isolated scratch database → run assertions → drop scratch → PASS/FAIL heartbeat
 #
 # ── Deviation from the plan's literal wording, flagged deliberately ───────────
 # §7.1 says "spin up an ephemeral postgres:16-alpine container." Doing that from
@@ -69,9 +74,12 @@ LATEST="$(rclone_do read lsf -R --files-only ":s3:${BACKUP_BUCKET}/${BACKUP_PREF
 log "latest offsite object: ${LATEST}"
 rclone_do read copyto ":s3:${BACKUP_BUCKET}/${BACKUP_PREFIX}/${LATEST}" "${WORK}/latest.dump.age"
 
-# 2. Decrypt (age identity — machine key for the weekly automated drill; the
-#    quarterly manual drill supplies ONLY the off-server key via AGE_IDENTITY_FILE).
-log "decrypting offsite copy"
+# 2. Decrypt with the OFF-SERVER identity (AGE_IDENTITY_FILE — the cold key read
+#    from custody for this manual run). age_identity_file() also accepts
+#    AGE_IDENTITY, but that path is for local staging tests only; in production the
+#    private key is never present on the host, so this step also proves the custody
+#    copy is readable (the "a key you've never tested reading" failure mode).
+log "decrypting offsite copy (off-server key)"
 age_decrypt "${WORK}/latest.dump.age" "${WORK}/latest.dump"
 
 # 3. Assertion: dump lists objects, and capture expected object count.

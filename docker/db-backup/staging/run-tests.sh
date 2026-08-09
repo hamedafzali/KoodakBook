@@ -44,10 +44,23 @@ fi
 echo "== [2] backup happy path =="
 OUT="$(runjob db-backup backup 2>&1)"; echo "$OUT" | sed 's/^/     /'
 OBJ="$(mc_root 'mc ls --recursive local/koodakbook-backups' | grep -oE 'staging-[0-9TZ]+\.dump\.age' | head -1)"
+MANOBJ="$(mc_root 'mc ls --recursive local/koodakbook-backups' | grep -oE 'staging-[0-9TZ]+\.dump\.age\.manifest\.json' | head -1)"
 if echo "$OUT" | grep -q 'backup .* complete' && [ -n "$OBJ" ]; then
   record "Backup happy path" PASS "object in bucket ($OBJ); upload size-verified; success heartbeat DRY-RUN logged"
 else
   record "Backup happy path" FAIL "no verified object / job did not complete"
+fi
+
+# ── Row 2b: Manifest sidecar emitted + well-formed (metadata only) ────────────
+echo "== [2b] manifest sidecar =="
+MANBODY="$(mc_root 'mc cat local/koodakbook-backups/'"$MANOBJ" 2>/dev/null)"
+if [ -n "$MANOBJ" ] && echo "$OUT" | grep -q 'manifest verified offsite' \
+   && echo "$MANBODY" | grep -q '"ciphertext_sha256"' \
+   && echo "$MANBODY" | grep -q '"age_recipient_fpr"' \
+   && echo "$MANBODY" | grep -q '"rows"'; then
+  record "Manifest sidecar emitted" PASS "manifest object present ($MANOBJ); carries sha256, recipient fpr, per-table rows; no row values"
+else
+  record "Manifest sidecar emitted" FAIL "manifest missing or malformed (obj='$MANOBJ')"
 fi
 
 # ── Row 3: Encryption is real ────────────────────────────────────────────────
@@ -72,14 +85,50 @@ else
   record "Encryption is real" FAIL "$(echo "$OUT" | tr '\n' ' ')"
 fi
 
-# ── Row 4: Restore-drill happy path ──────────────────────────────────────────
-echo "== [4] restore-drill happy path =="
+# ── Row 4: Quarterly restore-drill happy path (decrypt→restore) ──────────────
+# In prod this is the human-run quarterly drill fed the off-server key; here we
+# stand in with the ephemeral key (runjob passes AGE_IDENTITY) to exercise the
+# full decrypt→restore path.
+echo "== [4] quarterly restore-drill happy path =="
 OUT="$(runjob db-backup restore-drill 2>&1)"; DRC=$?; echo "$OUT" | sed 's/^/     /'
 if [ "$DRC" -eq 0 ] && echo "$OUT" | grep -q 'restore-drill PASS' && ! echo "$OUT" | grep -q '  FAIL  '; then
-  record "Restore-drill happy path" PASS "scratch restored; all §7 assertions PASS; scratch dropped"
+  record "Quarterly restore-drill (decrypt→restore)" PASS "scratch restored; all §7 assertions PASS; scratch dropped"
 else
-  record "Restore-drill happy path" FAIL "exit=$DRC or an assertion failed"
+  record "Quarterly restore-drill (decrypt→restore)" FAIL "exit=$DRC or an assertion failed"
 fi
+
+# ── Row 4b: Weekly verify-offsite happy path (KEYLESS) ───────────────────────
+# The scheduled weekly job. No private key in the environment — pass only the
+# recipient (runjob sets AGE_IDENTITY too, but verify-offsite never uses it).
+echo "== [4b] weekly verify-offsite (keyless) =="
+OUT="$(runjob db-backup verify-offsite 2>&1)"; VRC=$?; echo "$OUT" | grep -E 'PASS|FAIL|WARN' | sed 's/^/     /'
+if [ "$VRC" -eq 0 ] && echo "$OUT" | grep -q 'verify-offsite PASS' && ! echo "$OUT" | grep -q '  FAIL  '; then
+  record "Weekly verify-offsite (keyless)" PASS "existence, header+recipient, checksum/size, row sanity all PASS without decrypting (object-lock WARN on MinIO — see §CANNOT-LOCAL)"
+else
+  record "Weekly verify-offsite (keyless)" FAIL "exit=$VRC or a keyless check failed"
+fi
+
+# ── Row 4c: verify-offsite catches ciphertext tampering (checksum) ───────────
+# Overwrite the latest .age with altered bytes but DON'T update the manifest →
+# the checksum/size check must fail (proves the keyless integrity check asserts).
+echo "== [4c] verify-offsite catches tampering =="
+LKEY="$(mc_root 'mc ls --recursive local/koodakbook-backups' | awk '{print $NF}' | grep '\.dump\.age$' | grep -v manifest | sort | tail -1)"
+runjob --entrypoint sh db-backup -c '
+  rclone --s3-provider=Minio --s3-endpoint=http://minio:9000 --s3-region=us-east-1 \
+    --s3-access-key-id=backupreader --s3-secret-access-key=backupreaderpw --s3-no-check-bucket \
+    copyto ":s3:koodakbook-backups/'"$LKEY"'" /tmp/o.age 2>/dev/null
+  printf "TAMPER" >> /tmp/o.age
+  rclone --s3-provider=Minio --s3-endpoint=http://minio:9000 --s3-region=us-east-1 \
+    --s3-access-key-id=backupwriter --s3-secret-access-key=backupwriterpw --s3-no-check-bucket \
+    copyto /tmp/o.age ":s3:koodakbook-backups/'"$LKEY"'"' >/dev/null 2>&1
+OUT="$(runjob db-backup verify-offsite 2>&1)"; VRC=$?; echo "$OUT" | grep -E 'FAIL|checksum|size' | sed 's/^/     /'
+if [ "$VRC" -ne 0 ] && echo "$OUT" | grep -qE 'verify-offsite FAIL'; then
+  record "verify-offsite catches tampering" PASS "altered ciphertext (sha256/size ≠ manifest) → verify-offsite exit ${VRC}, did NOT pass"
+else
+  record "verify-offsite catches tampering" FAIL "tampering not caught (exit=$VRC)"
+fi
+# Re-run a clean backup so later rows see a consistent latest object+manifest.
+runjob db-backup backup >/dev/null 2>&1
 
 # ── Row 5: Restore-drill catches bad data ────────────────────────────────────
 echo "== [5] restore-drill catches a bad dump =="
