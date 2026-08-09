@@ -29,6 +29,9 @@ IDENT="$(grep 'AGE-SECRET-KEY' "$WORK/key.txt")"
 echo "   recipient: ${RECIP:-<none>}"
 
 runjob() { $DC run --rm --no-deps -e AGE_RECIPIENT="$RECIP" -e AGE_IDENTITY="$IDENT" "$@"; }
+# Keyless invocation: the private key is NOT placed in the environment at all —
+# used to prove the weekly drill never even has the option of decrypting.
+runjob_nokey() { $DC run --rm --no-deps -e AGE_RECIPIENT="$RECIP" "$@"; }
 
 # ── Row 1: Image builds + tool versions ──────────────────────────────────────
 echo "== [1] image builds =="
@@ -53,14 +56,22 @@ fi
 
 # ── Row 2b: Manifest sidecar emitted + well-formed (metadata only) ────────────
 echo "== [2b] manifest sidecar =="
-MANBODY="$(mc_root 'mc cat local/koodakbook-backups/'"$MANOBJ" 2>/dev/null)"
+# Full object key (not just the basename) so `mc cat` reads the real object.
+MANPATH="$(mc_root 'mc ls --recursive local/koodakbook-backups' | awk '{print $NF}' | grep 'manifest.json$' | head -1)"
+MANBODY="$(mc_root 'mc cat local/koodakbook-backups/'"$MANPATH" 2>/dev/null)"
+# "Metadata only" is asserted for real: the fixture seeds row VALUES the manifest
+# must never carry — a sentinel email and a child name. Their absence proves the
+# sidecar holds counts/hashes, not exfiltrated row data.
+NOROWVALS=0
+if [ -n "$MANBODY" ] && ! echo "$MANBODY" | grep -qiE 'admin@koodakbook\.com|Sentinel Child'; then NOROWVALS=1; fi
 if [ -n "$MANOBJ" ] && echo "$OUT" | grep -q 'manifest verified offsite' \
    && echo "$MANBODY" | grep -q '"ciphertext_sha256"' \
    && echo "$MANBODY" | grep -q '"age_recipient_fpr"' \
-   && echo "$MANBODY" | grep -q '"rows"'; then
-  record "Manifest sidecar emitted" PASS "manifest object present ($MANOBJ); carries sha256, recipient fpr, per-table rows; no row values"
+   && echo "$MANBODY" | grep -q '"rows"' \
+   && [ "$NOROWVALS" = "1" ]; then
+  record "Manifest sidecar (metadata only)" PASS "manifest object present ($MANOBJ); carries sha256, recipient fpr, per-table row COUNTS; contains no seeded row values (email/name absent)"
 else
-  record "Manifest sidecar emitted" FAIL "manifest missing or malformed (obj='$MANOBJ')"
+  record "Manifest sidecar (metadata only)" FAIL "manifest missing/malformed or LEAKS row values (obj='$MANOBJ' norowvals=$NOROWVALS)"
 fi
 
 # ── Row 3: Encryption is real ────────────────────────────────────────────────
@@ -97,15 +108,24 @@ else
   record "Quarterly restore-drill (decrypt→restore)" FAIL "exit=$DRC or an assertion failed"
 fi
 
-# ── Row 4b: Weekly verify-offsite happy path (KEYLESS) ───────────────────────
-# The scheduled weekly job. No private key in the environment — pass only the
-# recipient (runjob sets AGE_IDENTITY too, but verify-offsite never uses it).
+# ── Row 4b: Weekly verify-offsite happy path (PROVABLY KEYLESS) ──────────────
+# The scheduled weekly job. Run with runjob_nokey so NO private key exists in the
+# environment at all — and first prove that absence from inside the container, so
+# a PASS can't be an accidental decrypt.
 echo "== [4b] weekly verify-offsite (keyless) =="
-OUT="$(runjob db-backup verify-offsite 2>&1)"; VRC=$?; echo "$OUT" | grep -E 'PASS|FAIL|WARN' | sed 's/^/     /'
-if [ "$VRC" -eq 0 ] && echo "$OUT" | grep -q 'verify-offsite PASS' && ! echo "$OUT" | grep -q '  FAIL  '; then
-  record "Weekly verify-offsite (keyless)" PASS "existence, header+recipient, checksum/size, row sanity all PASS without decrypting (object-lock WARN on MinIO — see §CANNOT-LOCAL)"
+ENVCHK="$(runjob_nokey --entrypoint sh db-backup -c '
+  echo "IDENT_SET=${AGE_IDENTITY:+yes}${AGE_IDENTITY:-no}"
+  echo "IDENTFILE_SET=${AGE_IDENTITY_FILE:+yes}${AGE_IDENTITY_FILE:-no}"
+  echo "SECRET_IN_ENV=$(env | grep -c AGE-SECRET-KEY)"
+' 2>/dev/null)"
+echo "$ENVCHK" | sed 's/^/     /'
+OUT="$(runjob_nokey db-backup verify-offsite 2>&1)"; VRC=$?; echo "$OUT" | grep -E 'PASS|FAIL|WARN' | sed 's/^/     /'
+NOKEY_ENV=0
+if echo "$ENVCHK" | grep -q 'IDENT_SET=no' && echo "$ENVCHK" | grep -q 'IDENTFILE_SET=no' && echo "$ENVCHK" | grep -q 'SECRET_IN_ENV=0'; then NOKEY_ENV=1; fi
+if [ "$VRC" -eq 0 ] && [ "$NOKEY_ENV" = "1" ] && echo "$OUT" | grep -q 'verify-offsite PASS' && ! echo "$OUT" | grep -q '  FAIL  '; then
+  record "Weekly verify-offsite (provably keyless)" PASS "no AGE_IDENTITY / AGE_IDENTITY_FILE / secret-key anywhere in env; existence, header, recipient, checksum/size, row sanity all PASS without decrypting (object-lock WARN on MinIO — see §CANNOT-LOCAL)"
 else
-  record "Weekly verify-offsite (keyless)" FAIL "exit=$VRC or a keyless check failed"
+  record "Weekly verify-offsite (provably keyless)" FAIL "exit=$VRC nokey_env=$NOKEY_ENV or a keyless check failed"
 fi
 
 # ── Row 4c: verify-offsite catches ciphertext tampering (checksum) ───────────
@@ -128,6 +148,30 @@ else
   record "verify-offsite catches tampering" FAIL "tampering not caught (exit=$VRC)"
 fi
 # Re-run a clean backup so later rows see a consistent latest object+manifest.
+runjob db-backup backup >/dev/null 2>&1
+
+# ── Row 4d: verify-offsite catches a backup encrypted to the WRONG recipient ──
+# The guard against "backups silently encrypted to a key we don't hold, only
+# discovered as undecryptable at restore time." Generate a SECOND keypair, run a
+# real backup addressed to that WRONG recipient (so its manifest fingerprint is
+# the wrong key's), then run the keyless drill with OUR real recipient. The
+# recipient check (manifest fpr == our pubkey fpr) must FAIL — a real failing
+# test, not just the happy path.
+echo "== [4d] verify-offsite catches wrong-recipient backup =="
+$DC run --rm --no-deps --entrypoint sh db-backup -c 'age-keygen' > "$WORK/wrong.txt" 2>/dev/null
+WRECIP="$(grep 'public key:' "$WORK/wrong.txt" | awk '{print $NF}')"
+echo "     wrong recipient: ${WRECIP:-<none>}"
+# Backup addressed to the WRONG recipient — becomes the newest offsite object.
+$DC run --rm --no-deps -e AGE_RECIPIENT="$WRECIP" db-backup backup >/dev/null 2>&1
+# Keyless verify with OUR real recipient — must fail on the recipient leg.
+OUT="$(runjob_nokey db-backup verify-offsite 2>&1)"; VRC=$?
+echo "$OUT" | grep -E 'FAIL|recipient' | sed 's/^/     /'
+if [ "$VRC" -ne 0 ] && echo "$OUT" | grep -qE '  FAIL  recipient matches'; then
+  record "verify-offsite catches wrong recipient" PASS "backup encrypted to a different key → recipient fingerprint mismatch → verify-offsite exit ${VRC}, FAILED the recipient check (catches undecryptable-at-restore before restore time)"
+else
+  record "verify-offsite catches wrong recipient" FAIL "wrong-recipient backup was NOT caught by the recipient check (exit=$VRC)"
+fi
+# Restore a correctly-addressed latest object for the remaining rows.
 runjob db-backup backup >/dev/null 2>&1
 
 # ── Row 5: Restore-drill catches bad data ────────────────────────────────────
@@ -185,8 +229,11 @@ echo "== [9] off-server-key recovery =="
 # key material, no ACM env — into db-drill, to prove recovery survives loss of
 # the server's secrets. (The human 'machine that never held the ACM key' custody
 # step is the manual quarterly rehearsal — flagged.)
+# Use the CURRENT newest good object, not the Row-3 KEY — the tamper test (4c)
+# deliberately corrupted the object KEY pointed at, so re-select fresh here.
+GOODKEY="$(mc_root 'mc ls --recursive local/koodakbook-backups' | awk '{print $NF}' | grep '\.dump\.age$' | grep -v manifest | sort | tail -1)"
 printf '%s\n' "$IDENT" > "$WORK/offserver.key"
-OUT="$($DC run --rm --no-deps -v "$WORK:/w" -e KEY="$KEY" --entrypoint sh db-backup -c '
+OUT="$($DC run --rm --no-deps -v "$WORK:/w" -e KEY="$GOODKEY" --entrypoint sh db-backup -c '
   set -e
   rclone --s3-provider=Minio --s3-endpoint=http://minio:9000 --s3-region=us-east-1 \
     --s3-access-key-id=backupreader --s3-secret-access-key=backupreaderpw --s3-no-check-bucket \
