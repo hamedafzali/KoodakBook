@@ -15,7 +15,10 @@ role="${1:-scheduler}"
 case "$role" in
   scheduler)
     heartbeat_preflight scheduler          # fails closed if the dead-man's switch is off
-    exec supercronic -passthrough-logs "${HERE}/crontab"
+    # -no-reap: supercronic's own reaper only works as true PID 1 and crashes
+    # otherwise ("Failed to fork exec: no such file or directory"); Docker's
+    # own init (compose `init: true`) is PID 1 here and reaps for us instead.
+    exec supercronic -no-reap -passthrough-logs "${HERE}/crontab"
     ;;
   backup)
     heartbeat_preflight backup

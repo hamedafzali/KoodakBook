@@ -100,6 +100,10 @@ services:
     build:
       context: ./docker/db-backup
     restart: unless-stopped
+    # supercronic's own zombie-reaper crashes when it is PID 1 ("Failed to fork
+    # exec: no such file or directory") — let Docker's tini be PID 1 instead and
+    # disable supercronic's reaper in entrypoint.sh.
+    init: true
     read_only: true
     tmpfs:
       - /tmp
