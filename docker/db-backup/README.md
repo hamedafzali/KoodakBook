@@ -1,35 +1,30 @@
 # db-backup — encrypted offsite Postgres backups (Phase 1B)
 
-> ## ⚠️ Backup sidecar is currently DISABLED
+> ## ⚠️ Enabled, but LOCAL-ONLY (`BACKUP_OFFSITE=0`) — no offsite target yet
 >
-> `db-backup` and `db-drill` are gated behind the Compose profile `backup`,
-> which is **not** in the default profile set — a plain `docker compose up`
-> (what the ACM pipeline runs) starts neither service. **The database has no
-> restore point of any kind right now** — not offsite, not local-only. A bad
-> migration, an accidental `DELETE`, a disk failure: none of them are
-> recoverable while this is off.
+> `db-backup` and `db-drill` are live (`COMPOSE_PROFILES=backup`, enabled
+> 2026-08-10) and running twice-daily encrypted dumps with a healthchecks.io
+> dead-man's-switch. But no offsite destination is provisioned, so every
+> encrypted copy lives on `backup_staging` — **the same disk as
+> `postgres_data`.** This is a rollback safety net (bad migration, accidental
+> `DELETE`), **not disaster recovery** — see "Local-only mode" below for what
+> it does and doesn't protect against.
 >
-> **Re-enable:** set `COMPOSE_PROFILES=backup` in ACM, plus the five variables
-> both services need (`AGE_RECIPIENT`, `BACKUP_DB_PASSWORD`,
-> `DRILL_PGPASSWORD`, `HEARTBEAT_BACKUP_URL`, `HEARTBEAT_DRILL_URL`), then
-> redeploy. Leaving `COMPOSE_PROFILES` unset with those variables set does
-> **nothing** — the profile gate, not the variables, controls whether the
-> services exist at all.
+> The quarterly `restore-drill.sh` (needs an offsite target) cannot run in
+> this mode. The only proof of genuine restorability while local-only is the
+> **manual decrypt-and-restore test** documented below — run it, don't assume
+> it. As of 2026-08-11 it has been run once successfully (see git history for
+> the confirming session).
 >
 > **The soft `${VAR:-}` defaults on `AGE_RECIPIENT`/`BACKUP_DB_PASSWORD`/
 > `DRILL_PGPASSWORD` in `docker-compose.yml` exist only so `docker compose
-> config` resolves cleanly while the profile is inactive.** They are not a
-> runtime exemption: the moment the profile *is* active, `lib.sh:
-> require_backup_config()` still hard-fails (`FATAL: missing required config`
-> + a dead-man's-switch FAIL ping) if any of them is actually blank — verified
-> directly, this doesn't silently no-op into a fake backup.
+> config` resolves cleanly if the profile is ever inactive.** They are not a
+> runtime exemption: `lib.sh: require_backup_config()` still hard-fails
+> (`FATAL: missing required config` + a dead-man's-switch FAIL ping) if any of
+> them is actually blank.
 >
-> **[Piper removal (PR #1) stays blocked while this is off](../../project.md)**
-> — it drops four columns irreversibly, and there is nothing to restore from
-> if that goes wrong with backups disabled.
->
-> Everything below describes the sidecar's *behavior once enabled* (including
-> the separate, narrower local-only mode) — it does not apply while it's off.
+> Everything below describes the sidecar's full behavior, including the
+> offsite path this deployment does not yet use.
 
 A single sidecar image that gives KoodakBook a **tested, encrypted, offsite**
 restore point. One image, several roles (approved plan §3):
@@ -151,6 +146,122 @@ the obvious choice, already proven by the harness) in front of the NAS/disk
 rather than doing the sftp/local abstraction work — it stays a pure
 provisioning change and reuses the entire tested path. Reserve the four-site
 refactor for if keyless sftp/local with no gateway is specifically wanted.
+
+## Manual quarterly restore test (local-only mode)
+
+While `BACKUP_OFFSITE=0`, `restore-drill.sh` cannot run (it fetches from
+offsite by design) and `verify-local.sh` never decrypts — it checks the
+ciphertext is well-formed, not that it restores into a working database. This
+procedure is the only thing that actually proves restorability in local-only
+mode. It requires the off-server private key, so it is deliberately **manual,
+run by a human on their own machine, quarterly** — the same cadence and
+off-server-key model as the offsite `restore-drill.sh`, just done by hand
+instead of by the sidecar.
+
+**Prerequisites:** `age` and `docker` installed locally (`brew install age`),
+and the private key file generated when `AGE_RECIPIENT` was created — kept
+outside any git working tree, per the off-server-key model above.
+
+### 1. Copy the latest encrypted backup off the server
+
+```bash
+# Find the newest file on the staging volume
+LATEST=$(ssh hamed@192.168.178.34 \
+  'docker exec koodakbook-db-backup-1 sh -c "ls -1 /staging/*.dump.age | sort | tail -1"')
+echo "$LATEST"
+
+# Copy it down (container → stdout → local file; no intermediate host write)
+ssh hamed@192.168.178.34 "docker exec koodakbook-db-backup-1 cat ${LATEST}" \
+  > "$(basename "$LATEST")"
+```
+
+### 2. Decrypt with the off-server private key
+
+```bash
+age -d -i /path/to/your/age-private-key.txt \
+  -o restore-test.dump \
+  "$(basename "$LATEST")"
+```
+
+If this fails, that itself is the finding: it means the key you have doesn't
+match `AGE_RECIPIENT`, or the key is unreadable/corrupted — exactly the "a key
+you've never tested reading" failure mode this drill exists to catch.
+
+### 3. Restore into a disposable local Postgres
+
+```bash
+docker run -d --name koodakbook-restore-test \
+  -e POSTGRES_PASSWORD=restoretest -e POSTGRES_DB=restore_test \
+  -p 55432:5432 postgres:16-alpine
+
+# wait for it to accept connections
+until docker exec koodakbook-restore-test pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
+
+docker cp restore-test.dump koodakbook-restore-test:/tmp/restore.dump
+docker exec koodakbook-restore-test pg_restore --clean --if-exists \
+  --no-owner --no-privileges -U postgres -d restore_test /tmp/restore.dump
+```
+
+(`pg_restore` may print benign "does not exist, skipping" notices from
+`--clean --if-exists` against an empty database — not a failure by itself;
+the checks below are what determine pass/fail.)
+
+### 4. Confirm a genuine, complete restore — not just "it didn't error"
+
+Pull live counts from prod for comparison (uses the local-socket trust auth,
+no app password needed):
+
+```bash
+livecount() { ssh hamed@192.168.178.34 \
+  "docker exec -u postgres koodakbook-db-1 psql -U koodakbook -d koodakbook -tAc \"$1\""; }
+restoredcount() { docker exec koodakbook-restore-test \
+  psql -U postgres -d restore_test -tAc "$1"; }
+```
+
+Then check, mirroring exactly what `restore-drill.sh` asserts against a real
+offsite copy (same tables, same logic — see that script's §5a–5d):
+
+- **Schema currency** — restored `_migrations` max filename equals live's
+  (proves this isn't a stale dump silently missing a later migration):
+  ```bash
+  diff <(restoredcount "select max(filename) from _migrations") \
+       <(livecount     "select max(filename) from _migrations")
+  ```
+- **Row counts, per table** — restored count should be close to (within
+  ~25%, since the dump can be up to ~12h old) or equal to live, and above a
+  sane floor:
+  ```bash
+  for t in users children words stories child_word_progress; do
+    echo "$t: restored=$(restoredcount "select count(*) from $t") live=$(livecount "select count(*) from $t")"
+  done
+  ```
+- **No orphaned rows** (referential integrity survived the round trip):
+  ```bash
+  restoredcount "select count(*) from child_word_progress p left join children c on c.id=p.child_id where c.id is null"
+  restoredcount "select count(*) from story_pages sp left join stories s on s.id=sp.story_id where s.id is null"
+  # both must be 0
+  ```
+- **Sentinel row** — a known row survives intact, not just present:
+  ```bash
+  restoredcount "select count(*) from users where email = 'admin@koodakbook.com'"
+  # must be ≥ 1
+  ```
+
+A genuine pass is: schema matches, every table's restored count is within
+tolerance of live, both orphan checks are `0`, and the sentinel row exists.
+An empty-but-connected database, or a restore that silently dropped a table,
+will show up as a `0`/missing count here — a bare "exit code 0" from
+`pg_restore` would not have caught either.
+
+### 5. Clean up — the decrypted plaintext is now sitting unencrypted locally
+
+```bash
+docker rm -f koodakbook-restore-test
+shred -u restore-test.dump "$(basename "$LATEST")" 2>/dev/null || rm -P restore-test.dump "$(basename "$LATEST")"
+```
+
+(macOS has no `shred`; `rm -P` overwrites before unlinking. Belt-and-braces:
+don't leave either file sitting in a Trash/backup-synced folder afterward.)
 
 ## Restore isolation — why db-drill, not a socket-spawned container
 
