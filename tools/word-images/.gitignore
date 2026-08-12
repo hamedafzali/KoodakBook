@@ -1,0 +1,10 @@
+# Generated artifacts — these are content, not source. They reach the server
+# through upload.py as review candidates, never through git.
+batch/
+output/
+__pycache__/
+
+# Exported from prod by export-words.sh; regenerate rather than commit.
+words.json
+run-all.json
+briefs.json

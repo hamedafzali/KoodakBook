@@ -1,0 +1,235 @@
+[
+  {
+    "id": "10d68455-92d1-4599-8b6a-68777c5658fc",
+    "persian": "سیب",
+    "english": "apple",
+    "category": "food",
+    "image_brief": {
+      "subject": "a single red apple with a green leaf and short brown stem",
+      "composition": "centered, filling most of the frame",
+      "background": "plain soft cream background",
+      "avoid": ["other fruits in frame", "bite marks", "text"]
+    }
+  },
+  {
+    "id": "ad2abd8c-736c-4995-8ea8-3e397cf71da1",
+    "persian": "نان",
+    "english": "bread",
+    "category": "food",
+    "image_brief": {
+      "subject": "one single round flatbread disc, shaped exactly like a pita or naan bread: flat, round, golden-brown, with a smooth puffed surface and a few small scattered char spots, nothing else on or around it",
+      "composition": "centered, filling most of the frame, lying flat, viewed from directly above or a very gentle angle",
+      "background": "plain soft warm-tan background, nothing else in the scene",
+      "cultural_notes": "use the round flatbread-disc shape specifically (naan/pita silhouette) rather than a baguette, a sliced loaf, or a studded bun shape  -  the round flat disc is the single, unambiguous referent for this word",
+      "avoid": ["baguette or stick shape", "Western sliced sandwich loaf", "round bun or dumpling shape", "seeds or studded texture covering the surface", "utensils or any other object in frame", "branding or text"]
+    }
+  },
+  {
+    "id": "45d0678a-5427-445f-be1c-b638444d8508",
+    "persian": "گربه",
+    "english": "cat",
+    "category": "animals",
+    "image_brief": {
+      "subject": "a friendly cartoon cat sitting upright, orange tabby fur, tail curled around its paws",
+      "composition": "centered, sitting pose, three-quarter view",
+      "background": "plain soft lavender background",
+      "avoid": ["aggressive pose", "claws out", "text"]
+    }
+  },
+  {
+    "id": "37a81679-af68-418a-9b98-1604d1094d1b",
+    "persian": "سگ",
+    "english": "dog",
+    "category": "animals",
+    "image_brief": {
+      "subject": "a friendly cartoon dog sitting, medium build, brown and white fur, tongue out happily",
+      "composition": "centered, sitting pose, three-quarter view",
+      "background": "plain soft mint background",
+      "avoid": ["aggressive pose", "teeth bared", "collar with tags or text"]
+    }
+  },
+  {
+    "id": "1e32d980-c11d-4fef-b7c0-e11a6d301db3",
+    "persian": "قرمز",
+    "english": "red",
+    "category": "colors",
+    "image_brief": {
+      "subject": "one single plain filled circle, like a round color swatch or paint dot, solid red all the way through with no gradient and no pattern",
+      "composition": "one circle only, centered in frame, large, filling most of the frame, perfectly plain and flat like a color sample",
+      "background": "plain solid white background, completely empty otherwise",
+      "cultural_notes": "a plain circle is used instead of a real-world object (a balloon, a fruit) specifically because any recognizable object teaches the child that object's name, not the color; a circle is the simplest common shape with no object identity of its own, so it functions purely as a color carrier",
+      "avoid": ["any recognizable object (fruit, balloon, ball with markings, etc.)", "multiple shapes", "mosaic or collage of small shapes", "any other color in the frame besides red", "gradient or shading inside the circle", "text"]
+    }
+  },
+  {
+    "id": "78a7ec2a-ad14-4809-ad17-8da60bde8a1d",
+    "persian": "مامان",
+    "english": "mom",
+    "category": "family",
+    "image_brief": {
+      "subject": "a warm cartoon mother figure, simple friendly rounded design, gentle smile, medium-length dark hair in a simple style, wearing a modest simple dress, Middle-Eastern-presenting features rendered in a soft stylized non-photorealistic way",
+      "composition": "centered, waist-up, facing forward, open welcoming gesture",
+      "background": "plain soft peach background",
+      "cultural_notes": "Persian/Iranian heritage family  -  warm and dignified, modest styling; avoid Western stereotypical depictions (apron, blonde hair)",
+      "avoid": ["photorealistic human face", "identifiable or real-person likeness", "modern Western clothing stereotypes", "text"]
+    }
+  },
+  {
+    "id": "a1dbaf65-1950-4481-a816-77be02438c2e",
+    "persian": "خوشحال",
+    "english": "happy",
+    "category": "feelings",
+    "image_brief": {
+      "subject": "the same recurring cartoon child character used across all feeling words: round head, short black hair, warm tan skin, big round brown eyes, small round nose, no other characters  -  here with a big genuine smile, bright eyes, rosy cheeks",
+      "composition": "close-up centered face, front-facing",
+      "background": "plain soft warm-yellow background",
+      "cultural_notes": "gender-neutral, stylized non-photorealistic child face; this exact character description must be reused verbatim (same hair, skin tone, eyes, nose) for 'scared' and 'sleepy' so the three feeling images read as one consistent character rather than three different children  -  SDXL does not hold character identity across separate generations on its own, so a fixed detailed description plus a fixed seed is the mitigation, not a guarantee",
+      "avoid": ["photorealistic face", "identifiable features", "text", "a different-looking character than the fixed description"]
+    }
+  },
+  {
+    "id": "163b0032-41d7-4fc7-bd73-f596dc1b5986",
+    "persian": "ترسیده",
+    "english": "scared",
+    "category": "feelings",
+    "image_brief": {
+      "subject": "the same recurring cartoon child character used across all feeling words: round head, short black hair, warm tan skin, big round brown eyes, small round nose, no other characters  -  here with a mildly surprised, wide-eyed nervous expression: raised eyebrows, small open mouth, gentle and non-distressing",
+      "composition": "close-up centered face, front-facing",
+      "background": "plain soft dusty-purple background",
+      "cultural_notes": "SAFETY: must read as mild apprehension appropriate for a 4-7 year old, never genuine terror, crying, or distress  -  think 'a little surprised', not 'traumatized'",
+      "avoid": ["tears", "screaming mouth", "dark or scary background elements", "monsters or threatening objects in frame", "photorealistic distress"]
+    }
+  },
+  {
+    "id": "859e1cae-5ebf-4028-8a16-1eb9a4d920fb",
+    "persian": "خواب‌آلود",
+    "english": "sleepy",
+    "category": "feelings",
+    "image_brief": {
+      "subject": "the same recurring cartoon child character used across all feeling words: round head, short black hair, warm tan skin, big round brown eyes, small round nose, no other characters  -  here with eyes half-closed, small yawn, cheek resting near a pillow corner",
+      "composition": "close-up centered face, front-facing, slightly tilted",
+      "background": "plain soft dusty-blue background with a few small star and moon shapes",
+      "avoid": ["photorealistic face", "bed with text or branding"]
+    }
+  },
+  {
+    "id": "bdb028fd-6e85-4aec-8562-6819d79a5327",
+    "persian": "سه",
+    "english": "three",
+    "category": "numbers",
+    "image_brief": {
+      "render_mode": "count",
+      "count": 3,
+      "count_object_subject": "a single simple five-pointed cartoon star, solid golden-yellow color with a thick outline",
+      "numeral_text": "3",
+      "background_hex": "#FBC7AE",
+      "numeral_fill_hex": "#FFF6EE",
+      "numeral_outline_hex": "#7A3B2E",
+      "cultural_notes": "SDXL cannot reliably count objects or render numeral glyphs from a text prompt, so the count and the numeral are both produced deterministically in code (compose.py) from one generated star sticker, not asked of the model directly",
+      "avoid": []
+    }
+  },
+  {
+    "id": "e62a3b35-4a02-44e0-abd9-a0fdb143cf7a",
+    "persian": "بزرگ",
+    "english": "big",
+    "category": "opposites",
+    "image_brief": {
+      "subject": "one single round red balloon, so enormous it barely fits in the frame, its edges nearly touching all four sides",
+      "composition": "the balloon fills almost the entire frame, cropped slightly at the edges to emphasize its huge size, nothing else in the scene for scale",
+      "background": "plain soft yellow background",
+      "cultural_notes": "uses the same balloon object as the 'small' image (only the scale differs) so the pair reads as a matched contrasting set to a child; size is conveyed by how much of the frame the balloon fills, not by a side-by-side comparison, which SDXL cannot reliably keep two 'identical' objects consistent across",
+      "avoid": ["a second object for comparison", "text or labels", "balloon shown small or medium-sized"]
+    }
+  },
+  {
+    "id": "05f01c15-03a3-4269-9677-24f1b56d5184",
+    "persian": "کوچک",
+    "english": "small",
+    "category": "opposites",
+    "image_brief": {
+      "subject": "one single round red balloon, tiny, occupying only a small part of the frame",
+      "composition": "the balloon is small and sits in the middle of a large empty background, with generous empty space surrounding it on all sides to emphasize how little of the frame it fills",
+      "background": "plain soft yellow background (match 'big' for pair consistency)",
+      "cultural_notes": "uses the exact same balloon object as the 'big' image (only the scale differs) so the pair reads as a matched contrasting set to a child",
+      "avoid": ["a second object for comparison", "text or labels", "balloon shown large or filling the frame"]
+    }
+  },
+  {
+    "id": "50ef4a1b-5921-4e19-b040-b188b25f4872",
+    "persian": "بلند",
+    "english": "tall",
+    "category": "opposites",
+    "image_brief": {
+      "subject": "two simple cartoon tree shapes side by side, one tall and one short, with the tall tree visually emphasized",
+      "composition": "side-by-side height comparison, tall tree dominant",
+      "background": "plain soft green background",
+      "cultural_notes": "uses trees rather than human figures to keep the size-comparison concept clean and avoid extra facial/likeness complexity",
+      "avoid": ["human figures", "text or labels"]
+    }
+  },
+  {
+    "id": "05d81a07-0c27-4cd2-a3c7-3d1a59567928",
+    "persian": "داخل",
+    "english": "inside",
+    "category": "prepositions",
+    "image_brief": {
+      "subject": "a simple cartoon rabbit sitting inside an open cardboard box, only its head and ears visible above the rim",
+      "composition": "box centered in frame, rabbit clearly contained within it",
+      "background": "plain soft light-blue background",
+      "avoid": ["rabbit outside or on top of the box", "text or arrows"]
+    }
+  },
+  {
+    "id": "00ecdb3c-c822-45a5-94b0-0ac759b9c4cb",
+    "persian": "روی",
+    "english": "on",
+    "category": "prepositions",
+    "image_brief": {
+      "subject": "a simple cartoon cat sitting on top of a wooden table",
+      "composition": "cat clearly perched on the table surface, table beneath it",
+      "background": "plain soft light-blue background (match 'under' for pair consistency)",
+      "cultural_notes": "reuses the same cat-and-table motif as the 'under' image so the two images form a clear contrasting pair for a child",
+      "avoid": ["cat under or beside the table", "text or arrows"]
+    }
+  },
+  {
+    "id": "0654c372-087a-4123-8be4-03f9c43b7bd6",
+    "persian": "زیر",
+    "english": "under",
+    "category": "prepositions",
+    "image_brief": {
+      "subject": "a simple cartoon cat sitting underneath a wooden table, with the table clearly above the cat",
+      "composition": "clear vertical relationship: table spans the upper portion of the frame, cat sits below it",
+      "background": "plain soft light-blue background",
+      "cultural_notes": "the spatial relationship must be unambiguous even without text; pairs with the 'on' image using the same cat and table",
+      "avoid": ["cat beside or on top of the table", "cluttered scene", "text or arrows"]
+    }
+  },
+  {
+    "id": "6e8c3b32-d6be-4366-85df-83d28a1a7ee3",
+    "persian": "خوردن",
+    "english": "eat",
+    "category": "actions",
+    "image_brief": {
+      "subject": "the same recurring cartoon child character used across all feeling and action words: round head, short black hair, warm tan skin, big round brown eyes, small round nose  -  sitting, holding a spoon up to their mouth, a bowl of food in front of them",
+      "composition": "centered, three-quarter view, seated",
+      "background": "plain soft cream background",
+      "cultural_notes": "gender-neutral, stylized non-photorealistic child figure",
+      "avoid": ["photorealistic face", "branded food packaging", "text on the bowl"]
+    }
+  },
+  {
+    "id": "ba84f405-cd34-457c-8f80-c993a0735727",
+    "persian": "دویدن",
+    "english": "run",
+    "category": "actions",
+    "image_brief": {
+      "subject": "the same recurring cartoon child character used across all feeling and action words: round head, short black hair, warm tan skin, big round brown eyes, small round nose  -  mid-stride running, one leg forward and one back, arms swinging, small motion lines behind",
+      "composition": "centered, dynamic side profile",
+      "background": "plain soft sky-blue background",
+      "cultural_notes": "gender-neutral, stylized non-photorealistic child figure",
+      "avoid": ["photorealistic face", "identifiable features", "shoes with text or logos"]
+    }
+  }
+]

@@ -24,6 +24,7 @@ import adminPlansRouter from './routes/adminPlans'
 import adminAiSettingsRouter from './routes/adminAiSettings'
 import adminAudioRouter from './routes/adminAudio'
 import adminImagesRouter from './routes/adminImages'
+import adminWordImagesRouter from './routes/adminWordImages'
 import charactersRouter from './routes/characters'
 import friendsRouter  from './routes/friends'
 import leadsRouter    from './routes/leads'
@@ -86,6 +87,7 @@ app.use('/api/admin',     adminPlansRouter)
 app.use('/api/admin',     adminAiSettingsRouter)
 app.use('/api/admin',     adminAudioRouter)
 app.use('/api/admin',     adminImagesRouter)
+app.use('/api/admin',     adminWordImagesRouter)
 app.use('/api/characters', charactersRouter)
 app.use('/api/friends',   friendsRouter)
 app.use('/api/leads',     leadsRouter)
