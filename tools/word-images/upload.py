@@ -12,15 +12,24 @@ records what has already been sent, so re-running only sends new work.
 
 Config:
   ADMIN_API    base URL of the backend (default http://192.168.178.34:4000)
-  ADMIN_TOKEN  an admin JWT. Get one with:
-                 curl -s -X POST "$ADMIN_API/api/auth/login" \
-                   -H 'Content-Type: application/json' \
-                   -d '{"email":"...","password":"..."}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["token"])'
-  IMAGE_DIR    directory of <word_id>.png files (default ./batch)
+  ADMIN_TOKEN_FILE  path to a file containing an admin JWT and nothing else.
+                    Preferred over ADMIN_TOKEN so the token never lands in
+                    your shell history or process list. Mint one yourself:
+
+                      read -rs -p 'admin password: ' PW; echo
+                      curl -s -X POST "$ADMIN_API/api/auth/login" \
+                        -H 'Content-Type: application/json' \
+                        -d "{\"email\":\"you@example.com\",\"password\":\"$PW\"}" \
+                        | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"]["token"])' \
+                        > ~/.koodakbook-admin-token
+                      chmod 600 ~/.koodakbook-admin-token; unset PW
+
+  ADMIN_TOKEN       the JWT inline. Works, but prefer the file.
+  IMAGE_DIR         directory of <word_id>.png files (default ./batch)
 
 Usage:
-  ADMIN_TOKEN=... python3 upload.py            # upload everything new
-  ADMIN_TOKEN=... python3 upload.py --dry-run
+  ADMIN_TOKEN_FILE=~/.koodakbook-admin-token python3 upload.py
+  python3 upload.py --dry-run          # no token needed, lists what would go
 """
 import mimetypes
 import os
@@ -30,7 +39,22 @@ import urllib.request
 import uuid
 
 ADMIN_API = os.environ.get("ADMIN_API", "http://192.168.178.34:4000").rstrip("/")
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+
+
+def _read_token() -> str:
+    """Token from a file if one is named, else the inline env var.
+
+    The file route keeps the JWT out of shell history and out of `ps` output,
+    which matters because this token can publish to a children's app.
+    """
+    token_file = os.environ.get("ADMIN_TOKEN_FILE", "")
+    if token_file:
+        with open(os.path.expanduser(token_file), encoding="utf-8") as f:
+            return f.read().strip()
+    return os.environ.get("ADMIN_TOKEN", "").strip()
+
+
+ADMIN_TOKEN = _read_token()
 HERE = os.path.dirname(os.path.abspath(__file__))
 IMAGE_DIR = os.environ.get("IMAGE_DIR", os.path.join(HERE, "batch"))
 MARKER = os.path.join(IMAGE_DIR, ".uploaded")
