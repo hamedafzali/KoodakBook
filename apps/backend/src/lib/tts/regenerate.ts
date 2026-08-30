@@ -3,6 +3,7 @@ import path from 'path'
 import { query } from '../db'
 import { phonicsSyllables, mathAudioItems } from '@koodakbook/shared'
 import { synthesizeSection, getSectionConfigs, type AudioSection } from '../audio'
+import { alert } from '../alerts'
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
@@ -18,10 +19,11 @@ interface RegenState {
   done: number
   total: number
   errors: number
+  failedIds: string[]     // which items failed, so a partial run is visibly partial
   startedAt: number
   finishedAt: number
 }
-let state: RegenState = { running: false, scope: null, mode: 'all', voice: '', done: 0, total: 0, errors: 0, startedAt: 0, finishedAt: 0 }
+let state: RegenState = { running: false, scope: null, mode: 'all', voice: '', done: 0, total: 0, errors: 0, failedIds: [], startedAt: 0, finishedAt: 0 }
 
 export function getRegenStatus(): RegenState {
   return state
@@ -82,7 +84,7 @@ async function collect(scope: RegenScope, mode: RegenMode): Promise<Item[]> {
  *  Returns false if a run is already in progress. Poll getRegenStatus(). */
 export function startRegen(scope: RegenScope, mode: RegenMode = 'all'): boolean {
   if (state.running) return false
-  state = { running: true, scope, mode, voice: '', done: 0, total: 0, errors: 0, startedAt: Date.now(), finishedAt: 0 }
+  state = { running: true, scope, mode, voice: '', done: 0, total: 0, errors: 0, failedIds: [], startedAt: Date.now(), finishedAt: 0 }
 
   void (async () => {
     try {
@@ -108,17 +110,34 @@ export function startRegen(scope: RegenScope, mode: RegenMode = 'all'): boolean 
           if (it.entity && it.table) {
             const url = `/uploads/${it.dir}/${file}`
             await query(`update ${it.table} set audio_url = $1 where id = $2`, [url, it.id])
-            await query('delete from audio_assets where entity_type = $1 and entity_id = $2', [it.entity, it.id])
+            // trg_sync_audio_* (mig-019) always inserts/promotes this as source='native' —
+            // correct it here since the app, not the trigger, knows this is a TTS write (mig-052).
+            await query(
+              "update audio_assets set source = 'tts' where entity_type = $1 and entity_id = $2 and is_primary",
+              [it.entity, it.id]
+            )
           }
         } catch (err) {
           state.errors++
-          console.error('regen item failed', it.dir, it.id, (err as Error).message)
+          state.failedIds.push(it.id)
+          // Loud on purpose: a batch that drops items must never look identical to
+          // one that fully succeeded (5/10 pages silently failing this way is how
+          // half a story went unvoiced for weeks with only content-readiness able
+          // to notice, and only if someone happened to check it).
+          console.error(`[regen] FAILED ${it.section}/${it.dir} id=${it.id}: ${(err as Error).message}`)
         }
         state.done++
         await new Promise(r => setTimeout(r, 40))   // pace it — ease memory pressure on a small host
       }
+      if (state.errors > 0) {
+        const body = `scope=${scope} mode=${mode}: ${state.errors}/${state.total} items failed.\n` +
+          `ids: ${state.failedIds.slice(0, 20).join(', ')}${state.failedIds.length > 20 ? ', …' : ''}`
+        console.error(`[regen] BATCH PARTIALLY FAILED — ${body}`)
+        await alert({ check: 'incident', title: 'TTS regen batch had failures', body, severity: 'warn' })
+      }
     } catch (err) {
       console.error('regen job failed:', err)
+      await alert({ check: 'incident', title: 'TTS regen batch crashed', body: (err as Error).message, severity: 'crit' })
     } finally {
       state.running = false
       state.finishedAt = Date.now()

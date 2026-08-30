@@ -10,6 +10,7 @@ import {
   engineAvailable, engineKey, synthesizeWith, synthesizeSection,
   type AudioSection, type AudioEngine,
 } from '../lib/audio'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
@@ -86,7 +87,7 @@ router.get('/audio/voices', requireAdmin, requirePermission('ai.manage'), async 
 
 // One-off generation for a single word — the cheap path after adding a word:
 // no need to run (or pay for) a whole batch. Single cloud tier now.
-router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
+router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), asyncHandler(async (req, res) => {
   const w = await queryOne<{ id: string; text: string }>(
     'select id, coalesce(tts_text, persian) as text from words where id = $1', [req.params.id])
   if (!w) { res.status(404).json({ data: null, error: 'Word not found' }); return }
@@ -98,12 +99,17 @@ router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), asy
     fs.writeFileSync(path.join(dir, file), clip.buf)
     const url = `/uploads/words/${file}`
     await query('update words set audio_url = $1 where id = $2', [url, w.id])
-    await query("delete from audio_assets where entity_type = 'word' and entity_id = $1", [w.id])
+    // trg_sync_audio_words (mig-019) always inserts/promotes this as source='native' —
+    // correct it here since this endpoint is a TTS write, not a recording (mig-052).
+    await query(
+      "update audio_assets set source = 'tts' where entity_type = 'word' and entity_id = $1 and is_primary",
+      [w.id]
+    )
     res.json({ data: { url }, error: null })
   } catch (err) {
     res.status(502).json({ data: null, error: `ساخت صدا ممکن نشد: ${(err as Error).message}` })
   }
-})
+}))
 
 // Public voice sample for the pricing page: a story excerpt in the single
 // storyteller voice every account hears (audio quality is not a paid tier).
