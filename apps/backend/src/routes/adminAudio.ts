@@ -10,7 +10,6 @@ import {
   engineAvailable, engineKey, synthesizeWith, synthesizeSection,
   type AudioSection, type AudioEngine,
 } from '../lib/audio'
-import { asyncHandler } from '../lib/asyncHandler'
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
@@ -87,7 +86,7 @@ router.get('/audio/voices', requireAdmin, requirePermission('ai.manage'), async 
 
 // One-off generation for a single word — the cheap path after adding a word:
 // no need to run (or pay for) a whole batch. Single cloud tier now.
-router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), asyncHandler(async (req, res) => {
+router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
   const w = await queryOne<{ id: string; text: string }>(
     'select id, coalesce(tts_text, persian) as text from words where id = $1', [req.params.id])
   if (!w) { res.status(404).json({ data: null, error: 'Word not found' }); return }
@@ -109,7 +108,7 @@ router.post('/audio/word/:id', requireAdmin, requirePermission('ai.manage'), asy
   } catch (err) {
     res.status(502).json({ data: null, error: `ساخت صدا ممکن نشد: ${(err as Error).message}` })
   }
-}))
+})
 
 // Public voice sample for the pricing page: a story excerpt in the single
 // storyteller voice every account hears (audio quality is not a paid tier).
