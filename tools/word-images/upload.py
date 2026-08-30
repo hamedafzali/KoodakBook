@@ -33,12 +33,19 @@ Usage:
 """
 import mimetypes
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
 import uuid
 
 ADMIN_API = os.environ.get("ADMIN_API", "http://192.168.178.37:4000").rstrip("/")
+
+# A malformed <word_id>.png filename (e.g. a macOS AppleDouble "._foo.png"
+# sidecar, whose "word_id" comes out as "_foo") isn't a valid uuid and used to
+# crash the backend on the resulting Postgres cast error instead of getting a
+# clean 400 — skip these client-side rather than relying on the server.
+UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.IGNORECASE)
 
 
 def _read_token() -> str:
@@ -100,11 +107,18 @@ def main():
             done = {line.strip() for line in f if line.strip()}
 
     # <word_id>.png only — the .sticker.png intermediates that count-composited
-    # words leave behind are inputs, not deliverables.
+    # words leave behind are inputs, not deliverables. AppleDouble sidecars
+    # ("._foo.png", created by macOS when copying to non-HFS volumes/network
+    # shares) and any other non-uuid-named file are dropped here rather than
+    # POSTed and left for the server to reject.
     files = sorted(
         f for f in os.listdir(IMAGE_DIR)
-        if f.endswith(".png") and not f.endswith(".sticker.png")
+        if f.endswith(".png") and not f.endswith(".sticker.png") and not f.startswith(".")
     )
+    skipped = [f for f in files if not UUID_RE.match(f[:-4])]
+    if skipped:
+        print(f"skipping {len(skipped)} file(s) with a non-uuid name: {', '.join(skipped)}", file=sys.stderr)
+    files = [f for f in files if f not in skipped]
     todo = [f for f in files if f[:-4] not in done]
     print(f"{len(files)} images, {len(done)} already uploaded, {len(todo)} to send -> {ADMIN_API}")
 
