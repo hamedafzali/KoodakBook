@@ -17,6 +17,34 @@ function pickRandom<T>(arr: T[], n: number): T[] {
   return [...arr].sort(() => Math.random() - 0.5).slice(0, n)
 }
 
+// Frustration loop (mig-051): the backend attaches `easing`/`needsReteach` to
+// each due word — thresholds live server-side (frustration.ts) so this file
+// never has to know the numbers, only what to do about them.
+//
+// `easing`: prefer listen_tap over match_image. Of the two review modes,
+// match_image's answer options are TEXT-ONLY (QuizCard.tsx match_image
+// branch renders OptionButton with no image/emoji) — it silently assumes
+// Persian literacy. listen_tap's options carry an image/emoji AND a label,
+// which is the more supported mode for a pre-reader. Distractors also prefer
+// a different category than the target when the pool allows it, since a
+// same-category near-neighbor (two foods, two animals) is the harder
+// discrimination and this is exactly the moment to avoid it.
+function easedQuestion(word: Word, pool: Word[]): QuizQuestion {
+  const others = pool.filter(w => w.id !== word.id)
+  const differentCategory = others.filter(w => w.category !== word.category)
+  const distractorPool = differentCategory.length >= 3 ? differentCategory : others
+  return { mode: 'listen_tap', correctWord: word, distractorWords: pickRandom(distractorPool, 3) }
+}
+
+// Stage 2 (needsReteach): a no-scoring look-and-listen beat before the quiz
+// attempt, reusing QuizCard's existing flashcard mode verbatim — the same
+// component/props lessons use to introduce a word for the first time, not a
+// new remediation screen that would look different from how words are
+// normally taught.
+function reteachQuestion(word: Word): QuizQuestion {
+  return { mode: 'flashcard', correctWord: word }
+}
+
 export default function ReviewPage() {
   const router = useRouter()
   const [childId, setChildId] = useState('')
@@ -26,6 +54,16 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true)
   const [done, setDone] = useState(false)
   const [correct, setCorrect] = useState(0)
+  // Stage 3 padding (mig-051): quick, unscored wins appended when a word is
+  // still missed right after its re-teach beat, so the session doesn't end on
+  // a loss streak. Kept separate from `questions` (which is a pure function of
+  // items/pool) rather than mutated into it.
+  const [extraQuestions, setExtraQuestions] = useState<QuizQuestion[]>([])
+  // Which words have already had their re-teach flashcard shown this session —
+  // purely a same-session sequencing fact, not something derived from the
+  // threshold numbers (which this file never needs to know).
+  const reteachShownRef = useRef<Set<string>>(new Set())
+  const sessionWinsRef = useRef<Word[]>([])
   const firedRef = useRef(false)
 
   useEffect(() => {
@@ -51,15 +89,30 @@ export default function ReviewPage() {
   const questions = useMemo<QuizQuestion[]>(() => {
     if (items.length === 0) return []
     const modes: QuizMode[] = ['match_image', 'listen_tap']
-    return items.map(it => {
-      const distractors = pickRandom(pool.filter(w => w.id !== it.word.id), 3)
-      return {
-        mode: modes[Math.floor(Math.random() * modes.length)],
-        correctWord: it.word,
-        distractorWords: distractors,
-      }
-    })
+    const out: QuizQuestion[] = []
+    for (const it of items) {
+      // needsReteach implies easing too (both key off the same rising miss
+      // count) — the quiz attempt right after a re-teach stays eased.
+      if (it.needsReteach) out.push(reteachQuestion(it.word))
+      out.push(it.easing
+        ? easedQuestion(it.word, pool)
+        : {
+            mode: modes[Math.floor(Math.random() * modes.length)],
+            correctWord: it.word,
+            distractorWords: pickRandom(pool.filter(w => w.id !== it.word.id), 3),
+          })
+    }
+    return out
   }, [items, pool])
+
+  const allQuestions = useMemo(() => [...questions, ...extraQuestions], [questions, extraQuestions])
+
+  // Derived from idx/allQuestions rather than checked imperatively inside
+  // advance() — extraQuestions can land in the same tick as the advance that
+  // needed it, and an imperative check risks reading the pre-append length.
+  useEffect(() => {
+    if (allQuestions.length > 0 && idx >= allQuestions.length) setDone(true)
+  }, [idx, allQuestions.length])
 
   useEffect(() => {
     if (!done || firedRef.current) return
@@ -74,13 +127,15 @@ export default function ReviewPage() {
   }
 
   function advance() {
-    if (idx >= questions.length - 1) setDone(true)
-    else setIdx(i => i + 1)
+    setIdx(i => i + 1)
   }
 
   if (loading) return <LoadingScreen message="در حال آماده‌سازی مرور..." />
 
-  if (items.length === 0 || done) {
+  // `done` is set reactively one render after idx crosses allQuestions.length
+  // (see the useEffect above) — guard the in-between render rather than index
+  // into allQuestions with an out-of-range idx.
+  if (items.length === 0 || done || idx >= allQuestions.length) {
     const allCaughtUp = items.length === 0
     return (
       <div className="min-h-screen flex flex-col items-center justify-center child-bg p-6 gap-5 text-center">
@@ -91,7 +146,7 @@ export default function ReviewPage() {
           {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}
         </h1>
         <p className="text-gray-500 persian-text">
-          {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${correct} از ${questions.length} درست`}
+          {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${correct} از ${allQuestions.length} درست`}
         </p>
         <motion.button
           onClick={() => router.push('/child/home')}
@@ -104,8 +159,8 @@ export default function ReviewPage() {
     )
   }
 
-  const question = questions[idx]
-  const progress = (idx / Math.max(questions.length, 1)) * 100
+  const question = allQuestions[idx]
+  const progress = (idx / Math.max(allQuestions.length, 1)) * 100
 
   return (
     <div className="min-h-screen child-bg flex flex-col">
@@ -121,7 +176,7 @@ export default function ReviewPage() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
             <h1 className="font-bold text-gray-800 text-sm">مرور کلمه‌ها 🔄</h1>
-            <span className="text-sm font-bold text-amber-600">{idx + 1}/{questions.length}</span>
+            <span className="text-sm font-bold text-amber-600">{idx + 1}/{allQuestions.length}</span>
           </div>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <motion.div className="h-full bg-brand-gradient rounded-full" animate={{ width: `${progress}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
@@ -135,9 +190,37 @@ export default function ReviewPage() {
             <motion.div key={idx} initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
               <QuizCard
                 question={question}
-                onCorrect={() => { if (question.correctWord) report(question.correctWord.id, 'correct'); setCorrect(c => c + 1); advance() }}
-                onIncorrect={() => { if (question.correctWord) report(question.correctWord.id, 'incorrect'); advance() }}
-                onFlashcardNext={() => { if (question.correctWord) report(question.correctWord.id, 'correct'); advance() }}
+                onCorrect={() => {
+                  if (question.correctWord) {
+                    report(question.correctWord.id, 'correct')
+                    sessionWinsRef.current.push(question.correctWord)
+                  }
+                  setCorrect(c => c + 1)
+                  advance()
+                }}
+                onIncorrect={() => {
+                  const word = question.correctWord
+                  if (word) {
+                    report(word.id, 'incorrect')
+                    // Stage 3: still wrong right after its re-teach beat — pad the
+                    // rest of THIS session with a couple of already-correct wins
+                    // from earlier, rather than fetching mastered words fresh, so
+                    // the session doesn't end on a loss streak (bench happens
+                    // server-side via missIntervalDays; this is purely cosmetic).
+                    if (reteachShownRef.current.has(word.id)) {
+                      const wins = pickRandom(sessionWinsRef.current, 2)
+                      if (wins.length > 0) setExtraQuestions(q => [...q, ...wins.map(reteachQuestion)])
+                    }
+                  }
+                  advance()
+                }}
+                onFlashcardNext={() => {
+                  // No-scoring exposure (both the stage-2 re-teach beat and the
+                  // stage-3 win-padding flashcards) — must NOT report 'correct',
+                  // or a re-teach would silently inflate the Leitner box.
+                  if (question.correctWord) reteachShownRef.current.add(question.correctWord.id)
+                  advance()
+                }}
               />
             </motion.div>
           </AnimatePresence>

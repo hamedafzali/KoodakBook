@@ -255,6 +255,13 @@ export interface ReviewItem {
   word_id: string
   box: number
   due_at: string
+  /** Miss streak on this word (mig-051). Frontend shouldn't need to threshold
+   *  this itself — use `easing`/`needsReteach` instead. */
+  consecutive_misses: number
+  /** Force the easier mode + more distinct distractors. */
+  easing: boolean
+  /** Show a no-scoring re-teach beat before quizzing this word again. */
+  needsReteach: boolean
   word: Word
 }
 

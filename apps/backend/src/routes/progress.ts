@@ -6,12 +6,31 @@ import { requireChildOwner } from '../middleware/childOwner'
 import { checkAndAwardBadges } from './badges'
 import { promoteStrands } from '../lib/strands'
 import { planWordProgress, type WordProgressPrev } from '../lib/wordProgress'
+import {
+  frustrationFlags, DEFAULT_FRUSTRATION_CONFIG, type FrustrationConfig,
+} from '../lib/frustration'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
+// Runtime-configurable, same pattern as strands.ts's gateConfig() — read from
+// env so a pilot can tune the frustration thresholds without a release. Every
+// default here is an unvalidated assumption (see frustration.ts).
+function frustrationConfig(): FrustrationConfig {
+  const num = (v: string | undefined, d: number) => {
+    const n = v === undefined ? NaN : Number(v)
+    return Number.isFinite(n) ? n : d
+  }
+  return {
+    easeThreshold: num(process.env.FRUSTRATION_EASE_THRESHOLD, DEFAULT_FRUSTRATION_CONFIG.easeThreshold),
+    reteachThreshold: num(process.env.FRUSTRATION_RETEACH_THRESHOLD, DEFAULT_FRUSTRATION_CONFIG.reteachThreshold),
+    benchIntervalDays: num(process.env.FRUSTRATION_BENCH_INTERVAL_DAYS, DEFAULT_FRUSTRATION_CONFIG.benchIntervalDays),
+  }
+}
+
 // ── Sessions ──────────────────────────────────────────────
 
-router.post('/sessions/start', requireAuth, requireChildOwner, async (req, res) => {
+router.post('/sessions/start', requireAuth, requireChildOwner, asyncHandler(async (req, res) => {
   const { child_id } = req.body
   if (!child_id) { res.status(400).json({ data: null, error: 'child_id required' }); return }
 
@@ -20,12 +39,12 @@ router.post('/sessions/start', requireAuth, requireChildOwner, async (req, res) 
     [child_id]
   )
   res.status(201).json({ data: session, error: null })
-})
+}))
 
 // no requireAuth — session ID is an unguessable UUID; sendBeacon can't send headers.
 // Idempotent: only the first end call records duration, so repeated beacons
 // (visibility + unmount + beforeunload all fire) cannot inflate session time.
-router.post('/sessions/:id/end', async (req, res) => {
+router.post('/sessions/:id/end', asyncHandler(async (req, res) => {
   const session = await queryOne<{ started_at: string; ended_at: string | null }>(
     'select started_at, ended_at from child_sessions where id = $1',
     [req.params.id]
@@ -42,7 +61,7 @@ router.post('/sessions/:id/end', async (req, res) => {
     [duration_sec, req.params.id]
   )
   res.json({ data: updated ?? { ok: true }, error: null })
-})
+}))
 
 // ── Word progress ─────────────────────────────────────────
 
@@ -75,14 +94,14 @@ router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
   const row = await withTransaction(async (c) => {
     const prev =
       (await c.query<WordProgressPrev>(
-        `select box, status, mastered_at, box_productive, mastery
+        `select box, status, mastered_at, box_productive, mastery, consecutive_misses
            from child_word_progress
           where child_id = $1 and word_id = $2
           for update`,
         [child_id, word_id]
       )).rows[0] ?? null
 
-    const plan = planWordProgress(prev, { track: trackVal, correct, status })
+    const plan = planWordProgress(prev, { track: trackVal, correct, status }, frustrationConfig())
 
     if (!prev) {
       // Establish the row with column defaults (box 1, due_at null, status
@@ -101,18 +120,19 @@ router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
       const r = plan.receptive
       return (await c.query(
         `update child_word_progress set
-           replay_count     = replay_count + 1,
-           last_reviewed_at = now(),
-           box           = $3,
-           due_at        = now() + make_interval(days => $4),
-           status        = $5,
-           mastered_at   = case when $6 and mastered_at is null then now() else mastered_at end,
-           box_receptive = $3,
-           due_receptive = now() + make_interval(days => $4),
-           mastery       = $7
+           replay_count       = replay_count + 1,
+           last_reviewed_at   = now(),
+           box                = $3,
+           due_at             = now() + make_interval(days => $4),
+           status             = $5,
+           mastered_at        = case when $6 and mastered_at is null then now() else mastered_at end,
+           box_receptive      = $3,
+           due_receptive      = now() + make_interval(days => $4),
+           mastery            = $7,
+           consecutive_misses = $8
          where child_id = $1 and word_id = $2
          returning *`,
-        [child_id, word_id, r.box, r.intervalDays, r.status, r.stampMasteredAt, plan.mastery]
+        [child_id, word_id, r.box, r.intervalDays, r.status, r.stampMasteredAt, plan.mastery, r.consecutiveMisses]
       )).rows[0]
     }
 
@@ -137,9 +157,9 @@ router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
 
 // ── Words due for spaced-repetition review ─────────────────
 router.get('/:child_id/review', requireAuth, requireChildOwner, async (req, res) => {
-  const rows = await query(
+  const rows = await query<{ word_id: string; box: number; due_at: string; consecutive_misses: number; word: unknown }>(
     // word.audio_url is resolved from the primary audio_asset (native > tts, mig-018).
-    `select cwp.word_id, cwp.box, cwp.due_at,
+    `select cwp.word_id, cwp.box, cwp.due_at, cwp.consecutive_misses,
        to_jsonb(w) || jsonb_build_object('audio_url', coalesce(primary_audio('word', w.id), w.audio_url)) as word
      from child_word_progress cwp
      join words w on w.id = cwp.word_id
@@ -151,7 +171,13 @@ router.get('/:child_id/review', requireAuth, requireChildOwner, async (req, res)
      limit 20`,
     [req.params.child_id]
   )
-  res.json({ data: rows, error: null })
+  // Frustration-loop presentation flags (mig-051) — computed here, once, from
+  // the same config the write path uses, so the frontend never has to know
+  // the threshold VALUES, only what to do about them. Keeps the thresholds
+  // single-sourced instead of duplicated as frontend env vars.
+  const config = frustrationConfig()
+  const data = rows.map(r => ({ ...r, ...frustrationFlags(r.consecutive_misses, config) }))
+  res.json({ data, error: null })
 })
 
 // ── Lesson progress ───────────────────────────────────────

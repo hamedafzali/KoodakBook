@@ -1,4 +1,5 @@
 import { leitnerNext } from './leitner'
+import { nextConsecutiveMisses, missIntervalDays, DEFAULT_FRUSTRATION_CONFIG, type FrustrationConfig } from './frustration'
 
 /* Word-progress write routing (dual-track SR). Pure decision layer: given the
  * word's previous state and one interaction, it returns exactly which columns to
@@ -15,7 +16,12 @@ import { leitnerNext } from './leitner'
  * BUG-A guard: `plan.receptive === null` on every productive interaction — a
  * child failing to PRODUCE a word must not reset its receptive review schedule.
  * The unit tests assert exactly this, so a regression fails `npm test` rather
- * than silently mis-scheduling reviews in production. */
+ * than silently mis-scheduling reviews in production.
+ *
+ * consecutive_misses (mig-051, receptive only) rides along on the receptive
+ * plan: it drives the frustration-loop presentation flags the review endpoint
+ * attaches to each due word (see frustration.ts), and can push a still-missed
+ * word's due date out further than the standard box-1 interval. */
 
 export type Track = 'receptive' | 'productive'
 export type WordStatus = 'introduced' | 'practiced' | 'mastered'
@@ -28,6 +34,8 @@ export interface WordProgressPrev {
   mastered_at: string | null
   box_productive: number | null
   mastery: Mastery
+  /** Optional so existing callers/tests need not know about it; missing = 0. */
+  consecutive_misses?: number
 }
 
 export interface WordProgressPlan {
@@ -39,6 +47,8 @@ export interface WordProgressPlan {
     status: WordStatus
     /** Stamp mastered_at = now (only when first reaching mastered). */
     stampMasteredAt: boolean
+    /** mig-051: miss streak on this word, receptive track only. */
+    consecutiveMisses: number
   } | null
   /** Productive schedule columns to write. NULL on a receptive interaction. */
   productive: {
@@ -56,6 +66,7 @@ function statusToMastery(status: WordStatus): Mastery {
 export function planWordProgress(
   prev: WordProgressPrev | null,
   input: { track: Track; correct: boolean; status: WordStatus },
+  frustrationConfig: FrustrationConfig = DEFAULT_FRUSTRATION_CONFIG,
 ): WordProgressPlan {
   const { track, correct, status } = input
 
@@ -73,8 +84,18 @@ export function planWordProgress(
   // endpoint reads; box_receptive/due_receptive mirror it in the route.
   if (!prev) {
     // First-ever receptive exposure: enters box 1, due tomorrow, status as declared.
+    // A miss straight out of introduction is unusual but not impossible (e.g. a
+    // 'practiced'/'mastered' status can arrive from a lesson replay); consecutive
+    // misses still starts counting from here rather than assuming 0 unconditionally.
+    const consecutiveMisses = nextConsecutiveMisses(0, correct)
     return {
-      receptive: { box: 1, intervalDays: 1, status, stampMasteredAt: status === 'mastered' },
+      receptive: {
+        box: 1,
+        intervalDays: missIntervalDays(consecutiveMisses, 1, frustrationConfig),
+        status,
+        stampMasteredAt: status === 'mastered',
+        consecutiveMisses,
+      },
       productive: null,
       mastery: statusToMastery(status),
     }
@@ -83,12 +104,14 @@ export function planWordProgress(
   const reachedMastered = correct && box >= 5
   const nextStatus: WordStatus =
     reachedMastered ? 'mastered' : prev.status === 'mastered' ? 'mastered' : 'practiced'
+  const consecutiveMisses = nextConsecutiveMisses(prev.consecutive_misses ?? 0, correct)
   return {
     receptive: {
       box,
-      intervalDays,
+      intervalDays: missIntervalDays(consecutiveMisses, intervalDays, frustrationConfig),
       status: nextStatus,
       stampMasteredAt: reachedMastered && prev.mastered_at === null,
+      consecutiveMisses,
     },
     productive: null,
     mastery: statusToMastery(nextStatus),

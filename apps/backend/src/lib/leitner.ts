@@ -1,13 +1,12 @@
 /* Leitner box → next-review schedule (the SR ladder). Single source of truth
  * for the box transition and the day-interval per destination box.
  *
- * NOTE (verification honesty): the live scheduler in routes/progress.ts runs
- * this transition INSIDE an atomic SQL upsert, not by calling this function —
- * so these are the same rules expressed twice. This module exists to make the
- * ladder unit-testable and to be the documented spec the SQL must match; keep
- * the two in lock-step until the route is refactored to compute the schedule
- * here (see BUG notes in the SR review). A DB-level integration test is the
- * only thing that verifies the SQL itself.
+ * routes/progress.ts calls this (via planWordProgress in wordProgress.ts) and
+ * writes the returned box/intervalDays verbatim in its SQL upsert — the SQL
+ * itself contains no transition logic, so there is exactly one implementation
+ * of the ladder. (An earlier version of this comment warned that the route
+ * re-derived the transition inline; that duplication was already gone by the
+ * time this was checked — planWordProgress is the actual single source.)
  *
  * Intervals per DESTINATION box (project.md §11.1): 1,2,4,7,16 days. */
 

@@ -22,14 +22,14 @@ const prev = (o: Partial<WordProgressPrev> = {}): WordProgressPrev => ({
 
 test('first-ever receptive exposure enters box 1, due tomorrow, status as declared', () => {
   const p = planWordProgress(null, { track: 'receptive', correct: true, status: 'introduced' })
-  assert.deepEqual(p.receptive, { box: 1, intervalDays: 1, status: 'introduced', stampMasteredAt: false })
+  assert.deepEqual(p.receptive, { box: 1, intervalDays: 1, status: 'introduced', stampMasteredAt: false, consecutiveMisses: 0 })
   assert.equal(p.productive, null)
   assert.equal(p.mastery, 'introduced')
 })
 
 test('receptive correct climbs one box and lengthens the interval (2→3 = 4 days)', () => {
   const p = planWordProgress(prev({ box: 2 }), { track: 'receptive', correct: true, status: 'practiced' })
-  assert.deepEqual(p.receptive, { box: 3, intervalDays: 4, status: 'practiced', stampMasteredAt: false })
+  assert.deepEqual(p.receptive, { box: 3, intervalDays: 4, status: 'practiced', stampMasteredAt: false, consecutiveMisses: 0 })
 })
 
 test('receptive miss drops to box 1 / 1 day (floor) without unsetting a mastered status', () => {
@@ -40,6 +40,54 @@ test('receptive miss drops to box 1 / 1 day (floor) without unsetting a mastered
   assert.equal(p.receptive?.intervalDays, 1)
   assert.equal(p.receptive?.status, 'mastered', 'status is monotonic — a miss does not un-master')
   assert.equal(p.receptive?.stampMasteredAt, false)
+  assert.equal(p.receptive?.consecutiveMisses, 1)
+})
+
+// ── consecutive_misses / frustration-loop bench interval (mig-051) ──────────
+// Thresholds used here are the coded DEFAULTs (2/4/3) — unvalidated guesses,
+// see frustration.ts. These tests lock the WIRING (counter reset/increment,
+// bench override only kicking in past reteachThreshold), not the numbers.
+
+test('consecutive_misses increments on a miss and resets to 0 on a correct rep', () => {
+  const missed = planWordProgress(prev({ box: 2, consecutive_misses: 1 }), {
+    track: 'receptive', correct: false, status: 'practiced',
+  })
+  assert.equal(missed.receptive?.consecutiveMisses, 2)
+
+  const recovered = planWordProgress(prev({ box: 1, consecutive_misses: 3 }), {
+    track: 'receptive', correct: true, status: 'practiced',
+  })
+  assert.equal(recovered.receptive?.consecutiveMisses, 0)
+})
+
+test('a miss at exactly the reteach threshold still gets the standard box-1 interval, not the bench interval', () => {
+  // 4th consecutive miss (default reteachThreshold=4): the review endpoint's
+  // needsReteach flag flips true on THIS response, but the due date should
+  // stay soon (1 day) so the child sees the re-teach beat promptly.
+  const p = planWordProgress(prev({ box: 3, consecutive_misses: 3 }), {
+    track: 'receptive', correct: false, status: 'practiced',
+  })
+  assert.equal(p.receptive?.consecutiveMisses, 4)
+  assert.equal(p.receptive?.intervalDays, 1, 'still the normal miss interval, not the bench interval')
+})
+
+test('a miss immediately after the re-teach (past the reteach threshold) gets benched with the longer interval', () => {
+  // 5th consecutive miss: this is the "still wrong right after the re-teach"
+  // case — the word should be benched at benchIntervalDays (default 3), not
+  // the standard 1-day miss interval.
+  const p = planWordProgress(prev({ box: 3, consecutive_misses: 4 }), {
+    track: 'receptive', correct: false, status: 'practiced',
+  })
+  assert.equal(p.receptive?.consecutiveMisses, 5)
+  assert.equal(p.receptive?.intervalDays, 3, 'benched past the reteach threshold')
+})
+
+test('bench interval only applies to the receptive track — productive misses are unaffected', () => {
+  const p = planWordProgress(prev({ box_productive: 2, consecutive_misses: 5 }), {
+    track: 'productive', correct: false, status: 'practiced',
+  })
+  assert.equal(p.receptive, null)
+  assert.deepEqual(p.productive, { box: 1, intervalDays: 1 })
 })
 
 test('receptive reaching box 5 correctly masters and stamps mastered_at once', () => {
