@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { clientIp } from '../lib/clientIp'
 import { requireAdmin, requirePermission } from '../middleware/admin'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
@@ -58,11 +59,11 @@ router.get('/admin/list', requireAdmin, requirePermission('users.read'), async (
   res.json({ data: rows, error: null })
 })
 
-router.patch('/admin/:id', requireAdmin, requirePermission('users.read'), async (req, res) => {
+router.patch('/admin/:id', requireAdmin, requirePermission('users.read'), asyncHandler(async (req, res) => {
   const status = req.body?.status
   if (!['new', 'contacted', 'closed'].includes(status)) { res.status(400).json({ data: null, error: 'Invalid status' }); return }
   const row = await queryOne('update leads set status = $1 where id = $2 returning *', [status, req.params.id])
   res.json({ data: row, error: null })
-})
+}))
 
 export default router

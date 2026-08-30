@@ -29,6 +29,7 @@ import charactersRouter from './routes/characters'
 import friendsRouter  from './routes/friends'
 import leadsRouter    from './routes/leads'
 import aiRouter       from './routes/ai'
+import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -92,6 +93,9 @@ app.use('/api/characters', charactersRouter)
 app.use('/api/friends',   friendsRouter)
 app.use('/api/leads',     leadsRouter)
 app.use('/api/ai',        aiRouter)
+
+// Must be registered after every route — see errorHandler.ts.
+app.use(errorHandler)
 
 // Wrap Express in an HTTP server so Socket.IO can share the port. Native app
 // clients send no Origin, so allow any (the JWT handshake is the real gate).

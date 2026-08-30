@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { query, queryOne } from '../lib/db'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@koodakbook.com'
@@ -66,7 +67,7 @@ router.post('/admins', requireAdmin, requirePermission('admin.manage'), async (r
 
 // ── Set an admin's roles ─────────────────────────────────
 const rolesSchema = z.object({ roles: z.array(z.string()) })
-router.patch('/admins/:id/roles', requireAdmin, requirePermission('admin.manage'), async (req, res) => {
+router.patch('/admins/:id/roles', requireAdmin, requirePermission('admin.manage'), asyncHandler(async (req, res) => {
   const parsed = rolesSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
   const u = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
@@ -75,17 +76,17 @@ router.patch('/admins/:id/roles', requireAdmin, requirePermission('admin.manage'
   await setRoles(String(req.params.id), parsed.data.roles)
   await logAudit(res.locals.adminEmail, 'admin.set_roles', 'user', String(req.params.id), { roles: parsed.data.roles })
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Revoke admin access (remove all roles; keep the account) ──
-router.delete('/admins/:id', requireAdmin, requirePermission('admin.manage'), async (req, res) => {
+router.delete('/admins/:id', requireAdmin, requirePermission('admin.manage'), asyncHandler(async (req, res) => {
   const u = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
   if (!u) { res.status(404).json({ data: null, error: 'User not found' }); return }
   if (u.email === ADMIN_EMAIL) { res.status(400).json({ data: null, error: 'Cannot revoke the owner account' }); return }
   await query('delete from user_roles where user_id = $1', [req.params.id])
   await logAudit(res.locals.adminEmail, 'admin.revoke', 'user', String(req.params.id), { email: u.email })
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 async function setRoles(userId: string, roleKeys: string[]) {
   await query('delete from user_roles where user_id = $1', [userId])

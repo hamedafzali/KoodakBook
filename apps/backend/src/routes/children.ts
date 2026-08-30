@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
@@ -31,7 +32,7 @@ router.get('/', requireAuth, async (_req, res) => {
   res.json({ data: rows, error: null })
 })
 
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const userId = res.locals.userId
   const parsed = createChildSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
@@ -66,9 +67,9 @@ router.post('/', requireAuth, async (req, res) => {
     if (isUniqueViolation(err)) { res.status(409).json({ data: null, error: 'این نام کاربری قبلاً گرفته شده — یکی دیگر انتخاب کنید' }); return }
     throw err
   }
-})
+}))
 
-router.patch('/:id', requireAuth, async (req, res) => {
+router.patch('/:id', requireAuth, asyncHandler(async (req, res) => {
   const userId = res.locals.userId
   const parsed = createChildSchema.partial().safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
@@ -93,6 +94,6 @@ router.patch('/:id', requireAuth, async (req, res) => {
     if (isUniqueViolation(err)) { res.status(409).json({ data: null, error: 'این نام کاربری قبلاً گرفته شده — یکی دیگر انتخاب کنید' }); return }
     throw err
   }
-})
+}))
 
 export default router

@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { query, queryOne } from '../lib/db'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
@@ -17,15 +18,15 @@ const withAudio = (alias: string, entity: 'word' | 'letter' | 'story' | 'story_p
 
 type Obj = { obj: Record<string, unknown> }
 
-router.get('/lessons', async (req, res) => {
+router.get('/lessons', asyncHandler(async (req, res) => {
   const { stage } = req.query
   const rows = stage
     ? await query('select * from lessons where stage = $1 order by order_index', [stage])
     : await query('select * from lessons order by stage, order_index')
   res.json({ data: rows, error: null })
-})
+}))
 
-router.get('/lessons/:id', async (req, res) => {
+router.get('/lessons/:id', asyncHandler(async (req, res) => {
   const lesson = await queryOne('select * from lessons where id = $1', [req.params.id])
   if (!lesson) { res.status(404).json({ data: null, error: 'Lesson not found' }); return }
 
@@ -41,9 +42,9 @@ router.get('/lessons/:id', async (req, res) => {
     [req.params.id]
   )
   res.json({ data: { ...lesson, items }, error: null })
-})
+}))
 
-router.get('/stories', async (req, res) => {
+router.get('/stories', asyncHandler(async (req, res) => {
   const { stage } = req.query
   // The shared catalogue excludes AI-personalized stories — those surface only
   // for the child they were generated for (see /api/ai/stories/:child_id).
@@ -51,9 +52,9 @@ router.get('/stories', async (req, res) => {
     ? await query<Obj>(`select ${withAudio('s', 'story')} as obj from stories s where s.stage = $1 and not s.ai_generated order by s.created_at`, [stage])
     : await query<Obj>(`select ${withAudio('s', 'story')} as obj from stories s where not s.ai_generated order by s.stage, s.created_at`)
   res.json({ data: rows.map(r => r.obj), error: null })
-})
+}))
 
-router.get('/stories/:id', async (req, res) => {
+router.get('/stories/:id', asyncHandler(async (req, res) => {
   const story = await queryOne<Obj>(`select ${withAudio('s', 'story')} as obj from stories s where s.id = $1`, [req.params.id])
   if (!story) { res.status(404).json({ data: null, error: 'Story not found' }); return }
 
@@ -84,9 +85,9 @@ router.get('/stories/:id', async (req, res) => {
     return o
   }
   res.json({ data: { ...story.obj, pages: pages.map(r => withTx(r.obj)) }, error: null })
-})
+}))
 
-router.get('/words', async (req, res) => {
+router.get('/words', asyncHandler(async (req, res) => {
   const { category, stage } = req.query
   let sql = `select ${withAudio('w', 'word')} as obj from words w`
   const params: unknown[] = []
@@ -97,15 +98,15 @@ router.get('/words', async (req, res) => {
   sql += ' order by w.category, w.persian'
   const rows = await query<Obj>(sql, params)
   res.json({ data: rows.map(r => r.obj), error: null })
-})
+}))
 
-router.get('/words/:id', async (req, res) => {
+router.get('/words/:id', asyncHandler(async (req, res) => {
   const word = await queryOne<Obj>(`select ${withAudio('w', 'word')} as obj from words w where w.id = $1`, [req.params.id])
   if (!word) { res.status(404).json({ data: null, error: 'Word not found' }); return }
   res.json({ data: word.obj, error: null })
-})
+}))
 
-router.get('/letters', async (req, res) => {
+router.get('/letters', asyncHandler(async (req, res) => {
   const rows = await query<Obj>(
     `select to_jsonb(l) || jsonb_build_object(
          'audio_url', coalesce(primary_audio('letter', l.id), l.audio_url),
@@ -116,6 +117,6 @@ router.get('/letters', async (req, res) => {
      order by l.group, l.order_in_group`
   )
   res.json({ data: rows.map(r => r.obj), error: null })
-})
+}))
 
 export default router

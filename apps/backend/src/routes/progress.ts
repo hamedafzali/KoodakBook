@@ -156,7 +156,7 @@ router.post('/word', requireAuth, requireChildOwner, async (req, res) => {
 })
 
 // ── Words due for spaced-repetition review ─────────────────
-router.get('/:child_id/review', requireAuth, requireChildOwner, async (req, res) => {
+router.get('/:child_id/review', requireAuth, requireChildOwner, asyncHandler(async (req, res) => {
   const rows = await query<{ word_id: string; box: number; due_at: string; consecutive_misses: number; word: unknown }>(
     // word.audio_url is resolved from the primary audio_asset (native > tts, mig-018).
     `select cwp.word_id, cwp.box, cwp.due_at, cwp.consecutive_misses,
@@ -178,7 +178,7 @@ router.get('/:child_id/review', requireAuth, requireChildOwner, async (req, res)
   const config = frustrationConfig()
   const data = rows.map(r => ({ ...r, ...frustrationFlags(r.consecutive_misses, config) }))
   res.json({ data, error: null })
-})
+}))
 
 // ── Lesson progress ───────────────────────────────────────
 
@@ -240,7 +240,7 @@ router.post('/story', requireAuth, requireChildOwner, async (req, res) => {
 
 // ── Full progress summary ─────────────────────────────────
 
-router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
+router.get('/:child_id', requireAuth, requireChildOwner, asyncHandler(async (req, res) => {
   const { child_id } = req.params
   const [words, lessons, stories, sessions] = await Promise.all([
     query('select * from child_word_progress where child_id = $1', [child_id]),
@@ -249,6 +249,6 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
     query('select * from child_sessions where child_id = $1 order by started_at desc limit 10', [child_id]),
   ])
   res.json({ data: { words, lessons, stories, recent_sessions: sessions }, error: null })
-})
+}))
 
 export default router

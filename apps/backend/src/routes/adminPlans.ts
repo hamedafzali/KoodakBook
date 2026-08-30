@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
@@ -67,7 +68,7 @@ router.post('/plans', requireAdmin, requirePermission('plans.manage'), async (re
   res.json({ data: { id: row.id }, error: null })
 })
 
-router.patch('/plans/:id', requireAdmin, requirePermission('plans.manage'), async (req, res) => {
+router.patch('/plans/:id', requireAdmin, requirePermission('plans.manage'), asyncHandler(async (req, res) => {
   const parsed = planSchema.partial().safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
   const p = parsed.data
@@ -91,9 +92,9 @@ router.patch('/plans/:id', requireAdmin, requirePermission('plans.manage'), asyn
   if (p.features) await writeFeatures(String(req.params.id), p.features)
   await logAudit(res.locals.adminEmail, 'plan.update', null, String(req.params.id), {})
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
-router.delete('/plans/:id', requireAdmin, requirePermission('plans.manage'), async (req, res) => {
+router.delete('/plans/:id', requireAdmin, requirePermission('plans.manage'), asyncHandler(async (req, res) => {
   const plan = await queryOne<{ key: string; is_default: boolean }>('select key, is_default from plans where id = $1', [req.params.id])
   if (!plan) { res.status(404).json({ data: null, error: 'Plan not found' }); return }
   if (plan.is_default) { res.status(400).json({ data: null, error: 'Cannot delete the default plan' }); return }
@@ -102,6 +103,6 @@ router.delete('/plans/:id', requireAdmin, requirePermission('plans.manage'), asy
   await query('delete from plans where id = $1', [req.params.id])
   await logAudit(res.locals.adminEmail, 'plan.delete', null, String(req.params.id), { key: plan.key })
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 export default router

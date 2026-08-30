@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
@@ -107,8 +108,8 @@ async function respond(res: import('express').Response, id: string, userId: stri
   res.json({ data: { ok: true }, error: null })
 }
 
-router.post('/requests/:id/accept', requireAuth, (req, res) => { void respond(res, String(req.params.id), String(res.locals.userId), 'accepted') })
-router.post('/requests/:id/decline', requireAuth, (req, res) => { void respond(res, String(req.params.id), String(res.locals.userId), 'declined') })
+router.post('/requests/:id/accept', requireAuth, asyncHandler(async (req, res) => { await respond(res, String(req.params.id), String(res.locals.userId), 'accepted') }))
+router.post('/requests/:id/decline', requireAuth, asyncHandler(async (req, res) => { await respond(res, String(req.params.id), String(res.locals.userId), 'declined') }))
 
 // ── GET /api/friends/of/:child_id ────────────────────────────────────────
 // Accepted friends of this child.

@@ -7,6 +7,7 @@ import { query, queryOne } from '../lib/db'
 import { requireAdmin } from '../middleware/admin'
 import { upsertTranslations, deleteEntityTranslations } from '../lib/translations'
 import { WORD_CATEGORIES, ANIMATION_TEMPLATES, validateAnimationParams } from '@koodakbook/shared'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
@@ -105,7 +106,7 @@ router.post('/words', requireAdmin, async (req, res) => {
   res.status(201).json({ data: row, error: null })
 })
 
-router.patch('/words/:id', requireAdmin, async (req, res) => {
+router.patch('/words/:id', requireAdmin, asyncHandler(async (req, res) => {
   const p = wordSchema.partial().safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.message }); return }
   const animErr = animationError(p.data)
@@ -118,13 +119,13 @@ router.patch('/words/:id', requireAdmin, async (req, res) => {
   const row = await queryOne(`update words set ${setClause} where id = $${values.length + 1} returning *`, [...values, req.params.id])
   if (row) await syncWordTranslations(row)
   res.json({ data: row, error: null })
-})
+}))
 
-router.delete('/words/:id', requireAdmin, async (req, res) => {
+router.delete('/words/:id', requireAdmin, asyncHandler(async (req, res) => {
   await deleteEntityTranslations('word', String(req.params.id))
   await query('delete from words where id = $1', [req.params.id])
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Stories ───────────────────────────────────────────────
 
@@ -155,7 +156,7 @@ router.post('/stories', requireAdmin, async (req, res) => {
   res.status(201).json({ data: row, error: null })
 })
 
-router.patch('/stories/:id', requireAdmin, async (req, res) => {
+router.patch('/stories/:id', requireAdmin, asyncHandler(async (req, res) => {
   const p = storySchema.partial().safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.message }); return }
   const fields = Object.entries(p.data).filter(([, v]) => v !== undefined)
@@ -165,9 +166,9 @@ router.patch('/stories/:id', requireAdmin, async (req, res) => {
   const row = await queryOne(`update stories set ${setClause} where id = $${values.length + 1} returning *`, [...values, req.params.id])
   if (row) await syncStoryTranslations(row)
   res.json({ data: row, error: null })
-})
+}))
 
-router.delete('/stories/:id', requireAdmin, async (req, res) => {
+router.delete('/stories/:id', requireAdmin, asyncHandler(async (req, res) => {
   // Story delete cascades to story_pages in the DB; clear translations for both
   // the story and its pages first (translations use a loose FK, no cascade).
   await query(
@@ -178,7 +179,7 @@ router.delete('/stories/:id', requireAdmin, async (req, res) => {
   )
   await query('delete from stories where id = $1', [req.params.id])
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Story pages ───────────────────────────────────────────
 
@@ -190,12 +191,12 @@ const pageSchema = z.object({
   audio_url: z.string().nullable().optional(),
 })
 
-router.get('/stories/:story_id/pages', requireAdmin, async (req, res) => {
+router.get('/stories/:story_id/pages', requireAdmin, asyncHandler(async (req, res) => {
   const rows = await query('select * from story_pages where story_id = $1 order by page_number', [req.params.story_id])
   res.json({ data: rows, error: null })
-})
+}))
 
-router.post('/stories/:story_id/pages', requireAdmin, async (req, res) => {
+router.post('/stories/:story_id/pages', requireAdmin, asyncHandler(async (req, res) => {
   const p = pageSchema.safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.message }); return }
   const { page_number, text_persian, text_english, image_url, audio_url } = p.data
@@ -205,9 +206,9 @@ router.post('/stories/:story_id/pages', requireAdmin, async (req, res) => {
   )
   await syncPageTranslations(row)
   res.status(201).json({ data: row, error: null })
-})
+}))
 
-router.patch('/stories/:story_id/pages/:id', requireAdmin, async (req, res) => {
+router.patch('/stories/:story_id/pages/:id', requireAdmin, asyncHandler(async (req, res) => {
   const p = pageSchema.partial().safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.message }); return }
   const fields = Object.entries(p.data).filter(([, v]) => v !== undefined)
@@ -217,13 +218,13 @@ router.patch('/stories/:story_id/pages/:id', requireAdmin, async (req, res) => {
   const row = await queryOne(`update story_pages set ${setClause} where id = $${values.length + 1} and story_id = $${values.length + 2} returning *`, [...values, req.params.id, req.params.story_id])
   if (row) await syncPageTranslations(row)
   res.json({ data: row, error: null })
-})
+}))
 
-router.delete('/stories/:story_id/pages/:id', requireAdmin, async (req, res) => {
+router.delete('/stories/:story_id/pages/:id', requireAdmin, asyncHandler(async (req, res) => {
   await deleteEntityTranslations('story_page', String(req.params.id))
   await query('delete from story_pages where id = $1 and story_id = $2', [req.params.id, req.params.story_id])
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Lesson items ─────────────────────────────────────────
 
@@ -232,7 +233,7 @@ router.get('/lessons', requireAdmin, async (_req, res) => {
   res.json({ data: rows, error: null })
 })
 
-router.get('/lessons/:lesson_id/items', requireAdmin, async (req, res) => {
+router.get('/lessons/:lesson_id/items', requireAdmin, asyncHandler(async (req, res) => {
   const rows = await query(
     `select li.*, row_to_json(w.*) as word, row_to_json(l.*) as letter
      from lesson_items li
@@ -243,9 +244,9 @@ router.get('/lessons/:lesson_id/items', requireAdmin, async (req, res) => {
     [req.params.lesson_id]
   )
   res.json({ data: rows, error: null })
-})
+}))
 
-router.post('/lessons/:lesson_id/items', requireAdmin, async (req, res) => {
+router.post('/lessons/:lesson_id/items', requireAdmin, asyncHandler(async (req, res) => {
   const { word_id, letter_id } = req.body
   if (!word_id && !letter_id) { res.status(400).json({ data: null, error: 'word_id or letter_id required' }); return }
 
@@ -261,14 +262,14 @@ router.post('/lessons/:lesson_id/items', requireAdmin, async (req, res) => {
     [req.params.lesson_id, item_type, word_id ?? null, letter_id ?? null, order_index]
   )
   res.status(201).json({ data: row, error: null })
-})
+}))
 
-router.delete('/lessons/:lesson_id/items/:id', requireAdmin, async (req, res) => {
+router.delete('/lessons/:lesson_id/items/:id', requireAdmin, asyncHandler(async (req, res) => {
   await query('delete from lesson_items where id = $1 and lesson_id = $2', [req.params.id, req.params.lesson_id])
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
-router.patch('/lessons/:lesson_id/items/reorder', requireAdmin, async (req, res) => {
+router.patch('/lessons/:lesson_id/items/reorder', requireAdmin, asyncHandler(async (req, res) => {
   const { order }: { order: { id: string; order_index: number }[] } = req.body
   if (!Array.isArray(order)) { res.status(400).json({ data: null, error: 'order array required' }); return }
 
@@ -278,11 +279,11 @@ router.patch('/lessons/:lesson_id/items/reorder', requireAdmin, async (req, res)
     )
   )
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Letters audio ─────────────────────────────────────────
 
-router.patch('/letters/:id', requireAdmin, async (req, res) => {
+router.patch('/letters/:id', requireAdmin, asyncHandler(async (req, res) => {
   const { audio_url, example_word_id, tts_text } = req.body
   // tts_text is only applied when the key is present in the body (undefined =
   // untouched; '' or null clears it back to the plain letter name).
@@ -294,7 +295,7 @@ router.patch('/letters/:id', requireAdmin, async (req, res) => {
     [audio_url ?? null, example_word_id ?? null, tts_text !== undefined, tts_text ?? '', req.params.id]
   )
   res.json({ data: row, error: null })
-})
+}))
 
 // ── Stats ─────────────────────────────────────────────────
 

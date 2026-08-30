@@ -6,6 +6,7 @@ import { requireChildOwner } from '../middleware/childOwner'
 import { getAiSettings, generateStory, translateLines, AiNotConfiguredError, type StoryJSON } from '../lib/ai'
 import { synthesizeStoryPages } from '../lib/tts'
 import { parseSceneRef, isTranslationLang, langEnglishName } from '@koodakbook/shared'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
@@ -143,7 +144,7 @@ router.get('/stories/:child_id', requireAuth, requireChildOwner, async (req, res
 
 // POST /api/ai/stories/:id/audio — (re)generate audio for an existing AI story,
 // so stories made before audio existed (or before TTS was configured) get a voice.
-router.post('/stories/:id/audio', requireAuth, async (req, res) => {
+router.post('/stories/:id/audio', requireAuth, asyncHandler(async (req, res) => {
   const storyId = String(req.params.id)
   const story = await queryOne<{ created_for_child: string | null }>(
     'select created_for_child from stories where id = $1 and ai_generated', [storyId])
@@ -162,12 +163,12 @@ router.post('/stories/:id/audio', requireAuth, async (req, res) => {
     await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
   }
   res.json({ data: { ok: true, count: Object.keys(audioMap).length }, error: null })
-})
+}))
 
 // POST /api/ai/stories/:id/translate { lang } — fill missing translations for
 // one language on any story (folk tale or AI). Cached in story_pages.translations
 // so it's a one-time cost per story+language, shared across families.
-router.post('/stories/:id/translate', requireAuth, async (req, res) => {
+router.post('/stories/:id/translate', requireAuth, asyncHandler(async (req, res) => {
   const storyId = String(req.params.id)
   const lang = String(req.body?.lang ?? '')
   if (!isTranslationLang(lang) || lang === 'en') {
@@ -195,6 +196,6 @@ router.post('/stories/:id/translate', requireAuth, async (req, res) => {
     console.error('translate failed:', (err as Error).message)
     res.status(502).json({ data: null, error: 'ترجمه موفق نبود' })
   }
-})
+}))
 
 export default router

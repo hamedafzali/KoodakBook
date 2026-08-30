@@ -6,6 +6,9 @@ import crypto from 'crypto'
 import { z } from 'zod'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { query, queryOne } from '../lib/db'
+import { asyncHandler } from '../lib/asyncHandler'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /* Word-image review queue (migration 050).
  *
@@ -94,9 +97,13 @@ router.post(
   requireAdmin,
   requirePermission('content.edit'),
   upload.single('file'),
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
     if (!req.file) { res.status(400).json({ data: null, error: 'file required' }); return }
-    const wordId = req.params.wordId
+    const wordId = String(req.params.wordId)
+    if (!UUID_RE.test(wordId)) {
+      fs.unlinkSync(path.join(path.resolve(UPLOADS_DIR, 'images'), req.file.filename))
+      res.status(400).json({ data: null, error: 'wordId must be a uuid' }); return
+    }
     const url = `/uploads/images/${req.file.filename}`
 
     const updated = await queryOne<{ id: string }>(
@@ -114,7 +121,7 @@ router.post(
       res.status(404).json({ data: null, error: 'word not found' }); return
     }
     res.status(201).json({ data: { url }, error: null })
-  },
+  }),
 )
 
 const decisionSchema = z.object({
@@ -129,7 +136,10 @@ router.post(
   '/word-images/:wordId/review',
   requireAdmin,
   requirePermission('content.edit'),
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
+    if (!UUID_RE.test(String(req.params.wordId))) {
+      res.status(400).json({ data: null, error: 'wordId must be a uuid' }); return
+    }
     const parsed = decisionSchema.safeParse(req.body)
     if (!parsed.success) { res.status(400).json({ data: null, error: 'decision must be approved or rejected' }); return }
     const { decision, note } = parsed.data
@@ -170,7 +180,7 @@ router.post(
         )
 
     res.json({ data: row, error: null })
-  },
+  }),
 )
 
 export default router

@@ -10,6 +10,7 @@ import { requireAdmin, requirePermission } from '../middleware/admin'
 import { synthesizeWith, type AudioEngine } from '../lib/audio'
 import { getAiSettings, chatTurn, AiNotConfiguredError } from '../lib/ai'
 import { validReply } from '../lib/ai/chatGuard'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
@@ -79,7 +80,7 @@ const charSchema = z.object({
   animation: animationSchema.optional(),
 })
 
-router.patch('/admin/:id', requireAdmin, requirePermission('content.edit'), async (req, res) => {
+router.patch('/admin/:id', requireAdmin, requirePermission('content.edit'), asyncHandler(async (req, res) => {
   const p = charSchema.safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.issues[0]?.message ?? 'Invalid' }); return }
   const d = p.data
@@ -99,7 +100,7 @@ router.patch('/admin/:id', requireAdmin, requirePermission('content.edit'), asyn
      d.is_active ?? null, d.animation ? JSON.stringify(d.animation) : null, req.params.id])
   if (!row) { res.status(404).json({ data: null, error: 'Character not found' }); return }
   res.json({ data: row, error: null })
-})
+}))
 
 const linesSchema = z.object({
   lines: z.array(z.object({
@@ -110,7 +111,7 @@ const linesSchema = z.object({
 })
 
 // Replace a character's line set (audio for unchanged texts is preserved).
-router.put('/admin/:id/lines', requireAdmin, requirePermission('content.edit'), async (req, res) => {
+router.put('/admin/:id/lines', requireAdmin, requirePermission('content.edit'), asyncHandler(async (req, res) => {
   const p = linesSchema.safeParse(req.body)
   if (!p.success) { res.status(400).json({ data: null, error: p.error.issues[0]?.message ?? 'Invalid' }); return }
   const existing = await query<{ text_persian: string; audio_url: string | null }>(
@@ -123,10 +124,10 @@ router.put('/admin/:id/lines', requireAdmin, requirePermission('content.edit'), 
       [req.params.id, l.trigger, l.text_persian, l.emotion, audioByText.get(l.text_persian) ?? null])
   }
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // Voice this character's lines that don't have audio yet (its own voice).
-router.post('/admin/:id/audio', requireAdmin, requirePermission('ai.manage'), async (req, res) => {
+router.post('/admin/:id/audio', requireAdmin, requirePermission('ai.manage'), asyncHandler(async (req, res) => {
   const c = await queryOne<{ voice_engine: string; voice_id: string }>(
     'select voice_engine, voice_id from characters where id = $1', [req.params.id])
   if (!c) { res.status(404).json({ data: null, error: 'Character not found' }); return }
@@ -150,7 +151,7 @@ router.post('/admin/:id/audio', requireAdmin, requirePermission('ai.manage'), as
     await new Promise(r => setTimeout(r, 40))
   }
   res.json({ data: { done, errors, remaining: missing.length - done }, error: null })
-})
+}))
 
 /* ── Conversation engine (plan §4): controlled, never open-ended ─────────
  * Turn Planner (deterministic) → LLM boxed by the character card + child

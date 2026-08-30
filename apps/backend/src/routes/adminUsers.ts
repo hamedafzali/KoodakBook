@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { query, queryOne } from '../lib/db'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { logAudit } from '../lib/audit'
+import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
 
@@ -37,7 +38,7 @@ router.get('/users', requireAdmin, requirePermission('users.read'), async (req, 
 })
 
 // ── Family detail: parent + children + quick stats ───────
-router.get('/users/:id', requireAdmin, requirePermission('users.read'), async (req, res) => {
+router.get('/users/:id', requireAdmin, requirePermission('users.read'), asyncHandler(async (req, res) => {
   const user = await queryOne(
     'select id, email, plan, plan_expires_at, status, created_at from users where id = $1', [req.params.id],
   )
@@ -54,10 +55,10 @@ router.get('/users/:id', requireAdmin, requirePermission('users.read'), async (r
     [req.params.id],
   )
   res.json({ data: { user, children }, error: null })
-})
+}))
 
 // ── Child drill-down: full learning picture ──────────────
-router.get('/children/:id', requireAdmin, requirePermission('users.read'), async (req, res) => {
+router.get('/children/:id', requireAdmin, requirePermission('users.read'), asyncHandler(async (req, res) => {
   const child = await queryOne(
     'select id, parent_id, name, birth_year, level, placement_done, created_at from children where id = $1',
     [req.params.id],
@@ -98,14 +99,14 @@ router.get('/children/:id', requireAdmin, requirePermission('users.read'), async
     },
     error: null,
   })
-})
+}))
 
 // ── Change plan / entitlement ────────────────────────────
 const planSchema = z.object({
   plan: z.string().min(1),
   plan_expires_at: z.string().datetime().nullable().optional(),
 })
-router.patch('/users/:id/plan', requireAdmin, requirePermission('users.plan'), async (req, res) => {
+router.patch('/users/:id/plan', requireAdmin, requirePermission('users.plan'), asyncHandler(async (req, res) => {
   const parsed = planSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
   const { plan, plan_expires_at } = parsed.data
@@ -120,10 +121,10 @@ router.patch('/users/:id/plan', requireAdmin, requirePermission('users.plan'), a
   if (!row) { res.status(404).json({ data: null, error: 'User not found' }); return }
   await logAudit(res.locals.adminEmail, 'user.plan_change', 'user', String(req.params.id), { plan, plan_expires_at: plan_expires_at ?? null })
   res.json({ data: row, error: null })
-})
+}))
 
 // ── Reset a parent's password (returns a one-time temp password) ──
-router.post('/users/:id/reset-password', requireAdmin, requirePermission('users.reset_password'), async (req, res) => {
+router.post('/users/:id/reset-password', requireAdmin, requirePermission('users.reset_password'), asyncHandler(async (req, res) => {
   const user = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
   if (!user) { res.status(404).json({ data: null, error: 'User not found' }); return }
   // Generate a readable temp password; admin hands it to the parent, who changes it.
@@ -132,10 +133,10 @@ router.post('/users/:id/reset-password', requireAdmin, requirePermission('users.
   await query('update users set password_hash = $1 where id = $2', [hash, req.params.id])
   await logAudit(res.locals.adminEmail, 'user.reset_password', 'user', String(req.params.id), { email: user.email })
   res.json({ data: { temp_password: temp }, error: null })
-})
+}))
 
 // ── Delete a family (cascades to children + all progress) ──
-router.delete('/users/:id', requireAdmin, requirePermission('users.delete'), async (req, res) => {
+router.delete('/users/:id', requireAdmin, requirePermission('users.delete'), asyncHandler(async (req, res) => {
   const user = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
   if (!user) { res.status(404).json({ data: null, error: 'User not found' }); return }
   // Never let an admin delete the admin account out from under itself.
@@ -145,45 +146,45 @@ router.delete('/users/:id', requireAdmin, requirePermission('users.delete'), asy
   await query('delete from users where id = $1', [req.params.id])
   await logAudit(res.locals.adminEmail, 'user.delete', 'user', String(req.params.id), { email: user.email })
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Suspend / reactivate (Phase 3) ───────────────────────
-router.post('/users/:id/suspend', requireAdmin, requirePermission('users.suspend'), async (req, res) => {
+router.post('/users/:id/suspend', requireAdmin, requirePermission('users.suspend'), asyncHandler(async (req, res) => {
   const u = await queryOne<{ email: string }>('select email from users where id = $1', [req.params.id])
   if (!u) { res.status(404).json({ data: null, error: 'User not found' }); return }
   if (u.email === ADMIN_EMAIL) { res.status(400).json({ data: null, error: 'Cannot suspend the admin account' }); return }
   await query('update users set status = $1 where id = $2', ['suspended', req.params.id])
   await logAudit(res.locals.adminEmail, 'user.suspend', 'user', String(req.params.id), { email: u.email })
   res.json({ data: { ok: true }, error: null })
-})
-router.post('/users/:id/reactivate', requireAdmin, requirePermission('users.suspend'), async (req, res) => {
+}))
+router.post('/users/:id/reactivate', requireAdmin, requirePermission('users.suspend'), asyncHandler(async (req, res) => {
   await query('update users set status = $1 where id = $2', ['active', req.params.id])
   await logAudit(res.locals.adminEmail, 'user.reactivate', 'user', String(req.params.id), {})
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Support notes ────────────────────────────────────────
-router.get('/users/:id/notes', requireAdmin, requirePermission('users.read'), async (req, res) => {
+router.get('/users/:id/notes', requireAdmin, requirePermission('users.read'), asyncHandler(async (req, res) => {
   const rows = await query('select admin_email, note, created_at from support_notes where user_id = $1 order by created_at desc', [req.params.id])
   res.json({ data: rows, error: null })
-})
-router.post('/users/:id/notes', requireAdmin, requirePermission('users.read'), async (req, res) => {
+}))
+router.post('/users/:id/notes', requireAdmin, requirePermission('users.read'), asyncHandler(async (req, res) => {
   const note = (req.body?.note as string | undefined)?.trim()
   if (!note) { res.status(400).json({ data: null, error: 'note required' }); return }
   await query('insert into support_notes (user_id, admin_email, note) values ($1,$2,$3)', [req.params.id, res.locals.adminEmail, note])
   res.json({ data: { ok: true }, error: null })
-})
+}))
 
 // ── Activity timeline (audit entries about this user) ────
-router.get('/users/:id/activity', requireAdmin, requirePermission('users.read'), async (req, res) => {
+router.get('/users/:id/activity', requireAdmin, requirePermission('users.read'), asyncHandler(async (req, res) => {
   const rows = await query(
     `select action, detail, created_at, admin_email from audit_log
      where target_type = 'user' and target_id = $1 order by created_at desc limit 50`, [req.params.id])
   res.json({ data: rows, error: null })
-})
+}))
 
 // ── Export a family's data (GDPR) ────────────────────────
-router.get('/users/:id/export', requireAdmin, requirePermission('users.export'), async (req, res) => {
+router.get('/users/:id/export', requireAdmin, requirePermission('users.export'), asyncHandler(async (req, res) => {
   const id = req.params.id
   const user = await queryOne('select id, email, plan, plan_expires_at, status, created_at from users where id = $1', [id])
   if (!user) { res.status(404).json({ data: null, error: 'User not found' }); return }
@@ -196,7 +197,7 @@ router.get('/users/:id/export', requireAdmin, requirePermission('users.export'),
   ])
   await logAudit(res.locals.adminEmail, 'user.export', 'user', String(id), {})
   res.json({ data: { user, children, word_progress: words, lesson_progress: lessons, story_progress: stories, sessions }, error: null })
-})
+}))
 
 // ── Audit log viewer ─────────────────────────────────────
 router.get('/audit', requireAdmin, requirePermission('audit.read'), async (req, res) => {
