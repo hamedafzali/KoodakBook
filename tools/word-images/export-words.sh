@@ -9,7 +9,7 @@
 #   ONLY_MISSING=1 ./export-words.sh                # skip words that already have art
 set -Eeuo pipefail
 
-SERVER="${SERVER:-hamed@192.168.178.34}"
+SERVER="${SERVER:-hamed@192.168.178.37}"
 DB_CONTAINER="${DB_CONTAINER:-koodakbook-db-1}"
 
 where="where true"

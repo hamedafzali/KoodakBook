@@ -16,7 +16,7 @@
 #                    does not use the host port, so dropping the host-published
 #                    4000 to loopback removes only LAN reach, not app function.
 #   • admin   3002 — the admin UI is reached via SSH tunnel, not by anyone on
-#                    192.168.178.34:3002. Losing that LAN address is INTENDED (see
+#                    192.168.178.37:3002. Losing that LAN address is INTENDED (see
 #                    the access-path note below).
 #
 # 3001=web is DELIBERATELY left published on 0.0.0.0 as in docker-compose.yml, so
@@ -24,8 +24,8 @@
 # http://localhost:3001/api/lessons`, .acm/pipeline.yml) is completely unaffected.
 #
 # admin SSH-tunnel access path (unchanged by this file — documenting so the loss of
-# 192.168.178.34:3002 is not a surprise):
-#     ssh -L 3002:127.0.0.1:3002 hamed@192.168.178.34   →   http://localhost:3002
+# 192.168.178.37:3002 is not a surprise):
+#     ssh -L 3002:127.0.0.1:3002 hamed@192.168.178.37   →   http://localhost:3002
 #
 # This does NOT adopt docker-compose.prod.yml — that file is a dormant, drifted,
 # pre-tunnel architecture (stock db image + DB_PASSWORD rename, no piper service /

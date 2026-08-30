@@ -5,7 +5,7 @@ each word's image_brief. Resumable: skips any word whose output file already
 exists. No app-specific dependencies — stdlib only.
 
 Config (all via env vars, nothing machine-specific hardcoded):
-  COMFYUI_URL   base URL of the ComfyUI server, e.g. http://192.168.178.34:8188
+  COMFYUI_URL   base URL of the ComfyUI server, e.g. http://192.168.178.37:8188
   CKPT_NAME     checkpoint filename as ComfyUI sees it (default: sdxl.safetensors)
   WORDS_JSON    path to the word-list JSON (default: pilot-words.json next to this script)
   OUTPUT_DIR    where finished PNGs + manifest.csv go (default: ./output next to this script)
@@ -17,7 +17,7 @@ Config (all via env vars, nothing machine-specific hardcoded):
   SEED          fixed seed for all images, for style consistency (default: 42)
 
 Usage:
-  COMFYUI_URL=http://192.168.178.34:8188 python3 generate.py
+  COMFYUI_URL=http://192.168.178.37:8188 python3 generate.py
 """
 import csv
 import json

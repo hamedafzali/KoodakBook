@@ -17,7 +17,7 @@ Notes:
 
 - `EXPO_PUBLIC_API_URL` is the backend **origin** (no `/api` suffix — paths
   carry it). Never `localhost` on a physical phone: that's the phone itself.
-  The home server backend is directly reachable at `http://192.168.178.34:4000`.
+  The home server backend is directly reachable at `http://192.168.178.37:4000`.
 - Native requests send no `Origin` header, so the backend's CORS allowlist
   doesn't apply to the app — no backend change needed.
 - The JWT lives in the device keychain via `expo-secure-store` ([lib/auth.ts](lib/auth.ts)).

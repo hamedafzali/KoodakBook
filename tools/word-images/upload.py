@@ -11,7 +11,7 @@ Resumable in the same spirit as the generator: a local .uploaded marker file
 records what has already been sent, so re-running only sends new work.
 
 Config:
-  ADMIN_API    base URL of the backend (default http://192.168.178.34:4000)
+  ADMIN_API    base URL of the backend (default http://192.168.178.37:4000)
   ADMIN_TOKEN_FILE  path to a file containing an admin JWT and nothing else.
                     Preferred over ADMIN_TOKEN so the token never lands in
                     your shell history or process list. Mint one yourself:
@@ -38,7 +38,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-ADMIN_API = os.environ.get("ADMIN_API", "http://192.168.178.34:4000").rstrip("/")
+ADMIN_API = os.environ.get("ADMIN_API", "http://192.168.178.37:4000").rstrip("/")
 
 
 def _read_token() -> str:

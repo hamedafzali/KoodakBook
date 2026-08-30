@@ -7,13 +7,13 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.178.34:4000"
+        "EXPO_PUBLIC_API_URL": "http://192.168.178.37:4000"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.178.34:4000"
+        "EXPO_PUBLIC_API_URL": "http://192.168.178.37:4000"
       }
     },
     "production": {

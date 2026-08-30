@@ -166,12 +166,12 @@ outside any git working tree, per the off-server-key model above.
 
 ```bash
 # Find the newest file on the staging volume
-LATEST=$(ssh hamed@192.168.178.34 \
+LATEST=$(ssh hamed@192.168.178.37 \
   'docker exec koodakbook-db-backup-1 sh -c "ls -1 /staging/*.dump.age | sort | tail -1"')
 echo "$LATEST"
 
 # Copy it down (container → stdout → local file; no intermediate host write)
-ssh hamed@192.168.178.34 "docker exec koodakbook-db-backup-1 cat ${LATEST}" \
+ssh hamed@192.168.178.37 "docker exec koodakbook-db-backup-1 cat ${LATEST}" \
   > "$(basename "$LATEST")"
 ```
 
@@ -212,7 +212,7 @@ Pull live counts from prod for comparison (uses the local-socket trust auth,
 no app password needed):
 
 ```bash
-livecount() { ssh hamed@192.168.178.34 \
+livecount() { ssh hamed@192.168.178.37 \
   "docker exec -u postgres koodakbook-db-1 psql -U koodakbook -d koodakbook -tAc \"$1\""; }
 restoredcount() { docker exec koodakbook-restore-test \
   psql -U postgres -d restore_test -tAc "$1"; }
