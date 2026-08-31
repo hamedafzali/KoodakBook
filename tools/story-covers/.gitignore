@@ -1,0 +1,5 @@
+# Generated artifacts — these are content, not source. They reach the server
+# as review-queue candidates via direct upload, never through git.
+output/
+__pycache__/
+.secrets/
