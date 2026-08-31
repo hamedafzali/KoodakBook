@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { newFamily, signup, apiGet, loginAs } from "./helpers";
+import { newFamily, signup, apiGet, loginAs, setTranslationLang } from "./helpers";
 
 /**
  * Real UI journeys through the rendered app: logging in, the child home, the
@@ -25,9 +25,12 @@ test("the child home renders the child's name and learning content", async ({ pa
 
   await page.goto("/child/home");
 
-  // Stays in the child area (not bounced to /login) and greets the child by name.
+  // Stays in the child area (not bounced to /login or /onboarding/placement)
+  // and greets the child by name. exact: true matters here — the onboarding
+  // greeting text ("سلام آزمون! من سیمرغم") contains the fixture's child name
+  // as a substring, so a non-exact match can silently pass on the wrong screen.
   await expect(page).toHaveURL(/\/child\/home/);
-  await expect(page.getByRole("heading", { name: "آزمون" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "آزمون", exact: true })).toBeVisible({ timeout: 15_000 });
 });
 
 test("the lesson screen renders the quiz with a progress indicator", async ({ page, request }) => {
@@ -45,7 +48,7 @@ test("the lesson screen renders the quiz with a progress indicator", async ({ pa
   ).toBeVisible({ timeout: 15_000 });
 });
 
-test("the story reader shows bilingual text and the translation toggle hides it", async ({
+test("the story reader shows bilingual text, controlled by the parent's language setting", async ({
   page,
   request,
 }) => {
@@ -64,16 +67,18 @@ test("the story reader shows bilingual text and the translation toggle hides it"
   const englishLine = story.pages[0].text_english;
   expect(englishLine, "seed story should have English text").toBeTruthy();
 
+  // English is the default translation language: the story reader shows it
+  // under the Persian text without any per-story control.
   await page.goto(`/child/story/${stories[0].id}`);
-
-  // Bilingual is on by default: English line is visible and the toggle offers to
-  // turn translation OFF.
   await expect(page.getByText(englishLine)).toBeVisible({ timeout: 15_000 });
-  const toggle = page.getByRole("switch", { name: "غیرفعال کردن ترجمه" });
-  await expect(toggle).toBeVisible();
 
-  // Toggle off: English disappears and the switch now offers to turn it back ON.
-  await toggle.click();
+  // Translation is a parent decision (see commit a9b2069), set from
+  // /parent/settings — a PIN-gated screen that stores the choice under
+  // koodakbook_translation_lang. Seed that key directly, the same way loginAs()
+  // seeds the auth token, rather than driving the PIN UI to reach a settings
+  // page that isn't itself under test here.
+  await setTranslationLang(page, "none");
+
+  await page.goto(`/child/story/${stories[0].id}`);
   await expect(page.getByText(englishLine)).toBeHidden();
-  await expect(page.getByRole("switch", { name: "فعال کردن ترجمه" })).toBeVisible();
 });

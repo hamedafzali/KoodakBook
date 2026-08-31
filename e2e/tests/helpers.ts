@@ -49,10 +49,22 @@ export async function createChild(
     data: { name: "آزمون", birth_year: 2018, level: 1, ...overrides },
   });
   expect(res.status(), "create child should return 2xx").toBeLessThan(300);
-  return unwrap<{ id: string; name: string }>(await res.json());
+  const child = unwrap<{ id: string; name: string }>(await res.json());
+
+  // /child/home redirects to /onboarding/placement until this is done, so any
+  // test that wants real child-home content needs it completed. This is the
+  // same direct-API shortcut the real placement quiz ends on (POST
+  // /api/placement/result), not a UI flow worth driving here.
+  const placementRes = await request.post("/api/placement/result", {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { child_id: child.id, level: 1, strands: { V: 1, D: 1, F: 1, C: 1 } },
+  });
+  expect(placementRes.status(), "placement result should return 2xx").toBeLessThan(300);
+
+  return child;
 }
 
-/** A ready-to-use family: account + one child. */
+/** A ready-to-use family: account + one placed child (see createChild). */
 export async function newFamily(request: APIRequestContext): Promise<Family> {
   const { email, password, token } = await signup(request);
   const child = await createChild(request, token);
@@ -83,4 +95,17 @@ export async function loginAs(page: Page, family: Family) {
     // duplicate the child's name in a second heading.
     localStorage.setItem("koodakbook_seen_tutorial", "1");
   }, family.token);
+}
+
+/**
+ * Seed the family's translation-language preference the same way
+ * /parent/settings writes it (apps/web/src/lib/translation.ts). That screen is
+ * PIN-gated and isn't itself under test here, so tests that only care about the
+ * resulting story-reader behavior set the key directly instead of driving the
+ * PIN UI.
+ */
+export async function setTranslationLang(page: Page, code: string) {
+  await page.addInitScript((c) => {
+    localStorage.setItem("koodakbook_translation_lang", c);
+  }, code);
 }
