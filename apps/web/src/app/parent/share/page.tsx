@@ -7,6 +7,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import type { DashboardSummary, Child } from '@koodakbook/shared'
+import { buildShareText } from '@koodakbook/shared'
 import { containerWidths } from '@/components/shared/layout'
 
 /* Portrait card sized for WhatsApp / status sharing. */
@@ -113,7 +114,7 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
   // Branding footer
   ctx.fillStyle = '#9ca3af'
   ctx.font = '500 36px Vazirmatn, sans-serif'
-  ctx.fillText('کوداک‌بوک · KoodakBook', cx, H - 150)
+  ctx.fillText('کودک‌بوک · KoodakBook', cx, H - 150)
   ctx.fillStyle = '#cbd5e1'
   ctx.font = '500 30px Vazirmatn, sans-serif'
   ctx.fillText('یادگیری فارسی برای کودکان', cx, H - 100)
@@ -146,7 +147,7 @@ export default function SharePage() {
 
   function shareText() {
     if (!summary) return ''
-    return `«${summary.child.name}» در کوداک‌بوک داره فارسی یاد می‌گیره! 🌟 تا حالا ${summary.words_learned} کلمه یاد گرفته.`
+    return buildShareText(summary)
   }
 
   function canvasBlob(): Promise<Blob | null> {

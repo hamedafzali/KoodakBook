@@ -9,7 +9,14 @@ const vazirmatn = Vazirmatn({
   weight: ['400', '500', '700'],
 })
 
+// Needed to resolve absolute URLs for OG/Twitter images and the file-based
+// opengraph-image convention below. Set NEXT_PUBLIC_SITE_URL in production —
+// this only matters for how link previews and crawlers see the site, so it's
+// safe to leave at the localhost default in dev.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'KoodakBook — فارسی برای کودکان',
   description: 'یادگیری فارسی برای کودکان ایرانی خارج از کشور — از طریق داستان، بازی و ارتباط با خانواده.',
   manifest: '/manifest.json',

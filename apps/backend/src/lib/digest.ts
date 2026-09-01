@@ -58,7 +58,7 @@ function renderEmail(children: ChildWeek[]): { subject: string; html: string; te
   const first = children[0]
   const subject = children.length === 1
     ? `این هفته ${first.name} ${first.new_words} کلمه‌ی جدید یاد گرفت! 🌟`
-    : `گزارش هفتگی کوداک‌بوک 🌟`
+    : `گزارش هفتگی کودک‌بوک 🌟`
 
   const cards = children.map(c => `
     <div style="background:#fff7ed;border-radius:20px;padding:20px;margin:0 0 16px">
@@ -87,7 +87,7 @@ function renderEmail(children: ChildWeek[]): { subject: string; html: string; te
       <div style="text-align:center">
         <a href="${WEB_URL}/parent/dashboard" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:bold;padding:14px 28px;border-radius:16px">دیدن داشبورد کامل ←</a>
       </div>
-      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:28px">کوداک‌بوک · KoodakBook</p>
+      <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:28px">کودک‌بوک · KoodakBook</p>
     </div></body></html>`
 
   const text = children.map(c =>

@@ -63,7 +63,7 @@ export default function Friends() {
     if (!code) return
     const child = children.find((c) => c.id === selected)
     try {
-      await Share.share({ message: `کد دوستی ${child?.name ?? 'کودک'} در کوداک‌بوک: ${code}\nاین کد را در بخش «دوستان» وارد کن تا با هم بازی کنیم!` })
+      await Share.share({ message: `کد دوستی ${child?.name ?? 'کودک'} در کودک‌بوک: ${code}\nاین کد را در بخش «دوستان» وارد کن تا با هم بازی کنیم!` })
     } catch { /* cancelled */ }
   }
 

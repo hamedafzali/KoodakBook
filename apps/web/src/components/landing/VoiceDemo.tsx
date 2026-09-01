@@ -38,7 +38,7 @@ export default function VoiceDemo() {
     <div className="mt-10 rounded-3xl bg-white border border-slate-200 p-6 sm:p-8">
       <div className="text-center mb-5">
         <p className="text-amber-600 font-bold text-sm mb-1.5">با گوش خودتان بشنوید 🎧</p>
-        <h3 className="text-xl font-bold text-slate-800">صدای قصه‌گوی کوداک‌بوک</h3>
+        <h3 className="text-xl font-bold text-slate-800">صدای قصه‌گوی کودک‌بوک</h3>
       </div>
 
       <p className="persian-text text-slate-600 leading-loose text-center bg-amber-50/60 rounded-2xl px-5 py-4 mb-5">

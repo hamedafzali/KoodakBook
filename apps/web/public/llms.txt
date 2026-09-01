@@ -1,0 +1,68 @@
+# KoodakBook
+
+> KoodakBook is a web app that teaches spoken and reading Persian (Farsi)
+> to children ages 3–8 in Persian-diaspora families living abroad, through
+> phonics-based lessons, spaced-repetition vocabulary, personalized AI
+> stories, and traditional Persian folk tales — designed for a parent to
+> hand a child 10 minutes a day, unsupervised and ad-free.
+
+## Who it's for
+
+Iranian and other Persian-speaking families raising children outside a
+Persian-speaking country, who want their child to speak, listen to, and
+eventually read Persian — including families where the child understands
+some spoken Persian but the parents have limited time or no structured
+curriculum to teach reading and writing.
+
+## What it teaches
+
+- The 32 letters of the Persian alphabet, each shown in its initial,
+  medial and final forms, with handwriting practice.
+- Phonics (صداکشی) — blending vowel sounds with consonants, the
+  foundation of actually reading Persian rather than memorizing whole
+  words.
+- Vocabulary (290+ words) taught with audio and reviewed on a spaced-
+  repetition schedule, so each word resurfaces right before it would be
+  forgotten.
+- Speaking practice with voice recognition, so a child says a word aloud
+  and gets feedback on pronunciation.
+- Traditional Persian folk tales and personalized AI-generated stories
+  that cast the child as the main character, narrated with recorded
+  speech.
+- Basic numeracy in Persian (counting, reading Persian numerals, simple
+  shopping scenarios), taught in Persian rather than as a separate
+  subject.
+- A placement quiz at signup that starts each child at the right level,
+  from "has never heard Persian" to "speaks but doesn't yet read."
+
+## What makes it different
+
+- **Reading-science pedagogy**, not a vocabulary flashcard app: it
+  teaches sound-to-letter blending (phonics) first, the same approach
+  backed by Science of Reading research for how children actually learn
+  to read.
+- **Ad-free and closed**, with no external links or in-app purchases
+  reachable from the child's own screen — a parent PIN gates settings
+  and account changes, everything else is content.
+- **Parent progress visibility**: a separate parent dashboard shows what
+  a child practiced, which words they know, and where they're stuck —
+  without requiring the parent's ongoing involvement to run the lessons.
+- **Persian folk tales alongside AI-personalized stories**, so a child
+  gets both the shared cultural stories a Persian childhood usually
+  includes, and a story where they are the main character.
+- Supports up to 5 child profiles per family account, each with its own
+  level and progress.
+
+## Pricing
+
+The core curriculum (alphabet, phonics, and foundational lessons) is free
+permanently, with no card required to start. A paid tier adding the full
+story library and expanded AI-story generation is planned; at the time of
+writing it is not yet purchasable and pricing has not been announced.
+
+## Scope of this file
+
+This describes the public marketing pages only — the site's root and its
+/login, /signup, /kid, /privacy and /terms pages. It does not describe,
+and should not be used to infer, the content of the logged-in
+application, which is not intended for indexing.

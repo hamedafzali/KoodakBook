@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, Share, StyleSheet, Text, View } from 'rea
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { DashboardSummary } from '@koodakbook/shared'
-import { toPersianDigits } from '@koodakbook/shared'
+import { toPersianDigits, buildShareText } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { colors, fonts } from '@/lib/theme'
@@ -31,9 +31,7 @@ export default function ShareProgress() {
 
   async function share() {
     if (!summary) return
-    const message =
-      `«${summary.child.name}» در کوداک‌بوک داره فارسی یاد می‌گیره! 🌟 ` +
-      `تا حالا ${toPersianDigits(summary.words_learned)} کلمه یاد گرفته.`
+    const message = buildShareText(summary)
     try {
       await Share.share({ message })
     } catch { /* user cancelled */ }
@@ -60,7 +58,7 @@ export default function ShareProgress() {
       <View style={styles.card}>
         <Text style={styles.cardEmoji}>🌟</Text>
         <Text style={styles.cardName}>{summary.child.name}</Text>
-        <Text style={styles.cardLine}>در کوداک‌بوک فارسی یاد می‌گیرد</Text>
+        <Text style={styles.cardLine}>در کودک‌بوک فارسی یاد می‌گیرد</Text>
         <View style={styles.cardStats}>
           <CardStat value={summary.words_learned} label="کلمه" />
           <CardStat value={summary.stories_completed} label="داستان" />

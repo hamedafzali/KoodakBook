@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = { title: 'شرایط استفاده — کودک‌بوک' }
+export const metadata: Metadata = {
+  title: 'شرایط استفاده — کودک‌بوک',
+  alternates: { canonical: '/terms' },
+}
 
 const TERMS: { h: string; t: string }[] = [
   { h: 'حساب کاربری', t: 'حساب توسط والد یا سرپرست قانونی ساخته می‌شود؛ کودکان از پروفایل کودک و در حالت کودک استفاده می‌کنند. مسئولیت نگهداری رمز و پین والدین با شماست.' },
