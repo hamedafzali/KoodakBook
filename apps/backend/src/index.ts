@@ -67,8 +67,15 @@ app.use(cors({
 }))
 app.use(express.json())
 
-// serve uploaded files
-app.use('/uploads', express.static(path.resolve(UPLOADS_DIR)))
+// Serve uploaded files. Every upload path in this codebase embeds a
+// timestamp/random suffix (e.g. `${id}-${Date.now()}.ext`) and a changed
+// asset always gets a new filename rather than overwriting the old one —
+// so these are safe to cache as immutable for a long time; the default
+// `max-age=0` was forcing a revalidation round-trip on every single load.
+app.use('/uploads', express.static(path.resolve(UPLOADS_DIR), {
+  maxAge: '30d',
+  immutable: true,
+}))
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
 

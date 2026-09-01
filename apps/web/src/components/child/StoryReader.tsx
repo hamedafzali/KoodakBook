@@ -1,6 +1,7 @@
 'use client'
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import { parseSceneRef, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
 import BilingualText from '../shared/BilingualText'
 import SceneBackdrop from './SceneBackdrop'
@@ -145,14 +146,27 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
             exit={{ opacity: 0, x: 30 }}
             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
           >
-            {/* Illustration: a real page image wins; otherwise the scene
-                library paints the page's location with a slow Ken Burns drift. */}
+            {/* Illustration: a real page image wins. No story currently has
+                per-page art (186 pages, 0 images) — until that's generated,
+                reuse the story's own cover, muted, so the page still carries
+                that story's visual identity instead of a generic scene. Only
+                a story with no cover either falls back to the scene library. */}
             {mediaUrl(page.image_url) ? (
               <img
                 src={mediaUrl(page.image_url)!}
                 alt={`صفحه ${page.page_number} از داستان ${story.title_persian}`}
                 className="rounded-lg shadow-lg w-full max-h-64 object-contain lg:w-1/2 lg:max-h-[64vh] lg:self-center"
               />
+            ) : mediaUrl(story.cover_url) ? (
+              <div className="relative w-full h-52 rounded-lg shadow-md overflow-hidden lg:w-1/2 lg:h-[64vh] lg:self-center">
+                <Image
+                  src={mediaUrl(story.cover_url)!}
+                  alt=""
+                  fill
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  className="object-cover opacity-40 grayscale"
+                />
+              </div>
             ) : (
               <SceneBackdrop scene={sceneRef.scene} time={sceneRef.time}
                 className="w-full h-52 shadow-md lg:w-1/2 lg:h-[64vh]" />

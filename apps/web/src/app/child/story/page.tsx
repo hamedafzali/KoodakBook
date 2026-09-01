@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -157,11 +158,15 @@ export default function StoryListPage() {
                       </div>
                     )}
                     {mediaUrl(story.cover_url) ? (
-                      <img
-                        src={mediaUrl(story.cover_url)!}
-                        alt={story.title_persian}
-                        className="w-full h-32 object-cover"
-                      />
+                      <div className="relative w-full h-32">
+                        <Image
+                          src={mediaUrl(story.cover_url)!}
+                          alt={story.title_persian}
+                          fill
+                          sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                          className="object-cover"
+                        />
+                      </div>
                     ) : (
                       <div
                         className={`w-full h-32 bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} flex items-center justify-center text-5xl`}

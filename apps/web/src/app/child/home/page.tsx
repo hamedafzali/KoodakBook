@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -471,7 +472,9 @@ function CardTile({ href, title, sub, badge, emoji, image, tint, scene, glow, bi
       >
         {badge && <span className="absolute top-2 right-2 z-10 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>}
         {image ? (
-          <img src={image} alt="" className={`w-full ${h} object-cover shrink-0`} />
+          <div className={`relative w-full ${h} shrink-0`}>
+            <Image src={image} alt="" fill sizes="176px" className="object-cover" />
+          </div>
         ) : scene ? (
           <div className={`w-full ${h} shrink-0`}><SceneBackdrop scene={scene} className="w-full h-full !rounded-none" /></div>
         ) : (
