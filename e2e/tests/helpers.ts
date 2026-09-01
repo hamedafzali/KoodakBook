@@ -87,8 +87,19 @@ export function apiPost(request: APIRequestContext, token: string, path: string,
  * Put the app into a logged-in state in the browser without driving the login
  * form: seed the same localStorage token the real auth flow stores. pickChild()
  * then falls back to the family's only child.
+ *
+ * Also sets the kb_session presence cookie that onSignIn() sets in the real
+ * flow (see lib/auth.ts) — middleware.ts checks that cookie *server-side* to
+ * gate /child, /parent and /onboarding, and can't see localStorage at all. It
+ * has to go on the browser context's cookie jar (not document.cookie via
+ * addInitScript): middleware decides on the very first request for a gated
+ * page.goto(), before any init script has had a document to run in, so a
+ * cookie set from inside the page would always be one request too late.
  */
 export async function loginAs(page: Page, family: Family) {
+  await page.context().addCookies([
+    { name: "kb_session", value: "1", url: process.env.BASE_URL || "http://localhost:3001" },
+  ]);
   await page.addInitScript((token) => {
     localStorage.setItem("koodakbook_token", token);
     // Skip the first-run tutorial overlay so it doesn't cover content or
