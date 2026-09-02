@@ -379,15 +379,22 @@ router.get('/pilot-metrics', requireAdmin, async (_req, res) => {
   const activeLast7 = new Set(sessions.filter(s => new Date(s.started_at).getTime() >= now - 7 * DAY).map(s => s.child_id)).size
 
   // Literacy gain: mean over {V,D,F} of (gate_after at the latest recompute −
-  // gate_before at the earliest recompute), per child, then averaged across
-  // children with at least one strand measured. Reads gate_recompute_log —
-  // the evidence-driven trail of actual gate moves — rather than raw placement
-  // snapshots (docs/re-placement-flow-design.md §4): a placement/reprobe only
-  // ever nudges the *prior*, so the metric that should move is what the gate
-  // pipeline did with it, not the noisy probe reading itself. gate_before is
-  // null on a strand's very first-ever recompute (no prior gate to diff
-  // against), so that strand's earliest row is skipped when it has no
-  // predecessor to anchor a delta.
+  // a baseline gate), per child, then averaged across children with at least
+  // one strand measured. Reads gate_recompute_log — the evidence-driven trail
+  // of actual gate moves — rather than raw placement snapshots (docs/
+  // re-placement-flow-design.md §4): a placement/reprobe only ever nudges the
+  // *prior*, so the metric that should move is what the gate pipeline did
+  // with it, not the noisy probe reading itself.
+  //
+  // gate_before is null on a strand's very first-ever LOGGED recompute — and
+  // because gate_recompute_log itself only exists since the progression-
+  // rebuild migration (049, 2026-08-06), that genesis row is the norm, not
+  // the exception: it's every child's oldest row, old or new account alike.
+  // Treating null as "unmeasurable" would exclude nearly the whole cohort.
+  // Instead, when the earliest row has no gate_before, its own gate_after IS
+  // the correct baseline (the gate the genesis recompute established) — the
+  // delta then measures real gain from that point forward. A strand needs
+  // ≥2 rows to produce a delta at all; a single row has no elapsed change.
   const logByChildStrand = new Map<string, Map<string, typeof gateLog>>()
   for (const row of gateLog) {
     let byStrand = logByChildStrand.get(row.child_id)
@@ -401,10 +408,10 @@ router.get('/pilot-metrics', requireAdmin, async (_req, res) => {
     const strandGains: number[] = []
     for (const rows of byStrand.values()) {
       // rows are already ordered by `at` asc (query-level order by).
-      const earliest = rows[0]
+      if (rows.length < 2) continue
+      const baseline = rows[0].gate_before ?? rows[0].gate_after
       const latest = rows[rows.length - 1]
-      if (earliest.gate_before === null) continue
-      strandGains.push(latest.gate_after - earliest.gate_before)
+      strandGains.push(latest.gate_after - baseline)
     }
     if (strandGains.length) {
       gainChildren++
