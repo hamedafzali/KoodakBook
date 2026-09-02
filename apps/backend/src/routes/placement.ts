@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
+import { promoteStrands } from '../lib/strands'
+import { isReprobeDue, nextEligibleAt, DEFAULT_REPROBE_CONFIG, type ReprobeConfig } from '../lib/reprobe'
 
 const router = Router()
 
@@ -174,9 +176,13 @@ router.post('/result', requireAuth, requireChildOwner, async (req, res) => {
     )
   }
 
-  // Append a snapshot so pilot literacy-gain (pre vs post) is measurable (mig-021).
+  // Append a snapshot — the audit trail of what each probe read (mig-021),
+  // tagged 'onboarding' so it's told apart from a later reprobe (mig-054,
+  // docs/re-placement-flow-design.md §3). Pilot literacy-gain no longer reads
+  // this table directly (see routes/admin.ts) but re-placement's due-check
+  // does: it schedules off this row's taken_at.
   await query(
-    `insert into placement_history (child_id, level, strand_levels) values ($1, $2, $3)`,
+    `insert into placement_history (child_id, level, strand_levels, kind) values ($1, $2, $3, 'onboarding')`,
     [child_id, level, JSON.stringify(strands)]
   )
 
@@ -201,6 +207,102 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
   for (const r of rows) strand_levels[r.strand] = r.level
 
   res.json({ data: { level: child.level, strand_levels }, error: null })
+})
+
+// ── Re-placement (docs/re-placement-flow-design.md) ───────
+// Runtime-configurable, same pattern as strands.ts's gateConfig — read at call
+// time so a pilot can retune without a release. Every default is unvalidated
+// (design doc §6, A10/A11).
+function reprobeConfig(): ReprobeConfig {
+  const num = (v: string | undefined, d: number) => {
+    const n = v === undefined ? NaN : Number(v)
+    return Number.isFinite(n) ? n : d
+  }
+  return {
+    intervalDays: num(process.env.PLACEMENT_REPROBE_INTERVAL_DAYS, DEFAULT_REPROBE_CONFIG.intervalDays),
+    jitterDays: num(process.env.PLACEMENT_REPROBE_JITTER_DAYS, DEFAULT_REPROBE_CONFIG.jitterDays),
+  }
+}
+
+// ── GET /api/placement/:child_id/reprobe-due ──────────────
+// Checked once per session at home-screen load (design doc §1) — never polled,
+// never pushed. A child with no placement_history yet (shouldn't happen post-
+// onboarding, but defensively) is treated as not-due: onboarding placement, not
+// a reprobe, is the right activity for that state.
+router.get('/:child_id/reprobe-due', requireAuth, requireChildOwner, async (req, res) => {
+  const childId = req.params.child_id as string
+  const last = await queryOne<{ taken_at: string }>(
+    `select taken_at from placement_history where child_id = $1 order by taken_at desc limit 1`,
+    [childId]
+  )
+  if (!last) { res.json({ data: { due: false, next_eligible_at: null }, error: null }); return }
+
+  const config = reprobeConfig()
+  const lastPlacementAt = new Date(last.taken_at)
+  const due = isReprobeDue(lastPlacementAt, new Date(), childId, config)
+  res.json({
+    data: { due, next_eligible_at: nextEligibleAt(lastPlacementAt, childId, config).toISOString() },
+    error: null,
+  })
+})
+
+// ── POST /api/placement/:child_id/reprobe-result ──────────
+// Same probe, same answer shape as onboarding (resultSchema) — but this is a
+// PRIOR refresh, not a gate write (design doc §3). V/D/F get only their
+// prior_level updated; the damped recompute (promoteStrands) blends it in
+// exactly like any lesson/story completion would. C has no recompute loop of
+// its own, so it's written directly — same as onboarding.
+router.post('/:child_id/reprobe-result', requireAuth, requireChildOwner, async (req, res) => {
+  const parsed = resultSchema.omit({ child_id: true }).safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
+  const { level, strands } = parsed.data
+  const childId = req.params.child_id as string
+  const userId = res.locals.userId
+
+  const [child] = await query(
+    `update children set level = $1 where id = $2 and parent_id = $3 returning id`,
+    [level, childId, userId]
+  )
+  if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
+
+  for (const [strand, lvl] of Object.entries(strands)) {
+    if (strand === 'C') {
+      // Placement-only strand — never earned, never recomputed. Re-placement
+      // is its only update mechanism, same as onboarding.
+      await query(
+        `insert into child_strand_levels (child_id, strand, level, prior_level, source, updated_at)
+         values ($1, $2, $3, $3, 'placement', now())
+         on conflict (child_id, strand) do update
+           set level = excluded.level, prior_level = excluded.prior_level,
+               source = 'placement', updated_at = now()`,
+        [childId, strand, lvl]
+      )
+      continue
+    }
+    // V/D/F: refresh the PRIOR only. level/source stay whatever the last
+    // recompute set them to — promoteStrands below blends this prior in
+    // through the same damped, idempotent pipeline as any other trigger. The
+    // INSERT branch (level seeded to the same value) only fires if this strand
+    // somehow has no row yet — shouldn't happen post-onboarding, but if it
+    // does, treating it as a fresh placement is the reasonable fallback.
+    await query(
+      `insert into child_strand_levels (child_id, strand, level, prior_level, source, updated_at)
+       values ($1, $2, $3, $3, 'placement', now())
+       on conflict (child_id, strand) do update
+         set prior_level = excluded.prior_level, updated_at = now()`,
+      [childId, strand, lvl]
+    )
+  }
+
+  // Append the snapshot (kind='reprobe' — see design doc §3) before recompute,
+  // so the trajectory log always has the prior that produced a given move.
+  await query(
+    `insert into placement_history (child_id, level, strand_levels, kind) values ($1, $2, $3, 'reprobe')`,
+    [childId, level, JSON.stringify(strands)]
+  )
+
+  const promotions = await promoteStrands(childId, 'reprobe')
+  res.json({ data: { promotions }, error: null })
 })
 
 export default router

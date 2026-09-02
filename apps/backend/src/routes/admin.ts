@@ -327,7 +327,7 @@ router.get('/pilot-metrics', requireAdmin, async (_req, res) => {
   const DAY = 86_400_000
   const now = Date.now()
 
-  const [children, sessions, activatedRows, lessonsDone, storiesDone, wordsMastered, history] = await Promise.all([
+  const [children, sessions, activatedRows, lessonsDone, storiesDone, wordsMastered, gateLog] = await Promise.all([
     query<{ id: string; parent_id: string; created_at: string; placement_done: boolean }>(
       'select id, parent_id, created_at, placement_done from children'),
     query<{ child_id: string; started_at: string; duration_sec: number | null }>(
@@ -343,8 +343,9 @@ router.get('/pilot-metrics', requireAdmin, async (_req, res) => {
     query<{ child_id: string; c: string }>(
       `select child_id, count(*) c from child_word_progress
        where mastery in ('mastered','consolidated') group by child_id`),
-    query<{ child_id: string; level: number; taken_at: string }>(
-      'select child_id, level, taken_at from placement_history order by child_id, taken_at'),
+    query<{ child_id: string; strand: string; at: string; gate_before: number | null; gate_after: number }>(
+      `select child_id, strand, at, gate_before, gate_after from gate_recompute_log
+       where strand in ('V','D','F') order by child_id, strand, at`),
   ])
 
   const n = children.length
@@ -377,16 +378,38 @@ router.get('/pilot-metrics', requireAdmin, async (_req, res) => {
   const totalMin = Math.round(sessions.reduce((a, s) => a + (s.duration_sec ?? 0), 0) / 60)
   const activeLast7 = new Set(sessions.filter(s => new Date(s.started_at).getTime() >= now - 7 * DAY).map(s => s.child_id)).size
 
-  // Literacy gain: latest − first placement level for children with ≥2 snapshots.
-  const histByChild = new Map<string, number[]>()
-  for (const h of history) {
-    const arr = histByChild.get(h.child_id) ?? []
-    arr.push(h.level)
-    histByChild.set(h.child_id, arr)
+  // Literacy gain: mean over {V,D,F} of (gate_after at the latest recompute −
+  // gate_before at the earliest recompute), per child, then averaged across
+  // children with at least one strand measured. Reads gate_recompute_log —
+  // the evidence-driven trail of actual gate moves — rather than raw placement
+  // snapshots (docs/re-placement-flow-design.md §4): a placement/reprobe only
+  // ever nudges the *prior*, so the metric that should move is what the gate
+  // pipeline did with it, not the noisy probe reading itself. gate_before is
+  // null on a strand's very first-ever recompute (no prior gate to diff
+  // against), so that strand's earliest row is skipped when it has no
+  // predecessor to anchor a delta.
+  const logByChildStrand = new Map<string, Map<string, typeof gateLog>>()
+  for (const row of gateLog) {
+    let byStrand = logByChildStrand.get(row.child_id)
+    if (!byStrand) { byStrand = new Map(); logByChildStrand.set(row.child_id, byStrand) }
+    const arr = byStrand.get(row.strand) ?? []
+    arr.push(row)
+    byStrand.set(row.strand, arr)
   }
   let gainChildren = 0, gainSum = 0
-  for (const levels of histByChild.values()) {
-    if (levels.length >= 2) { gainChildren++; gainSum += levels[levels.length - 1] - levels[0] }
+  for (const byStrand of logByChildStrand.values()) {
+    const strandGains: number[] = []
+    for (const rows of byStrand.values()) {
+      // rows are already ordered by `at` asc (query-level order by).
+      const earliest = rows[0]
+      const latest = rows[rows.length - 1]
+      if (earliest.gate_before === null) continue
+      strandGains.push(latest.gate_after - earliest.gate_before)
+    }
+    if (strandGains.length) {
+      gainChildren++
+      gainSum += strandGains.reduce((a, b) => a + b, 0) / strandGains.length
+    }
   }
 
   res.json({
