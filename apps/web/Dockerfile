@@ -24,6 +24,12 @@ COPY package.json     ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Inlined into the client bundle and read by sitemap.ts/robots.ts/layout.tsx's
+# metadataBase at build time — must be present here, not just at container
+# runtime. Passed in via docker-compose.yml's `build.args`.
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 WORKDIR /app/apps/web
 RUN node node_modules/next/dist/bin/next build --webpack
 

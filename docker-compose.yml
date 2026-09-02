@@ -69,6 +69,15 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        # NEXT_PUBLIC_* vars are inlined at `next build` time, so this must be
+        # a build arg, not just an `environment:` entry below — a runtime env
+        # var on the container has no effect on the already-built JS/metadata
+        # (sitemap.ts, robots.ts, layout.tsx's metadataBase all read it at
+        # build time and are cached, per Next's sitemap.js docs). Set
+        # NEXT_PUBLIC_SITE_URL as an ACM project variable for this env; it
+        # flows in here via `docker compose --env-file .env.<env>`.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:4000
