@@ -154,6 +154,9 @@ router.post('/stories', requireAdmin, async (req, res) => {
   )
   await syncStoryTranslations(row)
   res.status(201).json({ data: row, error: null })
+  // Fire-and-forget: a Telegram hiccup must never fail the admin's save.
+  const { announceNewStory } = await import('../lib/telegramChannel')
+  announceNewStory({ title_persian, title_english, stage }).catch(err => console.error('[telegram] announceNewStory failed:', err))
 })
 
 router.patch('/stories/:id', requireAdmin, asyncHandler(async (req, res) => {
