@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -23,7 +23,21 @@ function choiceFace(c: ProbeChoice): string {
 }
 
 export default function PlacementPage() {
+  return (
+    <Suspense fallback={<LoadingScreen message="آماده‌سازی بازی..." />}>
+      <PlacementInner />
+    </Suspense>
+  )
+}
+
+// `?mode=reprobe` runs this as periodic re-placement instead of onboarding
+// (docs/re-placement-flow-design.md §2) — see the mobile client's equivalent
+// (apps/mobile/app/placement.tsx) for the full rationale; kept in sync here
+// so the two clients can't drift on the parts that must stay identical.
+function PlacementInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isReprobe = searchParams.get('mode') === 'reprobe'
   const [child, setChild] = useState<Child | null>(null)
   const [questions, setQuestions] = useState<ProbeQuestion[]>([])
   const [idx, setIdx] = useState(0)
@@ -82,7 +96,11 @@ export default function PlacementPage() {
     setFinalLevel(level)
     setPhase('done')
     if (child) {
-      await api.post('/api/placement/result', { child_id: child.id, level, strands })
+      if (isReprobe) {
+        await api.post(`/api/placement/${child.id}/reprobe-result`, { level, strands })
+      } else {
+        await api.post('/api/placement/result', { child_id: child.id, level, strands })
+      }
     }
     enterChildMode()
     setTimeout(() => router.push('/child/home'), 2600)
@@ -97,8 +115,11 @@ export default function PlacementPage() {
     setPhase('feedback')
 
     setTimeout(() => {
-      // Stop at the first miss (items get harder) or when the bank is exhausted.
-      if (!ok || idx + 1 >= questions.length) {
+      // Onboarding stops at the first miss (items get harder). Re-placement
+      // always runs the full bank — an early miss on the harder repeat run
+      // must never read as "game over" (design doc §2).
+      const bankExhausted = idx + 1 >= questions.length
+      if (bankExhausted || (!ok && !isReprobe)) {
         const answers = questions.map((_, i) => passed.current[i] ?? false)
         finish(answers)
       } else {
@@ -135,7 +156,12 @@ export default function PlacementPage() {
           <Mascot size={120} mood="excited" />
         </motion.div>
         <h1 className="text-2xl font-bold text-gray-800 mt-4">آفرین {child?.name}! 🎉</h1>
-        <p className="text-gray-600 mt-2 persian-text">از اینجا شروع می‌کنیم: <b>{labels[finalLevel]}</b></p>
+        {/* Re-placement never reveals a level — a recurring scorecard is
+            exactly the signal the gate/trophy split exists to hide, and a
+            re-placement result can legitimately move the gate down (§2/§3). */}
+        <p className="text-gray-600 mt-2 persian-text">
+          {isReprobe ? 'خیلی خوب بود! 🌟' : <>از اینجا شروع می‌کنیم: <b>{labels[finalLevel]}</b></>}
+        </p>
         <p className="text-sm text-gray-400 mt-4 persian-text">در حال رفتن به خانه...</p>
       </div>
     )

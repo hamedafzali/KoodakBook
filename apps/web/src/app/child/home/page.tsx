@@ -67,6 +67,7 @@ export default function ChildHomePage() {
   const [showTutorial, setShowTutorial] = useState(false)
   const [pickList, setPickList] = useState<Child[]>([])
   const [showPicker, setShowPicker] = useState(false)
+  const [reprobeDue, setReprobeDue] = useState(false)
 
   useChildSession(child?.id ?? null)
   useEffect(() => { if (!hasSeenTutorial()) setShowTutorial(true) }, [])
@@ -74,7 +75,7 @@ export default function ChildHomePage() {
 
   async function loadForChild(c: Child) {
     setChild(c)
-    const [lessonsRes, storiesRes, lettersRes, dashRes, reviewRes, progressRes, placeRes] = await Promise.all([
+    const [lessonsRes, storiesRes, lettersRes, dashRes, reviewRes, progressRes, placeRes, reprobeRes] = await Promise.all([
       api.get<Lesson[]>('/api/lessons'),
       api.get<Story[]>('/api/stories'),
       api.get<Letter[]>('/api/letters'),
@@ -82,9 +83,13 @@ export default function ChildHomePage() {
       api.get<ReviewItem[]>(`/api/progress/${c.id}/review`),
       api.get<{ lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${c.id}`),
       api.get<{ strand_levels: StrandLevels }>(`/api/placement/${c.id}`),
+      // Checked once per session load, never polled (design doc §1/§2) — a
+      // skippable game card, not an interstitial; reprobeDue never expires.
+      api.get<{ due: boolean }>(`/api/placement/${c.id}/reprobe-due`),
     ])
     if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
     if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
+    setReprobeDue(reprobeRes.data?.due ?? false)
     if (reviewRes.data) setReviewWords(reviewRes.data)
     if (progressRes.data) {
       setDoneLessons(new Set(progressRes.data.lessons.filter(l => l.completed).map(l => l.lesson_id)))
@@ -241,6 +246,24 @@ export default function ChildHomePage() {
             </ChunkyButton>
           </motion.div>
         </Link>
+
+        {/* ── Re-placement's entry point (all bands): a skippable game card,
+             same visual weight as any other activity, flavor-labeled — never
+             "ارزیابی"/assessment wording (design doc §2). Doesn't render next
+             visit until it's due again. ── */}
+        {reprobeDue && (
+          <Link href="/onboarding/placement?mode=reprobe" aria-label="بازی سیمرغ">
+            <motion.div whileTap={{ scale: 0.98 }}
+              className="bg-amber-50 rounded-2xl p-4 shadow-card flex items-center gap-3 ring-2 ring-amber-200/70">
+              <span className="text-3xl" aria-hidden="true">🦅</span>
+              <div className="flex-1">
+                <p className="font-bold text-gray-800 text-sm">بازی سیمرغ</p>
+                <p className="text-xs text-gray-500">سیمرغ دلش می‌خواد باهات بازی کنه!</p>
+              </div>
+              <span className="text-amber-400 text-xl">←</span>
+            </motion.div>
+          </Link>
+        )}
 
         {/* ── Friends row: the characters (all bands) ── */}
         {friends.length > 0 && (

@@ -58,6 +58,7 @@ export default function Home() {
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
   const [showTutorial, setShowTutorial] = useState(false)
+  const [reprobeDue, setReprobeDue] = useState(false)
 
   // Record a learning session so the parent dashboard's streak/time is real.
   useChildSession(child?.id ?? null)
@@ -84,7 +85,7 @@ export default function Home() {
         if (!active) return
         setChild(active)
 
-        const [lessonsRes, storiesRes, lettersRes, dashRes, reviewRes, progRes, placeRes] = await Promise.all([
+        const [lessonsRes, storiesRes, lettersRes, dashRes, reviewRes, progRes, placeRes, reprobeRes] = await Promise.all([
           api.get<Lesson[]>('/api/lessons'),
           api.get<Story[]>('/api/stories'),
           api.get<Letter[]>('/api/letters'),
@@ -92,6 +93,9 @@ export default function Home() {
           api.get<ReviewItem[]>(`/api/progress/${active.id}/review`),
           api.get<{ lessons: { lesson_id: string; completed: boolean }[]; stories: { story_id: string; completed: boolean }[] }>(`/api/progress/${active.id}`),
           api.get<{ strand_levels: StrandLevels }>(`/api/placement/${active.id}`),
+          // Checked once per session load, never polled (design doc §1/§2) — a
+          // skippable game card, not an interstitial; reprobeDue never expires.
+          api.get<{ due: boolean }>(`/api/placement/${active.id}/reprobe-due`),
         ])
         if (cancelled) return
         if (lessonsRes.data) setLessons(lessonsRes.data)
@@ -100,6 +104,7 @@ export default function Home() {
         if (dashRes.data) setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
         if (reviewRes.data) setReviewCount(reviewRes.data.length)
         if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
+        setReprobeDue(reprobeRes.data?.due ?? false)
         if (progRes.data) {
           setDoneLessons(new Set(progRes.data.lessons.filter((l) => l.completed).map((l) => l.lesson_id)))
           setDoneStories(new Set(progRes.data.stories.filter((s) => s.completed).map((s) => s.story_id)))
@@ -199,6 +204,19 @@ export default function Home() {
               <Text style={styles.tileTitle}>{tile.title}</Text>
             </Pressable>
           ))}
+          {/* Re-placement's entry point — same visual weight as any other
+              tile, flavor-labeled as a game, never "assessment" wording
+              (design doc §2). Skippable: just doesn't render next visit
+              until it's due again. */}
+          {reprobeDue && (
+            <Pressable
+              style={[styles.tile, { backgroundColor: '#fef9c3' }]}
+              onPress={() => router.push('/placement?mode=reprobe')}
+            >
+              <Text style={styles.tileEmoji}>🦅</Text>
+              <Text style={styles.tileTitle}>بازی سیمرغ</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </ScrollView>

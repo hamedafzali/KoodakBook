@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, PlacementProbe, ProbeChoice, ProbeQuestion } from '@koodakbook/shared'
 import { toPersianDigits, wordEmoji, scorePlacement } from '@koodakbook/shared'
@@ -15,6 +15,16 @@ import { colors, fonts } from '@/lib/theme'
  * sets the child's starting level. Simorgh greets, then easy→hard questions;
  * the run stops at the first miss. Web speaks Simorgh's line via browser TTS;
  * mobile shows it as text (listen-questions still play their audio clip).
+ *
+ * `?mode=reprobe` runs the same screen as periodic re-placement instead of
+ * onboarding (docs/re-placement-flow-design.md §2) — a skippable game card
+ * on the home screen, not a forced first-run step. Three things change, all
+ * here in the client: it runs all 4 items regardless of misses (an early
+ * miss on a harder repeat run must never read as "game over"), it never
+ * reveals the resulting level (a recurring scorecard is exactly the
+ * gate/trophy split this app otherwise protects), and it posts to
+ * reprobe-result, which only ever refreshes the decaying prior — it never
+ * writes the gate directly.
  */
 type Phase = 'loading' | 'intro' | 'question' | 'feedback' | 'done'
 
@@ -27,6 +37,8 @@ const LEVEL_LABELS = ['', 'تازه‌کار', 'آشنا با کلمه‌ها', 
 
 export default function Placement() {
   const insets = useSafeAreaInsets()
+  const { mode } = useLocalSearchParams<{ mode?: string }>()
+  const isReprobe = mode === 'reprobe'
   const [child, setChild] = useState<Child | null>(null)
   const [questions, setQuestions] = useState<ProbeQuestion[]>([])
   const [idx, setIdx] = useState(0)
@@ -69,7 +81,11 @@ export default function Placement() {
     const { level, strands } = scorePlacement(answers)
     setFinalLevel(level)
     setPhase('done')
-    if (child) await api.post('/api/placement/result', { child_id: child.id, level, strands })
+    if (child) {
+      const path = isReprobe ? `/api/placement/${child.id}/reprobe-result` : '/api/placement/result'
+      const body = isReprobe ? { level, strands } : { child_id: child.id, level, strands }
+      await api.post(path, body)
+    }
     setTimeout(() => router.replace('/home'), 2600)
   }
 
@@ -80,8 +96,11 @@ export default function Placement() {
     setLastCorrect(ok)
     setPhase('feedback')
     setTimeout(() => {
-      // Stop at the first miss (items get harder) or when the bank is exhausted.
-      if (!ok || idx + 1 >= questions.length) {
+      // Onboarding stops at the first miss (items get harder). Re-placement
+      // always runs the full bank — an early miss on the harder repeat run
+      // must never read as "game over" (design doc §2).
+      const bankExhausted = idx + 1 >= questions.length
+      if (bankExhausted || (!ok && !isReprobe)) {
         finish(questions.map((_, i) => passed.current[i] ?? false))
       } else {
         setIdx((i) => i + 1)
@@ -121,7 +140,12 @@ export default function Placement() {
         <View style={[styles.center, styles.transparent, { padding: 24, gap: 12 }]}>
           <Text style={{ fontSize: 72 }}>🎉</Text>
           <Text style={styles.introTitle}>آفرین {child?.name}!</Text>
-          <Text style={styles.introText}>از اینجا شروع می‌کنیم: {LEVEL_LABELS[finalLevel]}</Text>
+          {/* Re-placement never reveals a level — a recurring scorecard is
+              exactly the signal the gate/trophy split exists to hide, and a
+              re-placement result can legitimately move the gate down (§2/§3). */}
+          <Text style={styles.introText}>
+            {isReprobe ? 'خیلی خوب بود! 🌟' : `از اینجا شروع می‌کنیم: ${LEVEL_LABELS[finalLevel]}`}
+          </Text>
           <Text style={styles.goingHome}>در حال رفتن به خانه…</Text>
         </View>
       </ScreenBackground>
