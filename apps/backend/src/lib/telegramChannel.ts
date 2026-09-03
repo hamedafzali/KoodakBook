@@ -1,6 +1,6 @@
 /**
  * Public Telegram channel posting — sends to @koodakbook_app via Telegram's
- * sendMessage, plain fetch (no SDK dependency).
+ * sendMessage/sendPhoto, plain fetch (no SDK dependency).
  *
  * Same shape as the weekly parent digest (lib/digest.ts): if TELEGRAM_BOT_TOKEN
  * is not set it does a DRY RUN — the message is logged instead of sent, so the
@@ -20,12 +20,21 @@
  * that queue's review endpoint. render*Message() functions here stay pure so a
  * draft's exact text can be composed and shown to a reviewer before anything
  * is sent.
+ *
+ * An optional image (migration 057, post_drafts.image_path) is uploaded to
+ * Telegram as raw bytes read off local disk (UPLOADS_DIR), not passed as a
+ * URL — sendPhoto's `photo` param accepting a URL would require the app to be
+ * publicly reachable there, which WEB_URL currently is not (see
+ * docs/telegram-approval-queue.md).
  */
+import fs from 'fs'
+import path from 'path'
 
 const TG_BASE = process.env.TELEGRAM_API_BASE ?? 'https://api.telegram.org'
 const TG_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? ''
 const TG_CHANNEL = process.env.TELEGRAM_CHANNEL ?? '@koodakbook_app'
 const WEB_URL = process.env.WEB_URL ?? 'http://localhost:3000'
+const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
 export type PostResult = 'sent' | 'dry-run' | 'error'
 
@@ -44,22 +53,47 @@ export function renderNewStoryMessage(s: NewStory): string {
   )
 }
 
-/** Send arbitrary, already-approved text to the public channel. The only
- *  function in this file that talks to Telegram — see the approval-queue
- *  note above for why nothing else should call it directly. */
-export async function postToChannel(text: string): Promise<PostResult> {
+/** Resolve a post_drafts.image_path (e.g. "/uploads/images/foo.png") to a
+ *  real file under UPLOADS_DIR, refusing anything that tries to escape it. */
+function resolveUploadPath(imagePath: string): string | null {
+  const rel = imagePath.replace(/^\/?uploads\//, '')
+  const abs = path.resolve(UPLOADS_DIR, rel)
+  if (!abs.startsWith(path.resolve(UPLOADS_DIR) + path.sep)) return null
+  return fs.existsSync(abs) ? abs : null
+}
+
+/** Send arbitrary, already-approved text — with an optional local image — to
+ *  the public channel. The only function in this file that talks to
+ *  Telegram — see the approval-queue note above for why nothing else should
+ *  call it directly. Falls back to a text-only sendMessage if imagePath is
+ *  missing or the file can't be found on disk. */
+export async function postToChannel(text: string, imagePath?: string | null): Promise<PostResult> {
+  const filePath = imagePath ? resolveUploadPath(imagePath) : null
+  if (imagePath && !filePath) {
+    console.error(`[telegram] image_path not found on disk, sending text-only: ${imagePath}`)
+  }
+
   if (!TG_TOKEN) {
-    console.log(`[telegram] DRY RUN → ${TG_CHANNEL}\n  ${text.replace(/\n/g, '\n  ')}`)
+    console.log(`[telegram] DRY RUN${filePath ? ` (+ image ${filePath})` : ''} → ${TG_CHANNEL}\n  ${text.replace(/\n/g, '\n  ')}`)
     return 'dry-run'
   }
   try {
-    const r = await fetch(`${TG_BASE}/bot${TG_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TG_CHANNEL, text }),
-    })
+    let r: Response
+    if (filePath) {
+      const form = new FormData()
+      form.set('chat_id', TG_CHANNEL)
+      form.set('caption', text)
+      form.set('photo', new Blob([fs.readFileSync(filePath)]), path.basename(filePath))
+      r = await fetch(`${TG_BASE}/bot${TG_TOKEN}/sendPhoto`, { method: 'POST', body: form })
+    } else {
+      r = await fetch(`${TG_BASE}/bot${TG_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: TG_CHANNEL, text }),
+      })
+    }
     if (!r.ok) {
-      console.error(`[telegram] sendMessage error ${r.status} for ${TG_CHANNEL}: ${await r.text()}`)
+      console.error(`[telegram] send error ${r.status} for ${TG_CHANNEL}: ${await r.text()}`)
       return 'error'
     }
     return 'sent'

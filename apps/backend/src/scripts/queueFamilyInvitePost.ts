@@ -44,7 +44,12 @@ if (!validDraftText(TEXT, { allowedLinkHost: LINK_HOST })) {
   process.exit(1)
 }
 
-createDraft({ source: 'manual', source_ref: 'family-invite-2026-09', text: TEXT })
+createDraft({
+  source: 'manual',
+  source_ref: 'family-invite-2026-09',
+  text: TEXT,
+  image_path: '/uploads/images/family-invite-2026-09.png', // real child-home screenshot, see chat
+})
   .then(async (row) => {
     console.log('Queued draft:', row.id, '— status:', row.status)
     await db.end()

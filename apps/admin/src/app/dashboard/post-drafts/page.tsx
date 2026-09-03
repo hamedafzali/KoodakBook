@@ -18,6 +18,7 @@ interface Draft {
   source: 'story_published' | 'ai_scheduled' | 'manual'
   source_ref: string | null
   text: string
+  image_path: string | null
   status: Status
   created_at: string
   reviewed_at: string | null
@@ -144,6 +145,14 @@ export default function PostDraftsPage() {
                   </div>
                   <span className="text-xs text-slate-400">{new Date(d.created_at).toLocaleString('fa-IR')}</span>
                 </div>
+
+                {d.image_path && (
+                  <img
+                    src={d.image_path}
+                    alt=""
+                    className="w-full max-w-xs mx-auto rounded-xl border border-slate-200 object-cover"
+                  />
+                )}
 
                 <p className="whitespace-pre-wrap text-sm text-slate-700 bg-slate-50 rounded-xl px-3 py-2" dir="rtl">
                   {d.text}

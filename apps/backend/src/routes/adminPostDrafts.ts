@@ -23,6 +23,7 @@ export interface PostDraft {
   source: 'story_published' | 'ai_scheduled' | 'manual'
   source_ref: string | null
   text: string
+  image_path: string | null
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   reviewed_at: string | null
@@ -35,15 +36,18 @@ export interface PostDraft {
 /** Insert a new draft into the queue. The one entry point every content
  *  producer uses — nothing else writes to post_drafts, and nothing here
  *  posts to Telegram. Fire-and-forget on the caller's side is expected (a
- *  queueing hiccup must never fail the story save or the generator run). */
+ *  queueing hiccup must never fail the story save or the generator run).
+ *  image_path (migration 057) is a local /uploads path, not an external URL —
+ *  see lib/telegramChannel.ts for why. */
 export async function createDraft(input: {
   source: PostDraft['source']
   source_ref?: string | null
   text: string
+  image_path?: string | null
 }): Promise<PostDraft> {
   const [row] = await query<PostDraft>(
-    `insert into post_drafts (source, source_ref, text) values ($1, $2, $3) returning *`,
-    [input.source, input.source_ref ?? null, input.text],
+    `insert into post_drafts (source, source_ref, text, image_path) values ($1, $2, $3, $4) returning *`,
+    [input.source, input.source_ref ?? null, input.text, input.image_path ?? null],
   )
   const { notifyNewDraft } = await import('../lib/adminNotify')
   notifyNewDraft({ id: row.id, preview: row.text }).catch(err =>
@@ -114,7 +118,7 @@ router.post(
     }
 
     // Approved (first time or a retry): send now, record the outcome either way.
-    const result = await postToChannel(draft.text)
+    const result = await postToChannel(draft.text, draft.image_path)
     const row = await queryOne<PostDraft>(
       `update post_drafts
           set status      = 'approved',
