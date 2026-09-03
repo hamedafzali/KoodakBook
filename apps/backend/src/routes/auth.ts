@@ -29,6 +29,9 @@ router.post('/signup', async (req, res) => {
 
   const token = signToken(user.id)
   res.status(201).json({ data: { token, user_id: user.id }, error: null })
+  // Fire-and-forget: a Telegram hiccup must never fail the signup.
+  const { notifyNewSignup } = await import('../lib/adminNotify')
+  notifyNewSignup({ email }).catch(err => console.error('[admin-notify] notifyNewSignup failed:', err))
 })
 
 // ── Kid login: username only ─────────────────────────────

@@ -46,6 +46,9 @@ router.post('/', async (req, res) => {
     [type, name ?? null, email, phone ?? null, country ?? null, quantity ?? null, message ?? null],
   )
   res.status(201).json({ data: { ok: true }, error: null })
+  // Fire-and-forget: a Telegram hiccup must never fail the submission.
+  const { notifyNewLead } = await import('../lib/adminNotify')
+  notifyNewLead({ type, name, email, message }).catch(err => console.error('[admin-notify] notifyNewLead failed:', err))
 })
 
 // ── Admin: review + work the queue ────────────────────────
