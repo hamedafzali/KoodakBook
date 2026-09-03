@@ -89,17 +89,25 @@ curl -I https://koodakbook.com
 
 ## Admin Panel Access
 
-The admin panel runs on port `3001`, bound to localhost only (not exposed to internet).
+> This section describes the **live setup** (ACM-managed `docker-compose.yml`
+> + Cloudflare tunnel), not the `docker-compose.prod.yml`/nginx path this file
+> otherwise documents — see the note at the top of "Updating After Code
+> Changes" for why that file is dormant.
 
-Access it via SSH tunnel from your local machine:
+The admin panel (`admin` service, host port `3002`) is bound to `127.0.0.1`
+only on the server — not reachable from the LAN or the internet, by design
+(see the `ports:` comment on `admin` in `docker-compose.yml` for why). `web`
+(port `3001`) stays on `0.0.0.0` since it's the one service the Cloudflare
+tunnel routes to.
+
+Access the admin panel via SSH tunnel from your local machine:
 
 ```bash
-ssh -L 3001:localhost:3001 user@koodakbook.com
+ssh -L 3002:127.0.0.1:3002 hamed@192.168.178.37
 ```
 
-Then open `http://localhost:3001` in your browser.
-
-Login with `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env` file.
+Then open `http://localhost:3002` in your browser. Login with `ADMIN_EMAIL`
+and `ADMIN_PASSWORD` (ACM project variables on the server).
 
 ---
 
