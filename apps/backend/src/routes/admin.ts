@@ -154,9 +154,16 @@ router.post('/stories', requireAdmin, async (req, res) => {
   )
   await syncStoryTranslations(row)
   res.status(201).json({ data: row, error: null })
+  // Queued for approval, not posted directly — nothing reaches the public
+  // channel without a human confirming it (see routes/adminPostDrafts.ts).
   // Fire-and-forget: a Telegram hiccup must never fail the admin's save.
-  const { announceNewStory } = await import('../lib/telegramChannel')
-  announceNewStory({ title_persian, title_english, stage }).catch(err => console.error('[telegram] announceNewStory failed:', err))
+  const { renderNewStoryMessage } = await import('../lib/telegramChannel')
+  const { createDraft } = await import('./adminPostDrafts')
+  createDraft({
+    source: 'story_published',
+    source_ref: row.id as string,
+    text: renderNewStoryMessage({ title_persian, title_english, stage }),
+  }).catch(err => console.error('[post-drafts] createDraft failed:', err))
 })
 
 router.patch('/stories/:id', requireAdmin, asyncHandler(async (req, res) => {
@@ -449,6 +456,17 @@ router.get('/pilot-metrics', requireAdmin, async (_req, res) => {
 router.post('/digest/run', requireAdmin, async (_req, res) => {
   const { runWeeklyDigest } = await import('../lib/digest')
   const result = await runWeeklyDigest()
+  res.json({ data: result, error: null })
+})
+
+// ── AI-scheduled Telegram content ───────────────────────────
+// Trigger the scheduled post-draft generators on demand (queues to
+// post_drafts for approval, never posts). Schedule it (e.g. daily cron) to
+// hit this endpoint, or run apps/backend/src/scripts/generatePostDrafts.ts
+// directly. See lib/postDraftGenerator.ts.
+router.post('/post-drafts/generate', requireAdmin, async (_req, res) => {
+  const { runScheduledPostDrafts } = await import('../lib/postDraftGenerator')
+  const result = await runScheduledPostDrafts()
   res.json({ data: result, error: null })
 })
 

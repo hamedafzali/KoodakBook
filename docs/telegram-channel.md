@@ -1,24 +1,26 @@
-# Public Telegram channel announcements
+# Public Telegram channel posting
 
-Posts real-content milestones to the public `@koodakbook_app` channel via
-Telegram's Bot API `sendMessage`. Code:
+Sends to the public `@koodakbook_app` channel via Telegram's Bot API
+`sendMessage`. Code:
 [`apps/backend/src/lib/telegramChannel.ts`](../apps/backend/src/lib/telegramChannel.ts).
 
 ## What it is (and isn't)
 
-One trigger so far: **new story published** — fired from `POST /admin/stories`
-(`apps/backend/src/routes/admin.ts`) right after a story row is inserted. Real,
-admin-authored content only (not the per-child AI-generated stories in
-`routes/ai.ts`), since that's what has a natural public cadence.
-
-Fire-and-forget: a Telegram hiccup logs an error but never fails the admin's
-save (same reasoning as the digest and alert transports — the primary action
-must survive a downstream notification being unavailable).
+**This module only sends — it never decides what gets posted.** That
+decision belongs to the approval queue
+(`docs/telegram-approval-queue.md`): every candidate post (new story
+published, AI-scheduled weekly content) is queued as a `post_drafts` row and
+requires a human to approve it before `postToChannel()` is ever called.
+Previously `POST /admin/stories` called this module directly on save,
+auto-posting with no review — that direct path is gone; see the approval
+queue doc for how it works now.
 
 This is a **separate bot and token from `ALERT_TELEGRAM_BOT_TOKEN`**
-(`docs/alerting.md`). That one DMs a private ops chat about job failures; this
-one posts publicly to a channel about new content. Kept apart so a bug or leak
-in one can't grant posting/message access on the other.
+(`docs/alerting.md`) and from `ADMIN_TELEGRAM_BOT_TOKEN`
+(`docs/admin-notify.md`). Those two DM private chats (ops alerts, admin
+event notifications); this one is the only one of the three with posting
+rights on the public channel. Kept apart so a bug or leak in one can't grant
+posting/message access on another.
 
 ## Setup (once, by a human — needs a Telegram account this repo can't create)
 
@@ -40,17 +42,17 @@ sending) — safe in any environment, including local dev.
 
 ## Verify it fires
 
-Create a story via the admin UI (or `POST /admin/stories`) and check the
-backend logs:
+Create a story via the admin UI (or `POST /admin/stories`), then approve the
+resulting draft at `/dashboard/post-drafts` and check the backend logs:
 
 - No `TELEGRAM_BOT_TOKEN` set → `[telegram] DRY RUN → @koodakbook_app ...`
 - Token set → either the channel gets the message, or a
   `[telegram] sendMessage error ...` line names what Telegram's API rejected
   (most commonly: bot not an admin on the channel, or missing post permission).
 
-## Adding a second trigger later
+## Adding a new source of content
 
-Follow the same shape as `announceNewStory`: a small pure `render*Message`
-function plus a call to the shared `sendMessage` in
-`lib/telegramChannel.ts`, invoked (fire-and-forget, `.catch`-guarded) from
-wherever that event actually happens — not from a poller.
+Don't call `postToChannel` directly. Add a pure `render*Message` function
+here (same shape as `renderNewStoryMessage`) and have the event call
+`createDraft()` (`routes/adminPostDrafts.ts`) with the rendered text — see
+`docs/telegram-approval-queue.md`.

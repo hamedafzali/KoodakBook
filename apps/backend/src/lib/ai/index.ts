@@ -159,6 +159,60 @@ export async function chatTurn(
   return parseChatReply(raw, nonce)
 }
 
+const POST_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: { text: { type: 'string' } },
+  required: ['text'],
+} as const
+const POST_JSON_INSTRUCTION =
+  'Respond ONLY with a JSON object of this shape (no markdown, no commentary): { "text": string }'
+
+const PostSchema = z.object({ text: z.string().min(1) })
+
+export type PostKind = 'weekly_tip' | 'word_roundup' | 'holiday'
+
+const POST_KIND_SYSTEM: Record<PostKind, string> = {
+  weekly_tip:
+    'تو دستیار محتوای کانال تلگرام «کودک‌بوک» هستی، اپ آموزش فارسی به کودکان. ' +
+    'یک نکته‌ی کوتاه و کاربردی برای والدین درباره‌ی یادگیری زبان فارسی یا خواندن با کودک بنویس. ' +
+    'لحن گرم و مثبت، حداکثر چهار جمله، فقط فارسی.',
+  word_roundup:
+    'تو دستیار محتوای کانال تلگرام «کودک‌بوک» هستی. با استفاده از دقیقاً همان کلماتی که در ادامه ' +
+    'داده می‌شود (هیچ کلمه‌ی دیگری اضافه نکن) یک معرفی کوتاه و بازیگوش برای والدین بنویس. ' +
+    'لحن گرم، حداکثر چهار جمله، فقط فارسی.',
+  holiday:
+    'تو دستیار محتوای کانال تلگرام «کودک‌بوک» هستی. برای مناسبتی که در ادامه گفته می‌شود یک پیام ' +
+    'تبریک کوتاه و گرم برای خانواده‌ها بنویس که به یادگیری فارسی هم اشاره‌ی ملایمی داشته باشد. ' +
+    'حداکثر چهار جمله، فقط فارسی.',
+}
+
+/** Draft text for the Telegram approval queue (routes/adminPostDrafts.ts).
+ *  `context` is data the caller already fetched/knows — grounding facts (the
+ *  actual word list, the holiday name) so the model can't invent content
+ *  about the app that isn't true. The result still passes through
+ *  lib/postGuard's deterministic gate before it's queued; this function only
+ *  produces a candidate, it never decides anything is safe to post. */
+export async function generatePostText(settings: AiSettings, opts: { kind: PostKind; context: string }): Promise<string> {
+  if (!settings.ai_enabled) throw new AiNotConfiguredError('AI is disabled (kill switch)')
+  const apiKey = process.env.AI_API_KEY
+  if (!apiKey) throw new AiNotConfiguredError('Missing AI_API_KEY')
+
+  const system = POST_KIND_SYSTEM[opts.kind]
+  const prompt = opts.context
+
+  let raw: string
+  if (settings.provider === 'anthropic') {
+    raw = await generateAnthropic({ apiKey, model: settings.model, maxTokens: 300, system, prompt, schema: POST_JSON_SCHEMA as unknown as Record<string, unknown> })
+  } else {
+    if (!settings.base_url) throw new Error('base_url required for openai_compatible provider')
+    raw = await generateOpenAICompatible({ apiKey, baseURL: settings.base_url, model: settings.model, maxTokens: 300, system, prompt, jsonInstruction: POST_JSON_INSTRUCTION })
+  }
+  const parsed = PostSchema.safeParse(extractJson(raw))
+  if (!parsed.success) throw new Error('post text: schema validation failed: ' + parsed.error.message)
+  return parsed.data.text
+}
+
 /** Whether the single AI key is present in the backend env (admin status). */
 export function keyConfigured(): boolean {
   return !!process.env.AI_API_KEY

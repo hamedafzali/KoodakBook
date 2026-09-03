@@ -27,6 +27,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     { href: '/dashboard/words', label: 'کلمات', icon: 'pencil', perm: 'content.read' },
     { href: '/dashboard/word-images', label: 'تصویر کلمات', icon: 'image', perm: 'content.read' },
     { href: '/dashboard/story-covers', label: 'تصویر جلد داستان‌ها', icon: 'image', perm: 'content.read' },
+    { href: '/dashboard/post-drafts', label: 'صف تأیید تلگرام', icon: 'inbox', perm: 'content.read' },
     { href: '/dashboard/letters', label: 'حروف', icon: 'type', perm: 'content.read' },
     { href: '/dashboard/audio', label: 'صداها', icon: 'volume', perm: 'ai.manage' },
     { href: '/dashboard/characters', label: 'شخصیت‌ها', icon: 'smile', perm: 'content.read' },

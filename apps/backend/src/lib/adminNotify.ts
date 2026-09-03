@@ -65,3 +65,16 @@ export async function notifyNewLead(input: {
   if (input.message) lines.push(input.message)
   return sendMessage(lines.join('\n'))
 }
+
+/** A new post draft is waiting for review in the admin panel (routes/adminPostDrafts.ts). */
+export async function notifyNewDraft(input: { id: string; preview: string }): Promise<NotifyResult> {
+  const short = input.preview.length > 200 ? `${input.preview.slice(0, 200)}…` : input.preview
+  return sendMessage(`📝 پیش‌نویس تازه در صف تأیید تلگرام\n${short}`)
+}
+
+/** An AI-scheduled draft was generated but discarded by the deterministic
+ *  content gate (lib/postGuard) before it ever reached the review queue —
+ *  surfaced so a silently-dropped generation isn't invisible. */
+export async function notifyDraftGenerationFailed(input: { kind: string; reason: string }): Promise<NotifyResult> {
+  return sendMessage(`⚠️ پیش‌نویس خودکار (${input.kind}) رد شد و به صف نرسید\n${input.reason}`)
+}

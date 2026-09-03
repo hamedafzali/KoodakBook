@@ -1,6 +1,6 @@
 /**
- * Public Telegram channel announcements — posts real content milestones to
- * @koodakbook_app via Telegram's sendMessage, plain fetch (no SDK dependency).
+ * Public Telegram channel posting — sends to @koodakbook_app via Telegram's
+ * sendMessage, plain fetch (no SDK dependency).
  *
  * Same shape as the weekly parent digest (lib/digest.ts): if TELEGRAM_BOT_TOKEN
  * is not set it does a DRY RUN — the message is logged instead of sent, so the
@@ -8,11 +8,18 @@
  *   TELEGRAM_BOT_TOKEN=...   TELEGRAM_CHANNEL=@koodakbook_app
  * (the bot must be added to the channel as an admin with post permission).
  *
- * This is a separate bot/token from ALERT_TELEGRAM_BOT_TOKEN (lib/alerts) —
- * that one DMs a private ops chat about job failures; this one posts publicly
- * to the channel about new content. Keeping them separate means a broken
- * content bot can never end up with post access to internal alerts, or vice
- * versa.
+ * This is a separate bot/token from ALERT_TELEGRAM_BOT_TOKEN (lib/alerts) and
+ * ADMIN_TELEGRAM_BOT_TOKEN (lib/adminNotify) — this is the only one of the
+ * three with public posting rights. Keeping them separate means a broken or
+ * leaked content-bot token can never grant post access to the channel from
+ * a private context, or vice versa.
+ *
+ * postToChannel() only SENDS — it never decides whether something should be
+ * posted. That decision belongs to the approval queue (routes/adminPostDrafts.ts,
+ * docs/telegram-approval-queue.md); this module has no direct callers outside
+ * that queue's review endpoint. render*Message() functions here stay pure so a
+ * draft's exact text can be composed and shown to a reviewer before anything
+ * is sent.
  */
 
 const TG_BASE = process.env.TELEGRAM_API_BASE ?? 'https://api.telegram.org'
@@ -28,7 +35,7 @@ interface NewStory {
   stage: number
 }
 
-function renderNewStoryMessage(s: NewStory): string {
+export function renderNewStoryMessage(s: NewStory): string {
   return (
     `📖 داستان تازه در کودک‌بوک منتشر شد!\n\n` +
     `«${s.title_persian}» (${s.title_english})\n` +
@@ -37,7 +44,10 @@ function renderNewStoryMessage(s: NewStory): string {
   )
 }
 
-async function sendMessage(text: string): Promise<PostResult> {
+/** Send arbitrary, already-approved text to the public channel. The only
+ *  function in this file that talks to Telegram — see the approval-queue
+ *  note above for why nothing else should call it directly. */
+export async function postToChannel(text: string): Promise<PostResult> {
   if (!TG_TOKEN) {
     console.log(`[telegram] DRY RUN → ${TG_CHANNEL}\n  ${text.replace(/\n/g, '\n  ')}`)
     return 'dry-run'
@@ -57,9 +67,4 @@ async function sendMessage(text: string): Promise<PostResult> {
     console.error(`[telegram] send failed for ${TG_CHANNEL}:`, err)
     return 'error'
   }
-}
-
-/** Announce a newly published story to the public channel. */
-export async function announceNewStory(story: NewStory): Promise<PostResult> {
-  return sendMessage(renderNewStoryMessage(story))
 }
