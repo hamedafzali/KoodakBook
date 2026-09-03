@@ -45,6 +45,15 @@ services:
       # Free-photo picker sources (admin words page) — optional, better results.
       PIXABAY_API_KEY:    ${PIXABAY_API_KEY:-}
       PEXELS_API_KEY:     ${PEXELS_API_KEY:-}
+      # Telegram — three separate bots, each with its own token (never share
+      # one across these): public channel posts (docs/telegram-channel.md),
+      # private admin DMs (docs/admin-notify.md). Without a token each
+      # integration dry-runs to logs. See docs/telegram-approval-queue.md for
+      # how content reaches the channel (always via human approval).
+      TELEGRAM_BOT_TOKEN:       ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHANNEL:         ${TELEGRAM_CHANNEL:-@koodakbook_app}
+      ADMIN_TELEGRAM_BOT_TOKEN: ${ADMIN_TELEGRAM_BOT_TOKEN:-}
+      ADMIN_TELEGRAM_CHAT_ID:   ${ADMIN_TELEGRAM_CHAT_ID:-}
     volumes:
       - uploads:/app/uploads
     ports:
