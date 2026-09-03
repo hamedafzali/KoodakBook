@@ -46,7 +46,7 @@ if (!validDraftText(TEXT, { allowedLinkHost: LINK_HOST })) {
 
 createDraft({
   source: 'manual',
-  source_ref: 'family-invite-2026-09',
+  source_ref: 'family-invite-2026-09-v2', // v1 baked in the LAN-IP WEB_URL, rejected as superseded
   text: TEXT,
   image_path: '/uploads/images/family-invite-2026-09.png', // real child-home screenshot, see chat
 })
