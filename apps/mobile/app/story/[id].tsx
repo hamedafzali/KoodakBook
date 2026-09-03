@@ -160,8 +160,20 @@ export default function StoryReader() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.pageContent}>
+        {/* Illustration: a real page image wins. Most stories have no per-page
+            art yet — until they do, fall back to the story's own cover
+            (muted), so the page still carries that story's visual identity
+            instead of a generic scene. Only a story with no cover either
+            falls back to the scene library. Mirrors web's StoryReader. */}
         {page && mediaUrl(page.image_url) ? (
           <Image source={{ uri: mediaUrl(page.image_url)! }} style={styles.pageImage} contentFit="contain" transition={150} />
+        ) : mediaUrl(story.cover_url) ? (
+          <Image
+            source={{ uri: mediaUrl(story.cover_url)! }}
+            style={[styles.pageImage, styles.pageImageMuted]}
+            contentFit="cover"
+            transition={150}
+          />
         ) : (
           <SceneBackdrop scene={scenes[pageIdx]?.scene ?? 'park'} time={scenes[pageIdx]?.time ?? 'day'} style={styles.pageImage} />
         )}
@@ -252,6 +264,7 @@ const styles = StyleSheet.create({
   pageCount: { fontSize: 14, fontFamily: fonts.regular, color: colors.muted },
   pageContent: { padding: 20, gap: 18, alignItems: 'center' },
   pageImage: { width: '100%', height: 260, borderRadius: 16, backgroundColor: colors.card },
+  pageImageMuted: { opacity: 0.4 },
   pageText: {
     fontSize: 22, lineHeight: 44, fontFamily: fonts.medium, color: colors.text,
     textAlign: 'center', writingDirection: 'rtl',

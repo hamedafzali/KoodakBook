@@ -1,17 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { ReviewItem, Word } from '@koodakbook/shared'
-import { toPersianDigits } from '@koodakbook/shared'
-import QuizCard, { type QuizMode, type QuizQuestion } from '@/components/QuizCard'
+import { toPersianDigits, buildReviewQuestions, buildPaddingQuestions } from '@koodakbook/shared'
+import QuizCard, { type QuizQuestion } from '@/components/QuizCard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { colors, fonts } from '@/lib/theme'
 
-function pickRandom<T>(arr: T[], n: number): T[] {
-  return [...arr].sort(() => Math.random() - 0.5).slice(0, n)
-}
+// Frustration loop (mig-051): the backend attaches `easing`/`needsReteach` to
+// each due word — thresholds live server-side (frustration.ts), and what to
+// DO about the flags (mode choice, distractors, the re-teach beat, win-
+// padding) lives in `@koodakbook/shared`'s reviewFrustration module, shared
+// with web so the two clients can't drift on it (they had — this file used
+// to ignore both flags entirely).
 
 /** Spaced-repetition review — mobile port of web's /child/review. */
 export default function Review() {
@@ -22,6 +25,16 @@ export default function Review() {
   const [idx, setIdx] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [done, setDone] = useState(false)
+  // Stage 3 padding: quick, unscored wins appended when a word is still
+  // missed right after its re-teach beat, so the session doesn't end on a
+  // loss streak. Kept separate from `questions` (a pure function of
+  // items/pool) rather than mutated into it.
+  const [extraQuestions, setExtraQuestions] = useState<QuizQuestion[]>([])
+  // Which words have already had their re-teach flashcard shown this
+  // session — a same-session sequencing fact, not derived from the
+  // threshold numbers (which this file never needs to know).
+  const reteachShownRef = useRef<Set<string>>(new Set())
+  const sessionWinsRef = useRef<Word[]>([])
 
   useEffect(() => {
     async function load() {
@@ -38,15 +51,19 @@ export default function Review() {
     load()
   }, [])
 
-  const questions = useMemo<QuizQuestion[]>(() => {
-    if (!items || items.length === 0) return []
-    const modes: QuizMode[] = ['match_image', 'listen_tap']
-    return items.map((it) => ({
-      mode: modes[Math.floor(Math.random() * modes.length)],
-      correctWord: it.word,
-      distractorWords: pickRandom(pool.filter((w) => w.id !== it.word.id), 3),
-    }))
-  }, [items, pool])
+  const questions = useMemo<QuizQuestion[]>(
+    () => (!items || items.length === 0 ? [] : buildReviewQuestions(items, pool)),
+    [items, pool],
+  )
+
+  const allQuestions = useMemo(() => [...questions, ...extraQuestions], [questions, extraQuestions])
+
+  // Derived from idx/allQuestions rather than decided imperatively inside
+  // advance() — extraQuestions can land in the same tick as the advance that
+  // needed it, and an imperative check risks reading the pre-append length.
+  useEffect(() => {
+    if (allQuestions.length > 0 && idx >= allQuestions.length) setDone(true)
+  }, [idx, allQuestions.length])
 
   function report(wordId: string, result: 'correct' | 'incorrect') {
     if (!childId) return
@@ -54,8 +71,7 @@ export default function Review() {
   }
 
   function advance() {
-    if (idx >= questions.length - 1) setDone(true)
-    else setIdx((i) => i + 1)
+    setIdx((i) => i + 1)
   }
 
   if (!items) {
@@ -66,7 +82,10 @@ export default function Review() {
     )
   }
 
-  if (items.length === 0 || done) {
+  // `done` is set reactively one render after idx crosses allQuestions.length
+  // (see the effect above) — guard the in-between render rather than index
+  // into allQuestions with an out-of-range idx.
+  if (items.length === 0 || done || idx >= allQuestions.length) {
     const allCaughtUp = items.length === 0
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
@@ -77,7 +96,7 @@ export default function Review() {
         <Text style={styles.doneSub}>
           {allCaughtUp
             ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!'
-            : `${toPersianDigits(correct)} از ${toPersianDigits(questions.length)} درست`}
+            : `${toPersianDigits(correct)} از ${toPersianDigits(allQuestions.length)} درست`}
         </Text>
         <Pressable style={styles.homeButton} onPress={() => router.back()}>
           <Text style={styles.homeButtonText}>برگشت به خانه 🏠</Text>
@@ -86,8 +105,8 @@ export default function Review() {
     )
   }
 
-  const question = questions[idx]
-  const progress = (idx / Math.max(questions.length, 1)) * 100
+  const question = allQuestions[idx]
+  const progress = (idx / Math.max(allQuestions.length, 1)) * 100
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -99,7 +118,7 @@ export default function Review() {
           <View style={styles.topRow}>
             <Text style={styles.title}>مرور کلمه‌ها 🔄</Text>
             <Text style={styles.counter}>
-              {toPersianDigits(idx + 1)}/{toPersianDigits(questions.length)}
+              {toPersianDigits(idx + 1)}/{toPersianDigits(allQuestions.length)}
             </Text>
           </View>
           <View style={styles.track}>
@@ -113,16 +132,34 @@ export default function Review() {
           key={idx}
           question={question}
           onCorrect={() => {
-            if (question.correctWord) report(question.correctWord.id, 'correct')
+            if (question.correctWord) {
+              report(question.correctWord.id, 'correct')
+              sessionWinsRef.current.push(question.correctWord)
+            }
             setCorrect((c) => c + 1)
             advance()
           }}
           onIncorrect={() => {
-            if (question.correctWord) report(question.correctWord.id, 'incorrect')
+            const word = question.correctWord
+            if (word) {
+              report(word.id, 'incorrect')
+              // Stage 3: still wrong right after its re-teach beat — pad the
+              // rest of THIS session with a couple of already-correct wins
+              // from earlier, so the session doesn't end on a loss streak
+              // (bench happens server-side via missIntervalDays; this is
+              // purely cosmetic).
+              if (reteachShownRef.current.has(word.id)) {
+                const padding = buildPaddingQuestions(sessionWinsRef.current, 2)
+                if (padding.length > 0) setExtraQuestions((q) => [...q, ...padding])
+              }
+            }
             advance()
           }}
           onFlashcardNext={() => {
-            if (question.correctWord) report(question.correctWord.id, 'correct')
+            // No-scoring exposure (both the stage-2 re-teach beat and the
+            // stage-3 win-padding flashcards) — must NOT report 'correct',
+            // or a re-teach would silently inflate the Leitner box.
+            if (question.correctWord) reteachShownRef.current.add(question.correctWord.id)
             advance()
           }}
         />

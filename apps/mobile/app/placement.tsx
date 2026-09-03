@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { Child, PlacementProbe, ProbeChoice, ProbeQuestion } from '@koodakbook/shared'
-import { toPersianDigits, wordEmoji, scorePlacement } from '@koodakbook/shared'
+import type { Child, PlacementProbe, ProbeChoice, ProbeResults, ProbeStep } from '@koodakbook/shared'
+import { wordEmoji, currentProbeStep, recordProbeAnswer, emptyProbeResults } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { playClip } from '@/lib/sound'
@@ -12,19 +12,29 @@ import { colors, fonts } from '@/lib/theme'
 
 /**
  * Placement probe (web: /onboarding/placement) — a short adaptive game that
- * sets the child's starting level. Simorgh greets, then easy→hard questions;
- * the run stops at the first miss. Web speaks Simorgh's line via browser TTS;
- * mobile shows it as text (listen-questions still play their audio clip).
+ * sets the child's starting level. Simorgh greets, then a one-step staircase
+ * per strand (V/D/F branch harder/easier off their first item; C stays a
+ * single item) — see docs/placement-probe-rebuild.md. Web speaks Simorgh's
+ * line via browser TTS; mobile shows it as text (listen-questions still play
+ * their audio clip).
+ *
+ * The fixed 4-question array is gone: the server sends an item BANK (a mid
+ * item per strand plus its hard/easy branch candidates), and
+ * `@koodakbook/shared`'s probeFlow walks it strand-by-strand as answers come
+ * in — the exact same logic web uses, so the branch rule and the "skip a
+ * strand with no content" rule can't diverge between the two clients.
  *
  * `?mode=reprobe` runs the same screen as periodic re-placement instead of
  * onboarding (docs/re-placement-flow-design.md §2) — a skippable game card
- * on the home screen, not a forced first-run step. Three things change, all
- * here in the client: it runs all 4 items regardless of misses (an early
- * miss on a harder repeat run must never read as "game over"), it never
- * reveals the resulting level (a recurring scorecard is exactly the
- * gate/trophy split this app otherwise protects), and it posts to
- * reprobe-result, which only ever refreshes the decaying prior — it never
- * writes the gate directly.
+ * on the home screen, not a forced first-run step. Onboarding and reprobe now
+ * progress identically item-by-item (§6 of the probe rebuild doc retired the
+ * old "abort the whole probe at the first miss" behaviour for both flows —
+ * a branch to an easier item is still forward motion, never a stop). What
+ * still differs, all here in the client: it never reveals the resulting
+ * level on reprobe (a recurring scorecard is exactly the signal the
+ * gate/trophy split otherwise protects), and it posts to reprobe-result,
+ * which only ever refreshes the decaying prior — it never writes the gate
+ * directly.
  */
 type Phase = 'loading' | 'intro' | 'question' | 'feedback' | 'done'
 
@@ -40,12 +50,14 @@ export default function Placement() {
   const { mode } = useLocalSearchParams<{ mode?: string }>()
   const isReprobe = mode === 'reprobe'
   const [child, setChild] = useState<Child | null>(null)
-  const [questions, setQuestions] = useState<ProbeQuestion[]>([])
-  const [idx, setIdx] = useState(0)
+  const [bank, setBank] = useState<PlacementProbe | null>(null)
+  const [results, setResults] = useState<ProbeResults>(emptyProbeResults())
   const [phase, setPhase] = useState<Phase>('loading')
   const [lastCorrect, setLastCorrect] = useState(false)
   const [finalLevel, setFinalLevel] = useState(1)
-  const passed = useRef<boolean[]>([])
+  // A ref because finish() needs the LATEST results synchronously, before the
+  // setResults state update from the final answer has necessarily flushed.
+  const resultsRef = useRef<ProbeResults>(emptyProbeResults())
 
   useEffect(() => {
     async function load() {
@@ -57,18 +69,19 @@ export default function Placement() {
       ])
       const c = childRes.data?.find((x) => x.id === childId) ?? null
       setChild(c)
-      if (!probeRes.data?.questions?.length) {
-        // No probe content — skip gracefully, keep the default level.
+      if (!probeRes.data || !currentProbeStep(probeRes.data, emptyProbeResults())) {
+        // No usable probe content — skip gracefully, keep the default level.
         router.replace('/home')
         return
       }
-      setQuestions(probeRes.data.questions)
+      setBank(probeRes.data)
       setPhase('intro')
     }
     load()
   }, [])
 
-  const q = questions[idx]
+  const step: ProbeStep | null = bank ? currentProbeStep(bank, results) : null
+  const q = step?.question
 
   // Auto-play the audio prompt when a listen-question appears.
   useEffect(() => {
@@ -77,34 +90,37 @@ export default function Placement() {
     return () => clearTimeout(t)
   }, [phase, q])
 
-  async function finish(answers: boolean[]) {
-    const { level, strands } = scorePlacement(answers)
-    setFinalLevel(level)
-    setPhase('done')
+  async function finish() {
     if (child) {
       const path = isReprobe ? `/api/placement/${child.id}/reprobe-result` : '/api/placement/result'
-      const body = isReprobe ? { level, strands } : { child_id: child.id, level, strands }
-      await api.post(path, body)
+      const body = isReprobe ? resultsRef.current : { child_id: child.id, results: resultsRef.current }
+      if (isReprobe) {
+        await api.post(path, body)
+      } else {
+        // Scoring (§5) lives server-side — it needs gate.ts's w(n) for
+        // confidence — so the level for the reveal screen comes back on the
+        // response instead of being computed here before the request.
+        const res = await api.post<Child>(path, body)
+        if (res.data) setFinalLevel(res.data.level)
+      }
     }
+    setPhase('done')
     setTimeout(() => router.replace('/home'), 2600)
   }
 
   function answer(choice: ProbeChoice) {
-    if (phase !== 'question' || !q) return
-    const ok = choice.id === q.correct_id
-    passed.current[idx] = ok
+    if (phase !== 'question' || !step) return
+    const ok = choice.id === step.question.correct_id
     setLastCorrect(ok)
     setPhase('feedback')
     setTimeout(() => {
-      // Onboarding stops at the first miss (items get harder). Re-placement
-      // always runs the full bank — an early miss on the harder repeat run
-      // must never read as "game over" (design doc §2).
-      const bankExhausted = idx + 1 >= questions.length
-      if (bankExhausted || (!ok && !isReprobe)) {
-        finish(questions.map((_, i) => passed.current[i] ?? false))
-      } else {
-        setIdx((i) => i + 1)
+      const updated = recordProbeAnswer(resultsRef.current, step, ok)
+      resultsRef.current = updated
+      setResults(updated)
+      if (bank && currentProbeStep(bank, updated)) {
         setPhase('question')
+      } else {
+        finish()
       }
     }, 1100)
   }
@@ -162,17 +178,11 @@ export default function Placement() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
-      {/* Progress dots */}
-      <View style={styles.dots}>
-        {questions.map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.dot,
-              i === idx ? styles.dotActive : i < idx ? styles.dotDone : styles.dotFuture,
-            ]}
-          />
-        ))}
+      {/* No difficulty tier, question number, or "X of N" counter — the
+          child's staircase branch is never revealed (§6). A single mascot
+          face is enough progress feedback for this age group. */}
+      <View style={styles.mascotRow}>
+        <Text style={{ fontSize: 48 }}>🦅</Text>
       </View>
 
       <View style={styles.body}>
@@ -213,8 +223,6 @@ export default function Placement() {
           </Text>
         </View>
       )}
-
-      <Text style={styles.counter}>سؤال {toPersianDigits(idx + 1)} از {toPersianDigits(questions.length)}</Text>
     </View>
   )
 }
@@ -231,11 +239,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16, paddingHorizontal: 48,
   },
   bigButtonText: { color: '#fff', fontSize: 20, fontFamily: fonts.bold },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  dot: { height: 10, borderRadius: 999 },
-  dotActive: { width: 28, backgroundColor: colors.primary },
-  dotDone: { width: 10, backgroundColor: '#c4b5fd' },
-  dotFuture: { width: 10, backgroundColor: '#e5e7eb' },
+  mascotRow: { flexDirection: 'row', justifyContent: 'center' },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 24 },
   prompt: { fontSize: 18, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   speaker: {
@@ -258,5 +262,4 @@ const styles = StyleSheet.create({
   choiceLetter: { fontSize: 46, fontFamily: fonts.bold, color: colors.text },
   feedback: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', gap: 6 },
   feedbackText: { fontSize: 22, fontFamily: fonts.bold },
-  counter: { textAlign: 'center', fontSize: 12, fontFamily: fonts.regular, color: colors.muted },
 })

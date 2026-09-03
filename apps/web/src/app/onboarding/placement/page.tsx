@@ -12,8 +12,8 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import { speakOrPlay, speakPersian, stopSpeaking, initSpeech } from '@/lib/speech'
 import { useSpeaking } from '@/lib/useSpeaking'
 import { playTap, playSuccess } from '@/lib/sounds'
-import { wordEmoji, scorePlacement } from '@koodakbook/shared'
-import type { Child, PlacementProbe, ProbeQuestion, ProbeChoice } from '@koodakbook/shared'
+import { wordEmoji, currentProbeStep, recordProbeAnswer, emptyProbeResults } from '@koodakbook/shared'
+import type { Child, PlacementProbe, ProbeChoice, ProbeResults, ProbeStep } from '@koodakbook/shared'
 
 type Phase = 'loading' | 'intro' | 'question' | 'feedback' | 'done'
 
@@ -34,18 +34,28 @@ export default function PlacementPage() {
 // (docs/re-placement-flow-design.md §2) — see the mobile client's equivalent
 // (apps/mobile/app/placement.tsx) for the full rationale; kept in sync here
 // so the two clients can't drift on the parts that must stay identical.
+//
+// Placement probe rebuild (docs/placement-probe-rebuild.md): the fixed
+// 4-question array is gone. The server hands back an item BANK (a mid item
+// per strand plus its hard/easy branch candidates); `@koodakbook/shared`'s
+// probeFlow walks that bank strand-by-strand as answers come in, so this file
+// never decides the branch rule itself — mobile shares the exact same logic.
+// Onboarding and reprobe now progress identically (§6): the pre-rebuild
+// "abort the whole probe at the first miss" behaviour is gone — a branch to
+// an easier item is still forward motion, never a stop, for either flow.
 function PlacementInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isReprobe = searchParams.get('mode') === 'reprobe'
   const [child, setChild] = useState<Child | null>(null)
-  const [questions, setQuestions] = useState<ProbeQuestion[]>([])
-  const [idx, setIdx] = useState(0)
+  const [bank, setBank] = useState<PlacementProbe | null>(null)
+  const [results, setResults] = useState<ProbeResults>(emptyProbeResults())
   const [phase, setPhase] = useState<Phase>('loading')
   const [lastCorrect, setLastCorrect] = useState(false)
   const [finalLevel, setFinalLevel] = useState(1)
-  // passed[i] = did the child answer question i correctly (false once they stop)
-  const passed = useRef<boolean[]>([])
+  // A ref because finish() needs the LATEST results synchronously, before the
+  // setResults state update from the final answer has necessarily flushed.
+  const resultsRef = useRef<ProbeResults>(emptyProbeResults())
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -57,13 +67,13 @@ function PlacementInner() {
       const c = pickChild(childRes.data ?? [])
       if (!c) { router.push('/onboarding'); return }
       setChild(c)
-      if (!probeRes.data?.questions?.length) {
-        // No probe content — skip gracefully, keep the default level.
+      if (!probeRes.data || !currentProbeStep(probeRes.data, emptyProbeResults())) {
+        // No usable probe content — skip gracefully, keep the default level.
         enterChildMode()
         router.push('/child/home')
         return
       }
-      setQuestions(probeRes.data.questions)
+      setBank(probeRes.data)
       // Simorgh hosts: greet first, and the «بزن بریم» tap doubles as the user
       // gesture browsers require before the first listen-question can auto-play.
       setPhase('intro')
@@ -71,7 +81,8 @@ function PlacementInner() {
     load()
   }, [router])
 
-  const q = questions[idx]
+  const step: ProbeStep | null = bank ? currentProbeStep(bank, results) : null
+  const q = step?.question
   const speaking = useSpeaking()   // syncs Simorgh's talking mouth to her voice
 
   // Simorgh speaks her welcome when the intro appears.
@@ -91,40 +102,38 @@ function PlacementInner() {
     return () => clearTimeout(t)
   }, [phase, q])
 
-  async function finish(answers: boolean[]) {
-    const { level, strands } = scorePlacement(answers)
-    setFinalLevel(level)
-    setPhase('done')
+  async function finish() {
     if (child) {
       if (isReprobe) {
-        await api.post(`/api/placement/${child.id}/reprobe-result`, { level, strands })
+        await api.post(`/api/placement/${child.id}/reprobe-result`, resultsRef.current)
       } else {
-        await api.post('/api/placement/result', { child_id: child.id, level, strands })
+        // Scoring (§5) now lives server-side — it needs gate.ts's w(n) for
+        // confidence — so the level for the reveal screen comes back on the
+        // response instead of being computed here before the request.
+        const res = await api.post<Child>('/api/placement/result', { child_id: child.id, results: resultsRef.current })
+        if (res.data) setFinalLevel(res.data.level)
       }
     }
+    setPhase('done')
     enterChildMode()
     setTimeout(() => router.push('/child/home'), 2600)
   }
 
   function answer(choice: ProbeChoice) {
-    if (phase !== 'question' || !q) return
-    const ok = choice.id === q.correct_id
-    passed.current[idx] = ok
+    if (phase !== 'question' || !step) return
+    const ok = choice.id === step.question.correct_id
     setLastCorrect(ok)
     if (ok) playSuccess(); else playTap()
     setPhase('feedback')
 
     setTimeout(() => {
-      // Onboarding stops at the first miss (items get harder). Re-placement
-      // always runs the full bank — an early miss on the harder repeat run
-      // must never read as "game over" (design doc §2).
-      const bankExhausted = idx + 1 >= questions.length
-      if (bankExhausted || (!ok && !isReprobe)) {
-        const answers = questions.map((_, i) => passed.current[i] ?? false)
-        finish(answers)
-      } else {
-        setIdx(i => i + 1)
+      const updated = recordProbeAnswer(resultsRef.current, step, ok)
+      resultsRef.current = updated
+      setResults(updated)
+      if (bank && currentProbeStep(bank, updated)) {
         setPhase('question')
+      } else {
+        finish()
       }
     }, 1100)
   }
@@ -171,11 +180,11 @@ function PlacementInner() {
 
   return (
     <div className="min-h-screen child-bg flex flex-col">
-      {/* Progress dots */}
-      <div className="flex justify-center gap-2 pt-8" aria-label={`سوال ${idx + 1} از ${questions.length}`}>
-        {questions.map((_, i) => (
-          <div key={i} className={`h-2.5 rounded-full transition-all ${i === idx ? 'w-7 bg-amber-500' : i < idx ? 'w-2.5 bg-amber-300' : 'w-2.5 bg-white/60'}`} />
-        ))}
+      {/* No difficulty tier, question number, or "X of N" counter — the
+          child's staircase branch is never revealed (§6). Simorgh's own
+          animation beats are enough progress feedback for this age group. */}
+      <div className="flex justify-center pt-8">
+        <CharacterAvatar slug="simorgh" size={64} mood={phase === 'feedback' ? (lastCorrect ? 'excited' : 'idle') : 'happy'} />
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-5 gap-6">

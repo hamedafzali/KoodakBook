@@ -15,7 +15,7 @@ type Status = 'pending' | 'approved' | 'rejected'
 
 interface Draft {
   id: string
-  source: 'story_published' | 'ai_scheduled'
+  source: 'story_published' | 'ai_scheduled' | 'manual'
   source_ref: string | null
   text: string
   status: Status
@@ -36,6 +36,7 @@ const TABS: { key: Status; label: string }[] = [
 const SOURCE_LABEL: Record<Draft['source'], string> = {
   story_published: '📖 انتشار داستان',
   ai_scheduled: '🤖 تولید خودکار هوش مصنوعی',
+  manual: '✍️ نوشته‌شده دستی',
 }
 
 export default function PostDraftsPage() {

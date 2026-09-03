@@ -5,14 +5,20 @@ import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
 import { promoteStrands } from '../lib/strands'
 import { isReprobeDue, nextEligibleAt, DEFAULT_REPROBE_CONFIG, type ReprobeConfig } from '../lib/reprobe'
+import { DEFAULT_PRIOR_K } from '../lib/gate'
+import {
+  scoreProbe, pickStaircaseItems, wordDifficulty, letterRank,
+  DEFAULT_PLACEMENT_MAX_ITEMS, placementBranchingEnabled,
+  type LetterInfo, type ProbeResults, type StaircasePick,
+} from '../lib/probe'
 
 const router = Router()
 
 const STRANDS = ['P', 'D', 'V', 'F', 'C'] as const
 
 // ── Probe item shapes ─────────────────────────────────────
-interface WordRow   { id: string; persian: string; english: string; audio_url: string | null }
-interface LetterRow { id: string; character: string; name_persian: string; audio_url: string | null }
+interface WordRow   { id: string; persian: string; english: string; stage: number; audio_url: string | null }
+interface LetterRow { id: string; character: string; name_persian: string; group: number; order_in_group: number; audio_url: string | null }
 
 interface ProbeChoice {
   id: string
@@ -31,6 +37,17 @@ interface ProbeQuestion {
   choices: ProbeChoice[]
   correct_id: string
 }
+interface ProbeStaircase {
+  mid: ProbeQuestion | null
+  hard: ProbeQuestion | null
+  easy: ProbeQuestion | null
+}
+interface ProbeBank {
+  V: ProbeStaircase
+  D: ProbeStaircase
+  F: ProbeStaircase
+  C: ProbeQuestion | null
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -44,116 +61,169 @@ function shuffle<T>(arr: T[]): T[] {
 const wordChoice = (w: WordRow): ProbeChoice => ({ id: w.id, kind: 'word', persian: w.persian, english: w.english })
 const letterChoice = (l: LetterRow): ProbeChoice => ({ id: l.id, kind: 'letter', persian: l.name_persian, character: l.character })
 
-// ── GET /api/placement/probe ──────────────────────────────
-// A 4-item, stage-gated heuristic probe (V→D→F→C) built from existing content.
-// The client presents items in order and stops at the first miss (each item is
-// harder than the last), then computes a per-strand placement. Difficulty is
-// heuristic (stage + word length) until pilot data calibrates content_items.
-router.get('/probe', requireAuth, async (_req, res) => {
-  // Single audio tier since the Piper removal — audio_url is the served voice.
-  const aud = (r: { audio_url: string | null }) => r.audio_url
-  const words = await query<WordRow>(
-    `select id, persian, english, audio_url from words
-     where audio_url is not null and audio_url <> '' and stage = 1`
+/** Build the up-to-2-distractor choice list for one item from the rest of its
+ *  pool. A pool of exactly 3 (the minimum a strand needs at all — see the
+ *  MIN_POOL guard below) yields the same 2 distractors every time; anything
+ *  larger shuffles for variety. Never called on a pool smaller than 3. */
+function distractorsFor<T>(item: T, pool: T[], idOf: (t: T) => string): T[] {
+  return shuffle(pool.filter(x => idOf(x) !== idOf(item))).slice(0, 2)
+}
+
+const MIN_POOL = 3   // 1 correct + 2 distractors — the smallest a valid item needs
+
+function buildWordStaircase(
+  strand: 'V' | 'F', mode: 'listen' | 'read', prompt: string,
+  pool: WordRow[], letters: LetterInfo[],
+): ProbeStaircase {
+  if (pool.length < MIN_POOL) return { mid: null, hard: null, easy: null }
+  const picks = pickStaircaseItems(pool, w => wordDifficulty(w, letters), w => w.id)
+  const toQuestion = (w: WordRow): ProbeQuestion => {
+    const [d1, d2] = distractorsFor(w, pool, x => x.id)
+    return {
+      strand, stage: w.stage, mode, prompt,
+      audio_url: mode === 'listen' ? w.audio_url : undefined,
+      show_text: mode === 'read' ? w.persian : undefined,
+      choices: shuffle([w, d1, d2].map(wordChoice)),
+      correct_id: w.id,
+    }
+  }
+  return {
+    mid: picks.mid ? toQuestion(picks.mid) : null,
+    hard: picks.hard ? toQuestion(picks.hard) : null,
+    easy: picks.easy ? toQuestion(picks.easy) : null,
+  }
+}
+
+function buildLetterStaircase(pool: LetterRow[]): ProbeStaircase {
+  if (pool.length < MIN_POOL) return { mid: null, hard: null, easy: null }
+  const letters: LetterInfo[] = pool.map(l => ({ character: l.character, group: l.group, orderInGroup: l.order_in_group }))
+  const byId = new Map(pool.map(l => [l.id, l]))
+  const picks: StaircasePick<LetterInfo & { id: string }> = pickStaircaseItems(
+    pool.map(l => ({ id: l.id, character: l.character, group: l.group, orderInGroup: l.order_in_group })),
+    letterRank, l => l.id,
   )
-  const letters = await query<LetterRow>(
-    `select id, character, name_persian, audio_url from letters
+  const toQuestion = (pick: { id: string }): ProbeQuestion => {
+    const l = byId.get(pick.id)!
+    const [d1, d2] = distractorsFor(l, pool, x => x.id)
+    return {
+      strand: 'D', stage: 2, mode: 'listen',
+      prompt: 'این صدا برای کدام حرف است؟',
+      audio_url: l.audio_url,
+      choices: shuffle([l, d1, d2].map(letterChoice)),
+      correct_id: l.id,
+    }
+  }
+  return {
+    mid: picks.mid ? toQuestion(picks.mid) : null,
+    hard: picks.hard ? toQuestion(picks.hard) : null,
+    easy: picks.easy ? toQuestion(picks.easy) : null,
+  }
+}
+
+/** C stays single/unbranched (§3, unchanged in kind from the pre-rebuild
+ *  probe): the single hardest item available in `pool`, excluding anything
+ *  F already used so the two never repeat the same word. */
+function buildCItem(pool: WordRow[], exclude: Set<string>, letters: LetterInfo[]): ProbeQuestion | null {
+  const remaining = pool.filter(w => !exclude.has(w.id))
+  if (remaining.length < MIN_POOL) return null
+  const hardest = [...remaining].sort((a, b) => wordDifficulty(b, letters) - wordDifficulty(a, letters))[0]
+  const [d1, d2] = distractorsFor(hardest, remaining, w => w.id)
+  return {
+    strand: 'C', stage: hardest.stage, mode: 'read',
+    prompt: 'این کلمه‌ی سخت‌تر را بخوان.',
+    show_text: hardest.persian,
+    choices: shuffle([hardest, d1, d2].map(wordChoice)),
+    correct_id: hardest.id,
+  }
+}
+
+function placementMaxItems(): number {
+  const n = Number(process.env.PLACEMENT_MAX_ITEMS)
+  return Number.isFinite(n) ? n : DEFAULT_PLACEMENT_MAX_ITEMS
+}
+
+function stripBranch(s: ProbeStaircase): ProbeStaircase {
+  return { mid: s.mid, hard: null, easy: null }
+}
+
+// ── GET /api/placement/probe ──────────────────────────────
+// A composite-difficulty, one-step-staircase probe (docs/placement-probe-
+// rebuild.md): V (vocabulary, stage-1 words, listen→pick picture), D
+// (decoding, letters, listen→pick letter) and F (fluency, stage 2+ words,
+// read→pick picture) each get a mid item plus a hard/easy branch chosen from
+// the mid result; C stays a single unbranched "hardest available word" item,
+// unchanged in kind. Every strand degrades independently — a strand with too
+// little content to build even one valid item (MIN_POOL) is simply skipped
+// (all-null bank entries), rather than failing the whole probe; only a
+// probe with NOTHING usable anywhere 503s, so the client can fall back to
+// the default level exactly as before.
+router.get('/probe', requireAuth, async (_req, res) => {
+  const wordsV = await query<WordRow>(
+    `select id, persian, english, stage, audio_url from words
+     where stage = 1 and audio_url is not null and audio_url <> ''`
+  )
+  // Fluency/comprehension read real stage 2+ content (the bug this rebuild
+  // fixes — the pre-rebuild probe re-read the stage-1 pool for these under
+  // cosmetic "stage 3"/"stage 4" labels). No audio requirement: 'read' mode
+  // never plays audio.
+  const wordsF = await query<WordRow>(
+    `select id, persian, english, stage, audio_url from words where stage >= 2`
+  )
+  const letterRows = await query<LetterRow>(
+    `select id, character, name_persian, "group", order_in_group, audio_url from letters
      where audio_url is not null and audio_url <> ''`
   )
 
-  // Q1, Q3 and Q4 each consume 3 distinct stage-1 words (9 total, all needing
-  // audio); Q2 needs 3 letters. Below that, bail cleanly — the client skips the
-  // probe and keeps the default level — rather than building a broken question
-  // with undefined distractors.
-  if (words.length < 9 || letters.length < 3) {
+  const branchingEnabled = placementBranchingEnabled(placementMaxItems())
+  const letterInfos: LetterInfo[] = letterRows.map(l => ({ character: l.character, group: l.group, orderInGroup: l.order_in_group }))
+
+  let bank: ProbeBank = {
+    V: buildWordStaircase('V', 'listen', 'گوش کن. این کدام است؟', wordsV, letterInfos),
+    D: buildLetterStaircase(letterRows),
+    F: buildWordStaircase('F', 'read', 'این کلمه را بخوان و عکسش را پیدا کن.', wordsF, letterInfos),
+    C: buildCItem(wordsF, new Set(), letterInfos),
+  }
+  if (!branchingEnabled) {
+    // A13 fallback: budget below the full 7 — one item per strand, the
+    // pre-rebuild shape — rather than half-administering a staircase.
+    bank = { V: stripBranch(bank.V), D: stripBranch(bank.D), F: stripBranch(bank.F), C: bank.C }
+  }
+
+  const usable = bank.V.mid || bank.D.mid || bank.F.mid || bank.C
+  if (!usable) {
     res.status(503).json({ data: null, error: 'Not enough content to build a placement probe' })
     return
   }
 
-  const pool = shuffle(words)
-  const take = (n: number, exclude: Set<string>) => {
-    const out: WordRow[] = []
-    for (const w of pool) {
-      if (out.length === n) break
-      if (!exclude.has(w.id)) { out.push(w); exclude.add(w.id) }
-    }
-    return out
-  }
-
-  const questions: ProbeQuestion[] = []
-  const used = new Set<string>()
-
-  // Q1 — Vocabulary (stage 1): hear a common word, pick its picture.
-  {
-    const [correct, d1, d2] = take(3, used)
-    questions.push({
-      strand: 'V', stage: 1, mode: 'listen',
-      prompt: 'گوش کن. این کدام است؟',
-      audio_url: aud(correct),
-      choices: shuffle([correct, d1, d2].map(wordChoice)),
-      correct_id: correct.id,
-    })
-  }
-
-  // Q2 — Decoding (stage 2): hear a letter sound, pick the letter.
-  {
-    const [correct, d1, d2] = shuffle(letters).slice(0, 3)
-    questions.push({
-      strand: 'D', stage: 2, mode: 'listen',
-      prompt: 'این صدا برای کدام حرف است؟',
-      audio_url: aud(correct),
-      choices: shuffle([correct, d1, d2].map(letterChoice)),
-      correct_id: correct.id,
-    })
-  }
-
-  // Q3 — Fluency (stage 3): READ a written word (no audio), pick its picture.
-  {
-    const [correct, d1, d2] = take(3, used)
-    questions.push({
-      strand: 'F', stage: 3, mode: 'read',
-      prompt: 'این کلمه را بخوان و عکسش را پیدا کن.',
-      show_text: correct.persian,
-      choices: shuffle([correct, d1, d2].map(wordChoice)),
-      correct_id: correct.id,
-    })
-  }
-
-  // Q4 — Comprehension/fluency (stage 4): a HARDER word (longest available), read it.
-  {
-    const remaining = pool.filter(w => !used.has(w.id))
-    const hard = [...remaining].sort((a, b) => b.persian.length - a.persian.length)[0] ?? remaining[0]
-    used.add(hard.id)
-    const [d1, d2] = take(2, used)
-    questions.push({
-      strand: 'C', stage: 4, mode: 'read',
-      prompt: 'این کلمه‌ی سخت‌تر را بخوان.',
-      show_text: hard.persian,
-      choices: shuffle([hard, d1, d2].map(wordChoice)),
-      correct_id: hard.id,
-    })
-  }
-
-  res.json({ data: { questions }, error: null })
+  res.json({ data: bank, error: null })
 })
 
 // ── POST /api/placement/result ────────────────────────────
+// Body carries the RAW per-item results the client walked through
+// (probeFlow.ts's ProbeResults), not a precomputed level/strands — scoring
+// (§5) needs gate.ts's w(n), which is backend-only, so it happens here.
+const resultsSchema = z.object({
+  V: z.array(z.boolean()).max(2),
+  D: z.array(z.boolean()).max(2),
+  F: z.array(z.boolean()).max(2),
+  C: z.boolean().nullable(),
+})
 const resultSchema = z.object({
   child_id: z.string().uuid(),
-  level: z.number().int().min(1).max(4),
-  strands: z.object({
-    V: z.number().int().min(1).max(4),
-    D: z.number().int().min(1).max(4),
-    F: z.number().int().min(1).max(4),
-    C: z.number().int().min(1).max(4),
-  }),
+  results: resultsSchema,
 })
+
+function probeK(): number {
+  const n = Number(process.env.PROGRESSION_PRIOR_K)
+  return Number.isFinite(n) ? n : DEFAULT_PRIOR_K
+}
 
 router.post('/result', requireAuth, requireChildOwner, async (req, res) => {
   const parsed = resultSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
-  const { child_id, level, strands } = parsed.data
+  const { child_id, results } = parsed.data
   const userId = res.locals.userId
+  const { level, strands, confidence } = scoreProbe(results as ProbeResults, probeK())
 
   const [child] = await query(
     `update children set level = $1, placement_done = true
@@ -166,13 +236,15 @@ router.post('/result', requireAuth, requireChildOwner, async (req, res) => {
     // Placement seeds BOTH the gate (level) and the retained prior (prior_level):
     // the gate is where the child starts; the prior is what later recomputes decay
     // away from as real evidence accrues (docs/placement-progression-rebuild.md §3).
+    // `confidence` (§5 of the probe rebuild doc) is the SAME w(n) gate.ts uses for
+    // real evidence, fed one unit of n per probe item actually resolved.
     await query(
-      `insert into child_strand_levels (child_id, strand, level, prior_level, source, updated_at)
-       values ($1, $2, $3, $3, 'placement', now())
+      `insert into child_strand_levels (child_id, strand, level, prior_level, confidence, source, updated_at)
+       values ($1, $2, $3, $3, $4, 'placement', now())
        on conflict (child_id, strand) do update
          set level = excluded.level, prior_level = excluded.prior_level,
-             source = 'placement', updated_at = now()`,
-      [child_id, strand, lvl]
+             confidence = excluded.confidence, source = 'placement', updated_at = now()`,
+      [child_id, strand, lvl, confidence[strand as keyof typeof confidence]]
     )
   }
 
@@ -247,17 +319,18 @@ router.get('/:child_id/reprobe-due', requireAuth, requireChildOwner, async (req,
 })
 
 // ── POST /api/placement/:child_id/reprobe-result ──────────
-// Same probe, same answer shape as onboarding (resultSchema) — but this is a
+// Same probe, same answer shape as onboarding (resultsSchema) — but this is a
 // PRIOR refresh, not a gate write (design doc §3). V/D/F get only their
-// prior_level updated; the damped recompute (promoteStrands) blends it in
-// exactly like any lesson/story completion would. C has no recompute loop of
-// its own, so it's written directly — same as onboarding.
+// prior_level (and confidence) updated; the damped recompute (promoteStrands)
+// blends it in exactly like any lesson/story completion would. C has no
+// recompute loop of its own, so it's written directly — same as onboarding.
 router.post('/:child_id/reprobe-result', requireAuth, requireChildOwner, async (req, res) => {
-  const parsed = resultSchema.omit({ child_id: true }).safeParse(req.body)
+  const parsed = resultsSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
-  const { level, strands } = parsed.data
+  const results = parsed.data as ProbeResults
   const childId = req.params.child_id as string
   const userId = res.locals.userId
+  const { level, strands, confidence } = scoreProbe(results, probeK())
 
   const [child] = await query(
     `update children set level = $1 where id = $2 and parent_id = $3 returning id`,
@@ -266,31 +339,33 @@ router.post('/:child_id/reprobe-result', requireAuth, requireChildOwner, async (
   if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
 
   for (const [strand, lvl] of Object.entries(strands)) {
+    const conf = confidence[strand as keyof typeof confidence]
     if (strand === 'C') {
       // Placement-only strand — never earned, never recomputed. Re-placement
       // is its only update mechanism, same as onboarding.
       await query(
-        `insert into child_strand_levels (child_id, strand, level, prior_level, source, updated_at)
-         values ($1, $2, $3, $3, 'placement', now())
+        `insert into child_strand_levels (child_id, strand, level, prior_level, confidence, source, updated_at)
+         values ($1, $2, $3, $3, $4, 'placement', now())
          on conflict (child_id, strand) do update
            set level = excluded.level, prior_level = excluded.prior_level,
-               source = 'placement', updated_at = now()`,
-        [childId, strand, lvl]
+               confidence = excluded.confidence, source = 'placement', updated_at = now()`,
+        [childId, strand, lvl, conf]
       )
       continue
     }
-    // V/D/F: refresh the PRIOR only. level/source stay whatever the last
-    // recompute set them to — promoteStrands below blends this prior in
-    // through the same damped, idempotent pipeline as any other trigger. The
-    // INSERT branch (level seeded to the same value) only fires if this strand
-    // somehow has no row yet — shouldn't happen post-onboarding, but if it
-    // does, treating it as a fresh placement is the reasonable fallback.
+    // V/D/F: refresh the PRIOR (and its confidence) only. level/source stay
+    // whatever the last recompute set them to — promoteStrands below blends
+    // this prior in through the same damped, idempotent pipeline as any
+    // other trigger. The INSERT branch (level seeded to the same value) only
+    // fires if this strand somehow has no row yet — shouldn't happen post-
+    // onboarding, but if it does, treating it as a fresh placement is the
+    // reasonable fallback.
     await query(
-      `insert into child_strand_levels (child_id, strand, level, prior_level, source, updated_at)
-       values ($1, $2, $3, $3, 'placement', now())
+      `insert into child_strand_levels (child_id, strand, level, prior_level, confidence, source, updated_at)
+       values ($1, $2, $3, $3, $4, 'placement', now())
        on conflict (child_id, strand) do update
-         set prior_level = excluded.prior_level, updated_at = now()`,
-      [childId, strand, lvl]
+         set prior_level = excluded.prior_level, confidence = excluded.confidence, updated_at = now()`,
+      [childId, strand, lvl, conf]
     )
   }
 

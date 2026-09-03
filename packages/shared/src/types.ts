@@ -42,8 +42,24 @@ export interface ProbeQuestion {
   choices: ProbeChoice[]
   correct_id: string
 }
+/** V/D/F's one-step staircase bank (docs/placement-probe-rebuild.md §3): the
+ *  mid item is always administered first; `hard`/`easy` is chosen from the
+ *  mid result. Either branch entry can be `null` — not enough content to
+ *  represent that tier distinctly — in which case the strand resolves after
+ *  just the mid item, same as the pre-rebuild single-item shape. */
+export interface ProbeStaircase {
+  mid: ProbeQuestion | null
+  hard: ProbeQuestion | null
+  easy: ProbeQuestion | null
+}
+
+/** The full item bank for one probe administration. C stays single/unbranched
+ *  (§3) — `null` means no usable content, so the strand is skipped. */
 export interface PlacementProbe {
-  questions: ProbeQuestion[]
+  V: ProbeStaircase
+  D: ProbeStaircase
+  F: ProbeStaircase
+  C: ProbeQuestion | null
 }
 
 /** A strand level-up earned by clearing unlocked content (progress-driven). */

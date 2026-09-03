@@ -6,44 +6,20 @@ import confetti from 'canvas-confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
-import QuizCard, { type QuizQuestion, type QuizMode } from '@/components/child/QuizCard'
+import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 import Mascot from '@/components/child/Mascot'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import type { Child, Word, ReviewItem } from '@koodakbook/shared'
-
-function pickRandom<T>(arr: T[], n: number): T[] {
-  return [...arr].sort(() => Math.random() - 0.5).slice(0, n)
-}
+import { buildReviewQuestions, buildPaddingQuestions } from '@koodakbook/shared'
 
 // Frustration loop (mig-051): the backend attaches `easing`/`needsReteach` to
 // each due word — thresholds live server-side (frustration.ts) so this file
-// never has to know the numbers, only what to do about them.
-//
-// `easing`: prefer listen_tap over match_image. Of the two review modes,
-// match_image's answer options are TEXT-ONLY (QuizCard.tsx match_image
-// branch renders OptionButton with no image/emoji) — it silently assumes
-// Persian literacy. listen_tap's options carry an image/emoji AND a label,
-// which is the more supported mode for a pre-reader. Distractors also prefer
-// a different category than the target when the pool allows it, since a
-// same-category near-neighbor (two foods, two animals) is the harder
-// discrimination and this is exactly the moment to avoid it.
-function easedQuestion(word: Word, pool: Word[]): QuizQuestion {
-  const others = pool.filter(w => w.id !== word.id)
-  const differentCategory = others.filter(w => w.category !== word.category)
-  const distractorPool = differentCategory.length >= 3 ? differentCategory : others
-  return { mode: 'listen_tap', correctWord: word, distractorWords: pickRandom(distractorPool, 3) }
-}
-
-// Stage 2 (needsReteach): a no-scoring look-and-listen beat before the quiz
-// attempt, reusing QuizCard's existing flashcard mode verbatim — the same
-// component/props lessons use to introduce a word for the first time, not a
-// new remediation screen that would look different from how words are
-// normally taught.
-function reteachQuestion(word: Word): QuizQuestion {
-  return { mode: 'flashcard', correctWord: word }
-}
+// never has to know the numbers. What to DO about the flags (mode choice,
+// distractor selection, the re-teach beat, win-padding) lives in
+// `@koodakbook/shared`'s reviewFrustration module, shared with mobile so the
+// two clients can't drift on it again.
 
 export default function ReviewPage() {
   const router = useRouter()
@@ -86,24 +62,10 @@ export default function ReviewPage() {
     load()
   }, [router])
 
-  const questions = useMemo<QuizQuestion[]>(() => {
-    if (items.length === 0) return []
-    const modes: QuizMode[] = ['match_image', 'listen_tap']
-    const out: QuizQuestion[] = []
-    for (const it of items) {
-      // needsReteach implies easing too (both key off the same rising miss
-      // count) — the quiz attempt right after a re-teach stays eased.
-      if (it.needsReteach) out.push(reteachQuestion(it.word))
-      out.push(it.easing
-        ? easedQuestion(it.word, pool)
-        : {
-            mode: modes[Math.floor(Math.random() * modes.length)],
-            correctWord: it.word,
-            distractorWords: pickRandom(pool.filter(w => w.id !== it.word.id), 3),
-          })
-    }
-    return out
-  }, [items, pool])
+  const questions = useMemo<QuizQuestion[]>(
+    () => (items.length === 0 ? [] : buildReviewQuestions(items, pool)),
+    [items, pool],
+  )
 
   const allQuestions = useMemo(() => [...questions, ...extraQuestions], [questions, extraQuestions])
 
@@ -208,8 +170,8 @@ export default function ReviewPage() {
                     // the session doesn't end on a loss streak (bench happens
                     // server-side via missIntervalDays; this is purely cosmetic).
                     if (reteachShownRef.current.has(word.id)) {
-                      const wins = pickRandom(sessionWinsRef.current, 2)
-                      if (wins.length > 0) setExtraQuestions(q => [...q, ...wins.map(reteachQuestion)])
+                      const padding = buildPaddingQuestions(sessionWinsRef.current, 2)
+                      if (padding.length > 0) setExtraQuestions(q => [...q, ...padding])
                     }
                   }
                   advance()

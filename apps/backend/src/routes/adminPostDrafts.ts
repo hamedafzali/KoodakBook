@@ -20,7 +20,7 @@ const router = Router()
 
 export interface PostDraft {
   id: string
-  source: 'story_published' | 'ai_scheduled'
+  source: 'story_published' | 'ai_scheduled' | 'manual'
   source_ref: string | null
   text: string
   status: 'pending' | 'approved' | 'rejected'
