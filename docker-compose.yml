@@ -56,8 +56,21 @@ services:
       ADMIN_TELEGRAM_CHAT_ID:   ${ADMIN_TELEGRAM_CHAT_ID:-}
     volumes:
       - uploads:/app/uploads
+    # Loopback-only (Finding C, tunnel/auth audit 2026-08): nothing on the LAN
+    # should hit the raw API. The public API is served SAME-ORIGIN
+    # (koodakbook.eu.cc/api/*) — web proxies to backend:4000 over the internal
+    # koodakbook docker network, which doesn't use this host-published port at
+    # all, so loopback-only here removes LAN reach without touching app
+    # function. This used to live in docker-compose.override.yml, but ACM's
+    # own resource-limits editor (project-service.ts applyResourceLimits)
+    # silently deletes or overwrites any file with that exact name in a
+    # managed project — it's ACM's private scratch file for that feature,
+    # even though the filename is a plain Docker Compose convention any
+    # project can legitimately use. Keeping the binding here instead is
+    # immune to that. See docker-compose.yml git history for the original
+    # override file's full writeup if this needs revisiting.
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     depends_on:
       db:
         condition: service_healthy
@@ -69,8 +82,11 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:4000
+    # Loopback-only — see backend's port comment above (same ACM collision,
+    # same fix). Reached via SSH tunnel, not the LAN:
+    #   ssh -L 3002:127.0.0.1:3002 hamed@192.168.178.37  →  http://localhost:3002
     ports:
-      - "3002:3001"
+      - "127.0.0.1:3002:3001"
     depends_on:
       - backend
 
@@ -90,6 +106,16 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:4000
+    # web MUST stay on 0.0.0.0, unlike backend/admin above — do not "helpfully"
+    # lock this one down too. cloudflared runs INSIDE the ACM container, not on
+    # the host, so it reaches host-published apps only via the host gateway
+    # (host.docker.internal / 172.17.0.1) — 127.0.0.1 from that namespace is
+    # ACM's own loopback and is unreachable, which would sever the tunnel.
+    # koodakbook.eu.cc routes to this service; backend/admin have no tunnel
+    # ingress at all, which is what makes loopback-only safe for THEM but not
+    # for this one. Also required unchanged for the ACM pipeline health gate
+    # (`docker run --network host busybox wget http://localhost:3001/api/lessons`,
+    # .acm/pipeline.yml).
     ports:
       - "3001:3000"
     depends_on:
