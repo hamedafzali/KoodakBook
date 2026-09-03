@@ -46,9 +46,9 @@ if (!validDraftText(TEXT, { allowedLinkHost: LINK_HOST })) {
 
 createDraft({
   source: 'manual',
-  source_ref: 'family-invite-2026-09-v2', // v1 baked in the LAN-IP WEB_URL, rejected as superseded
+  source_ref: 'family-invite-2026-09-v3', // v1 baked in the LAN-IP WEB_URL, v2 was a plain screenshot; both rejected as superseded
   text: TEXT,
-  image_path: '/uploads/images/family-invite-2026-09.png', // real child-home screenshot, see chat
+  image_path: '/uploads/images/family-invite-2026-09-v3.png', // composed poster: real child-home screenshot + story-cover art + Vazirmatn text, see tools/post-images/
 })
   .then(async (row) => {
     console.log('Queued draft:', row.id, '— status:', row.status)
