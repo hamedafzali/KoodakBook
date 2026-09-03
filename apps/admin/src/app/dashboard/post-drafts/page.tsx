@@ -118,6 +118,16 @@ export default function PostDraftsPage() {
     if (res.data) setDrafts(ds => ds.map(d => (d.id === id ? res.data! : d)))
   }
 
+  async function sendAgain(id: string) {
+    setBusy(b => ({ ...b, [id]: true }))
+    const res = await api.post<Draft>(`/api/admin/post-drafts/${id}/duplicate`, {})
+    setBusy(b => ({ ...b, [id]: false }))
+    if (res.error) { setError(res.error); return }
+    // The original card is untouched — its own send record stays exactly as
+    // it was. The copy starts pending, so switch there to review/edit it.
+    setStatus('pending')
+  }
+
   async function remove(id: string) {
     setBusy(b => ({ ...b, [id]: true }))
     const res = await api.delete<{ id: string }>(`/api/admin/post-drafts/${id}`)
@@ -188,6 +198,7 @@ export default function PostDraftsPage() {
           {drafts.map(d => {
             const result = d.status === 'approved' && d.post_result ? RESULT_LABEL[d.post_result] : null
             const canRetry = d.status === 'approved' && d.post_result === 'error'
+            const canSendAgain = d.status === 'approved' && (d.post_result === 'sent' || d.post_result === 'dry-run')
             const canDelete = !d.posted_at // never sent, never dry-run — nothing to lose by deleting
             const isEditing = editing[d.id] !== undefined
             return (
@@ -290,6 +301,12 @@ export default function PostDraftsPage() {
                 {canRetry && (
                   <Button disabled={busy[d.id]} onClick={() => void decide(d.id, 'approved')}>
                     تلاش دوباره برای ارسال
+                  </Button>
+                )}
+
+                {canSendAgain && (
+                  <Button variant="secondary" disabled={busy[d.id]} onClick={() => void sendAgain(d.id)}>
+                    ارسال دوباره (به‌عنوان پیش‌نویس جدید)
                   </Button>
                 )}
 

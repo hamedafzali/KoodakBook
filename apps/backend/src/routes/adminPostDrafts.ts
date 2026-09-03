@@ -143,6 +143,39 @@ router.delete(
   }),
 )
 
+/* "Send again" — for a draft you want to post a second time later (a
+ * seasonal reminder, a repost), never a way to retry a failed send (that's
+ * the review endpoint re-approving the SAME row, see below). This makes a
+ * fresh copy instead of touching the original: the sent/dry-run draft keeps
+ * its own posted_at/post_result exactly as it happened, untouched, and the
+ * copy starts pending so wording can be adjusted before it goes out again.
+ * Only from 'approved' (sent or dry-run) — an error draft should use retry
+ * on the same row, not a duplicate; a pending/rejected draft has nothing to
+ * "send again" yet. */
+router.post(
+  '/post-drafts/:id/duplicate',
+  requireAdmin,
+  requirePermission('content.edit'),
+  asyncHandler(async (req, res) => {
+    if (!UUID_RE.test(String(req.params.id))) {
+      res.status(400).json({ data: null, error: 'id must be a uuid' }); return
+    }
+    const draft = await queryOne<PostDraft>('select * from post_drafts where id = $1', [req.params.id])
+    if (!draft) { res.status(404).json({ data: null, error: 'draft not found' }); return }
+    if (draft.status !== 'approved' || draft.post_result === 'error') {
+      res.status(409).json({ data: null, error: 'only a sent or dry-run draft can be sent again' }); return
+    }
+
+    const copy = await createDraft({
+      source: draft.source,
+      source_ref: draft.source_ref ? `${draft.source_ref}-resend` : null,
+      text: draft.text,
+      image_path: draft.image_path,
+    })
+    res.json({ data: copy, error: null })
+  }),
+)
+
 const decisionSchema = z.object({
   decision: z.enum(['approved', 'rejected']),
   note: z.string().trim().max(500).optional(),
