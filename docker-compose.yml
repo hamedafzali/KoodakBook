@@ -82,11 +82,17 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:4000
-    # Loopback-only — see backend's port comment above (same ACM collision,
-    # same fix). Reached via SSH tunnel, not the LAN:
-    #   ssh -L 3002:127.0.0.1:3002 hamed@192.168.178.37  →  http://localhost:3002
+    # LAN-reachable on purpose (2026-09): the SSH-tunnel path stopped working
+    # when AllowTcpForwarding was found disabled in sshd, and fixing that
+    # would need root on a box we don't have sudo on, plus a risky remote
+    # sshd restart just to reach a dashboard. Admin has its own login in
+    # front of it (unlike backend:4000, which stays loopback-only above —
+    # that one has no auth at all), and this is a home network, so binding
+    # to the LAN trades a small, accepted exposure (the login page itself)
+    # for not needing a tunnel every time. Revisit if this box ever leaves
+    # a trusted network.
     ports:
-      - "127.0.0.1:3002:3001"
+      - "3002:3001"
     depends_on:
       - backend
 
