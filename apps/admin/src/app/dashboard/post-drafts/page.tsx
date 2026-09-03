@@ -28,6 +28,7 @@ interface Draft {
   post_result: string | null
 }
 interface Counts { pending: string; approved: string; rejected: string }
+interface TelegramStatus { configured: boolean; channel: string }
 
 const TABS: { key: Status; label: string }[] = [
   { key: 'pending', label: 'در انتظار تأیید' },
@@ -39,21 +40,39 @@ const SOURCE_LABEL: Record<Draft['source'], string> = {
   ai_scheduled: '🤖 تولید خودکار هوش مصنوعی',
   manual: '✍️ نوشته‌شده دستی',
 }
+const RESULT_LABEL: Record<string, { label: string; tone: 'green' | 'amber' | 'red' }> = {
+  sent: { label: '✅ ارسال شد', tone: 'green' },
+  'dry-run': { label: '⚠️ حالت آزمایشی — بدون توکن تلگرام', tone: 'amber' },
+  error: { label: '❌ ارسال نشد', tone: 'red' },
+}
+
+// Within a tab, dry-run/error sit above sent/pending/rejected — an approved
+// draft that didn't actually go anywhere is the thing most likely to be
+// missed if it's buried below ones that worked.
+const RESULT_RANK: Record<string, number> = { error: 0, 'dry-run': 1, sent: 2 }
 
 export default function PostDraftsPage() {
   const [status, setStatus] = useState<Status>('pending')
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [counts, setCounts] = useState<Counts | null>(null)
+  const [telegram, setTelegram] = useState<TelegramStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<Record<string, boolean>>({})
   const [rejecting, setRejecting] = useState<Record<string, string>>({})
+  const [editing, setEditing] = useState<Record<string, string>>({})
 
   const load = useCallback(async (s: Status) => {
     setLoading(true); setError('')
-    const res = await api.get<{ drafts: Draft[]; counts: Counts }>(`/api/admin/post-drafts/queue?status=${s}`)
+    const res = await api.get<{ drafts: Draft[]; counts: Counts; telegram: TelegramStatus }>(`/api/admin/post-drafts/queue?status=${s}`)
     if (res.error) setError(res.error)
-    else { setDrafts(res.data?.drafts ?? []); setCounts(res.data?.counts ?? null) }
+    else {
+      const ds = res.data?.drafts ?? []
+      ds.sort((a, b) => (RESULT_RANK[a.post_result ?? ''] ?? 3) - (RESULT_RANK[b.post_result ?? ''] ?? 3))
+      setDrafts(ds)
+      setCounts(res.data?.counts ?? null)
+      setTelegram(res.data?.telegram ?? null)
+    }
     setLoading(false)
   }, [])
 
@@ -88,6 +107,26 @@ export default function PostDraftsPage() {
     }
   }
 
+  async function saveEdit(id: string) {
+    const text = editing[id]?.trim()
+    if (!text) return
+    setBusy(b => ({ ...b, [id]: true }))
+    const res = await api.patch<Draft>(`/api/admin/post-drafts/${id}`, { text })
+    setBusy(b => ({ ...b, [id]: false }))
+    if (res.error) { setError(res.error); return }
+    setEditing(e => { const { [id]: _drop, ...rest } = e; return rest })
+    if (res.data) setDrafts(ds => ds.map(d => (d.id === id ? res.data! : d)))
+  }
+
+  async function remove(id: string) {
+    setBusy(b => ({ ...b, [id]: true }))
+    const res = await api.delete<{ id: string }>(`/api/admin/post-drafts/${id}`)
+    setBusy(b => ({ ...b, [id]: false }))
+    if (res.error) { setError(res.error); return }
+    setDrafts(ds => ds.filter(d => d.id !== id))
+    setCounts(c => c && { ...c, [status]: String(Math.max(0, Number(c[status]) - 1)) } as Counts)
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -102,6 +141,19 @@ export default function PostDraftsPage() {
           </div>
         }
       />
+
+      {telegram && (
+        telegram.configured ? (
+          <div className="p-3 rounded-lg bg-emerald-50 text-emerald-700 text-sm">
+            ربات کانال متصل است — ارسال به {telegram.channel}
+          </div>
+        ) : (
+          <div className="p-3 rounded-lg bg-amber-50 text-amber-700 text-sm">
+            ربات کانال تنظیم نشده — تأییدها فقط در حالت آزمایشی ثبت می‌شوند و به {telegram.channel} ارسال نمی‌شوند.
+            برای فعال‌سازی، TELEGRAM_BOT_TOKEN را در متغیرهای پروژه تنظیم کنید.
+          </div>
+        )
+      )}
 
       {counts && (
         <div className="grid grid-cols-3 gap-3">
@@ -134,14 +186,16 @@ export default function PostDraftsPage() {
       ) : (
         <div className="space-y-3">
           {drafts.map(d => {
-            const sendFailed = d.status === 'approved' && d.post_result === 'error'
+            const result = d.status === 'approved' && d.post_result ? RESULT_LABEL[d.post_result] : null
+            const canRetry = d.status === 'approved' && d.post_result === 'error'
+            const canDelete = !d.posted_at // never sent, never dry-run — nothing to lose by deleting
+            const isEditing = editing[d.id] !== undefined
             return (
               <Card key={d.id} className="p-4 flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-slate-700">{SOURCE_LABEL[d.source]}</span>
-                    {sendFailed && <Badge tone="red">ارسال نشد</Badge>}
-                    {d.status === 'approved' && d.post_result === 'dry-run' && <Badge tone="amber">حالت آزمایشی — بدون توکن تلگرام</Badge>}
+                    {result && <Badge tone={result.tone}>{result.label}</Badge>}
                   </div>
                   <span className="text-xs text-slate-400">{new Date(d.created_at).toLocaleString('fa-IR')}</span>
                 </div>
@@ -154,9 +208,20 @@ export default function PostDraftsPage() {
                   />
                 )}
 
-                <p className="whitespace-pre-wrap text-sm text-slate-700 bg-slate-50 rounded-xl px-3 py-2" dir="rtl">
-                  {d.text}
-                </p>
+                {isEditing ? (
+                  <textarea
+                    autoFocus
+                    value={editing[d.id]}
+                    onChange={e => setEditing(v => ({ ...v, [d.id]: e.target.value }))}
+                    rows={5}
+                    dir="rtl"
+                    className="w-full text-sm border border-slate-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-amber-300"
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap text-sm text-slate-700 bg-slate-50 rounded-xl px-3 py-2" dir="rtl">
+                    {d.text}
+                  </p>
+                )}
 
                 {d.review_note && (
                   <div className="text-xs text-rose-700 bg-rose-50 rounded p-2">دلیل رد: {d.review_note}</div>
@@ -166,7 +231,19 @@ export default function PostDraftsPage() {
                 )}
 
                 {status === 'pending' && (
-                  rejecting[d.id] !== undefined ? (
+                  isEditing ? (
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        disabled={!editing[d.id]?.trim() || busy[d.id]}
+                        onClick={() => void saveEdit(d.id)}
+                      >ذخیره ویرایش</Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setEditing(v => { const { [d.id]: _drop, ...rest } = v; return rest })}
+                      >انصراف</Button>
+                    </div>
+                  ) : rejecting[d.id] !== undefined ? (
                     <div className="space-y-2">
                       <textarea
                         autoFocus
@@ -199,16 +276,29 @@ export default function PostDraftsPage() {
                       <Button
                         variant="secondary"
                         disabled={busy[d.id]}
+                        onClick={() => setEditing(v => ({ ...v, [d.id]: d.text }))}
+                      >ویرایش</Button>
+                      <Button
+                        variant="secondary"
+                        disabled={busy[d.id]}
                         onClick={() => setRejecting(r => ({ ...r, [d.id]: '' }))}
                       >رد</Button>
                     </div>
                   )
                 )}
 
-                {sendFailed && (
+                {canRetry && (
                   <Button disabled={busy[d.id]} onClick={() => void decide(d.id, 'approved')}>
                     تلاش دوباره برای ارسال
                   </Button>
+                )}
+
+                {canDelete && !isEditing && (
+                  <button
+                    onClick={() => void remove(d.id)}
+                    disabled={busy[d.id]}
+                    className="self-start text-xs text-slate-400 hover:text-rose-600 transition"
+                  >حذف</button>
                 )}
               </Card>
             )

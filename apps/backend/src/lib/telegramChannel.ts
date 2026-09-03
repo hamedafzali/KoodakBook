@@ -38,6 +38,14 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR ?? './uploads'
 
 export type PostResult = 'sent' | 'dry-run' | 'error'
 
+/** Presence-only status for the post-drafts admin page's config banner — never
+ *  the token itself. Lets "approved but nothing happened" be explained on
+ *  screen (adminPostDrafts.ts queue endpoint) instead of requiring a DB/env
+ *  lookup to notice the bot was never configured. */
+export function channelStatus(): { configured: boolean; channel: string } {
+  return { configured: TG_TOKEN.length > 0, channel: TG_CHANNEL }
+}
+
 interface NewStory {
   title_persian: string
   title_english: string

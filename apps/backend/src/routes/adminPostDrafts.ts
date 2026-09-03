@@ -3,7 +3,11 @@ import { z } from 'zod'
 import { requireAdmin, requirePermission } from '../middleware/admin'
 import { query, queryOne } from '../lib/db'
 import { asyncHandler } from '../lib/asyncHandler'
-import { postToChannel } from '../lib/telegramChannel'
+import { postToChannel, channelStatus } from '../lib/telegramChannel'
+import { validDraftText } from '../lib/postGuard'
+
+const WEB_URL = process.env.WEB_URL ?? 'http://localhost:3000'
+const LINK_HOST = (() => { try { return new URL(WEB_URL).host } catch { return undefined } })()
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -76,8 +80,68 @@ router.get('/post-drafts/queue', requireAdmin, requirePermission('content.read')
        count(*) filter (where status = 'rejected') as rejected
      from post_drafts`,
   )
-  res.json({ data: { drafts, counts }, error: null })
+  res.json({ data: { drafts, counts, telegram: channelStatus() }, error: null })
 })
+
+const editSchema = z.object({
+  text: z.string().trim().min(1).max(800),
+})
+
+/* Wording fixes on a pending draft, without a reject-and-regenerate round
+ * trip. Same content gate every producer's text passes through — an edit is
+ * new text, same rules. Only pending drafts are editable: once a decision is
+ * recorded (approved/rejected), the row is a record of what happened, not a
+ * work-in-progress. */
+router.patch(
+  '/post-drafts/:id',
+  requireAdmin,
+  requirePermission('content.edit'),
+  asyncHandler(async (req, res) => {
+    if (!UUID_RE.test(String(req.params.id))) {
+      res.status(400).json({ data: null, error: 'id must be a uuid' }); return
+    }
+    const parsed = editSchema.safeParse(req.body)
+    if (!parsed.success) { res.status(400).json({ data: null, error: 'text is required' }); return }
+
+    const draft = await queryOne<PostDraft>('select * from post_drafts where id = $1', [req.params.id])
+    if (!draft) { res.status(404).json({ data: null, error: 'draft not found' }); return }
+    if (draft.status !== 'pending') {
+      res.status(409).json({ data: null, error: 'only a pending draft can be edited' }); return
+    }
+    if (!validDraftText(parsed.data.text, { allowedLinkHost: LINK_HOST })) {
+      res.status(400).json({ data: null, error: 'متن ویرایش‌شده قوانین محتوا را رعایت نمی‌کند' }); return
+    }
+
+    const row = await queryOne<PostDraft>(
+      `update post_drafts set text = $2 where id = $1 returning *`,
+      [req.params.id, parsed.data.text],
+    )
+    res.json({ data: row, error: null })
+  }),
+)
+
+/* Delete, for drafts that should just go away rather than sit as rejected
+ * records — never for anything Telegram has already seen (sent OR dry-run:
+ * both mean the approve action happened and postToChannel ran), which stays
+ * as a permanent record. */
+router.delete(
+  '/post-drafts/:id',
+  requireAdmin,
+  requirePermission('content.edit'),
+  asyncHandler(async (req, res) => {
+    if (!UUID_RE.test(String(req.params.id))) {
+      res.status(400).json({ data: null, error: 'id must be a uuid' }); return
+    }
+    const draft = await queryOne<PostDraft>('select * from post_drafts where id = $1', [req.params.id])
+    if (!draft) { res.status(404).json({ data: null, error: 'draft not found' }); return }
+    if (draft.posted_at) {
+      res.status(409).json({ data: null, error: 'a draft that was sent to Telegram (or dry-run) cannot be deleted' }); return
+    }
+
+    await query('delete from post_drafts where id = $1', [req.params.id])
+    res.json({ data: { id: req.params.id }, error: null })
+  }),
+)
 
 const decisionSchema = z.object({
   decision: z.enum(['approved', 'rejected']),
