@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
+import { mediaUrl } from '@/lib/media'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
@@ -35,9 +36,11 @@ export default function SpeakPage() {
         api.get<Word[]>('/api/words'),
         api.get<Child[]>('/api/children'),
       ])
-      // Prefer words that have an emoji so the child has a visual cue
+      // Prefer words that have a real image or, failing that, an emoji, so
+      // the child always has a visual cue — same "has a visual" test WordTile
+      // and QuizCard use, not emoji-only.
       const all = wordsRes.data ?? []
-      const withVisual = all.filter(w => wordEmoji(w.english))
+      const withVisual = all.filter(w => w.image_url || wordEmoji(w.english))
       setWords((withVisual.length >= 8 ? withVisual : all).slice(0, 20))
       const child = pickChild(childRes.data ?? [])
       if (child) setChildId(child.id)
@@ -50,6 +53,7 @@ export default function SpeakPage() {
   if (words.length === 0) return <LoadingScreen message="کلمه‌ای نیست" />
 
   const word = words[idx]
+  const image = mediaUrl(word.image_url)
   const emoji = wordEmoji(word.english)
 
   async function record() {
@@ -95,7 +99,11 @@ export default function SpeakPage() {
           className="w-full max-w-sm bg-white rounded-lg shadow-md p-6 flex flex-col items-center gap-2 touch-target"
           aria-label={`بشنو: ${word.persian}`}
         >
-          {emoji && <span className="text-7xl leading-none" aria-hidden="true">{emoji}</span>}
+          {image ? (
+            <img src={image} alt="" className="w-28 h-28 object-contain" />
+          ) : emoji ? (
+            <span className="text-7xl leading-none" aria-hidden="true">{emoji}</span>
+          ) : null}
           <span className="text-5xl font-bold text-gray-800">{word.persian}</span>
           <span className="text-base text-gray-500 ltr">{word.english}</span>
           <span className="text-xs text-amber-700">🔊 اول گوش کن</span>

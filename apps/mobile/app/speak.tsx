@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, Word } from '@koodakbook/shared'
@@ -7,6 +8,7 @@ import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { playClip } from '@/lib/sound'
+import { mediaUrl } from '@/lib/media'
 import { colors, fonts } from '@/lib/theme'
 
 /**
@@ -29,8 +31,9 @@ export default function Speak() {
       if (activeId) setChildId(activeId)
       const res = await api.get<Word[]>('/api/words')
       const all = res.data ?? []
-      // Prefer words with an emoji so the child has a visual cue.
-      const withVisual = all.filter((w) => wordEmoji(w.english))
+      // Prefer words with a real image or, failing that, an emoji, so the
+      // child always has a visual cue — same test QuizCard uses, not emoji-only.
+      const withVisual = all.filter((w) => w.image_url || wordEmoji(w.english))
       setWords((withVisual.length >= 8 ? withVisual : all).slice(0, 20))
     }
     load()
@@ -60,6 +63,7 @@ export default function Speak() {
     )
   }
 
+  const image = mediaUrl(word.image_url)
   const emoji = wordEmoji(word.english)
 
   function confirmSaid() {
@@ -97,7 +101,11 @@ export default function Speak() {
 
       {/* Word card — tap to hear again */}
       <Pressable style={styles.card} onPress={() => playClip(word.audio_url)}>
-        {emoji && <Text style={styles.cardEmoji}>{emoji}</Text>}
+        {image ? (
+          <Image source={{ uri: image }} style={styles.cardImage} contentFit="contain" />
+        ) : emoji ? (
+          <Text style={styles.cardEmoji}>{emoji}</Text>
+        ) : null}
         <Text style={styles.cardWord}>{word.persian}</Text>
         <Text style={styles.cardLatin}>{word.english}</Text>
         <Text style={styles.cardListen}>🔊 اول گوش کن</Text>
@@ -137,6 +145,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
   },
   cardEmoji: { fontSize: 72, lineHeight: 84 },
+  cardImage: { width: 112, height: 112 },
   cardWord: { fontSize: 44, fontFamily: fonts.bold, color: colors.text },
   cardLatin: { fontSize: 16, fontFamily: fonts.regular, color: colors.muted },
   cardListen: { fontSize: 12, fontFamily: fonts.regular, color: '#b45309', marginTop: 4 },
