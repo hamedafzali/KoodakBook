@@ -216,9 +216,13 @@ export default function ChildHomePage() {
                 <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium">🎓 {resolveLevel(stats.xp).label}</div>
               </div>
             )}
-            {band !== 3 && stats.streak > 0 && (
-              <div className="inline-block bg-white/20 rounded-full px-3 py-1 text-sm font-medium mt-2">🔥 {stats.streak} روز</div>
-            )}
+            {/* Streak count hidden for bands 1-2 (expert review, streak
+                hazard): a broken-streak number is exactly the punishment-
+                for-failure shape the frustration-loop work was meant to
+                eliminate, and the youngest kids have no control over whether
+                a tablet gets handed to them on a given day. Band 3 keeps it
+                in the chip row above; every band still sees it on the
+                parent dashboard. */}
           </div>
           <button onClick={() => speakPersian(nextUp.say)} aria-label="مَسکات — بگو چی کار کنیم">
             <Mascot size={band === 1 ? 116 : 96} mood={stats.streak > 0 ? 'happy' : 'idle'} />

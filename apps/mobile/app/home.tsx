@@ -16,6 +16,7 @@ import ScreenBackground from '@/components/ScreenBackground'
 import Tutorial from '@/components/Tutorial'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
+import { childAge } from '@/lib/math'
 import { mediaUrl } from '@/lib/media'
 import { ensurePrefs, hasSeenTutorial } from '@/lib/prefs'
 import { playClip } from '@/lib/sound'
@@ -153,7 +154,13 @@ export default function Home() {
           <Text style={styles.greeting}>{greeting()} 👋</Text>
           <Text style={styles.heroName}>{child.name}</Text>
           <View style={styles.chips}>
-            {stats.streak > 0 && <Chip text={`🔥 ${toPersianDigits(stats.streak)} روز`} />}
+            {/* Streak count hidden for bands 1-2 (expert review, streak
+                hazard — same rule as web's child/home): a broken-streak
+                number is exactly the punishment-for-failure shape the
+                frustration-loop work eliminated elsewhere. Band 3 (8+)
+                still sees it here; every band still sees it on the parent
+                dashboard. */}
+            {childAge(child) > 7 && stats.streak > 0 && <Chip text={`🔥 ${toPersianDigits(stats.streak)} روز`} />}
             {stats.words > 0 && <Chip text={`⭐ ${toPersianDigits(stats.words)} کلمه`} />}
             <Chip text={`🎓 ${resolveLevel(stats.xp).label}`} />
           </View>
