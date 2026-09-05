@@ -130,7 +130,7 @@ export default async function First100WordsPage() {
 
         <p className="mt-8 text-center text-sm text-slate-500 max-w-md mx-auto">
           این همان ۱۰۰ کلمه اولی است که کودک‌بوک برای شروع آموزش فارسی استفاده می‌کند.{' '}
-          <a href="/alphabet" className="text-brand font-bold hover:underline">الفبای فارسی را هم امتحان کن</a>
+          <a href="/alphabet" className="text-brand-text font-bold hover:underline">الفبای فارسی را هم امتحان کن</a>
         </p>
       </main>
     </div>

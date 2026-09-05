@@ -49,7 +49,7 @@ export function TapToHearExplorer({
             aria-pressed={item.id === selectedId}
             className={`aspect-square rounded-2xl border flex items-center justify-center text-xl sm:text-2xl font-bold transition
               ${item.id === selectedId
-                ? 'bg-brand-light border-brand text-brand shadow-sm ring-2 ring-brand-light'
+                ? 'bg-brand-light border-brand text-brand-text shadow-sm ring-2 ring-brand-light'
                 : 'bg-white border-slate-200 text-slate-800 hover:border-brand/50 hover:bg-brand-pale'}`}
           >
             {item.tile}
@@ -81,7 +81,7 @@ export function TapToHearExplorer({
       {selectedId && (
         <div className="mt-6 text-center text-sm text-slate-500 border-t border-dashed border-slate-200 pt-4">
           {nudgeText}{' '}
-          <Link href="/signup" className="text-brand font-bold hover:underline">ثبت‌نام رایگان</Link>
+          <Link href="/signup" className="text-brand-text font-bold hover:underline">ثبت‌نام رایگان</Link>
         </div>
       )}
     </div>

@@ -132,7 +132,7 @@ export default async function AlphabetPage() {
 
         <p className="mt-8 text-center text-sm text-slate-500 max-w-md mx-auto">
           کودک‌بوک آموزش فارسی را با صداکشی (ترکیب صداها) شروع می‌کند — همان روشی که علم خواندن آن را تأیید کرده.{' '}
-          <a href="/" className="text-brand font-bold hover:underline">درباره کودک‌بوک بیشتر بدانید</a>
+          <a href="/" className="text-brand-text font-bold hover:underline">درباره کودک‌بوک بیشتر بدانید</a>
         </p>
       </main>
     </div>
