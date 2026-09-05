@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { markParentUnlocked, isParentUnlocked } from '@/lib/auth'
-import { setMode } from '@/lib/mode'
+import { setMode, enterChildMode } from '@/lib/mode'
 
 const PIN_LENGTH = 4
 
@@ -11,6 +12,23 @@ type State = 'loading' | 'set_pin' | 'enter_pin' | 'reset' | 'unlocked'
 
 interface Props {
   children: React.ReactNode
+}
+
+/** A child who opened the parent area by accident has no way back — the
+ *  only exit before this was a text link ("پین را فراموش کردید؟"), and only
+ *  in one of three locked states. A big, icon-only home button works for a
+ *  child who can't read yet and is shown in every locked state. */
+function ChildExitButton() {
+  const router = useRouter()
+  return (
+    <button
+      onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
+      aria-label="بازگشت به صفحه کودک"
+      className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-2xl transition-colors touch-target"
+    >
+      <span aria-hidden="true">🏠</span>
+    </button>
+  )
 }
 
 export default function ParentGate({ children }: Props) {
@@ -138,7 +156,8 @@ export default function ParentGate({ children }: Props) {
   // ── Reset screen (password) ──
   if (state === 'reset') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-6">
+      <div className="relative min-h-screen flex flex-col items-center justify-center bg-slate-900 p-6">
+        <ChildExitButton />
         <motion.div
           ref={containerRef}
           animate={shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : { x: 0 }}
@@ -187,7 +206,8 @@ export default function ParentGate({ children }: Props) {
     : 'این بخش برای والدین است'
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-6">
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-slate-900 p-6">
+      <ChildExitButton />
       <motion.div
         ref={containerRef}
         animate={shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : { x: 0 }}

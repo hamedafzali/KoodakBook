@@ -83,10 +83,16 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
   if (!page) return null
 
   return (
-    <div className="flex flex-col h-full min-h-screen child-bg">
+    // h-dvh + overflow-hidden pins this to the actual viewport height (not
+    // just its minimum) so the header and nav can never be pushed off by a
+    // tall page — only the middle content region scrolls. Previously this
+    // was min-h-screen with no overflow cap, so a page whose image + text
+    // was taller than the viewport grew the whole layout past it and shoved
+    // "بعدی" below the fold, requiring a scroll to advance every page.
+    <div className="flex flex-col h-dvh overflow-hidden child-bg">
 
       {/* Header */}
-      <div className="bg-white/90 backdrop-blur-md border-b border-amber-100 px-4 py-3">
+      <div className="shrink-0 bg-white/90 backdrop-blur-md border-b border-amber-100 px-4 py-3">
         <div className="flex items-center gap-3">
           {onBack && (
             <motion.button
@@ -196,7 +202,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
 
       {/* Navigation */}
       <div
-        className="px-4 pb-6 pt-3 flex gap-3 bg-white/80 backdrop-blur-md border-t border-amber-100"
+        className="shrink-0 px-4 pb-6 pt-3 flex gap-3 bg-white/80 backdrop-blur-md border-t border-amber-100"
         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
       >
         <motion.button

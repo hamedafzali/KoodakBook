@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const [logoutConfirm, setLogoutConfirm] = useState(false)
   const [children, setChildren] = useState<Child[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem(GOAL_KEY)
@@ -37,6 +38,9 @@ export default function SettingsPage() {
         setChildren(res.data)
         if (!getActiveChildId() && res.data[0]) setActiveId(res.data[0].id)
       }
+    })
+    api.get<{ email: string }>('/api/auth/me').then(res => {
+      if (res.data?.email) setEmail(res.data.email)
     })
   }, [])
 
@@ -223,6 +227,17 @@ export default function SettingsPage() {
           <section aria-labelledby="account-settings-title">
             <h2 id="account-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">حساب کاربری</h2>
             <div className="bg-white rounded-md shadow-sm divide-y divide-slate-100">
+              {email && (
+                <div className="flex items-center gap-3 px-5 py-4">
+                  <span className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-sm font-bold shrink-0" aria-hidden="true">
+                    {email[0].toUpperCase()}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs text-slate-400">وارد شده به عنوان</p>
+                    <p className="font-medium text-slate-800 text-sm truncate ltr text-left" dir="ltr">{email}</p>
+                  </div>
+                </div>
+              )}
               <button
                 onClick={resetParentPin}
                 className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-right min-h-[56px]"

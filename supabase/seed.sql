@@ -62,9 +62,11 @@ insert into words (persian, english, finglish, category, stage) values
 on conflict (persian, english) do nothing;
 
 -- ── Letters ───────────────────────────────────────────────
+-- آ (alef + madda) is a diacritic form of ا, not a distinct letter of the
+-- 32-letter Persian alphabet — see migration 058_merge_alef_mad.sql, which
+-- also removes it from any database seeded before this line changed.
 insert into letters (character, name_persian, name_english, "group", order_in_group) values
   ('ا', 'الف',     'Alef',    1, 1),
-  ('آ', 'الف مد',  'Alef Mad',1, 2),
   ('ب', 'به',      'Be',      2, 1),
   ('پ', 'په',      'Pe',      2, 2),
   ('ت', 'ته',      'Te',      2, 3),
