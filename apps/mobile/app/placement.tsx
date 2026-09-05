@@ -248,18 +248,18 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
   },
   showTextCard: {
-    backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 40, paddingVertical: 28,
+    backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 28, paddingVertical: 20,
     shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
   },
-  showText: { fontSize: 56, fontFamily: fonts.bold, color: colors.text },
+  showText: { fontSize: 38, fontFamily: fonts.bold, color: colors.text },
   choices: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, maxWidth: 340 },
   choice: {
     width: 96, height: 96, borderRadius: 24, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
-  choiceEmoji: { fontSize: 46 },
-  choiceLetter: { fontSize: 46, fontFamily: fonts.bold, color: colors.text },
+  choiceEmoji: { fontSize: 34 },
+  choiceLetter: { fontSize: 34, fontFamily: fonts.bold, color: colors.text },
   feedback: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', gap: 6 },
   feedbackText: { fontSize: 22, fontFamily: fonts.bold },
 })

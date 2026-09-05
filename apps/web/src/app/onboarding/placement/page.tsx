@@ -200,8 +200,8 @@ function PlacementInner() {
             🔊
           </button>
         ) : (
-          <div className="bg-white rounded-lg shadow-lg px-10 py-8">
-            <span className="text-6xl font-bold text-gray-800">{q.show_text}</span>
+          <div className="bg-white rounded-lg shadow-lg px-6 py-6 sm:px-10 sm:py-8">
+            <span className="text-4xl sm:text-6xl font-bold text-gray-800">{q.show_text}</span>
           </div>
         )}
 
@@ -216,7 +216,7 @@ function PlacementInner() {
               className="aspect-square bg-white rounded-[1.5rem] shadow-md flex flex-col items-center justify-center gap-1 disabled:opacity-60 touch-target"
               aria-label={c.persian}
             >
-              <span className={c.kind === 'letter' ? 'text-5xl font-bold text-gray-800' : 'text-5xl'}>{choiceFace(c)}</span>
+              <span className={c.kind === 'letter' ? 'text-3xl sm:text-5xl font-bold text-gray-800' : 'text-3xl sm:text-5xl'}>{choiceFace(c)}</span>
             </motion.button>
           ))}
         </div>
