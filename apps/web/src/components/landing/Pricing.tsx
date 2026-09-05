@@ -71,26 +71,26 @@ export default function Pricing() {
             className={`relative rounded-3xl bg-white p-7 flex flex-col ${
               highlight ? 'border-2 border-amber-400 shadow-lg shadow-amber-100' : 'border border-slate-200'}`}>
             {p.badge && (
-              <span className="absolute -top-3.5 right-6 bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-full">{p.badge}</span>
+              <span className="absolute -top-3.5 right-6 bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-full">{p.badge}</span>
             )}
             <h3 className="font-bold text-xl">{p.name}</h3>
             {p.show_price ? (
               <p className="text-3xl font-bold mt-2">
-                {price(p)}<span className="text-sm font-normal text-slate-400"> {INTERVAL[p.interval]}</span>
+                {price(p)}<span className="text-sm font-normal text-slate-500"> {INTERVAL[p.interval]}</span>
               </p>
             ) : (
-              <p className="text-lg font-bold mt-3 text-slate-400">قیمت به‌زودی اعلام می‌شود</p>
+              <p className="text-lg font-bold mt-3 text-slate-500">قیمت به‌زودی اعلام می‌شود</p>
             )}
             {p.description && <p className="text-sm text-slate-500 mt-1">{p.description}</p>}
             <ul className="mt-5 space-y-2.5 text-sm text-slate-600 flex-1">
               {featureLines(p.features).map(l => <li key={l}>{free ? '✅' : '⭐'} {l}</li>)}
             </ul>
             {p.purchasable ? (
-              <Link href="/signup" className="block text-center mt-7 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition">
+              <Link href="/signup" className="block text-center mt-7 bg-amber-700 hover:bg-amber-800 text-white font-bold py-3 rounded-xl transition">
                 {free ? 'شروع رایگان' : 'انتخاب این پلن'}
               </Link>
             ) : (
-              <span className="block text-center mt-7 bg-slate-100 text-slate-400 font-bold py-3 rounded-xl cursor-default select-none">
+              <span className="block text-center mt-7 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl cursor-default select-none">
                 به‌زودی
               </span>
             )}

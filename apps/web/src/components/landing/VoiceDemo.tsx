@@ -37,7 +37,7 @@ export default function VoiceDemo() {
   return (
     <div className="mt-10 rounded-3xl bg-white border border-slate-200 p-6 sm:p-8">
       <div className="text-center mb-5">
-        <p className="text-amber-600 font-bold text-sm mb-1.5">با گوش خودتان بشنوید 🎧</p>
+        <p className="text-amber-700 font-bold text-sm mb-1.5">با گوش خودتان بشنوید 🎧</p>
         <h3 className="text-xl font-bold text-slate-800">صدای قصه‌گوی کودک‌بوک</h3>
       </div>
 
@@ -56,7 +56,7 @@ export default function VoiceDemo() {
         </button>
       </div>
 
-      <p className="text-center text-xs text-slate-400 mt-4 persian-text">
+      <p className="text-center text-xs text-slate-500 mt-4 persian-text">
         همه‌ی داستان‌ها، حروف و واژه‌ها با همین صدای طبیعی خوانده می‌شوند — برای همه‌ی حساب‌ها.
       </p>
     </div>

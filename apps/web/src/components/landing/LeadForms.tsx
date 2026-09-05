@@ -44,11 +44,11 @@ export function TabletForm() {
       <textarea rows={2} placeholder="توضیح (اختیاری) — مثلاً برای چند کودک و چه سنی؟" value={form.message}
         onChange={e => setForm(f => ({ ...f, message: e.target.value }))} className={input} />
       <button type="submit" disabled={state === 'busy'}
-        className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-60">
+        className="w-full sm:w-auto bg-amber-700 hover:bg-amber-800 text-white font-bold px-8 py-3 rounded-xl transition disabled:opacity-60">
         {state === 'busy' ? 'در حال ارسال…' : 'ثبت پیش‌سفارش تبلت'}
       </button>
       {err && <p className="text-sm text-red-600">{err}</p>}
-      <p className="text-xs text-slate-400">با ثبت درخواست هیچ مبلغی پرداخت نمی‌کنید — اول با شما تماس می‌گیریم.</p>
+      <p className="text-xs text-slate-500">با ثبت درخواست هیچ مبلغی پرداخت نمی‌کنید — اول با شما تماس می‌گیریم.</p>
     </form>
   )
 }
