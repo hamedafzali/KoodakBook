@@ -13,6 +13,10 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
 
   try {
     const payload = verifyToken(token)
+    // A kid-login token carries the parent's account id but proves nothing
+    // about identity — never let one into the admin panel even if that
+    // parent happens to be an admin/owner.
+    if (payload.scope === 'child') { res.status(403).json({ data: null, error: 'Forbidden' }); return }
     const user = await queryOne<{ email: string }>('select email from users where id = $1', [payload.sub])
     if (!user) { res.status(403).json({ data: null, error: 'Forbidden' }); return }
     if (!(await isAdminUser(payload.sub, user.email))) {

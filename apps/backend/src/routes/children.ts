@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
-import { requireAuth } from '../middleware/auth'
+import { requireAuth, requireParent } from '../middleware/auth'
 import { asyncHandler } from '../lib/asyncHandler'
 
 const router = Router()
@@ -23,6 +23,10 @@ function isUniqueViolation(err: unknown): boolean {
   return (err as { code?: string })?.code === '23505'
 }
 
+// Left open to a kid-login session too: every child-mode screen calls this
+// to find its own profile among siblings (there's no other "who am I"
+// lookup for child mode). It only lists — creating or editing a profile
+// below is gated to requireParent.
 router.get('/', requireAuth, async (_req, res) => {
   const userId = res.locals.userId
   const rows = await query(
@@ -32,7 +36,9 @@ router.get('/', requireAuth, async (_req, res) => {
   res.json({ data: rows, error: null })
 })
 
-router.post('/', requireAuth, asyncHandler(async (req, res) => {
+// requireParent: creating a profile (and username, below) is account
+// management, not something a kid-login session should ever reach.
+router.post('/', requireAuth, requireParent, asyncHandler(async (req, res) => {
   const userId = res.locals.userId
   const parsed = createChildSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }
@@ -69,7 +75,9 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   }
 }))
 
-router.patch('/:id', requireAuth, asyncHandler(async (req, res) => {
+// requireParent: renaming a profile, changing its login username, or
+// picking a different level is account management, not a kid-login action.
+router.patch('/:id', requireAuth, requireParent, asyncHandler(async (req, res) => {
   const userId = res.locals.userId
   const parsed = createChildSchema.partial().safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: parsed.error.message }); return }

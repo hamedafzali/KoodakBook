@@ -2,9 +2,9 @@ import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
-import { signToken } from '../lib/jwt'
+import { signParentToken, signChildToken } from '../lib/jwt'
 import { clientIp } from '../lib/clientIp'
-import { requireAuth } from '../middleware/auth'
+import { requireAuth, requireParent } from '../middleware/auth'
 
 const router = Router()
 
@@ -27,7 +27,7 @@ router.post('/signup', async (req, res) => {
     [email, password_hash]
   )
 
-  const token = signToken(user.id)
+  const token = signParentToken(user.id)
   res.status(201).json({ data: { token, user_id: user.id }, error: null })
   // Fire-and-forget: a Telegram hiccup must never fail the signup.
   const { notifyNewSignup } = await import('../lib/adminNotify')
@@ -39,6 +39,13 @@ router.post('/signup', async (req, res) => {
 // child mode. No password — kids can't type them; the parent area stays behind
 // the PIN. Rate-limited so names can't be enumerated quickly. Future: this is
 // the hook point for face recognition.
+//
+// The issued token is scope: 'child' (signChildToken), NOT the parent's own
+// token — it used to be signToken(child.parent_id), meaning guessing a
+// username handed out full parent-account access with zero proof of
+// identity. A child-scoped token can now only reach that one child's own
+// data (middleware/childOwner.ts) and is rejected outright by requireParent
+// (PIN set/reset, child-profile management) and requireAdmin.
 // Keyed on the real client IP (clientIp), NOT req.ip: behind cloudflared→nginx
 // req.ip is nginx's address for every request, so a req.ip bucket would be
 // global — one caller could lock out all child logins, and per-attacker
@@ -64,7 +71,7 @@ router.post('/child-login', async (req, res) => {
   const child = await queryOne<{ id: string; name: string; parent_id: string }>(
     'select id, name, parent_id from children where lower(username) = $1', [username])
   if (!child) { res.status(404).json({ data: null, error: 'این اسم را پیدا نکردم! از مامان یا بابا بپرس' }); return }
-  const token = signToken(child.parent_id)
+  const token = signChildToken(child.parent_id, child.id)
   res.json({ data: { token, child_id: child.id, child_name: child.name }, error: null })
 })
 
@@ -87,7 +94,7 @@ router.post('/login', async (req, res) => {
     return
   }
 
-  const token = signToken(user.id)
+  const token = signParentToken(user.id)
   res.json({ data: { token, user_id: user.id }, error: null })
 })
 
@@ -117,7 +124,9 @@ const LOCK_THRESHOLD = 5
 const LOCK_MINUTES = 15
 
 // First-run set. Refuses if a PIN already exists (use reset to change).
-router.post('/pin/set', requireAuth, async (req, res) => {
+// requireParent: a kid-login session proves nothing about identity — it must
+// not be able to install the PIN that then unlocks the parent area.
+router.post('/pin/set', requireAuth, requireParent, async (req, res) => {
   const parsed = pinSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: 'PIN must be 4 digits' }); return }
 
@@ -133,6 +142,11 @@ router.post('/pin/set', requireAuth, async (req, res) => {
 })
 
 // Verify. Always 200; the body says whether it matched / is locked.
+// Deliberately requireAuth only, NOT requireParent — this is the intended
+// escalation path: a device stuck on a kid-login session (e.g. a shared
+// tablet a child opened) proves it's actually the parent by knowing the
+// PIN, same as any other device. What a kid-login session can't do is
+// INSTALL or CLEAR a PIN without that proof (see pin/set, pin/reset).
 router.post('/pin/verify', requireAuth, async (req, res) => {
   const parsed = pinSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: 'PIN must be 4 digits' }); return }
@@ -159,8 +173,11 @@ router.post('/pin/verify', requireAuth, async (req, res) => {
 
 // Forgot PIN → clear it with the account password (a child can't bypass it).
 // After this the account has no PIN, so the gate falls back to first-run set.
+// requireParent too: a kid-login session that somehow learned the account
+// password should still go through a real /login, not clear the PIN from
+// inside a spoofable-scope session.
 const resetSchema = z.object({ password: z.string().min(6) })
-router.post('/pin/reset', requireAuth, async (req, res) => {
+router.post('/pin/reset', requireAuth, requireParent, async (req, res) => {
   const parsed = resetSchema.safeParse(req.body)
   if (!parsed.success) { res.status(400).json({ data: null, error: 'Password required' }); return }
 

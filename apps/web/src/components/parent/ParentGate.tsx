@@ -32,6 +32,7 @@ function ChildExitButton() {
 }
 
 export default function ParentGate({ children }: Props) {
+  const router = useRouter()
   const [state, setState] = useState<State>('loading')
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
@@ -93,9 +94,18 @@ export default function ParentGate({ children }: Props) {
     const res = await api.post<{ ok: boolean }>('/api/auth/pin/set', { pin: p })
     setBusy(false)
     if (res.data?.ok) { unlock(); return }
-    // A PIN already exists (e.g. set in another tab) → fall back to entering it.
-    setStep('first'); setPin(''); setConfirmPin(''); setError(null)
-    setState('enter_pin')
+    setStep('first'); setPin(''); setConfirmPin('')
+    if (res.error === 'PIN already set') {
+      // Set in another tab/device meanwhile → fall back to entering it.
+      setError(null)
+      setState('enter_pin')
+      return
+    }
+    // A kid-login session (no proof of identity) can't set the first PIN —
+    // the server rejects it (requireParent). Send them to a real parent
+    // login instead of a keypad with nothing to verify against.
+    triggerShake()
+    setError('برای تنظیم پین باید با ایمیل و رمز عبور والدین وارد شوید')
   }
 
   function handleDigit(d: string) {
@@ -145,7 +155,9 @@ export default function ParentGate({ children }: Props) {
       return
     }
     triggerShake()
-    setError('رمز عبور اشتباه است')
+    // requireParent (server) rejects a kid-login session outright, even with
+    // the correct password — surface that distinctly from "wrong password".
+    setError(res.error === 'Incorrect password' ? 'رمز عبور اشتباه است' : res.error)
   }
 
   const currentPin = state === 'enter_pin' ? pin : step === 'first' ? pin : confirmPin
@@ -186,12 +198,21 @@ export default function ParentGate({ children }: Props) {
               {busy ? '...' : 'تأیید و تنظیم پین جدید'}
             </button>
           </form>
-          <button
-            onClick={() => { setState('enter_pin'); setPassword(''); setError(null) }}
-            className="mt-4 text-xs text-gray-400 hover:text-amber-600 transition-colors"
-          >
-            انصراف
-          </button>
+          {error && error !== 'رمز عبور اشتباه است' ? (
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-4 text-xs text-amber-700 hover:text-amber-800 font-medium transition-colors underline block mx-auto"
+            >
+              ورود با ایمیل و رمز عبور
+            </button>
+          ) : (
+            <button
+              onClick={() => { setState('enter_pin'); setPassword(''); setError(null) }}
+              className="mt-4 text-xs text-gray-400 hover:text-amber-600 transition-colors"
+            >
+              انصراف
+            </button>
+          )}
         </motion.div>
       </div>
     )
@@ -282,6 +303,15 @@ export default function ParentGate({ children }: Props) {
             ⌫
           </motion.button>
         </div>
+
+        {state === 'set_pin' && error && (
+          <button
+            onClick={() => router.push('/login')}
+            className="mt-5 text-xs text-amber-700 hover:text-amber-800 font-medium transition-colors underline"
+          >
+            ورود با ایمیل و رمز عبور
+          </button>
+        )}
 
         {state === 'enter_pin' && (
           <button

@@ -63,7 +63,10 @@ export function setupRealtime(io: Server) {
     try {
       const { token, childId, childName, emoji } = socket.handshake.auth ?? {}
       if (!token || !childId) return next(new Error('unauthorized'))
-      const { sub: userId } = verifyToken(String(token))
+      const { sub: userId, scope, childId: tokenChildId } = verifyToken(String(token))
+      // A kid-login socket is locked to its own child — otherwise one
+      // sibling's token could open a realtime session as another.
+      if (scope === 'child' && tokenChildId !== String(childId)) return next(new Error('forbidden'))
       const owned = await queryOne<{ name: string }>(
         'select name from children where id = $1 and parent_id = $2', [String(childId), userId])
       if (!owned) return next(new Error('forbidden'))
