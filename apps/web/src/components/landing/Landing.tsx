@@ -173,14 +173,21 @@ function TabletProduct() {
 
 function StoreBadge({ store }: { store: 'android' | 'ios' }) {
   return (
-    <div className="relative flex items-center gap-3 bg-slate-800 text-white rounded-xl px-5 py-2.5 opacity-70 cursor-default select-none"
-      aria-label={`${store === 'android' ? 'Google Play' : 'App Store'} — به‌زودی`}>
-      <span className="text-2xl" aria-hidden="true">{store === 'android' ? '🤖' : ''}</span>
-      <span className="text-right leading-tight">
-        <span className="block text-[10px] text-slate-300">به‌زودی در</span>
-        <span className="block font-bold text-sm" dir="ltr">{store === 'android' ? 'Google Play' : 'App Store'}</span>
-      </span>
-      <span className="absolute -top-2 -left-2 bg-amber-700 text-white text-[10px] font-bold rounded-full px-2 py-0.5">به‌زودی</span>
+    // The "به‌زودی" ribbon must stay fully opaque for contrast — opacity-70
+    // lives on this inner wrapper (the muted "coming soon" card look),
+    // not on the outer relative container the ribbon is positioned against.
+    // (Previously opacity-70 sat on the outer div and washed the ribbon's
+    // background out along with everything else, silently failing contrast
+    // despite the foreground/background colors themselves computing fine.)
+    <div className="relative cursor-default select-none" aria-label={`${store === 'android' ? 'Google Play' : 'App Store'} — به‌زودی`}>
+      <div className="flex items-center gap-3 bg-slate-800 text-white rounded-xl px-5 py-2.5 opacity-70">
+        <span className="text-2xl" aria-hidden="true">{store === 'android' ? '🤖' : ''}</span>
+        <span className="text-right leading-tight">
+          <span className="block text-[10px] text-slate-300">به‌زودی در</span>
+          <span className="block font-bold text-sm" dir="ltr">{store === 'android' ? 'Google Play' : 'App Store'}</span>
+        </span>
+      </div>
+      <span className="absolute -top-2 -left-2 bg-amber-900 text-white text-[10px] font-bold rounded-full px-2 py-0.5">به‌زودی</span>
     </div>
   )
 }
