@@ -3,6 +3,23 @@ import { TabletForm, WaitlistForm } from './LeadForms'
 import Pricing from './Pricing'
 import VoiceDemo from './VoiceDemo'
 
+// Server-side fetch talks straight to the backend, same convention as
+// /alphabet and /first-100-words — never through the browser, so a missing
+// demo file never shows up as a 404 in the visitor's console (Lighthouse/
+// PageSpeed "browser errors logged to console" audit, 2026-09). VoiceDemo
+// used to HEAD-check this client-side and just hide itself on failure, which
+// silently avoided a broken UI but still left the failed request in devtools.
+const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:4000'
+
+async function getVoiceDemoReady(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/uploads/demo/voice.wav`, { method: 'HEAD', next: { revalidate: 300 } })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 /* Public marketing landing (server-rendered for SEO).
  * Audience: Iranian parents abroad deciding whether this is safe + effective
  * for their child. Structure follows education-landing best practice:
@@ -194,7 +211,8 @@ function StoreBadge({ store }: { store: 'android' | 'ios' }) {
 
 // ── Page ───────────────────────────────────────────────────
 
-export default function Landing() {
+export default async function Landing() {
+  const voiceDemoReady = await getVoiceDemoReady()
   return (
     <div className="bg-white text-slate-800">
 
@@ -315,7 +333,7 @@ export default function Landing() {
             sub="امروز همه‌چیز با حساب رایگان شروع می‌شود؛ پلن‌های پرمیوم به‌زودی فعال می‌شوند." />
           <Pricing />
           {/* Hear-the-difference: hidden until admin generates both samples */}
-          <VoiceDemo />
+          <VoiceDemo ready={voiceDemoReady} />
         </div>
       </section>
 

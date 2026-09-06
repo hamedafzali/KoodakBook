@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 /* Voice sample for the pricing section: a story excerpt read in the single
  * storyteller voice every account hears — audio quality is not a paid tier.
  * The clip is pre-generated in admin (صداها → ساخت نمونه) to a fixed path;
- * the widget hides itself until the file exists. */
+ * the widget hides itself until the file exists.
+ *
+ * Readiness is checked server-side by the parent (Landing.tsx) and passed in
+ * as `ready` — this component used to HEAD-probe the file itself on mount,
+ * which meant every visitor's browser logged a 404 to devtools whenever the
+ * sample hadn't been generated yet (flagged by Lighthouse/PageSpeed's
+ * "browser errors logged to console" audit, 2026-09). */
 
 const DEMO_URL = '/uploads/demo/voice.wav'
 
@@ -12,14 +18,11 @@ const DEMO_TEXT =
   'یکی بود، یکی نبود. پیرزن مهربانی بود که دلش برای دخترش تنگ شده بود. ' +
   'گفت: می‌روم به دیدنش! راه خانه‌ی دختر از جنگل می‌گذشت و یک ماجرای شیرین در راه بود…'
 
-export default function VoiceDemo() {
-  const [ready, setReady] = useState(false)
+export default function VoiceDemo({ ready }: { ready: boolean }) {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    // Show only when the admin has actually generated the sample.
-    fetch(DEMO_URL, { method: 'HEAD' }).then(r => setReady(r.ok)).catch(() => setReady(false))
     return () => { audioRef.current?.pause() }
   }, [])
 
