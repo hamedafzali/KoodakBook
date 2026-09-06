@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { enterChildMode } from '@/lib/mode'
+import type { Child } from '@koodakbook/shared'
 
 const ITEMS = [
   { href: '/parent/dashboard', label: 'داشبورد', icon: '📊' },
@@ -20,9 +21,13 @@ export default function ParentNav() {
   // in — surface it here since the sidebar is the one thing visible on
   // every parent page.
   const [email, setEmail] = useState<string | null>(null)
+  const [hasChildren, setHasChildren] = useState(false)
   useEffect(() => {
     api.get<{ email: string }>('/api/auth/me').then(res => {
       if (res.data?.email) setEmail(res.data.email)
+    })
+    api.get<Child[]>('/api/children').then(res => {
+      setHasChildren((res.data?.length ?? 0) > 0)
     })
   }, [])
   return (
@@ -46,11 +51,13 @@ export default function ParentNav() {
           )
         })}
       </div>
-      <button
-        onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
-        className="w-full text-right flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-white/70 mt-6">
-        <span>👶</span> حالت کودک
-      </button>
+      {hasChildren && (
+        <button
+          onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
+          className="w-full text-right flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-white/70 mt-6">
+          <span>👶</span> حالت کودک
+        </button>
+      )}
     </nav>
   )
 }
