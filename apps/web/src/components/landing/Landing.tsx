@@ -1,7 +1,15 @@
 import Link from 'next/link'
-import { TabletForm, WaitlistForm } from './LeadForms'
-import Pricing from './Pricing'
-import VoiceDemo from './VoiceDemo'
+import dynamic from 'next/dynamic'
+
+// These four are all well below the hero fold, so their client JS shouldn't
+// compete with it for bandwidth on first paint. next/dynamic still
+// server-renders them (ssr defaults to true) — the HTML crawlers/Lighthouse
+// see is unchanged, only the JS bundle is split out and fetched separately
+// (PageSpeed "reduce unused JavaScript", 2026-09).
+const Pricing = dynamic(() => import('./Pricing'))
+const VoiceDemo = dynamic(() => import('./VoiceDemo'))
+const TabletForm = dynamic(() => import('./LeadForms').then(m => m.TabletForm))
+const WaitlistForm = dynamic(() => import('./LeadForms').then(m => m.WaitlistForm))
 
 // Server-side fetch talks straight to the backend, same convention as
 // /alphabet and /first-100-words — never through the browser, so a missing
