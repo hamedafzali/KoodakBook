@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
 import { signParentToken, signChildToken } from '../lib/jwt'
@@ -60,6 +61,11 @@ function kidAllowed(ip: string): boolean {
   return hits.length <= 10
 }
 
+// mig 059: if the parent has set a picture password (children.picture_password),
+// a username match alone is no longer enough — this responds with
+// needs_picture_password instead of a token, and the client continues with
+// /child-login/verify-picture. A child with none set logs straight in, same
+// as before (so families that skip setup keep the original one-tap flow).
 router.post('/child-login', async (req, res) => {
   if (!kidAllowed(clientIp(req))) {
     res.status(429).json({ data: null, error: 'کمی صبر کن و دوباره امتحان کن' }); return
@@ -68,11 +74,131 @@ router.post('/child-login', async (req, res) => {
   if (!/^[a-z0-9_]{3,20}$/.test(username)) {
     res.status(400).json({ data: null, error: 'اسمت را درست بنویس (حروف انگلیسی)' }); return
   }
-  const child = await queryOne<{ id: string; name: string; parent_id: string }>(
-    'select id, name, parent_id from children where lower(username) = $1', [username])
+  const child = await queryOne<{ id: string; name: string; parent_id: string; picture_password: string[] | null }>(
+    'select id, name, parent_id, picture_password from children where lower(username) = $1', [username])
   if (!child) { res.status(404).json({ data: null, error: 'این اسم را پیدا نکردم! از مامان یا بابا بپرس' }); return }
+
+  if (child.picture_password) {
+    res.json({ data: { child_id: child.id, child_name: child.name, needs_picture_password: true }, error: null })
+    return
+  }
   const token = signChildToken(child.parent_id, child.id)
   res.json({ data: { token, child_id: child.id, child_name: child.name }, error: null })
+})
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const PICTURE_LOCK_THRESHOLD = 5
+const PICTURE_LOCK_MINUTES = 15
+
+function hashDeviceToken(raw: string): string {
+  return crypto.createHash('sha256').update(raw).digest('hex')
+}
+
+// Step 2 of picture-password login. A correct sequence alone is only enough
+// on a device already bound to this child (device_token matches a live row
+// in device_tokens) — that's the "stolen/found device" defense (mig 059
+// header). No match → needs_parent_pin, and the client falls through to
+// /child-login/bind-device with the account's actual PIN.
+const verifyPictureSchema = z.object({
+  child_id: z.string().regex(UUID_RE),
+  slugs: z.array(z.string().min(1)).length(3),
+  device_token: z.string().min(32).optional(),
+})
+router.post('/child-login/verify-picture', async (req, res) => {
+  if (!kidAllowed(clientIp(req))) {
+    res.status(429).json({ data: null, error: 'کمی صبر کن و دوباره امتحان کن' }); return
+  }
+  const parsed = verifyPictureSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: 'Invalid request' }); return }
+  const { child_id, slugs, device_token } = parsed.data
+
+  const child = await queryOne<{
+    id: string; name: string; parent_id: string; picture_password: string[] | null
+    picture_failed_attempts: number; picture_locked_until: string | null
+  }>(
+    'select id, name, parent_id, picture_password, picture_failed_attempts, picture_locked_until from children where id = $1',
+    [child_id]
+  )
+  if (!child?.picture_password) { res.status(404).json({ data: null, error: 'Not found' }); return }
+
+  if (child.picture_locked_until && new Date(child.picture_locked_until) > new Date()) {
+    res.json({ data: { ok: false, locked: true }, error: null }); return
+  }
+
+  const matches = child.picture_password.length === slugs.length
+    && child.picture_password.every((s, i) => s === slugs[i])
+  if (!matches) {
+    const attempts = child.picture_failed_attempts + 1
+    const lock = attempts >= PICTURE_LOCK_THRESHOLD
+    await query('update children set picture_failed_attempts = $1, picture_locked_until = $2 where id = $3',
+      [lock ? 0 : attempts, lock ? new Date(Date.now() + PICTURE_LOCK_MINUTES * 60_000) : null, child_id])
+    res.json({ data: { ok: false, locked: lock }, error: null })
+    return
+  }
+  await query('update children set picture_failed_attempts = 0, picture_locked_until = null where id = $1', [child_id])
+
+  if (device_token) {
+    const bound = await queryOne(
+      'select 1 from device_tokens where child_id = $1 and token_hash = $2 and revoked_at is null',
+      [child_id, hashDeviceToken(device_token)]
+    )
+    if (bound) {
+      await query('update device_tokens set last_used_at = now() where child_id = $1 and token_hash = $2',
+        [child_id, hashDeviceToken(device_token)])
+      const token = signChildToken(child.parent_id, child.id)
+      res.json({ data: { ok: true, token, child_id: child.id, child_name: child.name }, error: null })
+      return
+    }
+  }
+  // Right sequence, but this device isn't bound to this child yet.
+  res.json({ data: { ok: true, needs_parent_pin: true, child_id: child.id, child_name: child.name }, error: null })
+})
+
+// Step 3, only reached on an unbound device: the account's real PIN proves a
+// parent is present, and binds this device to the child going forward so
+// this step is a one-time cost per (child, device) pair. Uses the SAME
+// lockout counters as /pin/verify (users.pin_failed_attempts) — this is
+// still an attempt to prove the parent PIN, whichever screen asked for it.
+const bindDeviceSchema = z.object({
+  child_id: z.string().regex(UUID_RE),
+  pin: z.string().regex(/^\d{4}$/),
+})
+router.post('/child-login/bind-device', async (req, res) => {
+  if (!kidAllowed(clientIp(req))) {
+    res.status(429).json({ data: null, error: 'کمی صبر کن و دوباره امتحان کن' }); return
+  }
+  const parsed = bindDeviceSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: 'Invalid request' }); return }
+  const { child_id, pin } = parsed.data
+
+  const child = await queryOne<{ id: string; name: string; parent_id: string }>(
+    'select id, name, parent_id from children where id = $1', [child_id])
+  if (!child) { res.status(404).json({ data: null, error: 'Not found' }); return }
+
+  const user = await queryOne<{ parent_pin_hash: string | null; pin_failed_attempts: number; pin_locked_until: string | null }>(
+    'select parent_pin_hash, pin_failed_attempts, pin_locked_until from users where id = $1', [child.parent_id])
+  if (!user?.parent_pin_hash) { res.status(400).json({ data: null, error: 'No PIN set' }); return }
+
+  if (user.pin_locked_until && new Date(user.pin_locked_until) > new Date()) {
+    res.json({ data: { ok: false, locked: true }, error: null }); return
+  }
+
+  if (!(await bcrypt.compare(pin, user.parent_pin_hash))) {
+    const attempts = user.pin_failed_attempts + 1
+    const lock = attempts >= LOCK_THRESHOLD
+    await query('update users set pin_failed_attempts = $1, pin_locked_until = $2 where id = $3',
+      [lock ? 0 : attempts, lock ? new Date(Date.now() + LOCK_MINUTES * 60_000) : null, child.parent_id])
+    res.json({ data: { ok: false, locked: lock }, error: null })
+    return
+  }
+  await query('update users set pin_failed_attempts = 0, pin_locked_until = null where id = $1', [child.parent_id])
+
+  const rawDeviceToken = crypto.randomBytes(32).toString('hex')
+  await query('insert into device_tokens (child_id, token_hash) values ($1, $2)',
+    [child_id, hashDeviceToken(rawDeviceToken)])
+
+  const token = signChildToken(child.parent_id, child.id)
+  res.json({ data: { ok: true, token, device_token: rawDeviceToken, child_id: child.id, child_name: child.name }, error: null })
 })
 
 router.post('/login', async (req, res) => {

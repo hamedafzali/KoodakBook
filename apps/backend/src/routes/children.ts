@@ -104,4 +104,34 @@ router.patch('/:id', requireAuth, requireParent, asyncHandler(async (req, res) =
   }
 }))
 
+// ── Picture password (kid-login sequence, mig 059) ───────────────────────
+// requireParent: this and username (above) are the two things that let
+// someone log in as this child — setting either must never be reachable
+// from a kid-login session.
+const picturePasswordSchema = z.object({
+  // 3 character slugs, in order; null clears it (falls back to username-only).
+  slugs: z.array(z.string().min(1)).length(3).nullable(),
+})
+
+router.patch('/:id/picture-password', requireAuth, requireParent, asyncHandler(async (req, res) => {
+  const userId = res.locals.userId
+  const parsed = picturePasswordSchema.safeParse(req.body)
+  if (!parsed.success) { res.status(400).json({ data: null, error: 'باید ۳ شخصیت انتخاب شود' }); return }
+
+  if (parsed.data.slugs) {
+    const rows = await query<{ slug: string }>(
+      'select slug from characters where slug = any($1) and is_active', [parsed.data.slugs])
+    if (rows.length !== 3) { res.status(400).json({ data: null, error: 'یکی از شخصیت‌ها پیدا نشد' }); return }
+  }
+
+  const child = await queryOne(
+    `update children set picture_password = $1, picture_failed_attempts = 0, picture_locked_until = null
+     where id = $2 and parent_id = $3
+     returning id, picture_password`,
+    [parsed.data.slugs, req.params.id, userId]
+  )
+  if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
+  res.json({ data: child, error: null })
+}))
+
 export default router

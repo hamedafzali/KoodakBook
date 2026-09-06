@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { clearToken, lockParent } from '@/lib/auth'
 import { getActiveChildId, setActiveChildId } from '@/lib/activeChild'
-import type { Child } from '@koodakbook/shared'
+import type { Child, AppCharacter } from '@koodakbook/shared'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 import { TRANSLATION_LANGS } from '@koodakbook/shared'
 import { getTranslationLang, setTranslationLang } from '@/lib/translation'
 import { containerWidths } from '@/components/shared/layout'
@@ -54,6 +55,40 @@ export default function SettingsPage() {
     if (r.error) { setUnameMsg(m => ({ ...m, [id]: r.error! })); return }
     setUnameMsg(m => ({ ...m, [id]: v ? `ذخیره شد ✅ — کودک با «${v}» وارد می‌شود` : 'حذف شد' }))
     setChildren(cs => cs.map(c => (c.id === id ? { ...c, username: v || null } : c)))
+  }
+
+  // Picture password (mig 059): an alternative to typing the username, for a
+  // child who can't read/type reliably. 3 character taps, in order.
+  const [pwOpenFor, setPwOpenFor] = useState<string | null>(null)
+  const [pwCharacters, setPwCharacters] = useState<AppCharacter[]>([])
+  const [pwPicked, setPwPicked] = useState<string[]>([])
+  const [pwMsg, setPwMsg] = useState<Record<string, string>>({})
+
+  async function openPicturePassword(id: string) {
+    setPwOpenFor(id); setPwPicked([]); setPwMsg(m => ({ ...m, [id]: '' }))
+    if (pwCharacters.length === 0) {
+      const r = await api.get<AppCharacter[]>('/api/characters')
+      setPwCharacters(r.data ?? [])
+    }
+  }
+
+  async function pickForPicturePassword(id: string, slug: string) {
+    const next = [...pwPicked, slug]
+    setPwPicked(next)
+    if (next.length < 3) return
+    const r = await api.patch<Child>(`/api/children/${id}/picture-password`, { slugs: next })
+    setPwPicked([])
+    if (r.error) { setPwMsg(m => ({ ...m, [id]: r.error! })); return }
+    setPwMsg(m => ({ ...m, [id]: 'ذخیره شد ✅' }))
+    setPwOpenFor(null)
+    setChildren(cs => cs.map(c => (c.id === id ? { ...c, picture_password: next } : c)))
+  }
+
+  async function clearPicturePassword(id: string) {
+    const r = await api.patch<Child>(`/api/children/${id}/picture-password`, { slugs: null })
+    if (r.error) { setPwMsg(m => ({ ...m, [id]: r.error! })); return }
+    setPwMsg(m => ({ ...m, [id]: 'حذف شد' }))
+    setChildren(cs => cs.map(c => (c.id === id ? { ...c, picture_password: null } : c)))
   }
 
   function chooseChild(id: string) {
@@ -184,6 +219,49 @@ export default function SettingsPage() {
                     </button>
                   </div>
                   {unameMsg[c.id] && <p className="text-[11px] text-slate-500 mt-1">{unameMsg[c.id]}</p>}
+
+                  {/* Picture password (mig 059): 3-tap alternative to typing
+                      the username above — for a child who can't type/read
+                      reliably. First time on a new device still needs one
+                      parent PIN check (design: docs/child-login-security.md). */}
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-400">رمز تصویری (۳ شخصیت):</span>
+                      {c.picture_password ? (
+                        <button onClick={() => clearPicturePassword(c.id)}
+                          className="text-xs font-bold text-slate-400 hover:text-red-500">حذف</button>
+                      ) : (
+                        <button onClick={() => openPicturePassword(c.id)}
+                          className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg px-3 py-1.5">
+                          تنظیم رمز تصویری
+                        </button>
+                      )}
+                    </div>
+                    {pwMsg[c.id] && <p className="text-[11px] text-slate-500 mt-1">{pwMsg[c.id]}</p>}
+
+                    {pwOpenFor === c.id && (
+                      <div className="mt-3">
+                        <p className="text-[11px] text-slate-400 mb-2">
+                          ۳ شخصیت را به ترتیبی که کودک باید بزند لمس کنید ({pwPicked.length}/۳)
+                        </p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {pwCharacters.map(ch => (
+                            <button
+                              key={ch.slug}
+                              onClick={() => pickForPicturePassword(c.id, ch.slug)}
+                              disabled={pwPicked.includes(ch.slug)}
+                              className="bg-slate-50 rounded-xl p-1 hover:bg-amber-50 disabled:opacity-30 transition-colors"
+                              aria-label={ch.name_persian}
+                            >
+                              <CharacterAvatar slug={ch.slug} size={44} />
+                            </button>
+                          ))}
+                        </div>
+                        <button onClick={() => setPwOpenFor(null)}
+                          className="mt-2 text-[11px] text-slate-400 hover:text-amber-600">انصراف</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
               <Link

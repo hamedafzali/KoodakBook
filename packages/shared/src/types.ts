@@ -17,6 +17,9 @@ export interface Child {
   avatar_url: string | null
   /** Kid-mode login name (mig 039) — parent-defined, globally unique. */
   username?: string | null
+  /** 3 character slugs, in order (mig 059) — a picture-password alternative
+   *  to typing the username on «ورود بچه‌ها». Null/absent = not set. */
+  picture_password?: string[] | null
   created_at: string
   /** Set once the placement probe has run (mig-020). */
   placement_done?: boolean
