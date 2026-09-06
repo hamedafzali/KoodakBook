@@ -6,7 +6,13 @@ services:
       dockerfile: apps/db/Dockerfile
     restart: unless-stopped
     environment:
-      POSTGRES_DB:       koodakbook
+      # Per-env database name (ACM environments, 2026-09): dev/test/prod each
+      # run as their own compose project (-p koodakbook-dev / -test / bare),
+      # which already gives each its own named volume automatically (Compose
+      # prefixes unnamed top-level volumes with the project name) — the DB
+      # name below is for human legibility (psql/pg_dump against a live
+      # container) on top of that, not what provides the isolation.
+      POSTGRES_DB:       ${POSTGRES_DB:-koodakbook}
       POSTGRES_USER:     koodakbook
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in project variables}
     volumes:
@@ -24,7 +30,7 @@ services:
     restart: unless-stopped
     environment:
       PORT:              4000
-      DATABASE_URL:      postgres://koodakbook:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in project variables}@db:5432/koodakbook
+      DATABASE_URL:      postgres://koodakbook:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in project variables}@db:5432/${POSTGRES_DB:-koodakbook}
       JWT_SECRET:        ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRES_IN:    30d
       WEB_URL:           ${WEB_URL:-http://localhost:3001}
@@ -70,7 +76,7 @@ services:
     # immune to that. See docker-compose.yml git history for the original
     # override file's full writeup if this needs revisiting.
     ports:
-      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:${BACKEND_PORT:-4000}:4000"
     depends_on:
       db:
         condition: service_healthy
@@ -92,7 +98,7 @@ services:
     # for not needing a tunnel every time. Revisit if this box ever leaves
     # a trusted network.
     ports:
-      - "3002:3001"
+      - "${ADMIN_PORT:-3002}:3001"
     depends_on:
       - backend
 
@@ -123,7 +129,7 @@ services:
     # (`docker run --network host busybox wget http://localhost:3001/api/lessons`,
     # .acm/pipeline.yml).
     ports:
-      - "3001:3000"
+      - "${WEB_PORT:-3001}:3000"
     depends_on:
       - backend
 
@@ -162,7 +168,7 @@ services:
       # Source DB (least-privilege read-only role — see docker/db-backup/backup-role.sql)
       PGHOST:            db
       PGPORT:            "5432"
-      PGDATABASE:        koodakbook
+      PGDATABASE:        ${POSTGRES_DB:-koodakbook}
       PGUSER:            backup
       PGPASSWORD:        ${BACKUP_DB_PASSWORD:-}
       # Offsite destination — DEFERRED (see docker/db-backup/README.md "Local-only
@@ -227,6 +233,16 @@ services:
       timeout: 5s
       retries: 10
 
+# Deliberately no `name:` on any of these (ACM environments, 2026-09): ACM
+# deploys each environment as its own compose project — `docker compose -p
+# koodakbook-dev …`, `-p koodakbook-test …`, `-p koodakbook …` for prod (see
+# project-service.ts composeProjectFor) — and Compose auto-prefixes an
+# unnamed top-level volume with its project name. That's what actually keeps
+# dev/test/prod data apart: koodakbook-dev_postgres_data,
+# koodakbook-test_postgres_data, koodakbook_postgres_data are three distinct
+# volumes with no code-level sharing possible. Adding an explicit `name:`
+# here would pin one fixed volume name across all three projects and
+# silently merge their data — never do that.
 volumes:
   postgres_data:
   uploads:
