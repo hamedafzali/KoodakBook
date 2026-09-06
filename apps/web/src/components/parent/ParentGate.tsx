@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { markParentUnlocked, isParentUnlocked } from '@/lib/auth'
 import { setMode, enterChildMode } from '@/lib/mode'
+import type { Child } from '@koodakbook/shared'
 
 const PIN_LENGTH = 4
 
@@ -52,12 +53,27 @@ export default function ParentGate({ children }: Props) {
     }
     if (isParentUnlocked()) { setState('unlocked'); return }
     let alive = true
-    api.get<{ has_pin: boolean }>('/api/auth/me').then(res => {
+    async function check() {
+      // No child profile yet → nothing on the parent side needs protecting,
+      // and the parent needs a clear path to /parent/dashboard to create the
+      // first one. Without this, a fresh account loops forever: /child/home
+      // has no child to load so it bounces here, this then demands a PIN,
+      // and the only way out of the PIN screen (ChildExitButton) sends back
+      // to /child/home — a closed loop with no way to actually reach the
+      // dashboard. Bypassing is scoped to this tab (sessionStorage, same as
+      // a normal unlock) — the moment a child exists, a fresh tab is gated
+      // again as usual.
+      const childRes = await api.get<Child[]>('/api/children')
+      if (!alive) return
+      if (childRes.data && childRes.data.length === 0) { unlock(); return }
+      const res = await api.get<{ has_pin: boolean }>('/api/auth/me')
       if (!alive) return
       // No data → the session is dead; the api client has already sent us to /login.
       if (res.data) setState(res.data.has_pin ? 'enter_pin' : 'set_pin')
-    })
+    }
+    check()
     return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const triggerShake = useCallback(() => {
