@@ -34,6 +34,31 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
+// Site-wide identity, not page content — kept minimal and factual (no
+// invented ratings/reviews/prices; see SEO audit, 2026-09). Page-specific
+// JSON-LD (e.g. /alphabet's LearningResource) layers on top of this, same as
+// any site running both an Organization block and per-page schema.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: 'KoodakBook',
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon-512.png`,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: 'KoodakBook',
+      url: SITE_URL,
+      inLanguage: 'fa',
+      publisher: { '@id': `${SITE_URL}/#organization` },
+    },
+  ],
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
@@ -41,6 +66,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        {/* eslint-disable-next-line react/no-danger */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
       <body
         className="min-h-full bg-warm-white font-[family-name:var(--font-vazirmatn)]"
