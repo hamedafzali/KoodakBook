@@ -3,13 +3,12 @@ import { ActivityIndicator, Animated, Modal, Pressable, ScrollView, StyleSheet, 
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter, Child, Word } from '@koodakbook/shared'
-import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
+import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import QuizCard, { type QuizQuestion } from '@/components/QuizCard'
 import MarpeleBoard, { Confetti, Dice } from '@/components/MarpeleBoard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { characterEmoji } from '@/lib/characterEmoji'
-import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep } from '@/lib/marpele'
 import { colors, fonts } from '@/lib/theme'
 
 /* مارپله برای یادگیری فارسی — one game, three ways: solo, pass-and-play with

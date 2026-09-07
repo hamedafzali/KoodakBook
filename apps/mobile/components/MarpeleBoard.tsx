@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Polyline, Stop } from 'react-native-svg'
-import { toPersianDigits } from '@koodakbook/shared'
-import { COLS, LADDERS, ROWS, SIZE, SNAKES } from '@/lib/marpele'
+import { COLS, LADDERS, ROWS, SIZE, SNAKES, toPersianDigits } from '@koodakbook/shared'
 import { fonts } from '@/lib/theme'
 
 /**

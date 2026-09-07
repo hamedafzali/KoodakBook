@@ -345,6 +345,7 @@ export default function ChildHomePage() {
           <TileRow label="بازی‌ها 🎮">
             {([
               { href: '/child/games/memory', emoji: '🃏', title: 'بازی حافظه', m: 'games' as const },
+              { href: '/child/games/marpele', emoji: '🎲', title: 'مارپله', m: 'games' as const },
               { href: '/child/math/counting', emoji: '🍎', title: 'شمارش', m: 'lessons' as const },
               { href: '/child/math/digits', emoji: '۴', title: 'رقم‌ها', m: 'letters' as const },
               { href: '/child/math/bazaar', emoji: '🛒', title: 'بازار', m: 'rewards' as const },
@@ -407,6 +408,7 @@ export default function ChildHomePage() {
               <ModuleCard module="speak" href="/child/speak" title="گفتن" sub="کلمه‌ها را بگو" />
               <ModuleCard module="math" href="/child/math" title="دنیای اعداد" sub="ریاضی به فارسی" />
               <ModuleCard module="games" href="/child/games/memory" title="بازی حافظه" sub="جفت‌ها را پیدا کن" />
+              <ModuleCard module="games" href="/child/games/marpele" title="مارپله" sub="نردبان و مار" />
               <ModuleCard module="rewards" href="/child/rewards" title="جوایز من" sub="مدال‌هایم" />
             </div>
           </section>

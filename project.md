@@ -1266,16 +1266,26 @@ is cosmetic and can ride along with Phase 3 rather than being tracked on its own
   confirm both children see each other in `child/friends`.
 
 ### 12.3 Phase 3 — Marpele (مارپله) game → web
-- [ ] Move `apps/mobile/lib/marpele.ts` (board layout, ladders/snakes,
-      question-building — plain TypeScript, no RN import) into `packages/shared`
-      so both platforms share one source of truth instead of forking it.
-- [ ] New `apps/web/src/components/child/MarpeleBoard.tsx` — can't reuse
-      `apps/mobile/components/MarpeleBoard.tsx` (RN `View`/`Pressable`-based);
-      build fresh for web (CSS grid or canvas) against the shared board data.
-- [ ] New `apps/web/src/app/child/games/marpele/page.tsx` — solo play first
-      (mirrors mobile's `marpele.tsx`).
+- [x] Moved board layout/ladders/snakes/question-building into
+      `packages/shared/src/marpele.ts` (deleted `apps/mobile/lib/marpele.ts`,
+      repointed its 3 consumers — `app/games/marpele.tsx`,
+      `app/games/marpele-online.tsx`, `components/MarpeleBoard.tsx` — at
+      `@koodakbook/shared`). Its `pickRandom` was a duplicate of the one
+      already in `reviewFrustration.ts`; deduped rather than re-exported.
+      (2026-09)
+- [x] New `apps/web/src/components/child/MarpeleBoard.tsx` — CSS grid +
+      Framer Motion tokens/dice/confetti against the shared board data,
+      rather than mobile's hand-drawn `react-native-svg` snakes/ladders
+      (not portable, and a from-scratch redraw wasn't worth it for a first
+      pass — ladder/snake tiles carry an emoji badge instead).
+- [x] New `apps/web/src/app/child/games/marpele/page.tsx` — solo/pass-and-play
+      mode ported from mobile's `marpele.tsx` (setup screen: extra human
+      players + character race opponents; QuizCard challenges on ladders/
+      snakes; posts to `/api/progress/word` same as mobile). Linked from
+      `child/home`'s games row and module grid.
 - [ ] Multiplayer (`marpele-online.tsx`'s `socket.io-client` variant, against
       the backend's existing `lib/realtime.ts` socket server) is a second pass —
       add `socket.io-client` to web, match mobile's connect/disconnect lifecycle.
+      Not started.
 - **Verify:** solo play end-to-end on web; then a cross-platform match (web
   parent vs. mobile-playing sibling) once the online variant lands.
