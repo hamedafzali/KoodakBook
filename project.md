@@ -1227,18 +1227,24 @@ meaningless for an app-store app. Mobile's games hub screen (`games/index.tsx`)
 is cosmetic and can ride along with Phase 3 rather than being tracked on its own.
 
 ### 12.1 Phase 1 — Kid picture-password + device binding → mobile (security)
-- [ ] `apps/mobile/app/login.tsx` — branch on `needs_picture_password` from the
+- [x] `apps/mobile/app/login.tsx` — branch on `needs_picture_password` from the
       username lookup (`auth.ts`), same as web; show the 3-tap character picker
-      instead of a password field when true.
-- [ ] Picture-tap picker screen — reuse the character-roster rendering pattern
-      already in `apps/mobile/app/children.tsx` (`pixel-wizards-charachters`).
-- [ ] Device binding via `expo-secure-store` (already a dependency) to persist
-      the `device_token` returned after a first successful unlock — mobile's
-      equivalent of web's `localStorage`-based binding. Send it back on
-      subsequent attempts so a bound device skips the parent PIN re-check.
-- [ ] No backend or parent-settings work needed — `picture_password` is shared
+      instead of a password field when true. (2026-09)
+- [x] Picture-tap picker screen — used mobile's existing `characterEmoji()`
+      lookup (already the app-wide pattern in `friends.tsx`, `games/memory.tsx`,
+      `games/marpele.tsx`, etc.) rather than porting web's SVG
+      `pixel-wizards-charachters` avatars, which mobile doesn't render anywhere
+      today — keeps the picker consistent with every other character grid in
+      the app instead of introducing a one-off rendering path.
+- [x] Device binding via `expo-secure-store` (already a dependency) to persist
+      the `device_token` returned after a first successful unlock — new
+      `apps/mobile/lib/deviceToken.ts`, one keychain entry per child id
+      (mirrors web's `localStorage`-based binding, one key per platform's
+      storage model). Sent back on subsequent attempts so a bound device
+      skips the parent PIN re-check.
+- [x] No backend or parent-settings work needed — `picture_password` is shared
       account state, set once from either platform (web: `parent/settings`),
-      consumed by both.
+      consumed by both. Confirmed: no backend changes required.
 - **Verify:** set a picture password from web, unlock from a fresh mobile
   install; confirm a second unlock on the same device skips the parent PIN
   check the way web's `device_tokens` binding does.
