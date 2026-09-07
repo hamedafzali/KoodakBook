@@ -21,7 +21,12 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://backend:4000'
 
 const next = spawn(process.execPath, ['apps/web/server.js'], {
   stdio: 'inherit',
-  env: { ...process.env, PORT: String(NEXT_PORT) },
+  // Docker sets HOSTNAME on every container to the container ID, and Next's
+  // standalone server.js does `process.env.HOSTNAME || '0.0.0.0'` — so left
+  // alone, Next binds to that container-ID hostname instead of loopback, and
+  // this proxy's fixed `127.0.0.1:${NEXT_PORT}` target below can never reach
+  // it (ECONNREFUSED, 100% of requests). Override it explicitly.
+  env: { ...process.env, PORT: String(NEXT_PORT), HOSTNAME: '127.0.0.1' },
 })
 next.on('exit', (code, signal) => {
   console.error(`[proxy] Next process exited (code=${code}, signal=${signal}) — shutting down`)
