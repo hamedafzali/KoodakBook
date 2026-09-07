@@ -105,6 +105,13 @@ export default function ParentDashboardPage() {
             </div>
             <div className="flex items-center gap-1">
               <Link
+                href="/parent/friends"
+                aria-label="دوستان"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"
+              >
+                🤝
+              </Link>
+              <Link
                 href="/parent/share"
                 aria-label="کارت پیشرفت برای اشتراک‌گذاری"
                 className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"

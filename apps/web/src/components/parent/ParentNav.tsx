@@ -9,6 +9,7 @@ import type { Child } from '@koodakbook/shared'
 const ITEMS = [
   { href: '/parent/dashboard', label: 'داشبورد', icon: '📊' },
   { href: '/parent/progress', label: 'پیشرفت', icon: '📈' },
+  { href: '/parent/friends', label: 'دوستان', icon: '🤝' },
   { href: '/parent/settings', label: 'تنظیمات', icon: '⚙️' },
   { href: '/parent/share', label: 'اشتراک‌گذاری', icon: '📤' },
 ]

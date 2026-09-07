@@ -1250,14 +1250,18 @@ is cosmetic and can ride along with Phase 3 rather than being tracked on its own
   check the way web's `device_tokens` binding does.
 
 ### 12.2 Phase 2 — Parent friend-request approval → web
-- [ ] New `apps/web/src/app/parent/friends/page.tsx` — port mobile's
-      `parent/friends.tsx` 1:1: per-child friend code (shareable), incoming
-      request list with accept/decline, current friends list. Backend
-      (`friends.ts`: `/code/:child_id`, `/requests`, `/requests/:id/accept|decline`)
-      is already live and mobile-proven — this is UI only, no backend work.
-- [ ] Nav entry in `ParentNav.tsx` + dashboard grid, same pattern as
-      `/parent/conversations` (which is a *different* feature — AI-character
-      chat transcripts, not child-to-child friend requests; don't conflate them).
+- [x] New `apps/web/src/app/parent/friends/page.tsx` — ported mobile's
+      `parent/friends.tsx`: per-child friend code, incoming request list with
+      accept/decline, current friends list. Backend (`friends.ts`:
+      `/code/:child_id`, `/requests`, `/requests/:id/accept|decline`) is
+      already live and mobile-proven — this was UI only, no backend work.
+      One deliberate web-appropriate swap: mobile's native `Share.share()`
+      sheet becomes a clipboard-copy button (`navigator.clipboard`) — there's
+      no share-sheet equivalent on desktop web. (2026-09)
+- [x] Nav entry added to `ParentNav.tsx` sidebar and the dashboard header
+      (🤝 icon next to 📤/⚙️), same pattern as `/parent/conversations` (which
+      is a *different* feature — AI-character chat transcripts, not
+      child-to-child friend requests; not conflated).
 - **Verify:** send a friend code from mobile, accept it from the new web page,
   confirm both children see each other in `child/friends`.
 
