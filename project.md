@@ -928,6 +928,115 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       pre-merge gate — it already happened. **Re-enabling the backup sidecar
       (`COMPOSE_PROFILES=backup` + the five vars) and exercising a verified
       restore is now a priority, not a precondition.**
+- [ ] **[CORRECTION] "Held at approve-prod" was never the protection for KoodakBook
+      deploys — the gated pipeline is not how deploys actually happen here.**
+      Verified 2026-08-09 from ACM's own request logs: every KoodakBook deploy since
+      at least 2026-06-01 (and 048/049's unreviewed production run) went through the
+      ACM dashboard's **Deploy / Sync & Deploy buttons**, which call
+      `projectService.deployProject()` **directly** — a code path entirely separate
+      from `pipeline-service.ts`'s DAG (`quality` → `e2e` → `approve-prod` → `deploy`).
+      `pipeline_runs` has effectively no rows for this project because the gated path
+      has gone essentially unused; the raw dashboard button is the actual, habitual
+      deploy mechanism. The gate itself checks out — `when: manual` stages genuinely
+      pause on `resolveApproval()` — but it was never in the loop, so any merge-order
+      or release planning that assumed "won't ship until approve-prod" gave zero
+      actual protection. Reassess anything on this roadmap phased around that
+      assumption; if approve-prod is meant to be a real gate, either the dashboard's
+      raw deploy buttons need to require going through the pipeline, or they need to
+      be removed/restricted.
+      *(ops/security — incident review 2026-08-09, migration-048 causation investigation)*
+- [x] **[SECURITY] Deploy concurrency lock — top of the ACM hardening list, above
+      the loopback binds below.** Root cause of the unreviewed 048/049 production
+      run (2026-08-09): `projectService.deployProject()` has no in-flight guard —
+      repeated clicks on the dashboard's Deploy/Sync-Deploy button (confirmed via
+      request logs: two calls 36ms apart, both failing "Service db Building," a
+      third succeeding and applying the migrations) fire fully independent,
+      concurrent `docker compose up -d --build` runs against the same project, with
+      no server-side rejection. **Implemented 2026-08-09:**
+      1. Server-side in-flight guard in `deployProject()` (in-memory
+         `inFlightDeploys: Map`, check-then-set with no `await` in between — atomic
+         against Node's single-threaded event loop) — throws `DeployInProgressError`,
+         translated to `409` in both `/projects/:name/deploy` and `/sync-deploy`
+         routes. Chose in-memory over the persisted `project.status` field because
+         `reconcileStatus()` explicitly skips reconciling a stale `"building"` value
+         after an ACM crash/restart — a persisted lock could self-lock a project
+         forever; an in-memory one clears naturally on restart. Lives inside
+         `deployProject()` itself, so the unauthenticated `:5003` MCP
+         `deploy_project`/`sync_project` tools and any webhook/script caller hit the
+         same guard, not just the dashboard button.
+      2. Client-side: `setPending(projectName, "deploying")` moved to the first line
+         of `handleSyncDeploy`/`handleDeployProject` in `Projects.tsx`, before the
+         `await checkPortConflicts()` call — closes the double-click window that
+         actually caused the incident (the disabled-button guard existed already,
+         but arrived after that network round-trip, not before it).
+      3. **Deliberately NOT covered — flag if it ever changes:** the gated
+         pipeline's own `deploy` stage (`pipeline-service.ts`) runs through a
+         separate `spawn()` call, not `projectService.deployProject()`, so it does
+         not hit this lock. Left uncovered on purpose here, not missed — the gated
+         pipeline is unused for KoodakBook (see the CORRECTION item above), so
+         there's nothing today that races through it. If the gated pipeline is ever
+         put back into real use, this lock needs extending to cover that path too.
+      4. Not yet audited: whether the same unlocked pattern exists on other
+         mutating operations (`stopProject`, `restartEnvironment`, rollback,
+         `pullLatestProject` standalone) — out of scope for this pass, called out
+         separately in case it's picked up later.
+      *(ops/security — incident review 2026-08-09, migration-048 causation investigation)*
+- [x] **[SECURITY] Fail-open login gate — `/api/settings` sits behind the same
+      auth middleware it's used to detect.** `App.tsx` decides whether to render
+      the Login screen by first calling `GET /api/settings` to read
+      `security.requireAuth`. Once `requireAuth` is actually on, an unauthenticated
+      browser gets a `401 {success:false}` from that same call — `result.data` is
+      `undefined`, so `result.data?.security?.requireAuth === true` evaluates to
+      `false`, and the app concludes auth isn't required and renders the full
+      dashboard instead of Login. Every subsequent data call then 401s silently —
+      a broken/blank dashboard, not a login prompt. One-line fix: treat any
+      non-2xx response from `/api/settings` as "assume auth is required" (fail
+      closed), not the current fail-open default. Rides with the concurrency-lock
+      work since both need a rebuild. *(found 2026-08-09 enabling requireAuth
+      as part of the migration-048 incident response; fixed 2026-08-09 — `App.tsx`
+      now sets `requireAuth = true` on any non-2xx or network-error response from
+      `/api/settings`, rather than defaulting to `false`)*
+- [ ] **[SECURITY] `security.maxLoginAttempts` is a dead setting — defined,
+      rendered, editable, enforces nothing.** `settings-service.ts` defaults it to
+      `5`; `Settings.tsx:633` renders it as a live numeric field a user can edit
+      and save; grepped the entire backend and it is never read anywhere —
+      `auth-service.ts` has no failed-attempt counter or lockout logic at all.
+      Worse than not offering it: it implies account lockout is configured when
+      nothing enforces it. **Recommendation: remove it from the settings surface**
+      rather than wire up real lockout — implementing actual lockout (counters,
+      unlock windows, interaction with password-change/session-revoke) is new
+      security behavior needing its own review, not a fix that rides along with
+      the other three items here. Hiding the dead control is the safe immediate
+      move; scope real lockout separately later if wanted. *(found 2026-08-09,
+      same pass as the fail-open login gate above)*
+- [ ] **[RELIABILITY] ACM's tunnel feature is structurally unsafe as built —
+      recommend removing it, not fixing it.** `tunnel-service.ts` runs each
+      named Cloudflare tunnel's connector as a **child process of the ACM
+      container itself** (`spawn("cloudflared", ...)`), and persists connector
+      tokens to `tunnels.db` at a path (`/app/data/...`) that is **not** one of
+      the compose bind mounts (only `/data/projects` and `/data/db` are
+      mounted). Recreating the ACM container therefore kills every connector
+      *and* wipes the only copy of the tokens needed to relaunch them — which
+      is exactly what happened on 2026-08-09 when the concurrency-lock rebuild
+      took `koodakbook.eu.cc`, `trainova.eu.cc`, and `afzali.eu.cc` all offline
+      simultaneously with no automatic recovery (the underlying app containers
+      never went down — only the public routing did). Tunnel routing/DNS/
+      ingress on Cloudflare's side was untouched throughout — only the local
+      credential was lost, confirming the token, not the tunnel, is the single
+      point of failure. **Recommendation: remove the feature** rather than
+      rearchitect it. Fixing it properly would mean (1) managing cloudflared
+      as real Docker containers via the Docker API instead of spawning child
+      processes, (2) moving `tunnels.db` onto a bind mount, and (3) requiring a
+      configured Cloudflare API token so ACM can self-heal tokens — which is a
+      non-trivial rearchitecture that ends up reimplementing the exact pattern
+      being adopted instead: independent `cloudflared` containers per tunnel,
+      `restart: unless-stopped`, tokens in `.env`, managed directly in
+      `docker-compose.yml` outside ACM entirely. Keeping a second, ACM-native
+      way to manage the same tunnels is pure drift risk with no upside once the
+      manual path is in place — remove or clearly disable the in-app tunnel
+      UI so nobody reaches for it and gets burned the same way.
+      *(found + fixed via independent containers 2026-08-09/10, during the
+      concurrency-lock rebuild's fallout)*
 - [ ] **[SECURITY] Lock down the ACM control plane + UI + Redis** — Advanced
       Container Manager publishes three services to `0.0.0.0` with **no auth**, all
       reachable by anything on the LAN (and one stray tunnel-ingress edit from the
@@ -983,6 +1092,19 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       argv, so it never appears in `ps`. Do this the next time the tunnel config is
       touched; rotate the tokens afterward since the old ones were exposed.
       *(ops/security — tunnel/auth audit 2026-08, sibling of the ACM item above)*
+      **[DEFERRED 2026-08-10]** The three connector tokens also leaked into chat
+      twice during the 2026-08-09/10 outage response (extracted for the ad hoc →
+      compose-managed tunnel migration). Rotation is **not** in-place — Cloudflare
+      only supports invalidating a leaked token by deleting the tunnel object and
+      creating a new one, which means real downtime on all three sites for the
+      window between delete and the new tunnel's DNS/ingress being live. Given the
+      exposure is bounded (chat history only, not a public leak) and the three
+      sites just came back from an extended 502 outage, the user chose to defer
+      rather than trade a known-bounded exposure for guaranteed fresh downtime.
+      **Do this together with the argv fix above** — both need a tunnel
+      delete/recreate, so batch them into one maintenance window instead of two.
+      See the chat-history session for exactly which commit exposed the tokens
+      and the step-by-step Cloudflare-dashboard recreate sequence.
 - [ ] **[DECISION] Reconcile or delete `docker-compose.prod.yml`** — it reads like
       the production compose file but is **dormant**: the pipeline deploys plain
       `docker compose up` (docker-compose.yml + docker-compose.override.yml), never
@@ -1065,7 +1187,13 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
       served as static files, **world-readable by exact URL with no auth** (index.ts;
       randomized filenames only). It is benign *today* solely because nothing
       child-identifying lands there (verified 2026-08: only generated TTS + content
-      audio, no photos, no recordings, no names in paths). A record-voice feature
+      audio, plus AI-generated word illustrations under `/uploads/images` — no
+      photos, no recordings, no names in paths). The illustrations were an
+      explicit call (2026-08-12): unguessable filenames on generated artwork of
+      cats and tables is acceptable exposure, since the worst case is someone
+      seeing a picture that was going to be public anyway once approved. That
+      reasoning does **not** transfer to a child's voice, which is why the line
+      below is drawn where it is. A record-voice feature
       breaks that assumption: a child's recorded voice is PII, and dropping it under
       `/uploads` would make it publicly retrievable by anyone who learns the URL.
       Do NOT reuse the open `/uploads` path for it — store child recordings behind an
@@ -1080,3 +1208,64 @@ Whisper/server-ASR, stroke-scoring, B2B dashboards, print-on-demand.
    an *activity* and a *literacy system*; the NSM depends on real decoding.
 3. Native voice + illustration are slow/costly — so make them the scarce,
    human-reviewed end of an AI-saturated pipeline, spent only on the validated core.
+
+---
+
+## 12. Web ⇄ Mobile Parity Plan
+
+> Full route-by-route audit (2026-09): the core learning loop (auth, child home,
+> lessons, phonics, alphabet/writing, stories, review, math, rewards, parent
+> dashboard/progress/settings/plan/share/conversations, legal) already has full
+> parity and is documented in-code on the mobile side (most mobile screens carry
+> a `web: /parent/...` comment pointing at their web counterpart). Three real gaps
+> remain, ranked by risk — security first, then a safety-relevant social feature,
+> then a bonus game. Sequenced deliberately in that order, not by effort.
+
+**Explicitly not syncing:** `/alphabet` and `/first-100-words` stay web-only —
+they exist to be crawled by search engines (see §SEO work, 2026-09), which is
+meaningless for an app-store app. Mobile's games hub screen (`games/index.tsx`)
+is cosmetic and can ride along with Phase 3 rather than being tracked on its own.
+
+### 12.1 Phase 1 — Kid picture-password + device binding → mobile (security)
+- [ ] `apps/mobile/app/login.tsx` — branch on `needs_picture_password` from the
+      username lookup (`auth.ts`), same as web; show the 3-tap character picker
+      instead of a password field when true.
+- [ ] Picture-tap picker screen — reuse the character-roster rendering pattern
+      already in `apps/mobile/app/children.tsx` (`pixel-wizards-charachters`).
+- [ ] Device binding via `expo-secure-store` (already a dependency) to persist
+      the `device_token` returned after a first successful unlock — mobile's
+      equivalent of web's `localStorage`-based binding. Send it back on
+      subsequent attempts so a bound device skips the parent PIN re-check.
+- [ ] No backend or parent-settings work needed — `picture_password` is shared
+      account state, set once from either platform (web: `parent/settings`),
+      consumed by both.
+- **Verify:** set a picture password from web, unlock from a fresh mobile
+  install; confirm a second unlock on the same device skips the parent PIN
+  check the way web's `device_tokens` binding does.
+
+### 12.2 Phase 2 — Parent friend-request approval → web
+- [ ] New `apps/web/src/app/parent/friends/page.tsx` — port mobile's
+      `parent/friends.tsx` 1:1: per-child friend code (shareable), incoming
+      request list with accept/decline, current friends list. Backend
+      (`friends.ts`: `/code/:child_id`, `/requests`, `/requests/:id/accept|decline`)
+      is already live and mobile-proven — this is UI only, no backend work.
+- [ ] Nav entry in `ParentNav.tsx` + dashboard grid, same pattern as
+      `/parent/conversations` (which is a *different* feature — AI-character
+      chat transcripts, not child-to-child friend requests; don't conflate them).
+- **Verify:** send a friend code from mobile, accept it from the new web page,
+  confirm both children see each other in `child/friends`.
+
+### 12.3 Phase 3 — Marpele (مارپله) game → web
+- [ ] Move `apps/mobile/lib/marpele.ts` (board layout, ladders/snakes,
+      question-building — plain TypeScript, no RN import) into `packages/shared`
+      so both platforms share one source of truth instead of forking it.
+- [ ] New `apps/web/src/components/child/MarpeleBoard.tsx` — can't reuse
+      `apps/mobile/components/MarpeleBoard.tsx` (RN `View`/`Pressable`-based);
+      build fresh for web (CSS grid or canvas) against the shared board data.
+- [ ] New `apps/web/src/app/child/games/marpele/page.tsx` — solo play first
+      (mirrors mobile's `marpele.tsx`).
+- [ ] Multiplayer (`marpele-online.tsx`'s `socket.io-client` variant, against
+      the backend's existing `lib/realtime.ts` socket server) is a second pass —
+      add `socket.io-client` to web, match mobile's connect/disconnect lifecycle.
+- **Verify:** solo play end-to-end on web; then a cross-platform match (web
+  parent vs. mobile-playing sibling) once the online variant lands.
