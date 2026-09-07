@@ -47,7 +47,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone  ./
 COPY --from=builder /app/apps/web/public                                   ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static      ./apps/web/.next/static
 
+# Not traced/bundled by `next build` (it's only required by proxy-server.js
+# below, never by app code) — installed directly rather than via the
+# workspace lockfile so this stays a one-line addition. See proxy-server.js
+# for why it's here at all: /socket.io needs a public path this container
+# can forward to the backend, which next.config.ts's rewrites() can't do
+# for a WebSocket upgrade.
+RUN npm install --no-save --omit=dev http-proxy@1.18.1 && chown -R nextjs:nodejs node_modules
+COPY --chown=nextjs:nodejs apps/web/proxy-server.js ./apps/web/proxy-server.js
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "apps/web/proxy-server.js"]

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -16,10 +17,11 @@ import type { AppCharacter, Child, Word } from '@koodakbook/shared'
 import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDigits, wordEmoji } from '@koodakbook/shared'
 
 /* مارپله برای یادگیری فارسی — web port of mobile's app/games/marpele.tsx
- * (solo/pass-and-play mode; the socket-based marpele-online.tsx variant is a
- * later pass, per project.md §12.3). Humans use Persian to climb ladders /
- * escape snakes (a QuizCard); characters ride pure luck. Every challenge the
- * active child answers posts to the same Leitner progress as lessons/review. */
+ * (solo/pass-and-play mode; online play against a friend lives at
+ * ../marpele-online, ported from mobile's marpele-online.tsx). Humans use
+ * Persian to climb ladders / escape snakes (a QuizCard); characters ride
+ * pure luck. Every challenge the active child answers posts to the same
+ * Leitner progress as lessons/review. */
 
 const EXTRA_HUMAN_EMOJI = ['👧', '👦', '🧑']
 const MAX_PLAYERS = 4
@@ -159,6 +161,13 @@ function Setup({ childName, characters, onStart, onBack }: {
         >
           شروع بازی 🎲
         </motion.button>
+
+        <Link
+          href="/child/games/marpele-online"
+          className="w-full py-3.5 rounded-md border-2 border-sky-200 text-sky-600 font-bold text-center"
+        >
+          بازی آنلاین با دوستان 🌐
+        </Link>
       </div>
 
       <BottomNav />

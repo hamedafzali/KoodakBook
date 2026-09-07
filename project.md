@@ -1283,9 +1283,25 @@ is cosmetic and can ride along with Phase 3 rather than being tracked on its own
       players + character race opponents; QuizCard challenges on ladders/
       snakes; posts to `/api/progress/word` same as mobile). Linked from
       `child/home`'s games row and module grid.
-- [ ] Multiplayer (`marpele-online.tsx`'s `socket.io-client` variant, against
-      the backend's existing `lib/realtime.ts` socket server) is a second pass —
-      add `socket.io-client` to web, match mobile's connect/disconnect lifecycle.
-      Not started.
-- **Verify:** solo play end-to-end on web; then a cross-platform match (web
-  parent vs. mobile-playing sibling) once the online variant lands.
+- [x] Multiplayer — `apps/web/src/app/child/games/marpele-online/page.tsx` +
+      `apps/web/src/lib/socket.ts`, ported from mobile's `marpele-online.tsx`
+      / `lib/socket.ts` against the same `lib/realtime.ts` socket server
+      (client-authoritative relay, canned emoji reactions only). Linked from
+      the solo page's setup screen. (2026-09)
+      **Infra needed to make this reachable:** in production only the `web`
+      container has a route through the Cloudflare tunnel — `backend` has
+      none — and `rewrites()` only proxies plain HTTP, not a WS upgrade, so a
+      same-origin `/socket.io` connection had nowhere to land. Added
+      `apps/web/proxy-server.js`: wraps the generated standalone `server.js`
+      (moved to an internal-only port) behind a thin listener on the real
+      published port that forwards `/socket.io/*` (HTTP + WS upgrade) to
+      `backend:4000` and passes everything else straight through unchanged.
+      `apps/web/Dockerfile`'s CMD now runs that instead of `server.js`
+      directly; `http-proxy` is installed directly in the runner stage since
+      it's only used by the wrapper, never traced by `next build`.
+- **Verify:** solo play end-to-end on web (done). Online: two browser tabs as
+  two children first (needs no infra beyond localhost), then a real
+  cross-platform match (web parent vs. mobile-playing sibling) once this is
+  deployed and the proxy is confirmed carrying the WS upgrade in prod —
+  **not yet verified against the live tunnel**, since that requires an actual
+  deploy this session didn't perform.
