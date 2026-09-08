@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import express from 'express'
+import helmet from 'helmet'
 import http from 'http'
 import { Server as SocketServer } from 'socket.io'
 import { migrate } from './lib/migrate'
@@ -62,6 +63,12 @@ function isAllowedOrigin(origin: string | undefined): boolean {
   return false
 }
 
+// contentSecurityPolicy is off here — the real browsing context is web's own
+// CSP (next.config.ts), applied at the page level; this backend has no
+// public ingress today (see docker-compose.yml) but sets the rest of
+// helmet's defaults (frameguard, hidePoweredBy, noSniff, hsts, etc.) as
+// defense-in-depth for whenever that changes, and for direct/LAN access.
+app.use(helmet({ contentSecurityPolicy: false }))
 app.use(cors({
   origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
   credentials: true,

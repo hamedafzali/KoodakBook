@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    name: typecheck, lint, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Runs each workspace's own `lint` script — for web/admin/mobile that's
+      # `tsc --noEmit` (backend uses the same script name for the same
+      # check), so this is the typecheck gate for all four apps in one call.
+      - run: npx turbo lint
+
+      # Backend's own unit suite (leitner/probe/streak/gate/wordProgress —
+      # the spaced-repetition core, see project.md). Web/admin/mobile have no
+      # unit tests of their own yet.
+      - run: npm --workspace=@koodakbook/backend run test
+
+  e2e:
+    name: end-to-end (docker compose)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run e2e
