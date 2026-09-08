@@ -7,6 +7,7 @@ import { getAiSettings, generateStory, translateLines, AiNotConfiguredError, typ
 import { synthesizeStoryPages } from '../lib/tts'
 import { parseSceneRef, isTranslationLang, langEnglishName } from '@koodakbook/shared'
 import { asyncHandler } from '../lib/asyncHandler'
+import { isTrialEligible, trialExpiresAt, TRIAL_PLAN_KEY, TRIAL_DURATION_DAYS } from '../lib/tempPremiumTrial'
 
 const router = Router()
 
@@ -41,14 +42,14 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
   // uncapped plan is the one real runaway-bill vector. 20/day stays "unlimited"
   // in UX (no family reaches it) while stopping runaway/abuse.
   const DAILY_STORY_HARD_CAP = 20
-  const cap = await queryOne<{ value: string }>(
-    `select pf.value from users u
+  const capRow = await queryOne<{ value: string; plan: string }>(
+    `select pf.value, u.plan from users u
        join plans p on p.key = u.plan
        join plan_features pf on pf.plan_id = p.id and pf.feature_key = 'ai_stories_per_day'
       where u.id = $1`,
     [res.locals.userId],
   )
-  const perDay = cap ? parseInt(cap.value, 10) : NaN
+  const perDay = capRow ? parseInt(capRow.value, 10) : NaN
   const storyLimited = Number.isFinite(perDay)
   const storyCap = storyLimited ? perDay : DAILY_STORY_HARD_CAP
   const usedStories = await queryOne<{ n: string }>(
@@ -58,10 +59,51 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
     [res.locals.userId],
   )
   if (Number(usedStories?.n ?? 0) >= storyCap) {
-    res.status(429).json({ data: null, error: storyLimited
-      ? `سهم امروزِ داستان‌های شخصی (${perDay} داستان) تمام شد — فردا دوباره بساز! 🌙`
-      : 'امروز کلی داستان ساختی! 🌙 فردا دوباره بیا و باز هم بساز.' })
-    return
+    // Free→temp-premium unlock (see lib/tempPremiumTrial.ts): a free account
+    // that keeps bumping into this cap is the clearest "would benefit from
+    // premium" signal we have. Record today's hit, and if that crosses the
+    // trigger streak, grant a short premium window and let THIS request
+    // through instead of also blocking the moment that earned it.
+    let unlockedTrial = false
+    if (capRow?.plan === 'free') {
+      const now = new Date().toISOString()
+      await query(
+        `insert into ai_cap_hits (user_id, hit_date) values ($1, current_date)
+         on conflict (user_id, hit_date) do nothing`,
+        [res.locals.userId],
+      )
+      const hitRows = await query<{ hit_date: string }>(
+        `select hit_date::text from ai_cap_hits
+          where user_id = $1 and hit_date >= current_date - interval '30 days'`,
+        [res.locals.userId],
+      )
+      const lastGrant = await queryOne<{ granted_at: string }>(
+        `select granted_at::text from temp_premium_grants
+          where user_id = $1 order by granted_at desc limit 1`,
+        [res.locals.userId],
+      )
+      if (isTrialEligible(hitRows.map(r => r.hit_date), lastGrant?.granted_at ?? null, now)) {
+        const expiresAt = trialExpiresAt(now)
+        await query('update users set plan = $2, plan_expires_at = $3 where id = $1',
+          [res.locals.userId, TRIAL_PLAN_KEY, expiresAt])
+        await query(
+          `insert into temp_premium_grants (user_id, plan_key, reason, expires_at)
+           values ($1, $2, 'ai_cap_streak', $3)`,
+          [res.locals.userId, TRIAL_PLAN_KEY, expiresAt],
+        )
+        unlockedTrial = true
+      }
+    }
+    if (!unlockedTrial) {
+      res.status(429).json({ data: null, error: storyLimited
+        ? `سهم امروزِ داستان‌های شخصی (${perDay} داستان) تمام شد — فردا دوباره بساز! 🌙`
+        : 'امروز کلی داستان ساختی! 🌙 فردا دوباره بیا و باز هم بساز.' })
+      return
+    }
+    // Trial granted: fall through and let this generation proceed on the
+    // new plan. res.locals carries it to the response payload below so the
+    // client can surface "you just unlocked N days of premium" immediately.
+    res.locals.trialJustUnlocked = TRIAL_DURATION_DAYS
   }
 
   // Anchor vocabulary: a few words at or below the child's level so the story
@@ -128,7 +170,15 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
   }
 
   res.status(201).json({
-    data: { id: row.id, title_persian: story.title_persian, title_english: story.title_english },
+    data: {
+      id: row.id,
+      title_persian: story.title_persian,
+      title_english: story.title_english,
+      // Present only on the request that earned a fresh trial (see the cap
+      // check above) — the client can pop a "you unlocked N days of premium!"
+      // moment right when it happens, not just show the plan changing quietly.
+      trial_unlocked_days: res.locals.trialJustUnlocked ?? undefined,
+    },
     error: null,
   })
 })

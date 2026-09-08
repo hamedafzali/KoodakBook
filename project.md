@@ -886,6 +886,21 @@ unlock), never on frustration walls. Annual-default pricing anchored to heritage
 value; grandparent **gift** tier via `plan_expires_at`. B2B: seat-licensed school
 plan reusing `content_items`.
 
+**Free→temp-premium unlock** (mig-060, `lib/tempPremiumTrial.ts`): a separate
+mechanic from `plans.trial_days` (that column is for a one-time trial *at
+signup*, not yet wired to any checkout flow). This one re-engages existing
+free accounts: hitting the daily AI-story cap on 3 distinct days grants
+`premium_solo` for 5 days, once per 90-day cooldown per account (tracked in
+`ai_cap_hits` / `temp_premium_grants`). Fires inline in
+`routes/ai.ts`'s `/stories/generate` cap check — the request that earns the
+unlock is let through immediately rather than also being blocked, and its
+response carries `trial_unlocked_days` so the client can surface the moment
+(no dedicated banner built yet — `/parent/plan` already reads live
+`plan`/`plan_expires_at` via `/api/auth/me`, so the plan page reflects it
+without further FE work; a toast/banner on the unlock moment itself is a
+fast-follow). Trigger numbers (3-day streak, 5-day window, 90-day cooldown)
+are a first guess, not validated — revisit once there's conversion data.
+
 ### 11.5 Validation (non-negotiable gate before scaling)
 
 10-family, 6-week design-partner pilot. Pre/post decoding + receptive-vocab probes.
