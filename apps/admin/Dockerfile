@@ -17,7 +17,10 @@ COPY apps/admin/      ./apps/admin/
 COPY package.json     ./
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app/apps/admin
-RUN node node_modules/next/dist/bin/next build --webpack
+# `npx` (not a hardcoded node_modules/next/... path) so this keeps working
+# regardless of whether npm hoists `next` to the root node_modules or nests
+# it under apps/admin/node_modules — that placement isn't stable across installs.
+RUN npx next build --webpack
 
 FROM node:20-alpine AS runner
 WORKDIR /app

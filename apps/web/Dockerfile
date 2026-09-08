@@ -31,7 +31,10 @@ ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
 WORKDIR /app/apps/web
-RUN node node_modules/next/dist/bin/next build --webpack
+# `npx` (not a hardcoded node_modules/next/... path) so this keeps working
+# regardless of whether npm hoists `next` to the root node_modules or nests
+# it under apps/web/node_modules — that placement isn't stable across installs.
+RUN npx next build --webpack
 
 # ── Production stage ──────────────────────────────────────
 FROM node:20-alpine AS runner

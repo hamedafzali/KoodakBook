@@ -46,6 +46,12 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      # Baked into the build (metadataBase, sitemap.ts, robots.ts read it at
+      # build time, not runtime — see docker-compose.yml). Without this,
+      # Next's Dockerfile ARG defaults to an empty string, not unset, so
+      # `new URL('')` throws and the build fails collecting page data.
+      args:
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
     environment:
       BACKEND_URL: http://backend:4000
     depends_on:

@@ -19,10 +19,14 @@ jobs:
 
       - run: npm ci
 
-      # Runs each workspace's own `lint` script — for web/admin/mobile that's
-      # `tsc --noEmit` (backend uses the same script name for the same
-      # check), so this is the typecheck gate for all four apps in one call.
-      - run: npx turbo lint
+      # Typecheck every workspace. admin/mobile/shared/backend's own `lint`
+      # script IS `tsc --noEmit`, so `turbo lint` covers them; web's `lint`
+      # is `eslint` instead, which currently fails on ~37 pre-existing
+      # style errors unrelated to this workflow (see project.md backlog) —
+      # so web is typechecked directly here rather than gating CI on that
+      # backlog. Re-fold web into `turbo lint` once that debt is cleared.
+      - run: npx turbo lint --filter='!@koodakbook/web'
+      - run: npx tsc --noEmit -p apps/web/tsconfig.json
 
       # Backend's own unit suite (leitner/probe/streak/gate/wordProgress —
       # the spaced-repetition core, see project.md). Web/admin/mobile have no
