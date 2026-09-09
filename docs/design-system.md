@@ -80,6 +80,22 @@ deeper componentization — replace local gradient blocks with MODULE tints,
 use SectionTitle/ModuleCard throughout (the 2026-09 pass fixed contrast/shape
 tokens on these screens but did not restructure them onto the shared
 components).
-⬜ parent app / admin: separate calmer variant of the same tokens — not
-started.
+✅ parent app contrast/shadow/radius pass (2026-09): fixed the one real
+WCAG-AA failure (dashboard level/XP card, white-on-violet-500→purple-600 —
+now violet-700→purple-800), replaced ad-hoc `shadow-sm/md/lg` with
+`shadow-card`/`shadow-raised` across dashboard/friends/progress/settings/
+plan/conversations/share/ParentNav, and brought the few off-token radii
+(conversations' `rounded-2xl`, ParentGate's arbitrary `rounded-[2rem]`/
+`[0.875rem]`) onto the parent app's own theme scale (its `@theme inline`
+`--radius-sm/md/lg/xl` in globals.css — a *different* scale from the child
+app's kit.tsx radii, not to be conflated). Also fixed share's canvas card,
+which was still drawing the pre-contrast-pass 3-stop brand gradient.
+⬜ parent app: not yet componentized into a shared kit the way child has
+kit.tsx — this pass fixed tokens in place, no new shared components.
+⬜ admin: has a real, partially-adopted component kit already
+(`apps/admin/src/components/ui.tsx`) — needs a migration-completion pass
+(several dashboard pages still hand-roll gray-* markup instead of using
+Card/DataTable), not a new design system. One a11y gap (unlabeled ▲▼✕
+icon buttons in lessons/page.tsx) was fixed in the 2026-09 pass; the kit
+migration itself is not started.
 Rule for new screens: no new colors, no new radii, no new shadows — compose kit.
