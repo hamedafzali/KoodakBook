@@ -55,9 +55,13 @@ export async function createChild(
   // test that wants real child-home content needs it completed. This is the
   // same direct-API shortcut the real placement quiz ends on (POST
   // /api/placement/result), not a UI flow worth driving here.
+  // Payload is the RAW per-item results scoreProbe() expects (probe.ts),
+  // not a precomputed level/strands — an empty/null result for every strand
+  // scores to level 1 everywhere (scoreBranchStrand/scoreSingleStrand on
+  // []/null), the same "level 1" this shortcut always intended.
   const placementRes = await request.post("/api/placement/result", {
     headers: { Authorization: `Bearer ${token}` },
-    data: { child_id: child.id, level: 1, strands: { V: 1, D: 1, F: 1, C: 1 } },
+    data: { child_id: child.id, results: { V: [], D: [], F: [], C: null } },
   });
   expect(placementRes.status(), "placement result should return 2xx").toBeLessThan(300);
 
