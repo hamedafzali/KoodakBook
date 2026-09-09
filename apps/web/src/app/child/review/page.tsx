@@ -113,7 +113,7 @@ export default function ReviewPage() {
         <motion.button
           onClick={() => router.push('/child/home')}
           whileTap={{ scale: 0.96 }}
-          className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-md text-lg shadow-md"
+          className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-2xl text-lg shadow-card"
         >
           برگشت به خانه 🏠
         </motion.button>

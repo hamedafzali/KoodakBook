@@ -115,7 +115,7 @@ function Setup({ childName, characters, onStart, onBack }: {
       <div className="px-4 pt-5 max-w-md mx-auto flex flex-col gap-5">
         <section>
           <h2 className="font-bold text-gray-700 text-sm mb-2">بازیکن‌های دیگر (خواهر و برادر)</h2>
-          <div className="inline-flex items-center gap-4 bg-white rounded-2xl p-2.5 shadow-sm">
+          <div className="inline-flex items-center gap-4 bg-white rounded-2xl p-2.5 shadow-card">
             <button
               onClick={() => setExtraHumans(n => Math.max(0, n - 1))}
               className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 text-xl font-bold flex items-center justify-center"
@@ -157,14 +157,14 @@ function Setup({ childName, characters, onStart, onBack }: {
         <motion.button
           onClick={start}
           whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md"
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card"
         >
           شروع بازی 🎲
         </motion.button>
 
         <Link
           href="/child/games/marpele-online"
-          className="w-full py-3.5 rounded-md border-2 border-sky-200 text-sky-600 font-bold text-center"
+          className="w-full py-3.5 rounded-2xl border-2 border-sky-200 text-sky-600 font-bold text-center"
         >
           بازی آنلاین با دوستان 🌐
         </Link>
@@ -317,10 +317,10 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
         <h1 className="text-3xl font-bold text-gray-800">{childWon ? 'تو بردی! 🎉' : `${w.name} برد!`}</h1>
         {stars > 0 && <p className="text-gray-600 persian-text">{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</p>}
         <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
-          <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }} className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md">
+          <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }} className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">
             دوباره بازی کن 🔁
           </motion.button>
-          <motion.button onClick={onChangePlayers} whileTap={{ scale: 0.96 }} className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold">
+          <motion.button onClick={onChangePlayers} whileTap={{ scale: 0.96 }} className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
             تغییر بازیکن‌ها
           </motion.button>
           <button onClick={() => router.push('/child/home')} className="text-sm text-slate-400 hover:text-slate-600 mt-1">برگشت به خانه 🏠</button>
@@ -350,7 +350,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
             onClick={humanRoll}
             disabled={!canRoll}
             whileTap={canRoll ? { scale: 0.96 } : {}}
-            className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-md transition-colors ${
+            className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-card transition-colors ${
               canRoll ? 'bg-violet-600' : 'bg-slate-300'}`}
           >
             {cur?.kind === 'human' ? 'تاس بینداز! 🎲' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}

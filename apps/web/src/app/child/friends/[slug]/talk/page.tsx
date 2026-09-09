@@ -126,7 +126,7 @@ export default function TalkPage() {
               className={`flex ${t.role === 'child' ? 'justify-start' : 'justify-end'}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm persian-text leading-relaxed ${
                 t.role === 'child'
-                  ? 'bg-amber-500 text-white rounded-tr-sm'
+                  ? 'bg-amber-700 text-white rounded-tr-sm'
                   : 'bg-white shadow-card text-slate-700 rounded-tl-sm'}`}>
                 {t.text}
               </div>
@@ -167,7 +167,7 @@ export default function TalkPage() {
               animate={busy === 'listen' ? { scale: [1, 1.12, 1] } : {}}
               transition={busy === 'listen' ? { duration: 0.9, repeat: Infinity } : {}}
               aria-label={busy === 'listen' ? 'دارم گوش می‌کنم…' : 'ضربه بزن و حرف بزن'}
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg text-4xl ${
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-raised text-4xl ${
                 busy === 'listen' ? 'bg-rose-500' : 'bg-brand-gradient-br'} text-white disabled:opacity-60`}>
               🎤
             </motion.button>

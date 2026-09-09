@@ -173,7 +173,7 @@ export default function ChildHomePage() {
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
             <motion.button key={c.id} onClick={() => resolveChild(c)} whileTap={{ scale: 0.94 }}
-              className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center gap-3" aria-label={`بازی با ${c.name}`}>
+              className="bg-white rounded-2xl shadow-card p-6 flex flex-col items-center gap-3" aria-label={`بازی با ${c.name}`}>
               <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center overflow-hidden text-4xl">
                 {mediaUrl(c.avatar_url) ? <img src={mediaUrl(c.avatar_url)!} alt="" className="w-full h-full object-cover" /> : '🧒'}
               </div>
@@ -196,7 +196,11 @@ export default function ChildHomePage() {
       </AnimatePresence>
 
       {/* ── Hero: greeting + mascot; stats only for older kids ── */}
-      <div className="relative bg-gradient-to-b from-amber-400 to-orange-500 pt-8 pb-24 px-5 rounded-b-[2.5rem]">
+      {/* from-amber-700/to-orange-700, not the lighter -400/-500 the hero used
+          before the 2026-09 contrast audit: white greeting text + the child's
+          own name render here, and the lighter pair measured ~1.7–2.8:1 —
+          below WCAG AA even for large bold text. Matches --color-brand-from/to. */}
+      <div className="relative bg-gradient-to-b from-amber-700 to-orange-700 pt-8 pb-24 px-5 rounded-b-[2.5rem]">
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
         <motion.span className="absolute top-6 left-16 text-xl select-none" aria-hidden="true"
@@ -367,7 +371,7 @@ export default function ChildHomePage() {
         {/* ── Review strip (band 3: older kids like seeing the queue) ── */}
         {band === 3 && reviewWords.length > 0 && (
           <Link href="/child/review" aria-label={`مرور ${reviewWords.length} کلمه`}>
-            <motion.div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3" whileTap={{ scale: 0.98 }}>
+            <motion.div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3" whileTap={{ scale: 0.98 }}>
               <span className="text-3xl" aria-hidden="true">🔄</span>
               <div className="flex-1">
                 <p className="font-bold text-gray-800 text-sm">مرور امروز</p>
@@ -474,11 +478,11 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
             more content, so it can't point the wrong way. */}
         {!ends.end && (
           <button onClick={() => nudge(true)} aria-label="بعدی"
-            className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-lg ring-1 ring-slate-200/80 items-center justify-center text-2xl text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">‹</button>
+            className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-2xl text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">‹</button>
         )}
         {!ends.start && (
           <button onClick={() => nudge(false)} aria-label="قبلی"
-            className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-lg ring-1 ring-slate-200/80 items-center justify-center text-2xl text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">›</button>
+            className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-2xl text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">›</button>
         )}
       </div>
     </section>
@@ -522,7 +526,7 @@ function CardTile({ href, title, sub, badge, emoji, image, tint, scene, glow, bi
 function LockedTile({ title, big }: { title: string; big?: boolean }) {
   return (
     <div role="listitem" className="flex-shrink-0" aria-label={`${title} — هنوز خوابه`}>
-      <div className={`${big ? 'w-44 h-[212px]' : 'w-36 h-[172px]'} bg-white/60 rounded-lg overflow-hidden shadow-sm select-none flex flex-col`}>
+      <div className={`${big ? 'w-44 h-[212px]' : 'w-36 h-[172px]'} bg-white/60 rounded-2xl overflow-hidden shadow-card select-none flex flex-col`}>
         <div className={`w-full shrink-0 ${big ? 'h-32' : 'h-24'} bg-gray-100 flex items-center justify-center ${big ? 'text-5xl' : 'text-4xl'}`} aria-hidden="true">😴</div>
         <div className="p-3 flex-1 min-h-0">
           <p className="font-bold text-gray-400 text-sm leading-tight line-clamp-2">{title}</p>
@@ -539,7 +543,7 @@ function ActionTile({ emoji, title, href, onClick, big }: {
 }) {
   const inner = (
     <motion.div whileTap={{ scale: 0.94 }}
-      className={`${big ? 'w-32 h-[212px]' : 'w-28 h-[172px]'} bg-amber-50 border-2 border-dashed border-amber-200 rounded-lg flex flex-col items-center justify-center gap-2`}>
+      className={`${big ? 'w-32 h-[212px]' : 'w-28 h-[172px]'} bg-amber-50 border-2 border-dashed border-amber-200 rounded-2xl flex flex-col items-center justify-center gap-2`}>
       <span className={big ? 'text-5xl' : 'text-4xl'} aria-hidden="true">{emoji}</span>
       <p className="font-bold text-amber-700 text-xs text-center px-2 leading-snug">{title}</p>
     </motion.div>

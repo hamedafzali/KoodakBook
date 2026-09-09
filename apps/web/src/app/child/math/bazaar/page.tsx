@@ -99,9 +99,9 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
       <p className="text-gray-600 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} خرید</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md">دوباره 🔁</motion.button>
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره 🔁</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
       </div>
     </div>
   )
@@ -132,7 +132,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-4 text-center">
+        <div className="bg-white rounded-2xl shadow-card p-4 text-center">
           <p className="persian-text text-gray-700 font-bold">
             {q.mode === 'read'
               ? <>{names[0]} چند تومان است؟</>
@@ -149,7 +149,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
               : 'bg-white border-gray-100 text-gray-800'
             return (
               <motion.button key={n} onClick={() => pick(n)} whileTap={{ scale: 0.94 }}
-                className={`rounded-md border-2 py-4 shadow-sm font-bold touch-target ${cls}`}
+                className={`rounded-2xl border-2 py-4 shadow-card font-bold touch-target ${cls}`}
                 aria-label={`${numberToPersianWord(n)} تومان`}>
                 <span className="text-2xl block">{toPersianDigits(n)}</span>
                 <span className="text-[10px] block opacity-70 persian-text">تومان</span>

@@ -25,19 +25,26 @@ export const MODULE: Record<ModuleKey, {
   chip: string      // icon chip: soft tint + strong icon color
   bar: string       // accent bar / active states
   soft: string      // large soft fill (tile image area)
-  solid: string     // chunky tile fill (saturated)
+  solid: string     // chunky tile fill (saturated) — white text sits on this, see note below
   edge: string      // chunky tile 3D bottom edge (darker shade)
 }> = {
-  lessons: { emoji: '📚', chip: 'bg-emerald-100 text-emerald-600', bar: 'bg-emerald-400', soft: 'bg-emerald-50', solid: 'bg-emerald-400', edge: 'border-emerald-600' },
-  letters: { emoji: '✏️', chip: 'bg-sky-100 text-sky-600',         bar: 'bg-sky-400',     soft: 'bg-sky-50',     solid: 'bg-sky-400',     edge: 'border-sky-600' },
-  phonics: { emoji: '🎵', chip: 'bg-orange-100 text-orange-600',   bar: 'bg-orange-400',  soft: 'bg-orange-50',  solid: 'bg-orange-400',  edge: 'border-orange-600' },
-  stories: { emoji: '📖', chip: 'bg-teal-100 text-teal-600',       bar: 'bg-teal-400',    soft: 'bg-teal-50',    solid: 'bg-teal-400',    edge: 'border-teal-600' },
-  review:  { emoji: '🔄', chip: 'bg-violet-100 text-violet-600',   bar: 'bg-violet-400',  soft: 'bg-violet-50',  solid: 'bg-violet-400',  edge: 'border-violet-600' },
-  speak:   { emoji: '🎤', chip: 'bg-pink-100 text-pink-600',       bar: 'bg-pink-400',    soft: 'bg-pink-50',    solid: 'bg-pink-400',    edge: 'border-pink-600' },
-  write:   { emoji: '✍️', chip: 'bg-cyan-100 text-cyan-600',       bar: 'bg-cyan-400',    soft: 'bg-cyan-50',    solid: 'bg-cyan-400',    edge: 'border-cyan-600' },
-  math:    { emoji: '🔢', chip: 'bg-indigo-100 text-indigo-600',   bar: 'bg-indigo-400',  soft: 'bg-indigo-50',  solid: 'bg-indigo-400',  edge: 'border-indigo-600' },
-  games:   { emoji: '🃏', chip: 'bg-purple-100 text-purple-600',   bar: 'bg-purple-400',  soft: 'bg-purple-50',  solid: 'bg-purple-400',  edge: 'border-purple-600' },
-  rewards: { emoji: '🏆', chip: 'bg-amber-100 text-amber-600',     bar: 'bg-amber-400',   soft: 'bg-amber-50',   solid: 'bg-amber-400',   edge: 'border-amber-600' },
+  // `solid` was the -400 step until the 2026-09 contrast audit: white
+  // title text on a -400 fill measures ~1.9–2.5:1 (WCAG needs ≥4.5:1 normal
+  // text, ≥3:1 large/bold) across every module — the tile pattern used on
+  // the home screen and everywhere ModuleCard renders. Moved to -700 (all
+  // ≥5:1 on white); `edge` moved to -900 so the 3D bottom-border depth cue
+  // stays visibly darker than the fill. `chip`/`bar`/`soft` are unaffected —
+  // those never carry white text on top.
+  lessons: { emoji: '📚', chip: 'bg-emerald-100 text-emerald-600', bar: 'bg-emerald-400', soft: 'bg-emerald-50', solid: 'bg-emerald-700', edge: 'border-emerald-900' },
+  letters: { emoji: '✏️', chip: 'bg-sky-100 text-sky-600',         bar: 'bg-sky-400',     soft: 'bg-sky-50',     solid: 'bg-sky-700',     edge: 'border-sky-900' },
+  phonics: { emoji: '🎵', chip: 'bg-orange-100 text-orange-600',   bar: 'bg-orange-400',  soft: 'bg-orange-50',  solid: 'bg-orange-700',  edge: 'border-orange-900' },
+  stories: { emoji: '📖', chip: 'bg-teal-100 text-teal-600',       bar: 'bg-teal-400',    soft: 'bg-teal-50',    solid: 'bg-teal-700',    edge: 'border-teal-900' },
+  review:  { emoji: '🔄', chip: 'bg-violet-100 text-violet-600',   bar: 'bg-violet-400',  soft: 'bg-violet-50',  solid: 'bg-violet-700',  edge: 'border-violet-900' },
+  speak:   { emoji: '🎤', chip: 'bg-pink-100 text-pink-600',       bar: 'bg-pink-400',    soft: 'bg-pink-50',    solid: 'bg-pink-700',    edge: 'border-pink-900' },
+  write:   { emoji: '✍️', chip: 'bg-cyan-100 text-cyan-600',       bar: 'bg-cyan-400',    soft: 'bg-cyan-50',    solid: 'bg-cyan-700',    edge: 'border-cyan-900' },
+  math:    { emoji: '🔢', chip: 'bg-indigo-100 text-indigo-600',   bar: 'bg-indigo-400',  soft: 'bg-indigo-50',  solid: 'bg-indigo-700',  edge: 'border-indigo-900' },
+  games:   { emoji: '🃏', chip: 'bg-purple-100 text-purple-600',   bar: 'bg-purple-400',  soft: 'bg-purple-50',  solid: 'bg-purple-700',  edge: 'border-purple-900' },
+  rewards: { emoji: '🏆', chip: 'bg-amber-100 text-amber-600',     bar: 'bg-amber-400',   soft: 'bg-amber-50',   solid: 'bg-amber-700',   edge: 'border-amber-900' },
 }
 
 /** Rounded-square icon chip — the module's color identity, everywhere. */
@@ -81,10 +88,13 @@ export function ModuleCard({ module: m, title, sub, href, emoji, big }: {
   )
 }
 
-/** Primary CTA in the same chunky language (amber, the brand hue). */
+/** Primary CTA in the same chunky language (amber, the brand hue).
+ *  Fill is amber-700, not amber-500: white text on amber-500 measured
+ *  ~2.15:1 (2026-09 contrast audit) on the app's single most-pressed
+ *  button — amber-700 clears WCAG AA (~5:1) for every size this renders at. */
 export function ChunkyButton({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={`inline-flex items-center justify-center gap-1.5 bg-amber-500 border-amber-700 border-b-[5px] active:border-b-2 active:translate-y-[3px] text-white font-bold rounded-2xl transition-all ${className}`}>
+    <span className={`inline-flex items-center justify-center gap-1.5 bg-amber-700 border-amber-900 border-b-[5px] active:border-b-2 active:translate-y-[3px] text-white font-bold rounded-2xl transition-all ${className}`}>
       {children}
     </span>
   )

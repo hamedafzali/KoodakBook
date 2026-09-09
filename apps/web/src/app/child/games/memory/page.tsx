@@ -125,11 +125,11 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
       <p className="text-gray-600 persian-text">با {moves} حرکت — عالی بود!</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md">
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">
           دوباره بازی کن 🔁
         </motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold">
+          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
           برگشت به خانه 🏠
         </motion.button>
       </div>
@@ -164,11 +164,11 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
                   transition={{ duration: 0.4, ease: 'easeInOut' }}
                 >
                   {/* back (face-down) */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-400 to-purple-500 shadow-sm flex items-center justify-center [backface-visibility:hidden]">
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-400 to-purple-500 shadow-card flex items-center justify-center [backface-visibility:hidden]">
                     <span className="text-3xl" aria-hidden="true">🌟</span>
                   </div>
                   {/* front (word) */}
-                  <div className={`absolute inset-0 rounded-2xl shadow-sm flex flex-col items-center justify-center gap-0.5 px-1 overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)] ${
+                  <div className={`absolute inset-0 rounded-2xl shadow-card flex flex-col items-center justify-center gap-0.5 px-1 overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)] ${
                     isMatched ? 'bg-green-100 border-2 border-green-300' : 'bg-white border-2 border-violet-200'}`}>
                     {/* real photo when the word has one — word stays visible below */}
                     {card.image && (

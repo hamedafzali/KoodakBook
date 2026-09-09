@@ -226,7 +226,7 @@ export default function MarpeleOnlinePage() {
           <motion.button
             onClick={() => setPhase('lobby')}
             whileTap={{ scale: 0.96 }}
-            className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md"
+            className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card"
           >
             بازی دوباره
           </motion.button>
@@ -245,7 +245,7 @@ export default function MarpeleOnlinePage() {
           {notice && <p className="text-center text-sm font-medium text-amber-600 persian-text">{notice}</p>}
 
           {friends.length === 0 ? (
-            <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-2.5 shadow-sm">
+            <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-2.5 shadow-card">
               <span className="text-4xl">🤝</span>
               <p className="text-center text-sm text-gray-500 persian-text leading-6">
                 هنوز دوستی نداری. از حالت والدین با کد دوستی، دوست اضافه کن.
@@ -257,7 +257,7 @@ export default function MarpeleOnlinePage() {
                 key={f.id}
                 disabled={phase === 'waiting'}
                 onClick={() => inviteFriend(f)}
-                className="flex items-center gap-2.5 bg-white rounded-2xl p-3.5 shadow-sm disabled:opacity-60 text-right"
+                className="flex items-center gap-2.5 bg-white rounded-2xl p-3.5 shadow-card disabled:opacity-60 text-right"
               >
                 <span className="text-2xl">🧒</span>
                 <span className="flex-1 font-bold text-gray-800">{f.name}</span>
@@ -354,7 +354,7 @@ export default function MarpeleOnlinePage() {
             onClick={roll}
             disabled={!canRoll}
             whileTap={canRoll ? { scale: 0.96 } : {}}
-            className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-md transition-colors ${
+            className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-card transition-colors ${
               canRoll ? 'bg-sky-600' : 'bg-slate-300'}`}
           >
             {myTurn ? 'تاس بینداز! 🎲' : 'صبر کن…'}

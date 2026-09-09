@@ -25,9 +25,12 @@
   --color-brand-text:    #8A540D;
 
   /* Brand gradient — THE single source of truth for the primary action/identity
-     gradient (buttons, progress fills, hero accents). Rebranding = these two. */
-  --color-brand-from:    #FBBF24;   /* amber-400 */
-  --color-brand-to:      #F97316;   /* orange-500 */
+     gradient (buttons, progress fills, hero accents). Rebranding = these two.
+     Was amber-400→orange-500: white text on that range measured ~1.7–2.8:1
+     (2026-09 contrast audit) — fails WCAG AA even at the 3:1 large-text
+     floor. Darkened two Tailwind steps each; both ends now clear ≥5:1. */
+  --color-brand-from:    #B45309;   /* amber-700 */
+  --color-brand-to:      #C2410C;   /* orange-700 */
 
   /* Child Activity Colors */
   --color-lesson:        #E63946;   /* Pomegranate  — lessons     */
