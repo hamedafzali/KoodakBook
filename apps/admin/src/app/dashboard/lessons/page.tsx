@@ -129,12 +129,12 @@ export default function AdminLessonsPage() {
                       )}
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <button onClick={() => moveItem(item.id, 'up')} disabled={idx === 0}
+                      <button onClick={() => moveItem(item.id, 'up')} disabled={idx === 0} aria-label="جابجایی به بالا"
                         className="text-gray-300 hover:text-gray-500 disabled:opacity-20 text-xs leading-none">▲</button>
-                      <button onClick={() => moveItem(item.id, 'down')} disabled={idx === items.length - 1}
+                      <button onClick={() => moveItem(item.id, 'down')} disabled={idx === items.length - 1} aria-label="جابجایی به پایین"
                         className="text-gray-300 hover:text-gray-500 disabled:opacity-20 text-xs leading-none">▼</button>
                     </div>
-                    <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 text-sm">✕</button>
+                    <button onClick={() => removeItem(item.id)} aria-label="حذف" className="text-red-400 hover:text-red-600 text-sm">✕</button>
                   </div>
                 ))}
               </div>

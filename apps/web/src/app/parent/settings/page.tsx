@@ -141,7 +141,7 @@ export default function SettingsPage() {
           {/* Learning settings */}
           <section aria-labelledby="learning-settings-title">
             <h2 id="learning-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">تنظیمات یادگیری</h2>
-            <div className="bg-white rounded-md shadow-sm overflow-hidden">
+            <div className="bg-white rounded-md shadow-card overflow-hidden">
 
               {/* Daily goal */}
               <div className="px-5 py-4 border-b border-slate-100">
@@ -190,7 +190,7 @@ export default function SettingsPage() {
           {/* Children */}
           <section aria-labelledby="children-title">
             <h2 id="children-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">کودکان</h2>
-            <div className="bg-white rounded-md shadow-sm divide-y divide-slate-100">
+            <div className="bg-white rounded-md shadow-card divide-y divide-slate-100">
               {children.map(c => (
                 <div key={c.id} className="px-5 py-4">
                   <button
@@ -288,7 +288,7 @@ export default function SettingsPage() {
           {/* Subscription */}
           <section aria-labelledby="plan-section-title">
             <h2 id="plan-section-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">اشتراک</h2>
-            <div className="bg-white rounded-md shadow-sm">
+            <div className="bg-white rounded-md shadow-card">
               <Link
                 href="/parent/plan"
                 className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px]"
@@ -304,7 +304,7 @@ export default function SettingsPage() {
           {/* Account settings */}
           <section aria-labelledby="account-settings-title">
             <h2 id="account-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">حساب کاربری</h2>
-            <div className="bg-white rounded-md shadow-sm divide-y divide-slate-100">
+            <div className="bg-white rounded-md shadow-card divide-y divide-slate-100">
               {email && (
                 <div className="flex items-center gap-3 px-5 py-4">
                   <span className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-sm font-bold shrink-0" aria-hidden="true">

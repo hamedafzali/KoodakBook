@@ -65,11 +65,11 @@ export default function ConversationsPage() {
         {turns === null ? (
           <p className="text-center text-sm text-slate-400 py-8">در حال بارگذاری…</p>
         ) : turns.length === 0 ? (
-          <p className="text-center text-sm text-slate-400 bg-white rounded-2xl py-8 shadow-sm">
+          <p className="text-center text-sm text-slate-400 bg-white rounded-md py-8 shadow-card">
             هنوز گفت‌وگویی بین {child?.name ?? 'کودک'} و {character?.name_persian ?? 'این شخصیت'} انجام نشده.
           </p>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm p-4 space-y-2">
+          <div className="bg-white rounded-md shadow-card p-4 space-y-2">
             {turns.map((t, i) => (
               <div key={i} className={`flex ${t.role === 'child' ? 'justify-start' : 'justify-end'}`}>
                 <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm persian-text ${

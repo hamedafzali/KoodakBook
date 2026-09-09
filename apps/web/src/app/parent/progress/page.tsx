@@ -225,7 +225,7 @@ export default function ParentProgressPage() {
                 <p className="text-center text-slate-400 py-8 persian-text">هنوز درسی شروع نشده</p>
               )}
               {progress?.lessons.map(l => (
-                <div key={l.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-sm">
+                <div key={l.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-card">
                   <span className="text-2xl" aria-hidden="true">{l.completed ? '✅' : '⏳'}</span>
                   <div className="flex-1">
                     <p className="font-medium text-slate-800">{l.lesson?.title ?? '—'}</p>
@@ -253,7 +253,7 @@ export default function ParentProgressPage() {
                 <p className="text-center text-slate-400 py-8 persian-text">هنوز داستانی خوانده نشده</p>
               )}
               {progress?.stories.map(s => (
-                <div key={s.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-sm">
+                <div key={s.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-card">
                   <span className="text-2xl" aria-hidden="true">{s.completed ? '📖' : '📄'}</span>
                   <div className="flex-1">
                     <p className="font-medium text-slate-800">{s.story?.title_persian ?? '—'}</p>
@@ -280,7 +280,7 @@ export default function ParentProgressPage() {
                 <p className="text-center text-slate-400 py-8 persian-text">هنوز جلسه‌ای ثبت نشده</p>
               )}
               {progress?.recent_sessions.map((s, i) => (
-                <div key={i} className="bg-white rounded-md p-4 flex items-center justify-between shadow-sm">
+                <div key={i} className="bg-white rounded-md p-4 flex items-center justify-between shadow-card">
                   <div className="flex items-center gap-3">
                     <span className="text-xl" aria-hidden="true">📅</span>
                     <span className="text-slate-700">{new Date(s.started_at).toLocaleDateString('fa-IR')}</span>
