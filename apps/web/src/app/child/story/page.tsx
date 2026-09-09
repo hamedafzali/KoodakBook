@@ -71,7 +71,7 @@ export default function StoryListPage() {
         <Link
           href="/child/story/new"
           aria-label="یک داستان جدید برای من بساز"
-          className="flex items-center gap-3 mb-4 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white rounded-[1.5rem] p-4 shadow-md"
+          className="flex items-center gap-3 mb-4 bg-gradient-to-r from-fuchsia-700 to-purple-800 text-white rounded-3xl p-4 shadow-card"
         >
           <span className="text-3xl" aria-hidden="true">✨</span>
           <div className="flex-1 text-right">
@@ -91,14 +91,14 @@ export default function StoryListPage() {
                 const done = completed.has(story.id)
                 const busy = voicing.has(story.id)
                 return (
-                  <div key={story.id} role="listitem" className="bg-white rounded-lg shadow-sm overflow-hidden relative">
+                  <div key={story.id} role="listitem" className="bg-white rounded-2xl shadow-card overflow-hidden relative">
                     <Link
                       href={`/child/story/${story.id}`}
                       aria-label={`${story.title_persian}${done ? ' — خوانده شده' : ''}`}
                       className="block hover:opacity-95 transition-opacity"
                     >
                       {done && (
-                        <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium" aria-hidden="true">
+                        <div className="absolute top-2 left-2 bg-green-700 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium" aria-hidden="true">
                           ✅ خوندم
                         </div>
                       )}
@@ -147,11 +147,11 @@ export default function StoryListPage() {
                   <Link
                     href={`/child/story/${story.id}`}
                     aria-label={`${story.title_persian}${done ? ' — خوانده شده' : ''}${story.age_min ? `، برای ${story.age_min} تا ${story.age_max} سال` : ''}`}
-                    className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
+                    className="block bg-white rounded-2xl shadow-card hover:shadow-raised transition-shadow overflow-hidden relative"
                   >
                     {done && (
                       <div
-                        className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium"
+                        className="absolute top-2 left-2 bg-green-700 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium"
                         aria-hidden="true"
                       >
                         ✅ خوندم

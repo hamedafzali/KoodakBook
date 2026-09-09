@@ -39,17 +39,17 @@ interface MergeDemo { c: string; mark: string; text: string; markName: string; r
 function MergeStage({ demo }: { demo: MergeDemo | null }) {
   const reduce = useReducedMotion()
   if (!demo) return (
-    <div className="bg-white/70 border-2 border-dashed border-amber-200 rounded-lg h-28 flex items-center justify-center text-gray-400 persian-text text-sm">
+    <div className="bg-white/70 border-2 border-dashed border-amber-200 rounded-2xl h-28 flex items-center justify-center text-gray-400 persian-text text-sm">
       روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود ✨
     </div>
   )
   if (reduce) return (
-    <div className="bg-white rounded-lg h-28 shadow-sm flex items-center justify-center">
+    <div className="bg-white rounded-2xl h-28 shadow-card flex items-center justify-center">
       <span className="text-6xl font-bold text-amber-600">{demo.text}</span>
     </div>
   )
   return (
-    <div key={demo.run} className="bg-white rounded-lg h-28 shadow-sm relative overflow-hidden" aria-label={`ساخت هجای ${demo.text}`}>
+    <div key={demo.run} className="bg-white rounded-2xl h-28 shadow-card relative overflow-hidden" aria-label={`ساخت هجای ${demo.text}`}>
       {/* the two parts fly together… */}
       <motion.span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-gray-800"
         initial={{ x: 70, opacity: 0 }}
@@ -115,11 +115,11 @@ export default function PhonicsPage() {
         <p className="text-gray-600 persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.96 }}
-            className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md">
+            className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-raised">
             یک بار دیگه 🔁
           </motion.button>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
-            className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold">
+            className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
             برگشت به خانه 🏠
           </motion.button>
         </div>
@@ -132,7 +132,7 @@ export default function PhonicsPage() {
       <PageHeader title="صداها 🎵" subtitle="زبر، زیر، پیش" gradientClass="from-orange-500 to-amber-500" />
 
       <div className="px-4 pt-5 space-y-7">
-        <div className="bg-white rounded-lg p-4 shadow-sm flex items-center gap-3">
+        <div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3">
           <Mascot size={64} mood="happy" />
           <p className="text-gray-700 persian-text text-sm flex-1">
             این سه نشانه به حرف‌ها صدا می‌دهند. ضربه بزن، ببین و گوش کن!
@@ -152,7 +152,7 @@ export default function PhonicsPage() {
               const syll = DEMO + v.mark
               return (
                 <motion.button key={v.key} onClick={() => demoMerge(DEMO, v.mark, v.namePersian, syll, 'b' + v.latin)} whileTap={{ scale: 0.95 }}
-                  className={`bg-gradient-to-br ${v.color} rounded-[1.5rem] p-4 text-white shadow-md flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target`}
+                  className={`bg-gradient-to-br ${v.color} rounded-3xl p-4 text-white shadow-card flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target`}
                   aria-label={`${v.namePersian}: ${syll}`}>
                   <span className="text-5xl font-bold leading-none">{syll}</span>
                   <span className="text-sm font-medium mt-1">{v.namePersian}</span>
@@ -175,7 +175,7 @@ export default function PhonicsPage() {
                 const slug = c.latin + v.latin
                 return (
                   <motion.button key={slug} onClick={() => demoMerge(c.ch, v.mark, v.namePersian, text, slug)} whileTap={{ scale: 0.92 }}
-                    className="bg-white rounded-2xl py-3 shadow-sm flex flex-col items-center gap-0.5 touch-target"
+                    className="bg-white rounded-2xl py-3 shadow-card flex flex-col items-center gap-0.5 touch-target"
                     aria-label={`بخوان: ${text}`}>
                     <span className="text-3xl font-bold text-gray-800">{text}</span>
                     <span className="text-[11px] text-gray-400 ltr">{slug}</span>
@@ -187,7 +187,7 @@ export default function PhonicsPage() {
         ))}
 
         <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.97 }}
-          className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px]">
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-raised min-h-[56px]">
           بریم تمرین 🎧
         </motion.button>
       </div>
@@ -263,7 +263,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
       <div className="flex-1 flex flex-col items-center justify-center p-5 gap-8">
         <motion.button onClick={() => say(q.correct.text, q.correct.slug)} whileTap={{ scale: 0.9 }}
           animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-28 h-28 rounded-full bg-brand-gradient-br flex items-center justify-center shadow-lg touch-target"
+          className="w-28 h-28 rounded-full bg-brand-gradient-br flex items-center justify-center shadow-raised touch-target"
           aria-label="دوباره گوش کن">
           <span className="text-4xl">🔊</span>
         </motion.button>
@@ -280,7 +280,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
                 : 'bg-white border-gray-100 text-gray-800'
               return (
                 <motion.button key={opt.slug} onClick={() => choose(opt.slug)} whileTap={{ scale: 0.95 }}
-                  className={`rounded-md border-2 py-6 shadow-sm font-bold text-4xl touch-target ${cls}`}
+                  className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target ${cls}`}
                   aria-label={`انتخاب ${opt.text}`}>
                   {opt.text}
                 </motion.button>

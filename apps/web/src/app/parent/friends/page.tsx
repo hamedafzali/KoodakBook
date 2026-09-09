@@ -145,7 +145,7 @@ export default function ParentFriendsPage() {
             )}
 
             {/* This child's code */}
-            <section className="bg-white rounded-md p-4 shadow-sm text-center" aria-labelledby="code-title">
+            <section className="bg-white rounded-md p-4 shadow-card text-center" aria-labelledby="code-title">
               <h2 id="code-title" className="font-bold text-slate-700 text-sm mb-2">کد دوستی {activeChild.name}</h2>
               <p className="text-3xl font-bold text-amber-600 tracking-[0.3em] ltr" dir="ltr">{code ?? '…'}</p>
               <button
@@ -158,7 +158,7 @@ export default function ParentFriendsPage() {
             </section>
 
             {/* Add a friend by code */}
-            <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="add-title">
+            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="add-title">
               <h2 id="add-title" className="font-bold text-slate-700 text-sm mb-2">افزودن دوست با کد</h2>
               <form onSubmit={sendRequest} className="flex gap-2">
                 <input
@@ -179,7 +179,7 @@ export default function ParentFriendsPage() {
 
             {/* Incoming requests */}
             {requests.length > 0 && (
-              <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="requests-title">
+              <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="requests-title">
                 <h2 id="requests-title" className="font-bold text-slate-700 text-sm mb-3">درخواست‌های دوستی</h2>
                 <div className="space-y-3">
                   {requests.map(r => (
@@ -196,7 +196,7 @@ export default function ParentFriendsPage() {
             )}
 
             {/* Friends list */}
-            <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="friends-title">
+            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="friends-title">
               <h2 id="friends-title" className="font-bold text-slate-700 text-sm mb-3">دوستانِ {activeChild.name}</h2>
               {friends.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-4 persian-text">هنوز دوستی اضافه نشده — کد را به هم بدهید تا با هم بازی کنند</p>

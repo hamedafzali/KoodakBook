@@ -92,9 +92,9 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
       <p className="text-gray-600 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا گرفتی</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md">دوباره 🔁</motion.button>
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره 🔁</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
       </div>
     </div>
   )
@@ -110,7 +110,7 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
         </div>
 
         {/* Tap stage — big targets for small fingers */}
-        <div className="bg-white rounded-lg shadow-sm p-5 min-h-[220px]">
+        <div className="bg-white rounded-2xl shadow-card p-5 min-h-[220px]">
           <p className="text-center text-gray-600 persian-text text-sm mb-4">
             {allCounted ? 'حالا بگو: چند تا بود؟' : 'روی همه ضربه بزن و با من بشمار!'}
           </p>
@@ -145,7 +145,7 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
               : 'bg-white border-gray-100 text-gray-800'
             return (
               <motion.button key={n} onClick={() => answer(n)} whileTap={{ scale: 0.94 }}
-                className={`rounded-md border-2 py-5 shadow-sm font-bold touch-target ${cls}`}
+                className={`rounded-2xl border-2 py-5 shadow-card font-bold touch-target ${cls}`}
                 aria-label={numberToPersianWord(n)}>
                 <span className="text-3xl block">{toPersianDigits(n)}</span>
                 <span className="text-xs block mt-1 opacity-70 persian-text">{numberToPersianWord(n)}</span>

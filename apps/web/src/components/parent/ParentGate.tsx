@@ -190,7 +190,7 @@ export default function ParentGate({ children }: Props) {
           ref={containerRef}
           animate={shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : { x: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-white rounded-[2rem] p-8 w-full max-w-xs shadow-2xl text-center"
+          className="bg-white rounded-lg p-8 w-full max-w-xs shadow-2xl text-center"
         >
           <div className="text-4xl mb-4">🔑</div>
           <h1 className="font-bold text-xl text-gray-800 mb-1">بازنشانی پین</h1>
@@ -203,13 +203,13 @@ export default function ParentGate({ children }: Props) {
               value={password}
               onChange={e => { setPassword(e.target.value); setError(null) }}
               placeholder="رمز عبور"
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 min-h-[48px]"
+              className="ltr w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 min-h-[48px]"
             />
             {error && <p role="alert" className="text-red-500 text-sm persian-text">{error}</p>}
             <button
               type="submit"
               disabled={busy || password.length < 6}
-              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[48px]"
+              className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-sm transition-colors disabled:opacity-50 min-h-[48px]"
             >
               {busy ? '...' : 'تأیید و تنظیم پین جدید'}
             </button>
@@ -249,7 +249,7 @@ export default function ParentGate({ children }: Props) {
         ref={containerRef}
         animate={shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : { x: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-white rounded-[2rem] p-8 w-full max-w-xs shadow-2xl text-center"
+        className="bg-white rounded-lg p-8 w-full max-w-xs shadow-2xl text-center"
       >
         <div className="text-4xl mb-4">🔒</div>
         <h1 className="font-bold text-xl text-gray-800 mb-1">{titleText}</h1>

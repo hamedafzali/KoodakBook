@@ -46,7 +46,7 @@ export default function ParentNav() {
           return (
             <Link key={i.href} href={i.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                on ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600 hover:bg-white/70'}`}>
+                on ? 'bg-white text-amber-700 shadow-card' : 'text-slate-600 hover:bg-white/70'}`}>
               <span>{i.icon}</span>{i.label}
             </Link>
           )

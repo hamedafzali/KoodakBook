@@ -87,7 +87,7 @@ export default function PlanPage() {
           return (
             <section
               key={plan.id}
-              className={`bg-white rounded-lg shadow-sm overflow-hidden border-2 ${isCurrent ? 'border-amber-400' : 'border-transparent'}`}
+              className={`bg-white rounded-lg shadow-card overflow-hidden border-2 ${isCurrent ? 'border-amber-400' : 'border-transparent'}`}
               aria-labelledby={`plan-${plan.key}`}
             >
               <div className={`px-5 py-4 ${isPremium ? 'bg-brand-gradient text-white' : 'bg-slate-100'}`}>

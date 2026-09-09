@@ -33,7 +33,9 @@ SectionTitle) + PageHeader/BottomNav v2.
 ## 3. Tokens
 
 **Canvas** `.child-bg` cream gradient · **Surface** white · **Ink** slate-800 /
-slate-400 (secondary) · **Brand** amber-400→orange-500 (hero only).
+slate-400 (secondary) · **Brand** amber-700→orange-700 (hero only; darkened
+from amber-400→orange-500 in the 2026-09 contrast pass — the original pair
+put white text at ~1.7–2.8:1, well under WCAG AA's 4.5:1 floor).
 
 **Module hues** (chip `-100/-600`, bar `-400`, soft `-50`):
 lessons=emerald · letters=sky · phonics=orange · stories=teal · review=violet ·
@@ -64,7 +66,36 @@ active (pill or ring) / disabled (opacity-40, never hidden) / focus-visible.
 ## 5. Migration status
 
 ✅ tokens, kit, PageHeader (all screens), BottomNav (all screens), child home.
-⬜ lesson/story/review/speak/write/math/memory inner screens: replace local
-gradient blocks with MODULE tints as touched; use SectionTitle/ModuleCard.
-⬜ parent app: separate calmer variant of the same tokens.
+✅ contrast + shape tokens (2026-09 visual UX audit): every child screen now
+uses only `shadow-card`/`shadow-raised` and the 12/16/24/full radius scale,
+and every white-on-gradient/solid text instance was re-measured to ≥~4.5:1
+(kit.tsx MODULE + ChunkyButton, globals.css brand tokens, and per-screen
+gradients in rewards/lesson/story/story-new/friends-talk/home). `write` also
+got a fixed thumb-zone action bar (mobile reachability) and directional
+arrows for pre-readers. Guarded by `scripts/check-child-design-tokens.sh`
+(`npm run lint:design`) so raw `rounded-md/lg/[1.5rem]` and
+`shadow-sm/md/lg` don't reappear.
+⬜ lesson/story/review/speak/write/math/memory inner screens: still need the
+deeper componentization — replace local gradient blocks with MODULE tints,
+use SectionTitle/ModuleCard throughout (the 2026-09 pass fixed contrast/shape
+tokens on these screens but did not restructure them onto the shared
+components).
+✅ parent app contrast/shadow/radius pass (2026-09): fixed the one real
+WCAG-AA failure (dashboard level/XP card, white-on-violet-500→purple-600 —
+now violet-700→purple-800), replaced ad-hoc `shadow-sm/md/lg` with
+`shadow-card`/`shadow-raised` across dashboard/friends/progress/settings/
+plan/conversations/share/ParentNav, and brought the few off-token radii
+(conversations' `rounded-2xl`, ParentGate's arbitrary `rounded-[2rem]`/
+`[0.875rem]`) onto the parent app's own theme scale (its `@theme inline`
+`--radius-sm/md/lg/xl` in globals.css — a *different* scale from the child
+app's kit.tsx radii, not to be conflated). Also fixed share's canvas card,
+which was still drawing the pre-contrast-pass 3-stop brand gradient.
+⬜ parent app: not yet componentized into a shared kit the way child has
+kit.tsx — this pass fixed tokens in place, no new shared components.
+⬜ admin: has a real, partially-adopted component kit already
+(`apps/admin/src/components/ui.tsx`) — needs a migration-completion pass
+(several dashboard pages still hand-roll gray-* markup instead of using
+Card/DataTable), not a new design system. One a11y gap (unlabeled ▲▼✕
+icon buttons in lessons/page.tsx) was fixed in the 2026-09 pass; the kit
+migration itself is not started.
 Rule for new screens: no new colors, no new radii, no new shadows — compose kit.

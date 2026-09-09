@@ -142,7 +142,7 @@ export default function LessonPage() {
 
         {/* Score card */}
         <motion.div
-          className="bg-white rounded-lg shadow-lg p-5 w-full max-w-xs text-center"
+          className="bg-white rounded-2xl shadow-card p-5 w-full max-w-xs text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
@@ -167,7 +167,7 @@ export default function LessonPage() {
 
         {promotions.length > 0 && (
           <motion.div
-            className="bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-[1.5rem] shadow-lg p-4 w-full max-w-xs text-center"
+            className="bg-gradient-to-r from-violet-700 to-purple-800 text-white rounded-3xl shadow-card p-4 w-full max-w-xs text-center"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.55, type: 'spring', stiffness: 300, damping: 16 }}
@@ -180,7 +180,7 @@ export default function LessonPage() {
 
         <motion.button
           onClick={() => router.push('/child/home')}
-          className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-md text-lg shadow-md touch-target"
+          className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-2xl text-lg shadow-card touch-target"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}

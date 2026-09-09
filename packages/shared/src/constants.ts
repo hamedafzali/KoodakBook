@@ -282,10 +282,14 @@ export interface ShortVowel {
   color: string         // tailwind gradient classes for its tiles
 }
 
+// One step darker than originally shipped: white label text on the -500
+// end measured ~3.4–3.8:1 (2026-09 contrast audit) — enough for the large
+// bold syllable glyph but not the smaller "زبر/زیر/پیش" label under it,
+// which needs WCAG AA's 4.5:1 normal-text floor. All three pairs clear it now.
 export const SHORT_VOWELS: ShortVowel[] = [
-  { key: 'zabar', mark: 'َ', namePersian: 'زبر', latin: 'a', color: 'from-red-500 to-orange-500' },
-  { key: 'zir',   mark: 'ِ', namePersian: 'زیر', latin: 'e', color: 'from-blue-500 to-cyan-600' },
-  { key: 'pish',  mark: 'ُ', namePersian: 'پیش', latin: 'o', color: 'from-green-500 to-emerald-600' },
+  { key: 'zabar', mark: 'َ', namePersian: 'زبر', latin: 'a', color: 'from-red-600 to-orange-600' },
+  { key: 'zir',   mark: 'ِ', namePersian: 'زیر', latin: 'e', color: 'from-blue-600 to-cyan-700' },
+  { key: 'pish',  mark: 'ُ', namePersian: 'پیش', latin: 'o', color: 'from-green-600 to-emerald-700' },
 ]
 
 /** Starter consonants — simple shapes/sounds, with their latin for slugs. */

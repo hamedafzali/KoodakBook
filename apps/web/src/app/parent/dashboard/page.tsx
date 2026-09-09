@@ -151,7 +151,8 @@ export default function ParentDashboardPage() {
         <div className="px-4 lg:px-6 pt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3 lg:items-start">
 
           {/* ── Level / XP ── */}
-          <section className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-md p-4 shadow-sm text-white" aria-labelledby="level-title">
+          {/* violet-700/purple-800 (not -500/-600): white text needs ≥4.5:1, the original pair only cleared ~2.5:1 */}
+          <section className="bg-gradient-to-br from-violet-700 to-purple-800 rounded-md p-4 shadow-card text-white" aria-labelledby="level-title">
             <div className="flex items-center justify-between mb-2">
               <h2 id="level-title" className="font-bold text-sm">سطح: {lvl.label}</h2>
               <span className="text-sm font-bold">{xp ?? 0} XP</span>
@@ -177,7 +178,7 @@ export default function ParentDashboardPage() {
           </section>
 
           {/* ── Daily goal ── */}
-          <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="goal-title">
+          <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="goal-title">
             <div className="flex items-center justify-between mb-2">
               <h2 id="goal-title" className="font-bold text-slate-700 text-sm">هدف امروز</h2>
               <span className={`text-sm font-bold ${goalMet ? 'text-green-600' : 'text-amber-600'}`}>
@@ -202,7 +203,7 @@ export default function ParentDashboardPage() {
           </section>
 
           {/* ── 7-Day Activity Heatmap ── */}
-          <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="heatmap-title">
+          <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="heatmap-title">
             <h2 id="heatmap-title" className="font-bold text-slate-700 text-sm mb-3">فعالیت ۷ روز اخیر</h2>
             <div className="flex gap-2 justify-between">
               {heatmap.map((day, i) => (
@@ -249,7 +250,7 @@ export default function ParentDashboardPage() {
               { key: 'introduced',   label: 'معرفی شده',    count: mastery_breakdown.introduced,   bar: 'bg-slate-300',   dot: 'bg-slate-300' },
             ]
             return (
-              <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="mastery-title">
+              <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="mastery-title">
                 <div className="flex items-center justify-between mb-3">
                   <h2 id="mastery-title" className="font-bold text-slate-700 text-sm">تسلط بر کلمه‌ها</h2>
                   <span className="text-xs text-slate-400">{total} کلمه</span>
@@ -274,7 +275,7 @@ export default function ParentDashboardPage() {
 
           {/* ── Recent badges ── */}
           {recent_badges.length > 0 && (
-            <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="badges-title">
+            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="badges-title">
               <h2 id="badges-title" className="font-bold text-slate-700 mb-3 text-sm">جوایز اخیر</h2>
               <div className="flex gap-3 flex-wrap">
                 {recent_badges.map(cb => (
@@ -289,7 +290,7 @@ export default function ParentDashboardPage() {
 
           {/* ── Recent sessions ── */}
           {recent_sessions.length > 0 && (
-            <section className="bg-white rounded-md p-4 shadow-sm" aria-labelledby="sessions-title">
+            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="sessions-title">
               <h2 id="sessions-title" className="font-bold text-slate-700 mb-3 text-sm">جلسات اخیر</h2>
               <div className="space-y-2">
                 {recent_sessions.slice(0, 5).map((s, i) => (

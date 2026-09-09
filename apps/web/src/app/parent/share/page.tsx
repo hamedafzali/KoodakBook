@@ -43,11 +43,12 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
   ctx.direction = 'rtl'
   ctx.textAlign = 'center'
 
-  // Background gradient (matches the child home hero)
+  // Background gradient — matches --color-brand-from/--color-brand-to (globals.css).
+  // Canvas can't read CSS custom properties, so the hex is duplicated here; keep
+  // it in sync if the brand tokens change.
   const bg = ctx.createLinearGradient(0, 0, W, H)
-  bg.addColorStop(0, '#fbbf24')
-  bg.addColorStop(0.5, '#fb923c')
-  bg.addColorStop(1, '#fb7185')
+  bg.addColorStop(0, '#B45309')
+  bg.addColorStop(1, '#C2410C')
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, W, H)
 
@@ -228,7 +229,7 @@ export default function SharePage() {
             height={H}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-xs rounded-lg shadow-lg"
+            className="w-full max-w-xs rounded-lg shadow-raised"
             role="img"
             aria-label={`کارت پیشرفت ${summary.child.name}`}
           />
@@ -237,7 +238,7 @@ export default function SharePage() {
             <motion.button
               onClick={handleShare}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px] flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-raised min-h-[56px] flex items-center justify-center gap-2"
             >
               📤 به اشتراک بگذار
             </motion.button>

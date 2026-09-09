@@ -84,9 +84,9 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
       <p className="text-gray-600 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md">دوباره 🔁</motion.button>
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره 🔁</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
       </div>
     </div>
   )
@@ -104,7 +104,7 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
           <span className="text-amber-500">{'⭐'.repeat(stars)}</span>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-7 text-center">
+        <div className="bg-white rounded-2xl shadow-card p-7 text-center">
           <p className="text-gray-500 persian-text text-sm mb-3">
             {q.dir === 'toPersian' ? 'این عدد به رقمِ فارسی کدام است؟' : 'این عدد به رقمِ انگلیسی کدام است؟'}
           </p>
@@ -122,7 +122,7 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
               : 'bg-white border-gray-100 text-gray-800'
             return (
               <motion.button key={n} onClick={() => pick(n)} whileTap={{ scale: 0.94 }}
-                className={`rounded-md border-2 py-6 shadow-sm font-bold text-4xl touch-target ${cls}`} dir="ltr"
+                className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target ${cls}`} dir="ltr"
                 aria-label={numberToPersianWord(n)}>
                 {optionLabel(n)}
               </motion.button>

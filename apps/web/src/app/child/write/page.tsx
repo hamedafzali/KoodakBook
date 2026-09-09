@@ -7,6 +7,7 @@ import { isLoggedIn } from '@/lib/auth'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import { MODULE } from '@/components/child/kit'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Letter } from '@koodakbook/shared'
@@ -44,11 +45,14 @@ export default function WritePage() {
     <div className="min-h-screen child-bg pb-nav">
       <PageHeader title="تمرین نوشتن ✏️" subtitle={`حرف ${idx + 1} از ${letters.length}`} gradientClass="from-blue-400 to-cyan-500" />
 
-      <div className="px-4 pt-5 flex flex-col items-center gap-4">
+      {/* pb-44: clears BOTH fixed bars below (the action bar + BottomNav),
+          not just BottomNav's own .pb-nav reserve — see the action bar's
+          comment for why it's fixed instead of sitting in normal flow. */}
+      <div className="px-4 pt-5 pb-44 flex flex-col items-center gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => { playTap(); speakOrPlay(letter.audio_url, letter.name_persian) }}
-            className="bg-white rounded-2xl shadow-sm px-5 py-2 flex items-center gap-2 min-h-[44px]"
+            className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[44px]"
             aria-label={`بشنو: ${letter.name_persian}`}
           >
             <span className="text-2xl font-bold text-gray-800">{letter.character}</span>
@@ -58,21 +62,31 @@ export default function WritePage() {
         </div>
 
         <TracingCanvas key={letter.id} letter={letter.character} />
+      </div>
 
-        <div className="flex gap-3 w-full max-w-sm">
+      {/* Fixed action bar, not flow-positioned: on a short viewport (iPhone
+          SE etc.) the header + audio chip + 300px canvas + clear button
+          already reach the fold, so "بعدی" needs a scroll to find every
+          single letter (2026-09 reachability audit). Pinned above BottomNav
+          (bottom-20 = BottomNav's own .pb-nav reserve) it's always inside
+          the one-thumb reach zone instead. Prev/Next also gained arrow
+          glyphs — this screen exists because the child can't fully read
+          yet, so the direction shouldn't be gated on reading "قبلی"/"بعدی". */}
+      <div className="fixed inset-x-0 bottom-20 z-20 left-1/2 -translate-x-1/2 w-full max-w-[540px] px-4 pb-3">
+        <div className="flex gap-3 bg-white/95 backdrop-blur-md rounded-2xl shadow-raised p-3">
           <motion.button
             onClick={() => { playTap(); setIdx(i => Math.max(0, i - 1)) }}
             disabled={idx === 0}
             whileTap={{ scale: 0.94 }}
-            className="flex-1 py-4 rounded-md border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px]"
+            className="flex-1 py-4 rounded-2xl border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px]"
           >
-            قبلی
+            → قبلی
           </motion.button>
           <motion.button
             onClick={() => { playSuccess(); setIdx(i => Math.min(letters.length - 1, i + 1)) }}
             disabled={idx === letters.length - 1}
             whileTap={{ scale: 0.94 }}
-            className="flex-[2] py-4 rounded-md bg-gradient-to-r from-blue-400 to-cyan-500 text-white font-bold text-lg shadow-md disabled:opacity-40 min-h-[56px]"
+            className={`flex-[2] py-4 ${MODULE.write.solid} ${MODULE.write.edge} border-b-[5px] active:border-b-2 active:translate-y-[3px] rounded-2xl text-white font-bold text-lg disabled:opacity-40 min-h-[56px] transition-all`}
           >
             بعدی ←
           </motion.button>
@@ -156,7 +170,7 @@ function TracingCanvas({ letter }: { letter: string }) {
         ref={canvasRef}
         width={300}
         height={300}
-        className="bg-white rounded-lg shadow-md touch-none"
+        className="bg-white rounded-2xl shadow-card touch-none"
         style={{ width: 'min(80vw, 300px)', height: 'min(80vw, 300px)' }}
         onPointerDown={start}
         onPointerMove={move}
