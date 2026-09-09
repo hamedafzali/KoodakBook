@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/icons'
 
 const input = 'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400'
 
@@ -20,7 +21,7 @@ export function TabletForm() {
 
   if (state === 'done') return (
     <div className="rounded-2xl bg-green-50 border border-green-200 p-6 text-center">
-      <p className="text-3xl mb-2">🎉</p>
+      <p className="mb-2 flex justify-center text-amber-500"><Icon name="celebrate" size="lg" /></p>
       <p className="font-bold text-green-800">درخواست شما ثبت شد!</p>
       <p className="text-sm text-green-700 mt-1">به‌زودی با شما تماس می‌گیریم تا جزئیات تبلت و ارسال را هماهنگ کنیم.</p>
     </div>
@@ -70,7 +71,7 @@ export function WaitlistForm() {
 
   if (state === 'done') return (
     <p className="text-sm font-bold text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-      ✅ ثبت شد — به‌محض انتشار نرم‌افزار خبرتان می‌کنیم.
+      <Icon name="doneCircle" size="sm" className="text-green-600" /> ثبت شد — به‌محض انتشار نرم‌افزار خبرتان می‌کنیم.
     </p>
   )
 

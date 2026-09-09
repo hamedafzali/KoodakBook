@@ -15,6 +15,7 @@ import { speakOrPlay, initSpeech } from '@/lib/speech'
 import { recognitionSupported, listenOnce } from '@/lib/recognition'
 import { wordEmoji } from '@koodakbook/shared'
 import type { Word, Child } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 type Phase = 'idle' | 'listening' | 'correct' | 'tryagain'
 
@@ -84,7 +85,7 @@ export default function SpeakPage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="تمرین گفتن 🎤" subtitle={`کلمه ${idx + 1} از ${words.length}`} gradientClass="from-rose-400 to-pink-500" />
+      <PageHeader title="تمرین گفتن" subtitle={`کلمه ${idx + 1} از ${words.length}`} gradientClass="from-rose-400 to-pink-500" />
 
       <div className="px-4 pt-6 flex flex-col items-center gap-5">
         {!supported && (
@@ -106,7 +107,7 @@ export default function SpeakPage() {
           ) : null}
           <span className="text-5xl font-bold text-gray-800">{word.persian}</span>
           <span className="text-base text-gray-500 ltr">{word.english}</span>
-          <span className="text-xs text-amber-700">🔊 اول گوش کن</span>
+          <span className="flex items-center gap-1 text-xs text-amber-700"><Icon name="listen" size="xs" /> اول گوش کن</span>
         </button>
 
         {/* Mascot feedback */}
@@ -114,7 +115,7 @@ export default function SpeakPage() {
           {phase === 'correct' && (
             <motion.div key="correct" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
               <Mascot size={90} mood="excited" />
-              <p className="font-bold text-green-600 text-lg">آفرین! درست گفتی 🌟</p>
+              <p className="font-bold text-green-600 text-lg">آفرین! درست گفتی</p>
             </motion.div>
           )}
           {phase === 'tryagain' && (
@@ -139,7 +140,7 @@ export default function SpeakPage() {
             }`}
             aria-label={phase === 'listening' ? 'در حال شنیدن' : 'ضربه بزن و بگو'}
           >
-            <span className="text-4xl">{phase === 'listening' ? '👂' : '🎤'}</span>
+            <Icon name={phase === 'listening' ? 'headphones' : 'record'} size={40} />
           </motion.button>
         )}
         <p className="text-sm text-gray-500 persian-text">

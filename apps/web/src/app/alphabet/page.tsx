@@ -79,7 +79,7 @@ export default async function AlphabetPage() {
       ? `${l.name_english} — ${l.example_word.english}${l.example_word.finglish ? ` (${l.example_word.finglish})` : ''}`
       : l.name_english,
     detailImage: l.example_word?.image_url ?? null,
-    detailEmoji: '🔤',
+    detailIcon: 'alphabet' as const,
   }))
 
   const jsonLd = {

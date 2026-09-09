@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import { Icon } from '@/components/icons'
 
 /* Voice sample for the pricing section: a story excerpt read in the single
  * storyteller voice every account hears — audio quality is not a paid tier.
@@ -40,7 +41,7 @@ export default function VoiceDemo({ ready }: { ready: boolean }) {
   return (
     <div className="mt-10 rounded-3xl bg-white border border-slate-200 p-6 sm:p-8">
       <div className="text-center mb-5">
-        <p className="text-amber-700 font-bold text-sm mb-1.5">با گوش خودتان بشنوید 🎧</p>
+        <p className="text-amber-700 font-bold text-sm mb-1.5">با گوش خودتان بشنوید</p>
         <h3 className="text-xl font-bold text-slate-800">صدای قصه‌گوی کودک‌بوک</h3>
       </div>
 
@@ -54,7 +55,7 @@ export default function VoiceDemo({ ready }: { ready: boolean }) {
             playing
               ? 'border-amber-500 bg-amber-50 text-amber-700'
               : 'border-amber-300 text-amber-700 hover:border-amber-500 shadow-sm shadow-amber-100'}`}>
-          <span aria-hidden="true">{playing ? '⏸' : '🔊'}</span>
+          <Icon name={playing ? 'pause' : 'listen'} size="sm" />
           {playing ? 'در حال پخش…' : 'شنیدن نمونه'}
         </button>
       </div>

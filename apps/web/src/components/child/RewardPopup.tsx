@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti'
 import type { Badge } from '@koodakbook/shared'
 import Mascot from './Mascot'
 import { playComplete } from '@/lib/sounds'
+import { Icon } from '@/components/icons'
 
 interface Props {
   badge: Badge
@@ -99,7 +100,7 @@ export default function RewardPopup({ badge, onClose }: Props) {
             className="text-6xl mb-3"
             aria-hidden="true"
           >
-            🏆
+            <Icon name="rewards" size={64} strokeWidth={1.6} />
           </motion.div>
 
           <motion.h2
@@ -132,7 +133,7 @@ export default function RewardPopup({ badge, onClose }: Props) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            ممنون! 🎉
+            ممنون!
           </motion.button>
         </motion.div>
       </motion.div>

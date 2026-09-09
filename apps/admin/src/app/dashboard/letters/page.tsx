@@ -4,6 +4,7 @@ import { api } from '@/lib/api'
 import { PageHeader } from '@/components/ui'
 import FileUpload from '@/components/FileUpload'
 import type { Letter } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 const GROUP_COLORS: Record<number, string> = {
   1:'bg-red-50 border-red-200', 2:'bg-orange-50 border-orange-200', 3:'bg-yellow-50 border-yellow-200',
@@ -64,7 +65,7 @@ export default function AdminLettersPage() {
                 ) : (
                   <div className="text-center">
                     {l.audio_url
-                      ? <span className="text-xs text-green-600">🔊 صدا دارد</span>
+                      ? <span className="text-xs text-green-600"><Icon name="audio" size="xs" /> صدا دارد</span>
                       : <span className="text-xs text-gray-400">بدون صدا</span>
                     }
                     <button onClick={() => { setEditing(l.id); setAudioUrl(l.audio_url ?? ''); setTtsText(l.tts_text ?? '') }}

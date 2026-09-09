@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { speakOrPlay } from '@/lib/speech'
 import { playTap } from '@/lib/sounds'
+import { Icon, type IconName } from '@/components/icons'
 
 /**
  * One grid item: a tappable tile (a letter, or a word) plus the detail it
@@ -19,7 +20,7 @@ export interface ExplorerItem {
   detailTitle: string
   detailSubtitle: string
   detailImage?: string | null
-  detailEmoji?: string | null
+  detailIcon?: IconName | null
 }
 
 export function TapToHearExplorer({
@@ -68,7 +69,7 @@ export function TapToHearExplorer({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={selected.detailImage} alt="" className="w-10 h-10 object-contain" />
             ) : (
-              <span aria-hidden="true">{selected.detailEmoji ?? '🔊'}</span>
+              <Icon name={selected.detailIcon ?? 'listen'} size="sm" />
             )}
           </button>
           <div className="min-w-0">

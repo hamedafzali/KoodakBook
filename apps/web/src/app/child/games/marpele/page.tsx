@@ -15,6 +15,7 @@ import MarpeleBoard, { Confetti, Dice } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import type { AppCharacter, Child, Word } from '@koodakbook/shared'
 import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDigits, wordEmoji } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 /* مارپله برای یادگیری فارسی — web port of mobile's app/games/marpele.tsx
  * (solo/pass-and-play mode; online play against a friend lives at
@@ -23,6 +24,7 @@ import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDig
  * pure luck. Every challenge the active child answers posts to the same
  * Leitner progress as lessons/review. */
 
+// EMOJI-CONTENT: board-game tokens standing in for players. See marpele-online.
 const EXTRA_HUMAN_EMOJI = ['👧', '👦', '🧑']
 const MAX_PLAYERS = 4
 
@@ -110,7 +112,7 @@ function Setup({ childName, characters, onStart, onBack }: {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="مارپله 🎲" subtitle="با کی بازی می‌کنی؟" onBack={onBack} gradientClass="from-violet-500 to-purple-500" />
+      <PageHeader title="مارپله" subtitle="با کی بازی می‌کنی؟" onBack={onBack} gradientClass="from-violet-500 to-purple-500" />
 
       <div className="px-4 pt-5 max-w-md mx-auto flex flex-col gap-5">
         <section>
@@ -159,14 +161,14 @@ function Setup({ childName, characters, onStart, onBack }: {
           whileTap={{ scale: 0.96 }}
           className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card"
         >
-          شروع بازی 🎲
+          شروع بازی
         </motion.button>
 
         <Link
           href="/child/games/marpele-online"
           className="w-full py-3.5 rounded-2xl border-2 border-sky-200 text-sky-600 font-bold text-center"
         >
-          بازی آنلاین با دوستان 🌐
+          بازی آنلاین با دوستان
         </Link>
       </div>
 
@@ -313,17 +315,17 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 child-bg p-6 text-center">
         <Confetti />
-        <span className="text-8xl">{childWon ? '🏆' : w.emoji}</span>
-        <h1 className="text-3xl font-bold text-gray-800">{childWon ? 'تو بردی! 🎉' : `${w.name} برد!`}</h1>
+        <span className="text-8xl">{childWon ? <Icon name="rewards" size={96} strokeWidth={1.5} className="text-amber-500" /> : w.emoji}</span>
+        <h1 className="text-3xl font-bold text-gray-800">{childWon ? 'تو بردی!' : `${w.name} برد!`}</h1>
         {stars > 0 && <p className="text-gray-600 persian-text">{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</p>}
         <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
           <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }} className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">
-            دوباره بازی کن 🔁
+            دوباره بازی کن
           </motion.button>
           <motion.button onClick={onChangePlayers} whileTap={{ scale: 0.96 }} className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
             تغییر بازیکن‌ها
           </motion.button>
-          <button onClick={() => router.push('/child/home')} className="text-sm text-slate-400 hover:text-slate-600 mt-1">برگشت به خانه 🏠</button>
+          <button onClick={() => router.push('/child/home')} className="text-sm text-slate-400 hover:text-slate-600 mt-1">برگشت به خانه</button>
         </div>
       </div>
     )
@@ -332,7 +334,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
   return (
     <div className="min-h-screen child-bg pb-nav">
       <PageHeader
-        title="مارپله 🎲"
+        title="مارپله"
         gradientClass="from-violet-500 to-purple-500"
         rightSlot={stars > 0 ? <span className="text-sm font-bold text-amber-500">⭐ {toPersianDigits(stars)}</span> : undefined}
       />
@@ -353,7 +355,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
             className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-card transition-colors ${
               canRoll ? 'bg-violet-600' : 'bg-slate-300'}`}
           >
-            {cur?.kind === 'human' ? 'تاس بینداز! 🎲' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}
+            {cur?.kind === 'human' ? 'تاس بینداز!' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}
           </motion.button>
         </div>
       </div>
@@ -370,7 +372,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
             >
               <p className="text-center font-bold text-gray-800 persian-text">
                 {players[challenge.playerIdx].name}:{' '}
-                {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی! 🪜' : 'جواب بده تا از مار فرار کنی! 🐍'}
+                {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}
               </p>
               <QuizCard
                 key={challenge.target + '-' + (challenge.question.correctWord?.id ?? '')}

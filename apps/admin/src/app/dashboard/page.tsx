@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { LineChart, BarList, Donut, CohortHeatmap } from '@/components/charts'
+import { Icon, type IconName } from '@/components/icons'
 
 interface Stats { users: number; children: number; words: number; stories: number; lessons: number }
 interface Overview {
@@ -26,11 +27,11 @@ export default function AdminDashboard() {
   }, [])
 
   const cards = [
-    { label: 'خانواده‌ها', value: stats?.users, emoji: '👨‍👩‍👧' },
-    { label: 'کودکان', value: stats?.children, emoji: '👶' },
-    { label: 'کلمات', value: stats?.words, emoji: '📝' },
-    { label: 'داستان‌ها', value: stats?.stories, emoji: '📖' },
-    { label: 'درس‌ها', value: stats?.lessons, emoji: '📚' },
+    { label: 'خانواده‌ها', value: stats?.users, icon: 'families' as IconName },
+    { label: 'کودکان', value: stats?.children, icon: 'children' as IconName },
+    { label: 'کلمات', value: stats?.words, icon: 'words' as IconName },
+    { label: 'داستان‌ها', value: stats?.stories, icon: 'stories' as IconName },
+    { label: 'درس‌ها', value: stats?.lessons, icon: 'lessons' as IconName },
   ]
 
   const f = ov?.funnel
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {cards.map(c => (
           <div key={c.label} className="bg-white rounded-2xl p-4 shadow-sm text-center">
-            <div className="text-2xl mb-1">{c.emoji}</div>
+            <div className="mb-1 text-slate-400"><Icon name={c.icon} size="lg" /></div>
             <div className="text-2xl font-bold text-gray-800">{c.value ?? '—'}</div>
             <div className="text-xs text-gray-500 mt-1">{c.label}</div>
           </div>

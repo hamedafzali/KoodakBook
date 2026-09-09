@@ -14,6 +14,7 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import CharacterAvatar, { type CharacterMood } from '@/components/child/CharacterAvatar'
 import { isSceneSlug, type AppCharacter, type Child } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 /* «حرف بزنیم» — the controlled conversation (plan §4). Push-to-talk when the
  * browser can hear Persian, starter phrase chips always (the no-pressure
@@ -87,10 +88,10 @@ export default function TalkPage() {
     try {
       const heard = await dictateOnce()
       if (heard) { setBusy(null); await send(heard) }
-      else { setBusy(null); setNotice('نشنیدم! بلندتر بگو یا یکی از جمله‌ها را انتخاب کن 👇') }
+      else { setBusy(null); setNotice('نشنیدم! بلندتر بگو یا یکی از جمله‌ها را انتخاب کن') }
     } catch {
       setBusy(null)
-      setNotice('میکروفون کار نکرد — از جمله‌های پایین استفاده کن 👇')
+      setNotice('میکروفون کار نکرد — از جمله‌های پایین استفاده کن')
     }
   }
 
@@ -117,7 +118,7 @@ export default function TalkPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 max-w-md w-full mx-auto">
         {turns.length === 0 && (
           <p className="text-center text-sm text-slate-400 persian-text pt-4">
-            سلام کن یا یکی از جمله‌های پایین را بزن! 💬
+            سلام کن یا یکی از جمله‌های پایین را بزن!
           </p>
         )}
         <AnimatePresence initial={false}>
@@ -169,7 +170,7 @@ export default function TalkPage() {
               aria-label={busy === 'listen' ? 'دارم گوش می‌کنم…' : 'ضربه بزن و حرف بزن'}
               className={`w-20 h-20 rounded-full flex items-center justify-center shadow-raised text-4xl ${
                 busy === 'listen' ? 'bg-rose-500' : 'bg-brand-gradient-br'} text-white disabled:opacity-60`}>
-              🎤
+              <Icon name="record" size="xl" />
             </motion.button>
           </div>
         )}

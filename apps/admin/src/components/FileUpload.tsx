@@ -1,6 +1,7 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
 import { getToken } from '@/lib/auth'
+import { Icon } from '@/components/icons'
 
 interface Props {
   type: 'audio' | 'images' | 'pdfs'
@@ -102,16 +103,16 @@ export default function FileUpload({ type, onUploaded, label, currentUrl }: Prop
         {type === 'audio' && !editing && (
           recording
             ? <button type="button" onClick={stopRecording} className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium animate-pulse">⏹ توقف ضبط</button>
-            : <button type="button" onClick={startRecording} disabled={uploading} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50">🎙️ ضبط صدا</button>
+            : <button type="button" onClick={startRecording} disabled={uploading} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"><Icon name="record" size="sm" /> ضبط صدا</button>
         )}
         {!editing && (
           <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading || recording} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition disabled:opacity-50">
-            {uploading ? 'در حال آپلود...' : '📎 آپلود فایل'}
+            {uploading ? 'در حال آپلود...' : <><Icon name="attach" size="sm" /> آپلود فایل</>}
           </button>
         )}
         {!editing && saved && type === 'audio' && <audio controls src={saved} className="h-8 ltr" />}
         {!editing && saved && type === 'images' && <img src={saved} className="h-12 w-12 object-cover rounded-lg" alt="" />}
-        {!editing && saved && !['audio', 'images'].includes(type) && <span className="text-xs text-green-600">✓ آپلود شد</span>}
+        {!editing && saved && !['audio', 'images'].includes(type) && <span className="text-xs text-green-600"><Icon name="ok" size="xs" /> آپلود شد</span>}
       </div>
 
       {/* Editor — pitch/voice tuning + preview before saving */}
@@ -132,9 +133,9 @@ export default function FileUpload({ type, onUploaded, label, currentUrl }: Prop
           <p className="text-[11px] text-gray-500">صدای ضبط‌شده خودکار اصلاح می‌شود (حذف سکوت + یکسان‌سازی). با لغزنده می‌توانید صدا را نازک‌تر (کودکانه/زنانه) یا بم‌تر کنید.</p>
           <div className="flex gap-2">
             <button type="button" onClick={saveEdited} disabled={uploading} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium disabled:opacity-50">
-              {uploading ? 'در حال ذخیره...' : '💾 ذخیره'}
+              {uploading ? 'در حال ذخیره...' : <><Icon name="save" size="sm" /> ذخیره</>}
             </button>
-            <button type="button" onClick={closeEditor} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium">✖ لغو</button>
+            <button type="button" onClick={closeEditor} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium"><Icon name="close" size="sm" /> لغو</button>
           </div>
         </div>
       )}

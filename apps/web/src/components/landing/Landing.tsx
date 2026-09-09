@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Icon, type IconName } from '@/components/icons'
 import dynamic from 'next/dynamic'
 
 // These four are all well below the hero fold, so their client JS shouldn't
@@ -43,42 +44,42 @@ const STATS = [
 ]
 
 const FEATURES = [
-  { icon: '📚', title: 'درس‌های مرحله‌ای', text: 'واژگان در ۴ مرحله — حیوانات، خانواده، بدن، رنگ‌ها… هر درس کوتاه، رنگی و بازی‌گونه.' },
-  { icon: '✏️', title: 'الفبا و نوشتن', text: 'هر ۳۲ حرف با صدای درست، شکل حرف در اول/وسط/آخر و تمرین نوشتن با انگشت.' },
-  { icon: '🎵', title: 'صداکِشی (فونیکس)', text: 'زبر، زیر، پیش — بچه‌ها صدای حرف‌ها را می‌شنوند و ترکیب می‌کنند؛ پایه‌ی واقعی خواندن.' },
-  { icon: '🔄', title: 'مرور هوشمند', text: 'تکرار فاصله‌دار (Spaced Repetition): هر واژه دقیقاً وقتی برمی‌گردد که در آستانه‌ی فراموشی است.' },
-  { icon: '🎤', title: 'تمرین گفتن', text: 'کودک واژه را بلند می‌گوید و نرم‌افزار با تشخیص گفتار می‌شنود — تلفظ همان‌جا تمرین می‌شود.' },
-  { icon: '📖', title: 'داستان با اسم کودک شما', text: 'هوش مصنوعی داستانی می‌سازد که قهرمانش کودک شماست — متناسب با سن و سطح، با صدای گوینده.' },
-  { icon: '🏆', title: 'جایزه و نشان', text: 'ستاره‌ها، نشان‌ها و دستاوردها انگیزه را نگه می‌دارند؛ پیشرفت برای کودک قابل‌لمس می‌شود.' },
-  { icon: '🧭', title: 'آزمون تعیین سطح', text: 'در شروع، یک بازی کوتاه سطح کودک را می‌سنجد تا از جای درست شروع کند — نه آسان‌تر، نه سخت‌تر.' },
-  { icon: '🦊', title: 'دوست‌های سخنگو', text: 'پنج شخصیت — از سیمرغِ قصه‌گو تا روزی روباهه — با کودک شما فارسی حرف می‌زنند، جوابش را می‌دهند و تشویقش می‌کنند.' },
-  { icon: '🔢', title: 'دنیای اعداد', text: 'شمارش، خواندن رقم‌های فارسی (۴۵۶) و خرید با تومان در بازار — ریاضیِ مدرسه، این‌بار به زبان فارسی.' },
+  { icon: 'lessons' as IconName, title: 'درس‌های مرحله‌ای', text: 'واژگان در ۴ مرحله — حیوانات، خانواده، بدن، رنگ‌ها… هر درس کوتاه، رنگی و بازی‌گونه.' },
+  { icon: 'write' as IconName, title: 'الفبا و نوشتن', text: 'هر ۳۲ حرف با صدای درست، شکل حرف در اول/وسط/آخر و تمرین نوشتن با انگشت.' },
+  { icon: 'phonics' as IconName, title: 'صداکِشی (فونیکس)', text: 'زبر، زیر، پیش — بچه‌ها صدای حرف‌ها را می‌شنوند و ترکیب می‌کنند؛ پایه‌ی واقعی خواندن.' },
+  { icon: 'review' as IconName, title: 'مرور هوشمند', text: 'تکرار فاصله‌دار (Spaced Repetition): هر واژه دقیقاً وقتی برمی‌گردد که در آستانه‌ی فراموشی است.' },
+  { icon: 'speak' as IconName, title: 'تمرین گفتن', text: 'کودک واژه را بلند می‌گوید و نرم‌افزار با تشخیص گفتار می‌شنود — تلفظ همان‌جا تمرین می‌شود.' },
+  { icon: 'stories' as IconName, title: 'داستان با اسم کودک شما', text: 'هوش مصنوعی داستانی می‌سازد که قهرمانش کودک شماست — متناسب با سن و سطح، با صدای گوینده.' },
+  { icon: 'rewards' as IconName, title: 'جایزه و نشان', text: 'ستاره‌ها، نشان‌ها و دستاوردها انگیزه را نگه می‌دارند؛ پیشرفت برای کودک قابل‌لمس می‌شود.' },
+  { icon: 'placement' as IconName, title: 'آزمون تعیین سطح', text: 'در شروع، یک بازی کوتاه سطح کودک را می‌سنجد تا از جای درست شروع کند — نه آسان‌تر، نه سخت‌تر.' },
+  { icon: 'friends' as IconName, title: 'دوست‌های سخنگو', text: 'پنج شخصیت — از سیمرغِ قصه‌گو تا روزی روباهه — با کودک شما فارسی حرف می‌زنند، جوابش را می‌دهند و تشویقش می‌کنند.' },
+  { icon: 'math' as IconName, title: 'دنیای اعداد', text: 'شمارش، خواندن رقم‌های فارسی (۴۵۶) و خرید با تومان در بازار — ریاضیِ مدرسه، این‌بار به زبان فارسی.' },
 ]
 
 const METHOD = [
   {
-    icon: '🔤', title: 'اول صدا، بعد حرف',
+    icon: 'alphabet' as IconName, title: 'اول صدا، بعد حرف',
     text: 'پژوهش‌های علم خواندن (Science of Reading) روشن است: بچه‌ها با شنیدن و ترکیب صداها خواندن را یاد می‌گیرند، نه با حفظ شکل کلمه‌ها. صداکشی ستون این نرم‌افزار است.',
   },
   {
-    icon: '🧠', title: 'تکرار در لحظه‌ی درست',
+    icon: 'method' as IconName, title: 'تکرار در لحظه‌ی درست',
     text: 'حافظه با تکرارِ فاصله‌دار می‌ماند. کودک‌بوک هر واژه را درست قبل از فراموشی برمی‌گرداند — همان روشی که در بهترین نرم‌افزارهای زبان دنیا استفاده می‌شود.',
   },
   {
-    icon: '💛', title: 'قصه به‌جای درس',
+    icon: 'love' as IconName, title: 'قصه به‌جای درس',
     text: 'کودک با قصه‌ای که قهرمانش خودش است، واژه‌ها را در بافت واقعی می‌بیند و می‌شنود. یادگیری بدون احساس «کلاس» — همان‌طور که زبان مادری یاد گرفته می‌شود.',
   },
   {
-    icon: '🌍', title: 'چندزبانی یک هدیه است',
+    icon: 'language' as IconName, title: 'چندزبانی یک هدیه است',
     text: 'چندزبانی با تمرکز، انعطاف ذهنی و مهارت حل مسئله همراه است — و مهم‌تر: پیوند کودک با مادربزرگ، پدربزرگ و هویتش. روزی ۱۰ دقیقه کافی است.',
   },
 ]
 
 const PARENT_POINTS = [
-  { icon: '🔒', title: 'حالت کودک با پین والدین', text: 'کودک داخل بخش خودش می‌ماند؛ تنظیمات و خرید فقط با پین شما باز می‌شود.' },
-  { icon: '🚫', title: 'بدون تبلیغات', text: 'هیچ تبلیغی، هیچ لینک خروجی، هیچ خرید پنهانی — صفحه‌ی کودک فقط محتواست.' },
-  { icon: '📊', title: 'داشبورد پیشرفت', text: 'می‌بینید امروز چه تمرین کرده، کدام واژه‌ها را بلد است و کجا گیر کرده.' },
-  { icon: '👨‍👩‍👧‍👦', title: 'تا ۵ کودک', text: 'هر فرزند پروفایل، سطح و مسیر خودش را دارد — با یک اشتراک خانواده.' },
+  { icon: 'locked' as IconName, title: 'حالت کودک با پین والدین', text: 'کودک داخل بخش خودش می‌ماند؛ تنظیمات و خرید فقط با پین شما باز می‌شود.' },
+  { icon: 'noAds' as IconName, title: 'بدون تبلیغات', text: 'هیچ تبلیغی، هیچ لینک خروجی، هیچ خرید پنهانی — صفحه‌ی کودک فقط محتواست.' },
+  { icon: 'progress' as IconName, title: 'داشبورد پیشرفت', text: 'می‌بینید امروز چه تمرین کرده، کدام واژه‌ها را بلد است و کجا گیر کرده.' },
+  { icon: 'family' as IconName, title: 'تا ۵ کودک', text: 'هر فرزند پروفایل، سطح و مسیر خودش را دارد — با یک اشتراک خانواده.' },
 ]
 
 const FAQ = [
@@ -130,12 +131,12 @@ function TabletMock() {
       {/* header */}
       <rect x="20" y="20" width="280" height="56" rx="18" fill="#f59e0b" />
       <rect x="20" y="58" width="280" height="18" fill="#f59e0b" />
-      <text x="160" y="55" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#fff">صداها 🎵</text>
+      <text x="160" y="55" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#fff">صداها</text>
       {/* big letter card */}
       <rect x="70" y="100" width="180" height="130" rx="20" fill="#fff" stroke="#fde68a" strokeWidth="3" />
       <text x="160" y="185" textAnchor="middle" fontSize="72" fontWeight="bold" fill="#b45309">بَ</text>
       <circle cx="230" cy="120" r="14" fill="#fbbf24" />
-      <text x="230" y="126" textAnchor="middle" fontSize="14">🔊</text>
+      <g transform="translate(222 112)" className="text-white"><Icon name="listen" size={16} /></g>
       {/* options */}
       <rect x="45" y="255" width="108" height="52" rx="14" fill="#34d399" />
       <text x="99" y="288" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#fff">با</text>
@@ -146,8 +147,8 @@ function TabletMock() {
       <rect x="167" y="318" width="108" height="52" rx="14" fill="#fbbf24" />
       <text x="221" y="351" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#fff">بَه</text>
       {/* stars */}
-      <text x="48" y="130" fontSize="20">⭐</text>
-      <text x="36" y="230" fontSize="14">⭐</text>
+      <g transform="translate(44 116)" className="text-amber-400 fill-amber-400"><Icon name="star" size={18} /></g>
+      <g transform="translate(32 218)" className="text-amber-300 fill-amber-300"><Icon name="star" size={13} /></g>
     </svg>
   )
 }
@@ -167,20 +168,20 @@ function TabletProduct() {
       <rect x="72" y="68" width="276" height="174" rx="16" fill="#fffbeb" />
       <rect x="72" y="68" width="276" height="40" rx="16" fill="#f59e0b" />
       <rect x="72" y="92" width="276" height="16" fill="#f59e0b" />
-      <text x="210" y="95" textAnchor="middle" fontSize="17" fontWeight="bold" fill="#fff">کودک‌بوک 📚</text>
+      <text x="210" y="95" textAnchor="middle" fontSize="17" fontWeight="bold" fill="#fff">کودک‌بوک</text>
       {/* app tiles */}
       <rect x="92" y="122" width="72" height="52" rx="12" fill="#34d399" />
-      <text x="128" y="155" textAnchor="middle" fontSize="22">🔤</text>
+      <g transform="translate(117 135)" className="text-white"><Icon name="alphabet" size={22} /></g>
       <rect x="174" y="122" width="72" height="52" rx="12" fill="#818cf8" />
-      <text x="210" y="155" textAnchor="middle" fontSize="22">📖</text>
+      <g transform="translate(199 135)" className="text-white"><Icon name="stories" size={22} /></g>
       <rect x="256" y="122" width="72" height="52" rx="12" fill="#f472b6" />
-      <text x="292" y="155" textAnchor="middle" fontSize="22">🎵</text>
+      <g transform="translate(281 135)" className="text-white"><Icon name="phonics" size={22} /></g>
       <rect x="92" y="184" width="72" height="42" rx="12" fill="#fbbf24" />
-      <text x="128" y="212" textAnchor="middle" fontSize="20">🎤</text>
+      <g transform="translate(118 194)" className="text-white"><Icon name="speak" size={20} /></g>
       <rect x="174" y="184" width="72" height="42" rx="12" fill="#60a5fa" />
-      <text x="210" y="212" textAnchor="middle" fontSize="20">🏆</text>
+      <g transform="translate(200 194)" className="text-white"><Icon name="rewards" size={20} /></g>
       <rect x="256" y="184" width="72" height="42" rx="12" fill="#a78bfa" />
-      <text x="292" y="212" textAnchor="middle" fontSize="20">✏️</text>
+      <g transform="translate(282 194)" className="text-white"><Icon name="write" size={20} /></g>
       {/* grip handles */}
       <circle cx="40" cy="155" r="20" fill="#fb923c" />
       <circle cx="380" cy="155" r="20" fill="#fb923c" />
@@ -190,8 +191,8 @@ function TabletProduct() {
       <path d="M352 52c14-22 34-12 24 2-6 9-18 4-24-2z" fill="#f43f5e" />
       <path d="M348 56l-10 26 12-8 8 10z" fill="#fb7185" />
       {/* sparkles */}
-      <text x="60" y="35" fontSize="18">✨</text>
-      <text x="330" y="295" fontSize="16">⭐</text>
+      <g transform="translate(56 20)" className="text-amber-400"><Icon name="sparkle" size={18} /></g>
+      <g transform="translate(326 282)" className="text-amber-400 fill-amber-400"><Icon name="star" size={15} /></g>
     </svg>
   )
 }
@@ -206,7 +207,7 @@ function StoreBadge({ store }: { store: 'android' | 'ios' }) {
     // despite the foreground/background colors themselves computing fine.)
     <div className="relative cursor-default select-none" aria-label={`${store === 'android' ? 'Google Play' : 'App Store'} — به‌زودی`}>
       <div className="flex items-center gap-3 bg-slate-800 text-white rounded-xl px-5 py-2.5 opacity-70">
-        <span className="text-2xl" aria-hidden="true">{store === 'android' ? '🤖' : ''}</span>
+        <Icon name="mobile" size="lg" />
         <span className="text-right leading-tight">
           <span className="block text-[10px] text-slate-300">به‌زودی در</span>
           <span className="block font-bold text-sm" dir="ltr">{store === 'android' ? 'Google Play' : 'App Store'}</span>
@@ -227,7 +228,7 @@ export default async function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          <p className="font-bold text-xl text-amber-700">📚 کودک‌بوک</p>
+          <p className="font-bold text-xl text-amber-700 inline-flex items-center gap-2"><Icon name="book" size="md" />کودک‌بوک</p>
           <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600" aria-label="منوی اصلی">
             <a href="#features" className="hover:text-amber-700">ویژگی‌ها</a>
             <a href="#method" className="hover:text-amber-700">روش آموزش</a>
@@ -266,8 +267,8 @@ export default async function Landing() {
               </a>
             </div>
             <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
-              <li>🚫 بدون تبلیغات</li>
-              <li>🔒 حالت کودک با پین والدین</li>
+              <li className="inline-flex items-center gap-1.5"><Icon name="noAds" size="sm" />بدون تبلیغات</li>
+              <li className="inline-flex items-center gap-1.5"><Icon name="locked" size="sm" />حالت کودک با پین والدین</li>
               <li>🇮🇷 تمام محتوا با صدای فارسی</li>
             </ul>
           </div>
@@ -294,7 +295,7 @@ export default async function Landing() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {FEATURES.map(f => (
             <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
-              <p className="text-3xl mb-3" aria-hidden="true">{f.icon}</p>
+              <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
               <h3 className="font-bold text-slate-800 mb-1.5">{f.title}</h3>
               <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
             </div>
@@ -310,7 +311,7 @@ export default async function Landing() {
           <div className="grid sm:grid-cols-2 gap-5">
             {METHOD.map(m => (
               <div key={m.title} className="rounded-2xl bg-white border border-amber-100 p-6">
-                <p className="text-3xl mb-3" aria-hidden="true">{m.icon}</p>
+                <p className="mb-3 text-amber-600"><Icon name={m.icon} size="xl" strokeWidth={1.8} /></p>
                 <h3 className="font-bold text-slate-800 mb-2">{m.title}</h3>
                 <p className="text-sm text-slate-600 leading-relaxed">{m.text}</p>
               </div>
@@ -326,7 +327,7 @@ export default async function Landing() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {PARENT_POINTS.map(p => (
             <div key={p.title} className="rounded-2xl border border-slate-100 p-5 text-center">
-              <p className="text-3xl mb-3" aria-hidden="true">{p.icon}</p>
+              <p className="mb-3 flex justify-center text-amber-600"><Icon name={p.icon} size="xl" strokeWidth={1.8} /></p>
               <h3 className="font-bold text-slate-800 mb-1.5 text-sm">{p.title}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">{p.text}</p>
             </div>
@@ -357,19 +358,19 @@ export default async function Landing() {
           <p className="text-slate-500 mt-3 leading-relaxed">
             برای خانواده‌هایی که نمی‌خواهند موبایل خودشان را بدهند: تبلتی با کودک‌بوک
             نصب‌شده، حالت کودک قفل‌شده و بدون دسترسی باز به اینترنت. بهترین هدیه‌ی تولد
-            و نوروز برای نوه و خواهرزاده و برادرزاده. 🎁
+            و نوروز برای نوه و خواهرزاده و برادرزاده.
           </p>
         </div>
 
         {/* Packages — deliberately without prices until launch */}
         <div className="grid sm:grid-cols-3 gap-5 mb-12">
           {[
-            { icon: '📦', title: 'بسته‌ی پایه', items: ['تبلت ۸ اینچ', 'کودک‌بوک نصب و تنظیم‌شده', 'حالت کودک قفل‌شده'] },
-            { icon: '🛡️', title: 'بسته‌ی محافظ', items: ['تبلت ۱۰ اینچ', 'قاب ضدضربه‌ی مخصوص کودک', 'پایه‌ی رومیزی + محافظ صفحه'] },
-            { icon: '🎁', title: 'بسته‌ی هدیه', items: ['بسته‌ی محافظ کامل', 'جعبه‌ی هدیه و کارت تبریک', 'ارسال مستقیم به گیرنده در اروپا'] },
+            { icon: 'bundle' as IconName, title: 'بسته‌ی پایه', items: ['تبلت ۸ اینچ', 'کودک‌بوک نصب و تنظیم‌شده', 'حالت کودک قفل‌شده'] },
+            { icon: 'protect' as IconName, title: 'بسته‌ی محافظ', items: ['تبلت ۱۰ اینچ', 'قاب ضدضربه‌ی مخصوص کودک', 'پایه‌ی رومیزی + محافظ صفحه'] },
+            { icon: 'gift' as IconName, title: 'بسته‌ی هدیه', items: ['بسته‌ی محافظ کامل', 'جعبه‌ی هدیه و کارت تبریک', 'ارسال مستقیم به گیرنده در اروپا'] },
           ].map(p => (
             <div key={p.title} className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-              <p className="text-4xl mb-3" aria-hidden="true">{p.icon}</p>
+              <p className="mb-3 flex justify-center text-amber-600"><Icon name={p.icon} size="hero" strokeWidth={1.6} /></p>
               <h3 className="font-bold text-slate-800 mb-3">{p.title}</h3>
               <ul className="space-y-1.5 text-sm text-slate-500">
                 {p.items.map(i => <li key={i}>{i}</li>)}
@@ -393,7 +394,7 @@ export default async function Landing() {
       <section className="bg-slate-900 text-white">
         <div className="max-w-6xl mx-auto px-4 py-14 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
-            <h2 className="text-2xl font-bold">نرم‌افزار موبایل در راه است 📱</h2>
+            <h2 className="text-2xl font-bold inline-flex items-center gap-2"><Icon name="mobile" size="lg" />نرم‌افزار موبایل در راه است</h2>
             <p className="text-slate-300 mt-2 leading-relaxed max-w-lg">
               کودک‌بوک همین امروز در مرورگر موبایل و تبلت کار می‌کند (به صفحه‌ی اصلی اضافه‌اش کنید).
               نسخه‌ی اندروید و iOS با حالت آفلاین کامل در راه است — ایمیل بگذارید تا اول شما بدانید.
@@ -439,7 +440,7 @@ export default async function Landing() {
       {/* Footer */}
       <footer className="border-t border-slate-100">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p className="font-bold text-slate-700">📚 کودک‌بوک — فارسی برای کودکان</p>
+          <p className="font-bold text-slate-700 inline-flex items-center gap-2"><Icon name="book" size="sm" />کودک‌بوک — فارسی برای کودکان</p>
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="پیوندهای پایانی">
             <Link href="/privacy" className="hover:text-amber-700">حریم خصوصی</Link>
             <Link href="/terms" className="hover:text-amber-700">شرایط استفاده</Link>

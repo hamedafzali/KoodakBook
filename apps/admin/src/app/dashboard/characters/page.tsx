@@ -7,6 +7,7 @@ import EmotionEditor from '@/components/EmotionEditor'
 import { useActing } from '@/lib/useActing'
 import { SCENE_SLUGS, SCENE_LABELS, type AppCharacter, type SceneSlug } from '@koodakbook/shared'
 import type { EmotionOverrides } from 'pixel-wizards-charachters'
+import { Icon } from '@/components/icons'
 
 /* شخصیت‌ها — the character registry (docs/character-system-plan.md).
  * The whole point: adding/changing a character is DATA — a row, a voice, and
@@ -24,7 +25,7 @@ const MOODS: { id: CharacterMood; label: string }[] = [
   { id: 'happy', label: 'خوشحال' },
   { id: 'excited', label: 'هیجان‌زده' },
   { id: 'encouraging', label: 'تشویق‌گر' },
-  { id: 'thinking', label: 'در فکر 💭' },
+  { id: 'thinking', label: 'در فکر' },
 ]
 const TYPES = [
   { id: 'fantasy', label: 'افسانه‌ای' },
@@ -98,7 +99,7 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
     })
     setBusy(null)
     if (r1.error || r2.error) { setErr(r1.error ?? r2.error ?? 'خطا'); return }
-    setMsg('ذخیره شد ✅')
+    setMsg('ذخیره شد')
     onSaved()
   }
 
@@ -107,7 +108,7 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
     const r = await api.post<{ done: number; errors: number }>(`/api/characters/admin/${c.id}/audio`, {})
     setBusy(null)
     if (r.error || !r.data) { setErr(r.error ?? 'خطا'); return }
-    setMsg(`صداها: ${r.data.done} ساخته شد${r.data.errors ? `، ${r.data.errors} خطا (سهمیه/کلید؟)` : ' ✅'}`)
+    setMsg(`صداها: ${r.data.done} ساخته شد${r.data.errors ? `، ${r.data.errors} خطا (سهمیه/کلید؟)` : ''}`)
     onSaved()
   }
 
@@ -117,7 +118,7 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
         <h3 className="font-bold text-slate-800">{c.name_persian} <span className="text-xs text-slate-400 ltr">({c.slug})</span></h3>
         <div className="flex gap-2">
           <Badge tone={c.is_active ? 'green' : 'gray'}>{c.is_active ? 'فعال' : 'خاموش'}</Badge>
-          <Badge tone={voiced === lines.length && lines.length > 0 ? 'green' : 'amber'}>🔊 {voiced}/{lines.length}</Badge>
+          <Badge tone={voiced === lines.length && lines.length > 0 ? 'green' : 'amber'}><Icon name="audio" size="xs" /> {voiced}/{lines.length}</Badge>
         </div>
       </div>
 
@@ -209,8 +210,8 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
               <button type="button" onClick={() => play(l.text_persian, l.emotion, l.audio_url)}
                 disabled={!l.text_persian.trim()} title="اجرا با همین حس و صدا"
                 className="shrink-0 text-amber-600 hover:text-amber-700 disabled:opacity-30 px-1">▶</button>
-              <span title={l.audio_url ? 'صدا دارد' : 'بدون صدا'} className="shrink-0 text-sm">{l.audio_url ? '🔊' : '—'}</span>
-              <button onClick={() => setLines(ls => ls.filter((_, j) => j !== i))} className="text-red-400 px-1 shrink-0" aria-label="حذف">✕</button>
+              <span title={l.audio_url ? 'صدا دارد' : 'بدون صدا'} className="shrink-0 text-sm">{l.audio_url ? <Icon name="audio" size="sm" className="text-green-600" /> : '—'}</span>
+              <button onClick={() => setLines(ls => ls.filter((_, j) => j !== i))} className="text-red-400 px-1 shrink-0"><Icon name="remove" size="sm" label="حذف" /></button>
             </div>
           ))}
           <button onClick={() => setLines(ls => [...ls, { trigger: 'praise', text_persian: '', emotion: 'happy' }])}
@@ -221,7 +222,7 @@ function CharacterCard({ c, onSaved }: { c: AppCharacter & { system_prompt?: str
       <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
         <Button onClick={save} disabled={busy !== null}>{busy === 'save' ? 'در حال ذخیره…' : 'ذخیره'}</Button>
         <Button variant="secondary" onClick={makeAudio} disabled={busy !== null}>
-          {busy === 'audio' ? 'در حال ساخت…' : '🔊 ساخت صداهای بدون صدا'}
+          {busy === 'audio' ? 'در حال ساخت…' : <><Icon name="audio" size="xs" /> ساخت صداهای بدون صدا</>}
         </Button>
         <label className="flex items-center gap-1.5 text-sm mr-auto">
           <input type="checkbox" checked={f.is_active} onChange={e => setF({ ...f, is_active: e.target.checked })} /> فعال

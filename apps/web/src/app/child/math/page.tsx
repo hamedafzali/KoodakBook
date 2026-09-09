@@ -11,6 +11,7 @@ import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import Mascot from '@/components/child/Mascot'
 import type { Child } from '@koodakbook/shared'
+import { Icon, type IconName } from '@/components/icons'
 
 /* دنیای اعداد — hub. Three rooms, one per age band; the child's age picks the
  * highlighted «برای تو» room, nothing is locked (older sibling curiosity is
@@ -20,10 +21,12 @@ import type { Child } from '@koodakbook/shared'
 // title/sub text on the old pair measured well under WCAG AA's 4.5:1
 // normal-text floor (2026-09 contrast audit) — same failure as kit.tsx's
 // MODULE.solid, fixed the same way.
-const ROOMS: { id: MathRoom; href: string; icon: string; title: string; sub: string; ages: string; grad: string }[] = [
-  { id: 'counting', href: '/child/math/counting', icon: '🍎', title: 'شمارش', sub: 'بشمار و بگو چند تا!', ages: '۳–۵', grad: 'from-emerald-700 to-green-700' },
-  { id: 'digits', href: '/child/math/digits', icon: '۴', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', ages: '۶–۷', grad: 'from-sky-700 to-blue-700' },
-  { id: 'bazaar', href: '/child/math/bazaar', icon: '🛒', title: 'بازار', sub: 'با تومان خرید کن', ages: '۸–۱۰', grad: 'from-amber-700 to-orange-700' },
+const ROOMS: { id: MathRoom; href: string; icon: IconName | null; glyph?: string; title: string; sub: string; ages: string; grad: string }[] = [
+  { id: 'counting', href: '/child/math/counting', icon: 'counting' as IconName, title: 'شمارش', sub: 'بشمار و بگو چند تا!', ages: '۳–۵', grad: 'from-emerald-700 to-green-700' },
+  // EMOJI-CONTENT-ish: the Persian digit IS what this room teaches, so it
+  // stays a glyph rather than becoming an icon.
+  { id: 'digits', href: '/child/math/digits', icon: null, glyph: '۴', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', ages: '۶–۷', grad: 'from-sky-700 to-blue-700' },
+  { id: 'bazaar', href: '/child/math/bazaar', icon: 'shop' as IconName, title: 'بازار', sub: 'با تومان خرید کن', ages: '۸–۱۰', grad: 'from-amber-700 to-orange-700' },
 ]
 
 export default function MathHubPage() {
@@ -62,7 +65,7 @@ export default function MathHubPage() {
                   </span>
                 )}
                 <span className="text-4xl w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center font-bold" aria-hidden="true">
-                  {room.icon}
+                  {room.icon ? <Icon name={room.icon} size={40} strokeWidth={2} /> : room.glyph}
                 </span>
                 <div className="flex-1">
                   <p className="font-bold text-lg">{room.title}</p>
@@ -75,7 +78,7 @@ export default function MathHubPage() {
         })}
 
         <p className="text-center text-xs text-gray-400 persian-text pt-1">
-          ریاضی را در مدرسه یاد می‌گیری — اینجا یادش می‌گیری به فارسی بگویی 💛
+          ریاضی را در مدرسه یاد می‌گیری — اینجا یادش می‌گیری به فارسی بگویی
         </p>
       </div>
 

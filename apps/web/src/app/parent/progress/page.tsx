@@ -7,6 +7,7 @@ import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import type { Child, ChildWordProgress, ChildLessonProgress, ChildStoryProgress, ChildSession, Word, Lesson, Story } from '@koodakbook/shared'
 import { containerWidths } from '@/components/shared/layout'
+import { Icon } from '@/components/icons'
 
 interface RawProgress {
   words:           ChildWordProgress[]
@@ -226,7 +227,7 @@ export default function ParentProgressPage() {
               )}
               {progress?.lessons.map(l => (
                 <div key={l.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-card">
-                  <span className="text-2xl" aria-hidden="true">{l.completed ? '✅' : '⏳'}</span>
+                  <span className={l.completed ? 'text-green-600' : 'text-slate-400'}><Icon name={l.completed ? 'doneCircle' : 'time'} size="lg" /></span>
                   <div className="flex-1">
                     <p className="font-medium text-slate-800">{l.lesson?.title ?? '—'}</p>
                     {l.completed && l.completed_at && (
@@ -254,7 +255,7 @@ export default function ParentProgressPage() {
               )}
               {progress?.stories.map(s => (
                 <div key={s.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-card">
-                  <span className="text-2xl" aria-hidden="true">{s.completed ? '📖' : '📄'}</span>
+                  <span className={s.completed ? 'text-green-600' : 'text-slate-400'}><Icon name={s.completed ? 'stories' : 'report'} size="lg" /></span>
                   <div className="flex-1">
                     <p className="font-medium text-slate-800">{s.story?.title_persian ?? '—'}</p>
                     <p className="text-xs text-slate-400 mt-0.5">
@@ -282,7 +283,7 @@ export default function ParentProgressPage() {
               {progress?.recent_sessions.map((s, i) => (
                 <div key={i} className="bg-white rounded-md p-4 flex items-center justify-between shadow-card">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl" aria-hidden="true">📅</span>
+                    <span className="text-slate-400"><Icon name="calendar" size="md" /></span>
                     <span className="text-slate-700">{new Date(s.started_at).toLocaleDateString('fa-IR')}</span>
                   </div>
                   <span className="text-sm text-slate-400">

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Icon, type IconName } from '@/components/icons'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -73,6 +74,7 @@ export default function ParentDashboardPage() {
   if (!summary) {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-slate-50">
+          {/* EMOJI-CONTENT: empty-state portrait, wants real art. */}
           <div className="text-6xl">👶</div>
           <p className="text-gray-600 font-medium text-center persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
           <Link
@@ -107,23 +109,23 @@ export default function ParentDashboardPage() {
               <Link
                 href="/parent/friends"
                 aria-label="دوستان"
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
-                🤝
+                <Icon name="partner" size="lg" />
               </Link>
               <Link
                 href="/parent/share"
                 aria-label="کارت پیشرفت برای اشتراک‌گذاری"
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
-                📤
+                <Icon name="share" size="lg" />
               </Link>
               <Link
                 href="/parent/settings"
                 aria-label="تنظیمات"
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-2xl"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
-                ⚙️
+                <Icon name="settings" size="lg" />
               </Link>
             </div>
           </div>
@@ -173,7 +175,7 @@ export default function ParentDashboardPage() {
               />
             </div>
             <p className="text-xs text-white/80 mt-1.5">
-              {lvl.isMax ? 'بالاترین سطح! 🌟' : `${lvl.toNext} XP تا سطح بعدی`}
+              {lvl.isMax ? 'بالاترین سطح!' : `${lvl.toNext} XP تا سطح بعدی`}
             </p>
           </section>
 
@@ -182,7 +184,9 @@ export default function ParentDashboardPage() {
             <div className="flex items-center justify-between mb-2">
               <h2 id="goal-title" className="font-bold text-slate-700 text-sm">هدف امروز</h2>
               <span className={`text-sm font-bold ${goalMet ? 'text-green-600' : 'text-amber-600'}`}>
-                {goalMet ? '✅ انجام شد' : `${todayMin} از ${goalMin} دقیقه`}
+                {goalMet
+                  ? <span className="inline-flex items-center gap-1.5"><Icon name="doneCircle" size="sm" />انجام شد</span>
+                  : `${todayMin} از ${goalMin} دقیقه`}
               </span>
             </div>
             <div
@@ -233,10 +237,10 @@ export default function ParentDashboardPage() {
 
           {/* ── Stats grid ── */}
           <section className="grid grid-cols-2 gap-3" aria-label="خلاصه پیشرفت">
-            <StatCard emoji="🔥" value={streak_days}       label="روز متوالی"      color="bg-orange-50 border-orange-200" />
-            <StatCard emoji="📝" value={words_learned}     label="کلمه یاد گرفته"  color="bg-blue-50 border-blue-200" />
-            <StatCard emoji="📖" value={stories_completed} label="داستان خوانده"   color="bg-green-50 border-green-200" />
-            <StatCard emoji="✅" value={lessons_completed}  label="درس تمام شده"   color="bg-purple-50 border-purple-200" />
+            <StatCard icon="streak"  value={streak_days}       label="روز متوالی"      color="bg-orange-50 border-orange-200 text-orange-600" />
+            <StatCard icon="write"   value={words_learned}     label="کلمه یاد گرفته"  color="bg-blue-50 border-blue-200 text-blue-600" />
+            <StatCard icon="stories" value={stories_completed} label="داستان خوانده"   color="bg-green-50 border-green-200 text-green-600" />
+            <StatCard icon="done"    value={lessons_completed} label="درس تمام شده"    color="bg-purple-50 border-purple-200 text-purple-600" />
           </section>
 
           {/* ── Word mastery breakdown (mig-016) ── */}
@@ -280,7 +284,7 @@ export default function ParentDashboardPage() {
               <div className="flex gap-3 flex-wrap">
                 {recent_badges.map(cb => (
                   <div key={cb.id} className="flex flex-col items-center gap-1 bg-amber-50 rounded-xl p-3 text-center">
-                    <span className="text-3xl" aria-hidden="true">🏆</span>
+                    <span className="text-amber-500"><Icon name="rewards" size="lg" /></span>
                     <span className="text-xs font-medium text-slate-700">{cb.badge?.title}</span>
                   </div>
                 ))}
@@ -309,7 +313,8 @@ export default function ParentDashboardPage() {
             href="/parent/progress"
             className="flex items-center justify-center w-full bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-md transition-colors min-h-[56px] lg:col-span-2 xl:col-span-3"
           >
-            گزارش کامل پیشرفت 📊
+            <Icon name="progress" size="md" className="ms-2" />
+            گزارش کامل پیشرفت
           </Link>
 
           {children.length > 0 && (
@@ -317,7 +322,7 @@ export default function ParentDashboardPage() {
               onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
               className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-md transition-colors text-lg min-h-[56px] lg:col-span-2 xl:col-span-3"
             >
-              رفتن به حالت کودک 👶
+              رفتن به حالت کودک
             </button>
           )}
         </div>
@@ -325,10 +330,10 @@ export default function ParentDashboardPage() {
   )
 }
 
-function StatCard({ emoji, value, label, color }: { emoji: string; value: number; label: string; color: string }) {
+function StatCard({ icon, value, label, color }: { icon: IconName; value: number; label: string; color: string }) {
   return (
     <div className={`rounded-md border p-4 flex flex-col gap-1 ${color}`}>
-      <span className="text-3xl" aria-hidden="true">{emoji}</span>
+      <Icon name={icon} size="lg" />
       <span className="text-3xl font-bold text-slate-800">{value}</span>
       <span className="text-xs text-slate-600">{label}</span>
     </div>

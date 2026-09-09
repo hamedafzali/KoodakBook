@@ -5,13 +5,14 @@ import { usePathname, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { enterChildMode } from '@/lib/mode'
 import type { Child } from '@koodakbook/shared'
+import { Icon, type IconName } from '@/components/icons'
 
 const ITEMS = [
-  { href: '/parent/dashboard', label: 'داشبورد', icon: '📊' },
-  { href: '/parent/progress', label: 'پیشرفت', icon: '📈' },
-  { href: '/parent/friends', label: 'دوستان', icon: '🤝' },
-  { href: '/parent/settings', label: 'تنظیمات', icon: '⚙️' },
-  { href: '/parent/share', label: 'اشتراک‌گذاری', icon: '📤' },
+  { href: '/parent/dashboard', label: 'داشبورد', icon: 'progress' as IconName },
+  { href: '/parent/progress', label: 'پیشرفت', icon: 'trend' as IconName },
+  { href: '/parent/friends', label: 'دوستان', icon: 'partner' as IconName },
+  { href: '/parent/settings', label: 'تنظیمات', icon: 'settings' as IconName },
+  { href: '/parent/share', label: 'اشتراک‌گذاری', icon: 'share' as IconName },
 ]
 
 /** Desktop-only (lg+) sidebar nav for the parent area. */
@@ -47,7 +48,7 @@ export default function ParentNav() {
             <Link key={i.href} href={i.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 on ? 'bg-white text-amber-700 shadow-card' : 'text-slate-600 hover:bg-white/70'}`}>
-              <span>{i.icon}</span>{i.label}
+              <Icon name={i.icon} size="sm" />{i.label}
             </Link>
           )
         })}
@@ -56,7 +57,7 @@ export default function ParentNav() {
         <button
           onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
           className="w-full text-right flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-white/70 mt-6">
-          <span>👶</span> حالت کودک
+          <Icon name="child" size="sm" /> حالت کودک
         </button>
       )}
     </nav>

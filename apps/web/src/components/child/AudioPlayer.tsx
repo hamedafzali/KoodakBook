@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Icon } from '@/components/icons'
 
 interface Props {
   src: string
@@ -58,7 +59,7 @@ export default function AudioPlayer({ src, autoPlay = false, className, label }:
         animate={playing ? { scale: [1, 1.2, 1] } : { scale: 1 }}
         transition={{ duration: 0.6, repeat: playing ? Infinity : 0 }}
       >
-        {playing ? '⏸' : '🔊'}
+        <Icon name={playing ? 'pause' : 'listen'} size="md" />
       </motion.span>
       {label && <span>{label}</span>}
       <audio ref={audioRef} src={src} preload="none" />

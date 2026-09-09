@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { Icon } from '@/components/icons'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
@@ -60,6 +61,10 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
   const cx = W / 2
 
   // Mascot / celebration
+  // EMOJI-CONTENT: this canvas is an exported *image* shared outside the app,
+  // not UI chrome. Vector icons can't be painted into a 2D context, and the
+  // card is decorative artwork — it wants a real mascot render from
+  // pixel-wizards-charachters, which is the tracked follow-up here.
   ctx.font = '180px sans-serif'
   ctx.fillText('🦚', cx, 320)
 
@@ -186,7 +191,7 @@ export default function SharePage() {
     a.download = `koodakbook-${summary?.child.name ?? 'card'}.png`
     a.click()
     URL.revokeObjectURL(href)
-    setNote('تصویر ذخیره شد ✅')
+    setNote('تصویر ذخیره شد')
     setTimeout(() => setNote(''), 2500)
   }
 
@@ -198,6 +203,7 @@ export default function SharePage() {
 
   if (!summary) return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-slate-50">
+        {/* EMOJI-CONTENT: empty-state portrait, wants real art. */}
         <div className="text-6xl">👶</div>
         <p className="text-gray-600 font-medium text-center persian-text">هنوز پیشرفتی برای اشتراک‌گذاری نیست</p>
         <Link href="/parent/dashboard" className="text-amber-600 font-bold">برگشت به داشبورد</Link>
@@ -217,7 +223,7 @@ export default function SharePage() {
           </Link>
           <div>
             <h1 className="font-bold text-xl text-slate-800">کارت پیشرفت</h1>
-            <p className="text-sm text-slate-500 mt-0.5">برای پدربزرگ و مادربزرگ بفرست 💛</p>
+            <p className="text-sm text-slate-500 mt-0.5 inline-flex items-center gap-1.5">برای پدربزرگ و مادربزرگ بفرست<Icon name="love" size="xs" className="text-rose-400 fill-rose-400" /></p>
           </div>
         </div>
 
@@ -240,14 +246,16 @@ export default function SharePage() {
               whileTap={{ scale: 0.96 }}
               className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-raised min-h-[56px] flex items-center justify-center gap-2"
             >
-              📤 به اشتراک بگذار
+              <Icon name="share" size="md" />
+              به اشتراک بگذار
             </motion.button>
             <motion.button
               onClick={handleDownload}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold min-h-[52px]"
+              className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold min-h-[52px] flex items-center justify-center gap-2"
             >
-              💾 ذخیره تصویر
+              <Icon name="save" size="md" />
+              ذخیره تصویر
             </motion.button>
             {note && <p className="text-center text-green-600 text-sm font-medium">{note}</p>}
           </div>

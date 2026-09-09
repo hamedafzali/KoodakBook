@@ -105,7 +105,7 @@ export default function ReviewPage() {
           <Mascot size={130} mood="excited" />
         </motion.div>
         <h1 className="text-3xl font-bold text-gray-800">
-          {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}
+          {allCaughtUp ? 'همه را مرور کردی!' : 'آفرین! مرور تمام شد'}
         </h1>
         <p className="text-gray-500 persian-text">
           {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${correct} از ${allQuestions.length} درست`}
@@ -115,7 +115,7 @@ export default function ReviewPage() {
           whileTap={{ scale: 0.96 }}
           className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-2xl text-lg shadow-card"
         >
-          برگشت به خانه 🏠
+          برگشت به خانه
         </motion.button>
       </div>
     )
@@ -137,7 +137,7 @@ export default function ReviewPage() {
         </motion.button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-gray-800 text-sm">مرور کلمه‌ها 🔄</h1>
+            <h1 className="font-bold text-gray-800 text-sm">مرور کلمه‌ها</h1>
             <span className="text-sm font-bold text-amber-600">{idx + 1}/{allQuestions.length}</span>
           </div>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-gray-200 rounded-full overflow-hidden">

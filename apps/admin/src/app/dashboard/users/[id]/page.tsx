@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/icons'
 
 interface ChildRow {
   id: string; name: string; birth_year: number | null; level: number; placement_done: boolean
@@ -62,7 +63,7 @@ export default function FamilyPage() {
   async function savePlan() {
     setMsg(null)
     const r = await api.patch(`/api/admin/users/${id}/plan`, { plan })
-    setMsg(r.error ? `خطا: ${r.error}` : 'پلن ذخیره شد ✓')
+    setMsg(r.error ? `خطا: ${r.error}` : 'پلن ذخیره شد')
     load()
   }
   async function resetPw() {
@@ -129,9 +130,9 @@ export default function FamilyPage() {
                 <span className="text-xs text-gray-400">مرحله {c.level}{c.placement_done ? '' : ' · بدون ارزیابی'}</span>
               </div>
               <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                <span>📝 {c.words_mastered} کلمه</span>
-                <span>📚 {c.lessons_done} درس</span>
-                <span>📖 {c.stories_done} داستان</span>
+                <span><Icon name="words" size="xs" /> {c.words_mastered} کلمه</span>
+                <span><Icon name="lessons" size="xs" /> {c.lessons_done} درس</span>
+                <span><Icon name="stories" size="xs" /> {c.stories_done} داستان</span>
               </div>
               <p className="text-[11px] text-gray-400 mt-1">آخرین فعالیت: {fa(c.last_active)}</p>
             </Link>

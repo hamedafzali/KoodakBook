@@ -14,6 +14,7 @@ import { useSpeaking } from '@/lib/useSpeaking'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { wordEmoji, currentProbeStep, recordProbeAnswer, emptyProbeResults } from '@koodakbook/shared'
 import type { Child, PlacementProbe, ProbeChoice, ProbeResults, ProbeStep } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 type Phase = 'loading' | 'intro' | 'question' | 'feedback' | 'done'
 
@@ -144,14 +145,14 @@ function PlacementInner() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center child-bg p-6 text-center">
         <CharacterAvatar slug="simorgh" size={150} mood="happy" talking={speaking} />
-        <h1 className="text-2xl font-bold text-gray-800 mt-5 persian-text">سلام {child?.name}! من سیمرغم 🌟</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mt-5 persian-text">سلام {child?.name}! من سیمرغم</h1>
         <p className="text-gray-600 mt-2 persian-text leading-relaxed max-w-xs">
           بیا با هم یک بازی کوچولو کنیم تا ببینم چی بلدی — امتحان نیست، فقط بازیه!
         </p>
         <motion.button whileTap={{ scale: 0.94, y: 4 }}
           onClick={() => { playTap(); stopSpeaking(); setPhase('question') }}
           className="mt-8 bg-amber-500 text-white font-bold text-xl rounded-2xl px-12 py-4 shadow-lg border-b-[6px] border-amber-600 touch-target">
-          بزن بریم! 🎈
+          بزن بریم!
         </motion.button>
       </div>
     )
@@ -164,12 +165,12 @@ function PlacementInner() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-gray-800 mt-4">آفرین {child?.name}! 🎉</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mt-4">آفرین {child?.name}!</h1>
         {/* Re-placement never reveals a level — a recurring scorecard is
             exactly the signal the gate/trophy split exists to hide, and a
             re-placement result can legitimately move the gate down (§2/§3). */}
         <p className="text-gray-600 mt-2 persian-text">
-          {isReprobe ? 'خیلی خوب بود! 🌟' : <>از اینجا شروع می‌کنیم: <b>{labels[finalLevel]}</b></>}
+          {isReprobe ? 'خیلی خوب بود!' : <>از اینجا شروع می‌کنیم: <b>{labels[finalLevel]}</b></>}
         </p>
         <p className="text-sm text-gray-400 mt-4 persian-text">در حال رفتن به خانه...</p>
       </div>
@@ -197,7 +198,7 @@ function PlacementInner() {
             className="w-28 h-28 rounded-full bg-white shadow-lg flex items-center justify-center text-5xl touch-target active:scale-95 transition-transform"
             aria-label="دوباره گوش کن"
           >
-            🔊
+            <Icon name="listen" size="lg" />
           </button>
         ) : (
           <div className="bg-white rounded-lg shadow-lg px-6 py-6 sm:px-10 sm:py-8">
@@ -232,7 +233,7 @@ function PlacementInner() {
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-2">
               <Mascot size={100} mood={lastCorrect ? 'excited' : 'idle'} />
               <p className={`font-bold text-xl ${lastCorrect ? 'text-green-600' : 'text-amber-600'}`}>
-                {lastCorrect ? 'آفرین! 🌟' : 'اشکالی نداره 💛'}
+                {lastCorrect ? 'آفرین!' : 'اشکالی نداره'}
               </p>
             </motion.div>
           </motion.div>

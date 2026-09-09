@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { PageHeader, Badge, Spinner, Button, EmptyState, Card } from '@/components/ui'
+import { Icon, type IconName } from '@/components/icons'
 
 /* Telegram post approval queue — mirrors dashboard/story-covers/page.tsx
  * exactly, applied to draft text instead of image candidates (migration 055 /
@@ -35,15 +36,15 @@ const TABS: { key: Status; label: string }[] = [
   { key: 'approved', label: 'تأیید شده' },
   { key: 'rejected', label: 'رد شده' },
 ]
-const SOURCE_LABEL: Record<Draft['source'], string> = {
-  story_published: '📖 انتشار داستان',
-  ai_scheduled: '🤖 تولید خودکار هوش مصنوعی',
-  manual: '✍️ نوشته‌شده دستی',
+const SOURCE_LABEL: Record<Draft['source'], { icon: IconName; label: string }> = {
+  story_published: { icon: 'stories', label: 'انتشار داستان' },
+  ai_scheduled: { icon: 'ai', label: 'تولید خودکار هوش مصنوعی' },
+  manual: { icon: 'words', label: 'نوشته‌شده دستی' },
 }
-const RESULT_LABEL: Record<string, { label: string; tone: 'green' | 'amber' | 'red' }> = {
-  sent: { label: '✅ ارسال شد', tone: 'green' },
-  'dry-run': { label: '⚠️ حالت آزمایشی — بدون توکن تلگرام', tone: 'amber' },
-  error: { label: '❌ ارسال نشد', tone: 'red' },
+const RESULT_LABEL: Record<string, { icon: IconName; label: string; tone: 'green' | 'amber' | 'red' }> = {
+  sent: { icon: 'okCircle', label: 'ارسال شد', tone: 'green' },
+  'dry-run': { icon: 'warning', label: 'حالت آزمایشی — بدون توکن تلگرام', tone: 'amber' },
+  error: { icon: 'error', label: 'ارسال نشد', tone: 'red' },
 }
 
 // Within a tab, dry-run/error sit above sent/pending/rejected — an approved
@@ -205,8 +206,10 @@ export default function PostDraftsPage() {
               <Card key={d.id} className="p-4 flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-700">{SOURCE_LABEL[d.source]}</span>
-                    {result && <Badge tone={result.tone}>{result.label}</Badge>}
+                    <span className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-700">
+                      <Icon name={SOURCE_LABEL[d.source].icon} size="sm" />{SOURCE_LABEL[d.source].label}
+                    </span>
+                    {result && <Badge tone={result.tone}><Icon name={result.icon} size="xs" /> {result.label}</Badge>}
                   </div>
                   <span className="text-xs text-slate-400">{new Date(d.created_at).toLocaleString('fa-IR')}</span>
                 </div>

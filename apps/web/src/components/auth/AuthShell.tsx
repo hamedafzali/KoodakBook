@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Icon, type IconName } from '@/components/icons'
 
 /* Themed shell for the auth pages. Login and signup deliberately look
  * DIFFERENT (color, illustration, copy) — with the same panel users mixed the
@@ -12,8 +13,8 @@ const THEME: Record<Variant, {
   panel: string
   logoHover: string
   headline: string
-  points: { icon: string; text: string }[]
-  chips: string
+  points: { icon: IconName; text: string }[]
+  chips: { icon: IconName; text: string }[]
   badge: string
 }> = {
   login: {
@@ -22,11 +23,15 @@ const THEME: Record<Variant, {
     logoHover: 'hover:opacity-90',
     headline: 'هر شب یک قصه‌ی فارسی،\nهر روز چند واژه‌ی تازه',
     points: [
-      { icon: '📖', text: 'داستان‌هایی که قهرمانش کودک شماست' },
-      { icon: '🎵', text: 'الفبا و صداکشی با صدای درست فارسی' },
-      { icon: '🏆', text: 'بازی، ستاره و نشان — نه کلاس درس' },
+      { icon: 'stories' as IconName, text: 'داستان‌هایی که قهرمانش کودک شماست' },
+      { icon: 'phonics' as IconName, text: 'الفبا و صداکشی با صدای درست فارسی' },
+      { icon: 'rewards' as IconName, text: 'بازی، ستاره و نشان — نه کلاس درس' },
     ],
-    chips: '🚫 بدون تبلیغات · 🔒 حالت کودک با پین والدین · 🇮🇷 تمام محتوا با صدای فارسی',
+    chips: [
+      { icon: 'noAds' as IconName, text: 'بدون تبلیغات' },
+      { icon: 'locked' as IconName, text: 'حالت کودک با پین والدین' },
+      { icon: 'listen' as IconName, text: 'تمام محتوا با صدای فارسی' },
+    ],
     badge: 'ورود',
   },
   signup: {
@@ -35,11 +40,15 @@ const THEME: Record<Variant, {
     logoHover: 'hover:opacity-90',
     headline: 'ماجراجویی فارسی\nاز همین‌جا شروع می‌شود',
     points: [
-      { icon: '⏱️', text: 'ساخت حساب فقط ۲ دقیقه طول می‌کشد' },
-      { icon: '🧭', text: 'کودک را اضافه کنید — آزمون کوتاه، سطحش را پیدا می‌کند' },
-      { icon: '🌙', text: 'اولین قصه همین امشب آماده است' },
+      { icon: 'timer' as IconName, text: 'ساخت حساب فقط ۲ دقیقه طول می‌کشد' },
+      { icon: 'placement' as IconName, text: 'کودک را اضافه کنید — آزمون کوتاه، سطحش را پیدا می‌کند' },
+      { icon: 'night' as IconName, text: 'اولین قصه همین امشب آماده است' },
     ],
-    chips: '✅ رایگان برای همیشه · 🚫 بدون کارت بانکی · 🔒 امن برای کودک',
+    chips: [
+      { icon: 'doneCircle' as IconName, text: 'رایگان برای همیشه' },
+      { icon: 'noAds' as IconName, text: 'بدون کارت بانکی' },
+      { icon: 'locked' as IconName, text: 'امن برای کودک' },
+    ],
     badge: 'ثبت‌نام',
   },
 }
@@ -51,9 +60,9 @@ function StoryScene() {
       aria-label="کتاب باز با حروف فارسی و ستاره‌ها">
       <circle cx="308" cy="44" r="22" fill="#fef3c7" />
       <circle cx="298" cy="38" r="20" fill="#f59e0b" opacity="0.15" />
-      <text x="40" y="46" fontSize="18">⭐</text>
-      <text x="96" y="26" fontSize="12">✨</text>
-      <text x="250" y="90" fontSize="14">✨</text>
+      <g transform="translate(36 32)" className="text-amber-300 fill-amber-300"><Icon name="star" size={17} /></g>
+      <g transform="translate(92 16)" className="text-amber-200"><Icon name="sparkle" size={12} /></g>
+      <g transform="translate(246 78)" className="text-amber-200"><Icon name="sparkle" size={14} /></g>
       <text x="120" y="70" fontSize="30" fontWeight="bold" fill="#fbbf24" opacity="0.9">ب</text>
       <text x="170" y="48" fontSize="24" fontWeight="bold" fill="#fda4af" opacity="0.9">آ</text>
       <text x="212" y="76" fontSize="27" fontWeight="bold" fill="#93c5fd" opacity="0.9">م</text>
@@ -79,7 +88,7 @@ function BalloonScene() {
       <ellipse cx="290" cy="50" rx="34" ry="12" fill="#ffffff" opacity="0.85" />
       <ellipse cx="268" cy="58" rx="24" ry="10" fill="#ffffff" opacity="0.7" />
       <ellipse cx="86" cy="110" rx="28" ry="10" fill="#ffffff" opacity="0.6" />
-      <text x="300" y="120" fontSize="14">✨</text>
+      <g transform="translate(296 108)" className="text-white/70"><Icon name="sparkle" size={14} /></g>
       <text x="48" y="160" fontSize="16">⭐</text>
       {/* balloon envelope */}
       <path d="M180 24c-42 0-64 30-64 58 0 34 34 52 48 72h32c14-20 48-38 48-72 0-28-22-58-64-58z" fill="#fff" />
@@ -111,7 +120,7 @@ export default function AuthShell({ variant, children }: { variant: Variant; chi
       <aside className={`hidden lg:flex flex-col justify-center ${t.panel} text-white p-12 relative overflow-hidden`}>
         <div className="max-w-md mx-auto w-full">
           <div className="flex items-center justify-between mb-10">
-            <Link href="/" className={`inline-block font-bold text-2xl ${t.logoHover}`}>📚 کودک‌بوک</Link>
+            <Link href="/" className={`inline-flex items-center gap-2 font-bold text-2xl ${t.logoHover}`}><Icon name="book" size="lg" />کودک‌بوک</Link>
             <span className="bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full">{t.badge}</span>
           </div>
           {variant === 'login' ? <StoryScene /> : <BalloonScene />}
@@ -119,19 +128,23 @@ export default function AuthShell({ variant, children }: { variant: Variant; chi
           <ul className="mt-6 space-y-3">
             {t.points.map(p => (
               <li key={p.text} className="flex items-center gap-3 text-white/90">
-                <span className="text-xl bg-white/15 rounded-xl w-10 h-10 flex items-center justify-center shrink-0" aria-hidden="true">{p.icon}</span>
+                <span className="bg-white/15 rounded-xl w-10 h-10 flex items-center justify-center shrink-0"><Icon name={p.icon} size="md" /></span>
                 <span className="text-sm">{p.text}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-8 text-xs text-white/70">{t.chips}</p>
+          <ul className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/70">
+            {t.chips.map(c => (
+              <li key={c.text} className="inline-flex items-center gap-1.5"><Icon name={c.icon} size="xs" />{c.text}</li>
+            ))}
+          </ul>
         </div>
       </aside>
 
       {/* Form column */}
       <div className="flex flex-col p-4 sm:p-8">
         <div className="flex items-center justify-between">
-          <Link href="/" className={`lg:hidden font-bold text-lg ${variant === 'login' ? 'text-amber-600' : 'text-emerald-600'}`}>📚 کودک‌بوک</Link>
+          <Link href="/" className={`lg:hidden inline-flex items-center gap-2 font-bold text-lg ${variant === 'login' ? 'text-amber-600' : 'text-emerald-600'}`}><Icon name="book" size="md" />کودک‌بوک</Link>
           <Link href="/" className="mr-auto text-sm font-bold text-slate-500 hover:text-slate-700 flex items-center gap-1.5 py-2">
             بازگشت به سایت
             <span aria-hidden="true">←</span>

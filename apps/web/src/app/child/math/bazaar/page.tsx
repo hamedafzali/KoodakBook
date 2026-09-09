@@ -21,6 +21,8 @@ import type { Child } from '@koodakbook/shared'
  * saying it in Persian. */
 
 const GOODS = [
+  // EMOJI-CONTENT: the goods on the market stall are what the child is buying
+  // and counting — subject matter, not chrome.
   { emoji: '🍎', name: 'سیب' }, { emoji: '🍌', name: 'موز' }, { emoji: '🥕', name: 'هویج' },
   { emoji: '🍇', name: 'انگور' }, { emoji: '🍞', name: 'نان' }, { emoji: '🧀', name: 'پنیر' },
   { emoji: '🍉', name: 'هندوانه' }, { emoji: '🍪', name: 'شیرینی' },
@@ -95,13 +97,13 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         <Mascot size={130} mood="excited" />
       </motion.div>
-      <h1 className="text-3xl font-bold text-gray-800">چه خریدار زرنگی! 🛒</h1>
+      <h1 className="text-3xl font-bold text-gray-800">چه خریدار زرنگی!</h1>
       <p className="text-gray-600 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} خرید</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره 🔁</motion.button>
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد</motion.button>
       </div>
     </div>
   )
@@ -110,7 +112,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="بازار 🛒" subtitle="با تومان خرید کن" gradientClass="from-amber-500 to-orange-500" />
+      <PageHeader title="بازار" subtitle="با تومان خرید کن" gradientClass="from-amber-500 to-orange-500" />
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-4">
         <div className="flex items-center justify-between text-sm">

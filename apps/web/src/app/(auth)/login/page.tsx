@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { onSignIn } from '@/lib/auth'
+import { Icon } from '@/components/icons'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -35,7 +36,7 @@ export default function LoginPage() {
   return (
     <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-6">
-          <p className="text-4xl mb-2" aria-hidden="true">👋</p>
+          <p className="mb-2 flex justify-center text-amber-500"><Icon name="wave" size={40} strokeWidth={1.6} /></p>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">خوش برگشتید!</h1>
           <p className="text-gray-500 text-sm">قصه‌ها منتظرند — وارد شوید</p>
         </div>
@@ -97,7 +98,7 @@ export default function LoginPage() {
           </Link>
         </p>
         <Link href="/kid" className="block text-center mt-4 bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 rounded-2xl py-3 font-bold text-sky-700 transition">
-          🐣 ورود بچه‌ها — با اسم مخصوص خودت
+          <Icon name="child" size="sm" /> ورود بچه‌ها — با اسم مخصوص خودت
         </Link>
     </div>
   )

@@ -14,6 +14,7 @@ import EmptyState from '@/components/child/EmptyState'
 import { pickChild } from '@/lib/activeChild'
 import { ACTIVITY_GRADIENTS } from '@koodakbook/shared'
 import type { Story, Child } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } }
 const item = { hidden: { opacity: 0, scale: 0.94 }, show: { opacity: 1, scale: 1 } }
@@ -61,7 +62,7 @@ export default function StoryListPage() {
   return (
     <div className="min-h-screen child-bg pb-nav">
       <PageHeader
-        title="همه داستان‌ها 📖"
+        title="همه داستان‌ها"
         subtitle={`${stories.length} داستان موجود است`}
         gradientClass="from-green-400 to-emerald-500"
       />
@@ -73,7 +74,7 @@ export default function StoryListPage() {
           aria-label="یک داستان جدید برای من بساز"
           className="flex items-center gap-3 mb-4 bg-gradient-to-r from-fuchsia-700 to-purple-800 text-white rounded-3xl p-4 shadow-card"
         >
-          <span className="text-3xl" aria-hidden="true">✨</span>
+          <span className="text-fuchsia-500"><Icon name="sparkle" size="lg" /></span>
           <div className="flex-1 text-right">
             <p className="font-bold leading-tight">یک داستان برای من بساز</p>
             <p className="text-xs text-white/85 mt-0.5 persian-text">داستان مخصوص خودت با موضوع دلخواه</p>
@@ -85,7 +86,7 @@ export default function StoryListPage() {
             so this is the only place they can re-open them). */}
         {myStories.length > 0 && (
           <section className="mb-6" aria-label="داستان‌های من">
-            <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های من ✨</h2>
+            <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های من</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="list">
               {myStories.map(story => {
                 const done = completed.has(story.id)
@@ -99,10 +100,10 @@ export default function StoryListPage() {
                     >
                       {done && (
                         <div className="absolute top-2 left-2 bg-green-700 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium" aria-hidden="true">
-                          ✅ خوندم
+                          <Icon name="done" size="xs" /> خوندم
                         </div>
                       )}
-                      <div className="w-full h-32 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-5xl" aria-hidden="true">✨</div>
+                      <div className="w-full h-32 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white" aria-hidden="true"><Icon name="sparkle" size={48} strokeWidth={1.5} /></div>
                       <div className="px-3 pt-3">
                         <p className="font-bold text-gray-800 text-sm leading-tight persian-text">{story.title_persian}</p>
                         <p className="text-xs text-fuchsia-500 mt-1">داستان من</p>
@@ -113,7 +114,7 @@ export default function StoryListPage() {
                       disabled={busy}
                       className="w-full mt-2 mb-2.5 text-xs font-medium text-purple-700 hover:text-purple-900 disabled:opacity-60"
                     >
-                      {busy ? '...در حال ساخت صدا' : '🔊 ساخت صدا'}
+                      {busy ? '...در حال ساخت صدا' : <><Icon name="listen" size="xs" /> ساخت صدا</>}
                     </button>
                   </div>
                 )
@@ -123,7 +124,7 @@ export default function StoryListPage() {
         )}
 
         {myStories.length > 0 && stories.length > 0 && (
-          <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های آماده 📚</h2>
+          <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های آماده</h2>
         )}
 
         {stories.length === 0 ? (
@@ -154,7 +155,7 @@ export default function StoryListPage() {
                         className="absolute top-2 left-2 bg-green-700 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium"
                         aria-hidden="true"
                       >
-                        ✅ خوندم
+                        <Icon name="done" size="xs" /> خوندم
                       </div>
                     )}
                     {mediaUrl(story.cover_url) ? (
@@ -172,7 +173,7 @@ export default function StoryListPage() {
                         className={`w-full h-32 bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} flex items-center justify-center text-5xl`}
                         aria-hidden="true"
                       >
-                        📖
+                        <Icon name="stories" size="lg" />
                       </div>
                     )}
                     <div className="p-3">

@@ -5,6 +5,7 @@ import FileUpload from '@/components/FileUpload'
 import type { Word } from '@koodakbook/shared'
 import { WORD_CATEGORIES, ANIMATION_TEMPLATES, templateForCategory, TEMPLATE_REGISTRY } from '@koodakbook/shared'
 import { PageHeader, Button, ui } from '@/components/ui'
+import { Icon } from '@/components/icons'
 
 const CATEGORIES = WORD_CATEGORIES as readonly string[]
 const EMPTY = {
@@ -184,14 +185,14 @@ export default function AdminWordsPage() {
                 <td className="px-4 py-3 ltr text-gray-500">{w.english}</td>
                 <td className="px-4 py-3 text-center"><span className="bg-gray-100 px-2 py-0.5 rounded-full text-xs">{w.category}</span></td>
                 <td className="px-4 py-3 text-center whitespace-nowrap">
-                  <span title={w.audio_url ? 'صدا دارد' : 'بدون صدا'}>{w.audio_url ? '🔊' : '—'}</span>
+                  <span title={w.audio_url ? 'صدا دارد' : 'بدون صدا'}>{w.audio_url ? <Icon name="audio" size="sm" className="text-green-600" /> : '—'}</span>
                 </td>
-                <td className="px-4 py-3 text-center">{w.image_url ? '🖼' : '—'}</td>
+                <td className="px-4 py-3 text-center">{w.image_url ? <Icon name="image" size="sm" className="text-green-600" /> : '—'}</td>
                 <td className="px-4 py-3 text-center whitespace-nowrap">
                   <button onClick={() => genAudio(w.id)} disabled={genBusy !== null}
                     title="ساخت صدای این کلمه"
                     className="text-slate-500 hover:text-amber-600 text-xs ml-2 disabled:opacity-40">
-                    {genBusy === w.id ? '…' : '🔊 ساخت'}
+                    {genBusy === w.id ? '…' : <><Icon name="audio" size="xs" /> ساخت</>}
                   </button>
                   <button onClick={() => startEdit(w)} className="text-amber-600 hover:underline text-xs ml-3">ویرایش</button>
                   <button onClick={() => handleDelete(w.id)} className="text-red-500 hover:underline text-xs">حذف</button>
@@ -291,7 +292,7 @@ function PhotoPicker({ query, onPicked }: { query: string; onPicked: (url: strin
           className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs" />
         <button type="button" onClick={search} disabled={busy === 'search'}
           className="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1.5 rounded-lg hover:bg-amber-200 disabled:opacity-50 whitespace-nowrap">
-          {busy === 'search' ? '…' : '🔍 عکس رایگان'}
+          {busy === 'search' ? '…' : <><Icon name="search" size="xs" /> عکس رایگان</>}
         </button>
       </div>
       {err && <p className="text-xs text-red-500 mt-1">{err}</p>}

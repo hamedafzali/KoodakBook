@@ -7,6 +7,7 @@ import { isLoggedIn } from '@/lib/auth'
 import { setActiveChildId } from '@/lib/activeChild'
 import Mascot from '@/components/child/Mascot'
 import type { Child } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -66,7 +67,7 @@ export default function OnboardingPage() {
             <Mascot size={80} mood="happy" />
           </motion.div>
           <h1 className="text-xl font-bold text-gray-800">معرفی کودک</h1>
-          <p className="text-sm text-gray-500 mt-1 persian-text">بیایید با هم شروع کنیم 🚀</p>
+          <p className="text-sm text-gray-500 mt-1 persian-text">بیایید با هم شروع کنیم</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
@@ -105,7 +106,7 @@ export default function OnboardingPage() {
           </div>
 
           <div className="bg-amber-50 rounded-[0.875rem] p-3 flex items-center gap-2.5">
-            <span className="text-2xl" aria-hidden="true">🎮</span>
+            <span className="text-amber-500"><Icon name="games" size="lg" /></span>
             <p className="text-xs text-amber-800 persian-text leading-relaxed">
               بعد از این، یک بازی کوتاه و آسان انجام می‌دهیم تا بفهمیم از کجا شروع کنیم.
             </p>
@@ -127,7 +128,7 @@ export default function OnboardingPage() {
                     onClick={() => router.push('/parent/plan')}
                     className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold py-2.5 rounded-[0.875rem] transition-colors text-sm min-h-[44px]"
                   >
-                    مشاهده پلن‌ها و ارتقا ✨
+                    مشاهده پلن‌ها و ارتقا
                   </button>
                 )}
               </motion.div>
@@ -140,7 +141,7 @@ export default function OnboardingPage() {
             whileTap={{ scale: 0.97 }}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 text-lg min-h-[52px]"
           >
-            {loading ? 'در حال ذخیره...' : 'بریم بازی کنیم! 🚀'}
+            {loading ? 'در حال ذخیره...' : 'بریم بازی کنیم!'}
           </motion.button>
         </form>
       </div>

@@ -131,6 +131,22 @@ export const ACTIVITY_GRADIENTS = [
   'from-amber-500 to-orange-600',
 ] as const
 
+/**
+ * Lesson type -> icon name in the web app's icon set (apps/web/components/icons.tsx).
+ * Prefer this everywhere a UI affordance is drawn; see LESSON_TYPE_EMOJI below.
+ */
+export const LESSON_TYPE_ICON: Record<string, string> = {
+  vocabulary: 'lessons',
+  alphabet:   'alphabet',
+  phonics:    'phonics',
+}
+
+/**
+ * @deprecated for web and admin — use LESSON_TYPE_ICON with the shared icon set.
+ * Emoji are a font, not a design token: they can't take a color or stroke
+ * weight and render differently per platform. Still consumed by apps/mobile,
+ * which needs lucide-react-native before it can migrate.
+ */
 export const LESSON_TYPE_EMOJI: Record<string, string> = {
   vocabulary: '📚',
   alphabet:   '🔤',
@@ -143,6 +159,12 @@ export const LESSON_TYPE_LABEL: Record<string, string> = {
   phonics:    'آواشناسی',
 }
 
+/**
+ * EMOJI-CONTENT: a badge's face is the collectible itself — the thing a child
+ * earns and looks at, not an affordance. These stay emoji until
+ * pixel-wizards-charachters supplies real badge art; the *locked* state, which
+ * is chrome, already uses the icon set. See apps/web/src/components/icons.tsx.
+ */
 export const BADGE_EMOJI: Record<string, string> = {
   first_lesson:    '📚',
   first_story:     '📖',

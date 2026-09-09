@@ -13,6 +13,7 @@ import BottomNav from '@/components/child/BottomNav'
 import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 import MarpeleBoard, { Confetti, Dice } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import { Icon } from '@/components/icons'
 
 /* Online مارپله — web port of mobile's app/games/marpele-online.tsx (parity
  * phase 3, second pass). Invite an accepted friend and race turn-by-turn;
@@ -20,6 +21,9 @@ import LoadingScreen from '@/components/child/LoadingScreen'
  * same as mobile — no server-side simulation, see backend's realtime.ts).
  * Only canned emoji reactions travel between players, never free text. */
 
+// EMOJI-CONTENT: player tokens and reactions are game *pieces* and expressive
+// content between two children — not UI affordances. They want real character
+// art from pixel-wizards-charachters, not an outline glyph set.
 const TOKEN_EMOJI = ['🧒', '👧']
 const REACTIONS = ['👏', '🎉', '😄', '⭐', '💪']
 
@@ -216,11 +220,13 @@ export default function MarpeleOnlinePage() {
   if (phase === 'loading') return <LoadingScreen message="در حال اتصال..." />
 
   if (phase === 'ended') {
-    const title = endReason === 'won' ? 'تو بردی! 🏆' : endReason === 'lost' ? 'این بار دوستت برد!' : 'دوستت از بازی خارج شد'
+    const title = endReason === 'won' ? 'تو بردی!' : endReason === 'lost' ? 'این بار دوستت برد!' : 'دوستت از بازی خارج شد'
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 child-bg p-6 text-center">
         {endReason === 'won' && <Confetti />}
-        <span className="text-8xl">{endReason === 'won' ? '🏆' : '🎲'}</span>
+        <span className={endReason === 'won' ? 'text-amber-500' : 'text-slate-400'}>
+          <Icon name={endReason === 'won' ? 'rewards' : 'random'} size={96} strokeWidth={1.5} />
+        </span>
         <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
         <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
           <motion.button
@@ -230,7 +236,7 @@ export default function MarpeleOnlinePage() {
           >
             بازی دوباره
           </motion.button>
-          <button onClick={() => router.push('/child/home')} className="text-sm text-slate-400 hover:text-slate-600 mt-1">برگشت به خانه 🏠</button>
+          <button onClick={() => router.push('/child/home')} className="text-sm text-slate-400 hover:text-slate-600 mt-1">برگشت به خانه</button>
         </div>
       </div>
     )
@@ -239,14 +245,14 @@ export default function MarpeleOnlinePage() {
   if (phase === 'lobby' || phase === 'waiting') {
     return (
       <div className="min-h-screen child-bg pb-nav">
-        <PageHeader title="بازی آنلاین 🌐" subtitle="یک دوست آنلاین را برای بازی دعوت کن" onBack={() => router.push('/child/games/marpele')} gradientClass="from-sky-500 to-blue-500" />
+        <PageHeader title="بازی آنلاین" subtitle="یک دوست آنلاین را برای بازی دعوت کن" onBack={() => router.push('/child/games/marpele')} gradientClass="from-sky-500 to-blue-500" />
 
         <div className="px-4 pt-4 max-w-md mx-auto flex flex-col gap-3">
           {notice && <p className="text-center text-sm font-medium text-amber-600 persian-text">{notice}</p>}
 
           {friends.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-2.5 shadow-card">
-              <span className="text-4xl">🤝</span>
+              <span className="text-sky-500"><Icon name="partner" size="xl" /></span>
               <p className="text-center text-sm text-gray-500 persian-text leading-6">
                 هنوز دوستی نداری. از حالت والدین با کد دوستی، دوست اضافه کن.
               </p>
@@ -283,7 +289,7 @@ export default function MarpeleOnlinePage() {
                 <span className="text-5xl">{invite.fromEmoji || '🧒'}</span>
                 <p className="text-center font-bold text-gray-800 persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
                 <div className="flex gap-2.5">
-                  <button onClick={acceptInvite} className="bg-brand-gradient text-white font-bold rounded-xl px-6 py-3">بریم! 🎲</button>
+                  <button onClick={acceptInvite} className="bg-brand-gradient text-white font-bold rounded-xl px-6 py-3">بریم!</button>
                   <button onClick={declineInvite} className="bg-slate-100 text-gray-700 font-bold rounded-xl px-6 py-3">نه</button>
                 </div>
               </motion.div>
@@ -301,7 +307,7 @@ export default function MarpeleOnlinePage() {
   return (
     <div className="min-h-screen child-bg pb-nav">
       <PageHeader
-        title={myTurn ? 'نوبت توست! 🎲' : `نوبت ${cur?.name}…`}
+        title={myTurn ? 'نوبت توست!' : `نوبت ${cur?.name}…`}
         onBack={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); router.push('/child/games/marpele') }}
         gradientClass="from-sky-500 to-blue-500"
       />
@@ -357,7 +363,7 @@ export default function MarpeleOnlinePage() {
             className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-card transition-colors ${
               canRoll ? 'bg-sky-600' : 'bg-slate-300'}`}
           >
-            {myTurn ? 'تاس بینداز! 🎲' : 'صبر کن…'}
+            {myTurn ? 'تاس بینداز!' : 'صبر کن…'}
           </motion.button>
         </div>
       </div>
@@ -373,7 +379,7 @@ export default function MarpeleOnlinePage() {
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             >
               <p className="text-center font-bold text-gray-800 persian-text">
-                {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی! 🪜' : 'جواب بده تا از مار فرار کنی! 🐍'}
+                {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}
               </p>
               <QuizCard
                 key={challenge.target + '-' + (challenge.question.correctWord?.id ?? '')}

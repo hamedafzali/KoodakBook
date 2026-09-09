@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { PageHeader, Field, Input, Select, Badge, Spinner, Button } from '@/components/ui'
 import type { AudioSection, AudioEngine, AudioSectionConfig } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 // ── Engine catalog (what the admin can pick per section) ──
 // Cloud engines only — the free Piper/Edge sidecar was removed (single-tier
@@ -151,7 +152,7 @@ export default function AudioPage() {
         <p>۲. <b>Azure</b> — صدای نورال مایکروسافت (Farid/Dilara) با کلید رسمی.</p>
         <p>۳. <b>OpenAI</b> — روان اما با ته‌لهجه؛ قبل از انتخاب تست کنید.</p>
         <p className="pt-1 text-amber-800">
-          🎙 بهتر از همه‌ی موتورها برای حروف و هجاها: <b>ضبط صدای انسانی</b>. از دکمه‌ی ضبط در
+          <Icon name="record" size="sm" /> بهتر از همه‌ی موتورها برای حروف و هجاها: <b>ضبط صدای انسانی</b>. از دکمه‌ی ضبط در
           {' '}<Link href="/dashboard/letters" className="underline font-semibold">صفحه‌ی حروف</Link> و
           {' '}<Link href="/dashboard/words" className="underline font-semibold">صفحه‌ی کلمات</Link> استفاده کنید؛
           صدای ضبط‌شده همیشه بر صدای تولیدی مقدم است.
@@ -220,7 +221,7 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
     setBusy(null)
     if (r.error) { setErr(r.error); return }
     cfg.engine = engine; cfg.voice = voice
-    setMsg('ذخیره شد ✅ — برای اعمال روی فایل‌های موجود، پایین صفحه بازتولید کنید.')
+    setMsg('ذخیره شد — برای اعمال روی فایل‌های موجود، پایین صفحه بازتولید کنید.')
   }
 
   return (
@@ -280,7 +281,7 @@ function SectionCard({ cfg, engines, regen: regenSt }: { cfg: AudioSectionConfig
       </label>
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" onClick={regen} disabled={busy !== null || regenSt?.running}>
-          🔄 بازتولید این بخش
+          <Icon name="regenerate" size="sm" /> بازتولید این بخش
         </Button>
       </div>
 
@@ -328,7 +329,7 @@ function RegenCard({ st }: { st: RegenStatus | null }) {
     setErr(null); setDemoMsg('در حال ساخت نمونه…')
     const r = await api.post<{ url: string }>('/api/admin/audio/demo', {})
     if (r.error) { setDemoMsg(null); setErr(r.error); return }
-    setDemoMsg('نمونه ساخته شد ✅ — در بخش قیمتِ سایت پخش می‌شود')
+    setDemoMsg('نمونه ساخته شد — در بخش قیمتِ سایت پخش می‌شود')
   }
 
   const running = st?.running
@@ -358,14 +359,14 @@ function RegenCard({ st }: { st: RegenStatus | null }) {
             فقط موارد بدون صدا (جدیدها)
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={start}>🔄 بازتولید همه</Button>
-            <Button variant="secondary" onClick={makeDemo}>🎧 ساخت نمونه‌ی صدا برای سایت</Button>
+            <Button variant="secondary" onClick={start}><Icon name="regenerate" size="sm" /> بازتولید همه</Button>
+            <Button variant="secondary" onClick={makeDemo}><Icon name="headphones" size="sm" /> ساخت نمونه‌ی صدا برای سایت</Button>
           </div>
         </div>
       )}
 
       {st && !running && st.finishedAt > 0 && (
-        <p className="text-sm text-green-600">تمام شد ✅ — {st.done} مورد{st.errors > 0 ? `، ${st.errors} خطا` : ''}</p>
+        <p className="text-sm text-green-600">تمام شد — {st.done} مورد{st.errors > 0 ? `، ${st.errors} خطا` : ''}</p>
       )}
       {demoMsg && <p className="text-sm text-slate-600">{demoMsg}</p>}
       {err && <p className="text-sm text-red-600">{err}</p>}

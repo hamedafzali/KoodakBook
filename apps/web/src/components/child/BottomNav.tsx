@@ -3,12 +3,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import ParentDoorNav from './ParentDoorNav'
+import { Icon, type IconName } from '@/components/icons'
 
-const NAV_ITEMS = [
-  { href: '/child/home',    emoji: '🏠', label: 'خانه',    ariaLabel: 'صفحه اصلی' },
-  { href: '/child/lesson',  emoji: '📚', label: 'درس‌ها',  ariaLabel: 'لیست درس‌ها' },
-  { href: '/child/story',   emoji: '📖', label: 'داستان',  ariaLabel: 'داستان‌ها' },
-  { href: '/child/rewards', emoji: '🏆', label: 'جوایز',   ariaLabel: 'جوایز و مدال‌ها' },
+const NAV_ITEMS: { href: string; icon: IconName; label: string; ariaLabel: string }[] = [
+  { href: '/child/home',    icon: 'home',    label: 'خانه',    ariaLabel: 'صفحه اصلی' },
+  { href: '/child/lesson',  icon: 'lessons', label: 'درس‌ها',  ariaLabel: 'لیست درس‌ها' },
+  { href: '/child/story',   icon: 'stories', label: 'داستان',  ariaLabel: 'داستان‌ها' },
+  { href: '/child/rewards', icon: 'rewards', label: 'جوایز',   ariaLabel: 'جوایز و مدال‌ها' },
 ]
 
 export default function BottomNav() {
@@ -39,11 +40,11 @@ export default function BottomNav() {
               />
             )}
             <motion.span
-              className="relative text-2xl leading-none"
+              className={`relative leading-none ${active ? 'text-amber-800' : 'text-gray-400'}`}
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
             >
-              {nav.emoji}
+              <Icon name={nav.icon} size="lg" strokeWidth={active ? 2.4 : 2} />
             </motion.span>
             <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-gray-400'}`}>
               {nav.label}

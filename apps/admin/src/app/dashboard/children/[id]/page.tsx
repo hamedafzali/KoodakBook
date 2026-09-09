@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/icons'
 
 interface Drill {
   child: { id: string; parent_id: string; name: string; birth_year: number | null; level: number; placement_done: boolean; created_at: string }
@@ -74,9 +75,9 @@ export default function ChildDrillPage() {
           ))}
         </div>
         <div className="flex gap-4 text-sm text-gray-600">
-          <span>📚 {d.lessons_completed} درس تمام‌شده</span>
-          <span>📖 {d.stories_completed} داستان خوانده</span>
-          <span>🏆 {d.badges.length} جایزه</span>
+          <span><Icon name="lessons" size="xs" /> {d.lessons_completed} درس تمام‌شده</span>
+          <span><Icon name="stories" size="xs" /> {d.stories_completed} داستان خوانده</span>
+          <span><Icon name="badges" size="xs" /> {d.badges.length} جایزه</span>
         </div>
       </Section>
 

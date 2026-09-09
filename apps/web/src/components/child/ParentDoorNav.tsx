@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { Icon } from '@/components/icons'
 
 /**
  * The door from child mode back to the parent area, as a labelled nav item.
@@ -48,7 +49,7 @@ export default function ParentDoorNav({ variant = 'bar' }: { variant?: 'bar' | '
         animate={{ scaleX: holding ? 1 : 0 }}
         transition={{ duration: holding ? HOLD_MS / 1000 : 0.15, ease: 'linear' }}
       />
-      <span className="relative text-2xl leading-none" aria-hidden="true">🔒</span>
+      <span className="relative leading-none"><Icon name="locked" size="lg" /></span>
       <span className={`relative leading-none font-medium ${isRail ? 'text-[11px]' : 'text-xs'}`}>والدین</span>
     </button>
   )

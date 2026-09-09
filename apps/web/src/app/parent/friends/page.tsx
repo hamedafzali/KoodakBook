@@ -67,7 +67,7 @@ export default function ParentFriendsPage() {
     if (!code) return
     try {
       await navigator.clipboard.writeText(code)
-      setMsg({ ok: true, text: 'کد کپی شد ✅' })
+      setMsg({ ok: true, text: 'کد کپی شد' })
     } catch { /* clipboard unavailable — code is still visible to copy by hand */ }
   }
 
@@ -80,7 +80,7 @@ export default function ParentFriendsPage() {
     const res = await api.post<{ friend_name: string; accepted: boolean }>('/api/friends/request', { child_id: selected, code: c })
     if (res.data) {
       setInput('')
-      setMsg({ ok: true, text: res.data.accepted ? `${res.data.friend_name} حالا دوست است! ✅` : `درخواست برای ${res.data.friend_name} فرستاده شد ✅` })
+      setMsg({ ok: true, text: res.data.accepted ? `${res.data.friend_name} حالا دوست است!` : `درخواست برای ${res.data.friend_name} فرستاده شد` })
       if (res.data.accepted) await loadForChild(selected)
     } else {
       setMsg({ ok: false, text: res.error ?? 'خطا' })
@@ -113,7 +113,7 @@ export default function ParentFriendsPage() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </Link>
         <div>
-          <h1 className="font-bold text-xl text-slate-800">دوستان 🤝</h1>
+          <h1 className="font-bold text-xl text-slate-800">دوستان</h1>
           <p className="text-sm text-slate-500 mt-0.5">فقط با کد و تأیید شما — بدون غریبه</p>
         </div>
       </div>
@@ -121,6 +121,7 @@ export default function ParentFriendsPage() {
       <div className="px-4 pt-5 flex flex-col gap-4">
         {!activeChild ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
+            {/* EMOJI-CONTENT: empty-state portrait, wants real art. */}
             <div className="text-6xl">👶</div>
             <p className="text-gray-600 font-medium persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
           </div>
@@ -152,7 +153,7 @@ export default function ParentFriendsPage() {
                 onClick={copyCode}
                 className="mt-3 w-full sm:w-auto sm:mx-auto sm:px-8 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-2.5 rounded-xl transition-colors"
               >
-                کپی کد 📋
+                کپی کد
               </button>
               <p className="text-xs text-slate-400 mt-2 persian-text">این کد را به خانواده‌ی دوستِ کودک بدهید</p>
             </section>
@@ -204,9 +205,10 @@ export default function ParentFriendsPage() {
                 <div className="space-y-2">
                   {friends.map(f => (
                     <div key={f.id} className="flex items-center gap-3">
+                      {/* EMOJI-CONTENT: stands in for a friend's avatar. */}
                       <span className="text-2xl" aria-hidden="true">🧒</span>
                       <span className="flex-1 font-bold text-slate-700 text-sm">{f.name}</span>
-                      <span className="text-xs text-slate-400">بازی آنلاین به‌زودی 🎲</span>
+                      <span className="text-xs text-slate-400">بازی آنلاین به‌زودی</span>
                     </div>
                   ))}
                 </div>

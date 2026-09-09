@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
 import { Field, Input, Select, Badge, Spinner, Button, Toggle } from '@/components/ui'
+import { Icon } from '@/components/icons'
 
 type Provider = 'anthropic' | 'openai_compatible'
 
@@ -110,7 +111,7 @@ export default function AiSettingsPage() {
     })
     setSaving(false)
     if (r.error) { setErr(r.error); return }
-    setMsg('ذخیره شد ✅'); load()
+    setMsg('ذخیره شد'); load()
   }
 
   return (
@@ -125,8 +126,8 @@ export default function AiSettingsPage() {
       {/* Key status */}
       <div className={`rounded-xl border px-4 py-3 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
         {keySet
-          ? '✓ کلید AI_API_KEY تنظیم شده است.'
-          : '⚠ کلید AI_API_KEY تنظیم نشده — تا زمانی که در ACM مقدارش را اضافه نکنید، ساخت داستان کار نمی‌کند.'}
+          ? <><Icon name="ok" size="xs" className="text-green-600" /> کلید AI_API_KEY تنظیم شده است.</>
+          : <><Icon name="warning" size="xs" className="text-amber-600" /> کلید AI_API_KEY تنظیم نشده — تا زمانی که در ACM مقدارش را اضافه نکنید، ساخت داستان کار نمی‌کند.</>}
         <span className="block text-xs opacity-80 mt-1">یک کلید واحد برای ارائه‌دهنده‌ی انتخابی؛ هنگام تغییر ارائه‌دهنده، مقدار AI_API_KEY را در ACM به کلید همان شرکت تغییر دهید.</span>
       </div>
 
@@ -313,7 +314,7 @@ function TtsCard() {
     })
     setSaving(false)
     if (r.error) { setErr(r.error); return }
-    setMsg('ذخیره شد ✅'); load()
+    setMsg('ذخیره شد'); load()
   }
 
   return (
@@ -328,7 +329,9 @@ function TtsCard() {
         منتقل شده است. اینجا فقط تنظیمات ارائه‌دهنده‌ی ابری (کلید، ریجن، مدل) و فعال‌سازی کلیِ آن است. صدا برای همه‌ی حساب‌ها یکسان است.</p>
 
       <div className={`rounded-xl border px-4 py-2.5 text-sm ${keySet ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-        {keySet ? '✓ کلید TTS_API_KEY تنظیم شده است.' : '⚠ کلید TTS_API_KEY در ACM تنظیم نشده — تا آن زمان صدای تولیدی ساخته نمی‌شود و اپ با صدای مرورگر می‌خواند.'}
+        {keySet
+          ? <><Icon name="ok" size="xs" className="text-green-600" /> کلید TTS_API_KEY تنظیم شده است.</>
+          : <><Icon name="warning" size="xs" className="text-amber-600" /> کلید TTS_API_KEY در ACM تنظیم نشده — تا آن زمان صدای تولیدی ساخته نمی‌شود و اپ با صدای مرورگر می‌خواند.</>}
       </div>
 
       <Toggle checked={t.enabled} onChange={v => setT({ ...t, enabled: v })} label="فعال‌سازی صدای ابری" />

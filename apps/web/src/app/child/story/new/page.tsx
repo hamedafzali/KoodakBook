@@ -12,6 +12,9 @@ import type { Child } from '@koodakbook/shared'
 
 // Theme is sent to the backend as free text; the emoji/label are just the UI.
 const THEMES = [
+  // EMOJI-CONTENT: these are story *subjects* a pre-reader picks by picture —
+  // the picture IS the label. Outline icons would make them harder to tell
+  // apart, not easier. Wants illustrated topic cards.
   { key: 'حیوانات', emoji: '🦊', label: 'حیوانات' },
   { key: 'فضا و ستاره‌ها', emoji: '🚀', label: 'فضا' },
   { key: 'دریا و ماهی‌ها', emoji: '🐠', label: 'دریا' },
@@ -65,7 +68,7 @@ export default function NewStoryPage() {
         <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-gray-800">در حال نوشتن داستان تو... ✨</h1>
+        <h1 className="text-2xl font-bold text-gray-800">در حال نوشتن داستان تو...</h1>
         <p className="text-gray-500 persian-text">یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</p>
         <div className="flex gap-1.5">
           {[0, 1, 2].map(i => (
@@ -84,7 +87,7 @@ export default function NewStoryPage() {
   return (
     <div className="min-h-screen child-bg pb-10">
       <PageHeader
-        title="یک داستان برای من بساز ✨"
+        title="یک داستان برای من بساز"
         subtitle="یک موضوع انتخاب کن"
         gradientClass="from-fuchsia-500 to-purple-600"
       />
@@ -117,7 +120,7 @@ export default function NewStoryPage() {
           whileTap={{ scale: 0.97 }}
           className="w-full mt-6 bg-gradient-to-r from-fuchsia-700 to-purple-800 text-white font-bold py-4 rounded-2xl text-lg shadow-card disabled:opacity-50 touch-target"
         >
-          بساز! ✨
+          بساز!
         </motion.button>
       </div>
     </div>

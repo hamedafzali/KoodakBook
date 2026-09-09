@@ -2,6 +2,7 @@
 import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { COLS, LADDERS, ROWS, SIZE, SNAKES, boardRows, toPersianDigits } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 /* Web's مارپله board — CSS grid, not mobile's hand-drawn SVG snakes/ladders
  * (react-native-svg isn't available here and a from-scratch port wasn't worth
@@ -44,8 +45,11 @@ export default function MarpeleBoard({ positions, emojis }: { positions: number[
                 style={{ gridRow: r + 1, gridColumn: c + 1 }}
               >
                 <span className="absolute top-0.5 right-1 text-[10px] font-bold text-black/35">{toPersianDigits(n)}</span>
-                {start && <span className="text-xl">🏠</span>}
-                {finish && <span className="text-xl">🏆</span>}
+                {start && <Icon name="home" size="md" />}
+                {finish && <Icon name="rewards" size="md" />}
+                {/* EMOJI-CONTENT: the ladder and the snake are the board's two
+                    game mechanics, drawn as pieces — not affordances. They want
+                    real board art, and an outline glyph would read as a control. */}
                 {ladder && !start && !finish && <span className="text-lg">🪜{toPersianDigits(LADDERS[n])}</span>}
                 {snake && !start && !finish && <span className="text-lg">🐍</span>}
               </div>
@@ -114,6 +118,7 @@ export function Dice({ value, rolling }: { value: number | null; rolling: boolea
 
 /* ── Confetti burst for the win screen (emoji, no canvas — kept local so the
  * page doesn't pull in canvas-confetti just for this) ──────────────────── */
+// EMOJI-CONTENT: confetti is celebration *particles*, thrown by the hundred.
 const CONFETTI = ['🎉', '⭐', '🎈', '✨', '🏅']
 export function Confetti() {
   const pieces = useMemo(() => Array.from({ length: 22 }, () => ({

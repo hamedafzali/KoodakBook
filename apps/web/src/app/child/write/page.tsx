@@ -11,6 +11,7 @@ import { MODULE } from '@/components/child/kit'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Letter } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 export default function WritePage() {
   const router = useRouter()
@@ -43,7 +44,7 @@ export default function WritePage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="تمرین نوشتن ✏️" subtitle={`حرف ${idx + 1} از ${letters.length}`} gradientClass="from-blue-400 to-cyan-500" />
+      <PageHeader title="تمرین نوشتن" subtitle={`حرف ${idx + 1} از ${letters.length}`} gradientClass="from-blue-400 to-cyan-500" />
 
       {/* pb-44: clears BOTH fixed bars below (the action bar + BottomNav),
           not just BottomNav's own .pb-nav reserve — see the action bar's
@@ -57,7 +58,7 @@ export default function WritePage() {
           >
             <span className="text-2xl font-bold text-gray-800">{letter.character}</span>
             <span className="text-gray-500">{letter.name_persian}</span>
-            <span className="text-amber-500 text-lg">🔊</span>
+            <span className="text-amber-500"><Icon name="listen" size="md" /></span>
           </button>
         </div>
 
@@ -186,7 +187,7 @@ function TracingCanvas({ letter }: { letter: string }) {
           hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'
         }`}
       >
-        🧹 پاک کن
+        <Icon name="retry" size="sm" /> پاک کن
       </motion.button>
     </div>
   )

@@ -11,6 +11,7 @@ import { getDeviceToken, setDeviceToken } from '@/lib/deviceToken'
 import { playTap } from '@/lib/sounds'
 import CharacterAvatar from '@/components/child/CharacterAvatar'
 import type { AppCharacter } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 /* Kid login (mig 059): type your name, then — if a parent set one up — tap
  * your 3-character picture password instead of typing anything else. On an
@@ -116,9 +117,9 @@ export default function KidLoginPage() {
                 className="text-7xl mb-4 select-none"
                 animate={{ y: [0, -10, 0] }} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
                 aria-hidden="true"
-              >🐣</motion.p>
+              >{/* EMOJI-CONTENT: the hatching chick is the sign-in mascot. */}🐣</motion.p>
               <h1 className="text-3xl font-bold text-slate-800 mb-2">سلام! تو کی هستی؟</h1>
-              <p className="text-slate-500 persian-text mb-7">اسم مخصوصت را بنویس — همانی که مامان یا بابا برایت ساخته 🎈</p>
+              <p className="text-slate-500 persian-text mb-7">اسم مخصوصت را بنویس — همانی که مامان یا بابا برایت ساخته</p>
 
               <form onSubmit={submitName} className="space-y-4" noValidate>
                 <input
@@ -137,7 +138,7 @@ export default function KidLoginPage() {
                   whileTap={{ scale: 0.96 }}
                   className="w-full bg-brand-gradient text-white font-bold text-xl py-4 rounded-[1.5rem] shadow-lg disabled:opacity-50 min-h-[64px]"
                 >
-                  {loading ? 'دارم می‌آیم…' : 'بریم بازی! 🎈'}
+                  {loading ? 'دارم می‌آیم…' : 'بریم بازی!'}
                 </motion.button>
               </form>
 
@@ -152,7 +153,7 @@ export default function KidLoginPage() {
 
           {step === 'picture' && (
             <motion.div key="picture" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <h1 className="text-2xl font-bold text-slate-800 mb-1">سلام {child?.name}! 👋</h1>
+              <h1 className="text-2xl font-bold text-slate-800 mb-1">سلام {child?.name}!</h1>
               <p className="text-slate-500 persian-text mb-2">۳ دوستت را به ترتیب لمس کن</p>
 
               {/* Picked-so-far strip — lets a child see progress without any text/numbers. */}
@@ -190,7 +191,7 @@ export default function KidLoginPage() {
 
           {step === 'parent_pin' && (
             <motion.div key="parent_pin" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="text-4xl mb-4">🔒</div>
+              <div className="mb-4 flex justify-center text-slate-400"><Icon name="locked" size={40} /></div>
               <h1 className="text-xl font-bold text-slate-800 mb-1">این دستگاه جدید است</h1>
               <p className="text-slate-500 persian-text mb-6 text-sm">
                 برای اولین ورود {child?.name} روی این دستگاه، از مامان یا بابا بخواه پین را وارد کند

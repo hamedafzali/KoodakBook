@@ -8,6 +8,7 @@ import SceneBackdrop from './SceneBackdrop'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakOrPlay, stopSpeaking } from '@/lib/speech'
+import { Icon } from '@/components/icons'
 
 interface Props {
   story: Story & { pages: StoryPage[] }
@@ -128,7 +129,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 <span className={`w-2.5 h-2.5 rounded-full ${i <= currentPage ? 'bg-amber-500' : 'bg-gray-200'}`} />
                 {i === currentPage && (
                   <motion.span layoutId="story-walker" transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-                    className="absolute -top-2 text-sm leading-none select-none">🐣</motion.span>
+                    className="absolute -top-2 text-sm leading-none select-none">{/* EMOJI-CONTENT: the read-along chick follows the words. */}🐣</motion.span>
                 )}
               </div>
               {i < story.pages.length - 1 && (
@@ -136,7 +137,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
               )}
             </div>
           ))}
-          <span className="shrink-0 text-sm mr-1 leading-none select-none" aria-hidden="true">🚩</span>
+          <span className="shrink-0 mr-1 leading-none text-amber-500" aria-hidden="true"><Icon name="star" size="xs" /></span>
         </div>
       </div>
 
@@ -192,7 +193,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 aria-label="پخش دوباره‌ی صدای این صفحه"
                 className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px]"
               >
-                <span className="text-xl">🔊</span>
+                <Icon name="listen" size="md" />
                 <span>دوباره بشنو</span>
               </motion.button>
             </div>
@@ -221,7 +222,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           aria-label={isLast ? 'پایان داستان' : 'صفحه بعدی'}
           className="flex-[2] py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px] touch-target"
         >
-          {isLast ? '✅ تمام شد!' : 'بعدی ←'}
+          {isLast ? <><Icon name="done" size="sm" /> تمام شد!</> : 'بعدی ←'}
         </motion.button>
       </div>
     </div>

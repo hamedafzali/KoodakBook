@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import FileUpload from '@/components/FileUpload'
 import type { Story, StoryPage } from '@koodakbook/shared'
 import { PageHeader, Button, ui } from '@/components/ui'
+import { Icon } from '@/components/icons'
 
 const EMPTY_STORY = { title_persian: '', title_english: '', stage: 3, age_min: '', age_max: '', cover_url: '', audio_url: '' }
 const EMPTY_PAGE = { page_number: 1, text_persian: '', text_english: '', image_url: '', audio_url: '' }
@@ -183,8 +184,8 @@ export default function AdminStoriesPage() {
                   <p className="text-sm font-medium text-gray-800">{p.text_persian}</p>
                   {p.text_english && <p className="text-xs text-gray-400 ltr mt-0.5">{p.text_english}</p>}
                   <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                    {p.audio_url && <span>🔊 صدا</span>}
-                    {p.image_url && <span>🖼 تصویر</span>}
+                    {p.audio_url && <span><Icon name="audio" size="xs" /> صدا</span>}
+                    {p.image_url && <span><Icon name="image" size="xs" /> تصویر</span>}
                   </div>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">

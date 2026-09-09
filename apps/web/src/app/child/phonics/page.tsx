@@ -14,6 +14,7 @@ import {
   SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl,
   type Syllable,
 } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 const DEMO = 'ب' // base consonant used to demonstrate each vowel mark
 
@@ -40,7 +41,7 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
   const reduce = useReducedMotion()
   if (!demo) return (
     <div className="bg-white/70 border-2 border-dashed border-amber-200 rounded-2xl h-28 flex items-center justify-center text-gray-400 persian-text text-sm">
-      روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود ✨
+      روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود
     </div>
   )
   if (reduce) return (
@@ -71,7 +72,7 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
         {demo.text}
       </motion.span>
       <motion.span className="absolute left-4 top-3 text-xl" initial={{ scale: 0 }}
-        animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}>✨</motion.span>
+        animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}><Icon name="sparkle" size={40} className="text-amber-400" /></motion.span>
       <span className="absolute right-3 bottom-2 text-[11px] text-gray-400 persian-text">{demo.markName}</span>
     </div>
   )
@@ -111,16 +112,16 @@ export default function PhonicsPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="text-3xl font-bold text-gray-800">آفرین! 🌟</h1>
+        <h1 className="text-3xl font-bold text-gray-800">آفرین!</h1>
         <p className="text-gray-600 persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.96 }}
             className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-raised">
-            یک بار دیگه 🔁
+            یک بار دیگه
           </motion.button>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
             className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
-            برگشت به خانه 🏠
+            برگشت به خانه
           </motion.button>
         </div>
       </div>
@@ -129,7 +130,7 @@ export default function PhonicsPage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="صداها 🎵" subtitle="زبر، زیر، پیش" gradientClass="from-orange-500 to-amber-500" />
+      <PageHeader title="صداها" subtitle="زبر، زیر، پیش" gradientClass="from-orange-500 to-amber-500" />
 
       <div className="px-4 pt-5 space-y-7">
         <div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3">
@@ -188,7 +189,7 @@ export default function PhonicsPage() {
 
         <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.97 }}
           className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-raised min-h-[56px]">
-          بریم تمرین 🎧
+          بریم تمرین
         </motion.button>
       </div>
 
@@ -249,7 +250,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
         </motion.button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-gray-800 text-sm">گوش کن و انتخاب کن 🎧</h1>
+            <h1 className="font-bold text-gray-800 text-sm">گوش کن و انتخاب کن</h1>
             <span className="text-sm font-bold text-amber-600">{idx + 1}/{questions.length}</span>
           </div>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((idx / questions.length) * 100)}
@@ -265,7 +266,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
           animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           className="w-28 h-28 rounded-full bg-brand-gradient-br flex items-center justify-center shadow-raised touch-target"
           aria-label="دوباره گوش کن">
-          <span className="text-4xl">🔊</span>
+          <span className="text-white"><Icon name="listen" size="xl" /></span>
         </motion.button>
         <p className="text-gray-600 persian-text">کدام را شنیدی؟</p>
 

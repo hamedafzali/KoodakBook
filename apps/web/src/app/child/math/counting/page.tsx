@@ -19,6 +19,7 @@ import type { Child } from '@koodakbook/shared'
  * «چند تا بود؟». Counting aloud WITH the tap is the lesson — one-to-one
  * correspondence in Persian. Under 5 → up to 5 items; at 5 → up to 10. */
 
+// EMOJI-CONTENT: the objects being counted. This is the lesson content itself.
 const THINGS = ['🍎', '🐤', '🎈', '⭐', '🍓', '🐟', '🌸', '🚗']
 const ROUNDS = 5
 
@@ -88,20 +89,20 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         <Mascot size={130} mood="excited" />
       </motion.div>
-      <h1 className="text-3xl font-bold text-gray-800">چه شمارشگری! 🌟</h1>
+      <h1 className="text-3xl font-bold text-gray-800">چه شمارشگری!</h1>
       <p className="text-gray-600 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا گرفتی</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره 🔁</motion.button>
+          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد 🏠</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد</motion.button>
       </div>
     </div>
   )
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="شمارش 🍎" subtitle="ضربه بزن و بشمار" gradientClass="from-emerald-500 to-green-500" />
+      <PageHeader title="شمارش" subtitle="ضربه بزن و بشمار" gradientClass="from-emerald-500 to-green-500" />
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-5">
         <div className="flex items-center justify-between text-sm">

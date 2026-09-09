@@ -148,6 +148,9 @@ function SceneShapes({ scene, p }: { scene: SceneSlug; p: Palette }) {
 /** Floating parallax bits: stars at night, clouds/bubbles by day. */
 function Floats({ scene, night, animate }: { scene: SceneSlug; night: boolean; animate: boolean }) {
   const items = night
+    // EMOJI-CONTENT: painted scenery for the story backdrop, not chrome.
+    // ✦/✧ are Unicode *symbols* (not emoji) — they take fill and size like any
+    // other glyph, so they don't carry the OS-inconsistency problem.
     ? [{ x: 40, y: 30, e: '✦' }, { x: 340, y: 24, e: '✦' }, { x: 250, y: 56, e: '✧' }, { x: 120, y: 44, e: '✦' }]
     : scene === 'sea'
       ? [{ x: 60, y: 120, e: '☁️' }, { x: 300, y: 90, e: '☁️' }]

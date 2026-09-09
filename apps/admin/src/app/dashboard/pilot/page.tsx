@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/icons'
 
 interface RetentionWeek { week: number; eligible: number; active: number; rate: number | null }
 interface PilotMetrics {
@@ -29,7 +30,7 @@ function Gate({ rate, target, label }: { rate: number | null; target: number; la
     <div className={`rounded-2xl p-5 text-center ${pass ? 'bg-green-50' : 'bg-amber-50'}`}>
       <div className={`text-3xl font-bold ${pass ? 'text-green-700' : 'text-amber-700'}`}>{pct(rate)}</div>
       <div className="text-xs text-gray-600 mt-1">{label}</div>
-      <div className="text-[11px] text-gray-400 mt-0.5">هدف ≥ {Math.round(target * 100)}% {pass ? '✅' : ''}</div>
+      <div className="text-[11px] text-gray-400 mt-0.5">هدف ≥ {Math.round(target * 100)}% {pass ? <Icon name="okCircle" size="xs" className="text-green-600" /> : null}</div>
     </div>
   )
 }

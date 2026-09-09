@@ -4,6 +4,7 @@ import { api } from '@/lib/api'
 import { PageHeader, ui } from '@/components/ui'
 import type { Lesson, Word, Letter } from '@koodakbook/shared'
 import { LESSON_TYPE_EMOJI } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 type LessonItem = { id: string; item_type: 'word' | 'letter'; order_index: number; word?: Word; letter?: Letter }
 
@@ -134,7 +135,7 @@ export default function AdminLessonsPage() {
                       <button onClick={() => moveItem(item.id, 'down')} disabled={idx === items.length - 1} aria-label="جابجایی به پایین"
                         className="text-gray-300 hover:text-gray-500 disabled:opacity-20 text-xs leading-none">▼</button>
                     </div>
-                    <button onClick={() => removeItem(item.id)} aria-label="حذف" className="text-red-400 hover:text-red-600 text-sm">✕</button>
+                    <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600"><Icon name="remove" size="sm" label="حذف" /></button>
                   </div>
                 ))}
               </div>

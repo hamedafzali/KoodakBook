@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Mascot from './Mascot'
 import { speakPersian } from '@/lib/speech'
+import { Icon, type IconName } from '@/components/icons'
 
 const SEEN_KEY = 'koodakbook_seen_tutorial'
 
@@ -12,16 +13,21 @@ export function hasSeenTutorial(): boolean {
 }
 
 interface Step {
-  emoji: string
+  /** Set only on the mascot step; every other step uses `icon`. */
+  emoji: string | null
+  icon: IconName | null
   title: string
   body: string
 }
 
 const STEPS: Step[] = [
-  { emoji: '🦅', title: 'سلام! من سیمرغم', body: 'با هم فارسی یاد می‌گیریم. آماده‌ای؟' },
-  { emoji: '📚', title: 'درس‌ها', body: 'روی کارت‌ها ضربه بزن تا کلمه‌ها را بشنوی و بازی کنی.' },
-  { emoji: '📖', title: 'داستان‌ها', body: 'داستان‌های قشنگ بخوان و گوش کن.' },
-  { emoji: '🏆', title: 'جایزه‌ها', body: 'هر چه بیشتر تمرین کنی، جایزه‌های بیشتری می‌گیری!' },
+  // Step 0 keeps its mascot (EMOJI-CONTENT — Simorgh is a character, and this
+  // is the child's first meeting with him); the rest are wayfinding, so they
+  // use the same icons the child will see in the nav a moment later.
+  { emoji: '🦅', icon: null, title: 'سلام! من سیمرغم', body: 'با هم فارسی یاد می‌گیریم. آماده‌ای؟' },
+  { emoji: null, icon: 'lessons' as IconName, title: 'درس‌ها', body: 'روی کارت‌ها ضربه بزن تا کلمه‌ها را بشنوی و بازی کنی.' },
+  { emoji: null, icon: 'stories' as IconName, title: 'داستان‌ها', body: 'داستان‌های قشنگ بخوان و گوش کن.' },
+  { emoji: null, icon: 'rewards' as IconName, title: 'جایزه‌ها', body: 'هر چه بیشتر تمرین کنی، جایزه‌های بیشتری می‌گیری!' },
 ]
 
 interface Props {
@@ -76,9 +82,11 @@ export default function Tutorial({ childName, onClose }: Props) {
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.25 }}
           >
-            <div className="text-4xl mb-2" aria-hidden="true">{current.emoji}</div>
+            <div className="text-4xl mb-2 flex justify-center text-amber-500" aria-hidden="true">
+              {current.emoji ?? <Icon name={current.icon!} size={40} strokeWidth={1.8} />}
+            </div>
             <h2 className="text-xl font-bold text-gray-800 mb-1">
-              {step === 0 && childName ? `سلام ${childName}! 👋` : current.title}
+              {step === 0 && childName ? `سلام ${childName}!` : current.title}
             </h2>
             <p className="text-gray-500 persian-text mb-5">{current.body}</p>
           </motion.div>
@@ -105,7 +113,7 @@ export default function Tutorial({ childName, onClose }: Props) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.96 }}
           >
-            {isLast ? 'بزن بریم! 🚀' : 'بعدی ←'}
+            {isLast ? 'بزن بریم!' : 'بعدی ←'}
           </motion.button>
         </div>
       </motion.div>

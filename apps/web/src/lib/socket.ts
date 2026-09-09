@@ -11,6 +11,8 @@ import { getToken } from './auth'
  * forwards it to the backend internally, WS upgrade included. */
 let socket: Socket | null = null
 
+/** `emoji` is the child's board token (EMOJI-CONTENT, see components/icons.tsx),
+ *  not a UI icon — it travels over the wire to the other player's board. */
 export function connectSocket(childName: string, emoji = '🧒'): Socket | null {
   if (socket?.connected) return socket
   const token = getToken()

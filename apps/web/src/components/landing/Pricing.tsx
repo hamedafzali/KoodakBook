@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/icons'
 
 /* Pricing synced from the backend plan catalogue (/api/plans) — the same rows
  * the admin plans panel manages. Change a price there, the site follows.
@@ -83,7 +84,12 @@ export default function Pricing() {
             )}
             {p.description && <p className="text-sm text-slate-500 mt-1">{p.description}</p>}
             <ul className="mt-5 space-y-2.5 text-sm text-slate-600 flex-1">
-              {featureLines(p.features).map(l => <li key={l}>{free ? '✅' : '⭐'} {l}</li>)}
+              {featureLines(p.features).map(l => (
+                <li key={l} className="flex items-start gap-1.5">
+                  <Icon name={free ? 'done' : 'star'} size="xs" className={`mt-1 ${free ? 'text-green-600' : 'text-amber-500'}`} />
+                  {l}
+                </li>
+              ))}
             </ul>
             {p.purchasable ? (
               <Link href="/signup" className="block text-center mt-7 bg-amber-700 hover:bg-amber-800 text-white font-bold py-3 rounded-xl transition">

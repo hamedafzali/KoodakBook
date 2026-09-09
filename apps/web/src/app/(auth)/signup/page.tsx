@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { onSignIn } from '@/lib/auth'
+import { Icon } from '@/components/icons'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -29,7 +30,7 @@ export default function SignupPage() {
   return (
     <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-6">
-          <p className="text-4xl mb-2" aria-hidden="true">🎈</p>
+          <p className="mb-2 flex justify-center text-emerald-500"><Icon name="celebrate" size={40} strokeWidth={1.6} /></p>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">شروع ماجراجویی فارسی</h1>
           <p className="text-gray-500 text-sm">رایگان است — نه کارت بانکی، نه تعهدی</p>
         </div>

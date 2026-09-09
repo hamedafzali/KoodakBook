@@ -4,9 +4,9 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { isLoggedIn, clearToken } from '@/lib/auth'
 import { api } from '@/lib/api'
-import { Icon } from '@/components/icons'
+import { Icon, type IconName } from '@/components/icons'
 
-type Item = { href: string; label: string; icon: string; perm?: string }
+type Item = { href: string; label: string; icon: IconName; perm?: string }
 const GROUPS: { title: string; items: Item[] }[] = [
   { title: 'مرور', items: [
     { href: '/dashboard', label: 'داشبورد', icon: 'home' },

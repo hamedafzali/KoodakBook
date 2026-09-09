@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/lib/api'
 import { PLAN_FEATURES, featureLabel } from '@koodakbook/shared'
 import { Field, Toggle, ui } from '@/components/ui'
+import { Icon } from '@/components/icons'
 
 interface Plan {
   id: string; key: string; name: string; description: string | null
@@ -61,10 +62,10 @@ function PlanCard({ plan, onChange }: { plan: Plan; onChange: () => void }) {
         <div className="flex flex-col items-end gap-1">
           {plan.is_default && <span className="text-[11px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">پیش‌فرض</span>}
           <span className={`text-[11px] px-2 py-0.5 rounded-full ${plan.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>{plan.is_active ? 'فعال' : 'غیرفعال'}</span>
-          {!plan.is_public && <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">🙈 مخفی از سایت</span>}
+          {!plan.is_public && <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"><Icon name="hidden" size="xs" /> مخفی از سایت</span>}
           {!plan.show_price && <span className="text-[11px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">قیمت مخفی</span>}
           {!plan.purchasable && plan.price_cents > 0 && <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">به‌زودی</span>}
-          {plan.badge && <span className="text-[11px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">🏷 {plan.badge}</span>}
+          {plan.badge && <span className="text-[11px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full"><Icon name="tag" size="xs" /> {plan.badge}</span>}
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5 mt-3">
@@ -205,7 +206,7 @@ function PlanEditor({ plan, onSaved, onCancel }: { plan?: Plan; onSaved: () => v
               <div key={i} className="flex gap-2">
                 <input className={inp} placeholder="کلید" dir="ltr" value={k} onChange={e => { const c = [...custom]; c[i] = [e.target.value, v]; setCustom(c) }} />
                 <input className={inp} placeholder="مقدار" dir="ltr" value={v} onChange={e => { const c = [...custom]; c[i] = [k, e.target.value]; setCustom(c) }} />
-                <button onClick={() => setCustom(custom.filter((_, j) => j !== i))} className="text-red-400 px-2" aria-label="حذف">✕</button>
+                <button onClick={() => setCustom(custom.filter((_, j) => j !== i))} className="text-red-400 px-2"><Icon name="remove" size="sm" label="حذف" /></button>
               </div>
             ))}
             <button onClick={() => setCustom([...custom, ['', '']])} className="text-xs text-amber-700 hover:underline">+ افزودن</button>

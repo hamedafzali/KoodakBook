@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { containerWidths } from '@/components/shared/layout'
 import { PLAN_FEATURES } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 interface PlanRow {
   id: string
@@ -33,7 +34,7 @@ function FeatureValue({ featureKey, type, value }: { featureKey: string; type: s
     return <span className="font-bold text-slate-800">{Number(value).toLocaleString('fa-IR')}</span>
   }
   return value === 'true'
-    ? <span className="text-green-600 font-bold" aria-label="دارد">✓</span>
+    ? <span className="text-green-600" role="img" aria-label="دارد"><Icon name="done" size="sm" strokeWidth={3} /></span>
     : <span className="text-slate-300" aria-label="ندارد">—</span>
 }
 
@@ -119,7 +120,7 @@ export default function PlanPage() {
                   </button>
                 ) : isPremium ? (
                   <button disabled className="w-full py-3 rounded-md bg-amber-100 text-amber-700 font-bold cursor-default min-h-[48px]">
-                    به‌زودی 🚀
+                    به‌زودی
                   </button>
                 ) : null}
               </div>

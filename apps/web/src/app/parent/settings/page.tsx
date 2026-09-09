@@ -10,6 +10,7 @@ import CharacterAvatar from '@/components/child/CharacterAvatar'
 import { TRANSLATION_LANGS } from '@koodakbook/shared'
 import { getTranslationLang, setTranslationLang } from '@/lib/translation'
 import { containerWidths } from '@/components/shared/layout'
+import { Icon } from '@/components/icons'
 
 const GOAL_KEY = 'koodakbook_daily_goal_min'
 
@@ -53,7 +54,7 @@ export default function SettingsPage() {
     const v = (unameDraft[id] ?? '').trim().toLowerCase()
     const r = await api.patch<Child>(`/api/children/${id}`, { username: v })
     if (r.error) { setUnameMsg(m => ({ ...m, [id]: r.error! })); return }
-    setUnameMsg(m => ({ ...m, [id]: v ? `ذخیره شد ✅ — کودک با «${v}» وارد می‌شود` : 'حذف شد' }))
+    setUnameMsg(m => ({ ...m, [id]: v ? `ذخیره شد — کودک با «${v}» وارد می‌شود` : 'حذف شد' }))
     setChildren(cs => cs.map(c => (c.id === id ? { ...c, username: v || null } : c)))
   }
 
@@ -79,7 +80,7 @@ export default function SettingsPage() {
     const r = await api.patch<Child>(`/api/children/${id}/picture-password`, { slugs: next })
     setPwPicked([])
     if (r.error) { setPwMsg(m => ({ ...m, [id]: r.error! })); return }
-    setPwMsg(m => ({ ...m, [id]: 'ذخیره شد ✅' }))
+    setPwMsg(m => ({ ...m, [id]: 'ذخیره شد' }))
     setPwOpenFor(null)
     setChildren(cs => cs.map(c => (c.id === id ? { ...c, picture_password: next } : c)))
   }
@@ -268,7 +269,7 @@ export default function SettingsPage() {
                 href="/parent/conversations"
                 className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px]"
               >
-                <span className="font-medium text-slate-800 text-sm">گفت‌وگوهای کودک با شخصیت‌ها 💬</span>
+                <span className="font-medium text-slate-800 text-sm">گفت‌وگوهای کودک با شخصیت‌ها</span>
                 <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -332,7 +333,7 @@ export default function SettingsPage() {
                   className="w-full flex items-center justify-between px-5 py-4 hover:bg-red-50 transition-colors text-red-500 text-right min-h-[56px]"
                 >
                   <span className="font-medium text-sm">خروج از حساب</span>
-                  <span aria-hidden="true">🚪</span>
+                  <Icon name="seeAll" size="sm" />
                 </button>
               ) : (
                 <div className="px-5 py-4">

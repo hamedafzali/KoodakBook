@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { markParentUnlocked, isParentUnlocked } from '@/lib/auth'
 import { setMode, enterChildMode } from '@/lib/mode'
 import type { Child } from '@koodakbook/shared'
+import { Icon } from '@/components/icons'
 
 const PIN_LENGTH = 4
 
@@ -27,7 +28,7 @@ function ChildExitButton() {
       aria-label="بازگشت به صفحه کودک"
       className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-2xl transition-colors touch-target"
     >
-      <span aria-hidden="true">🏠</span>
+      <Icon name="home" size="sm" />
     </button>
   )
 }
@@ -192,7 +193,7 @@ export default function ParentGate({ children }: Props) {
           transition={{ duration: 0.4 }}
           className="bg-white rounded-lg p-8 w-full max-w-xs shadow-2xl text-center"
         >
-          <div className="text-4xl mb-4">🔑</div>
+          <div className="mb-4 flex justify-center text-slate-400"><Icon name="parent" size={40} /></div>
           <h1 className="font-bold text-xl text-gray-800 mb-1">بازنشانی پین</h1>
           <p className="text-sm text-gray-500 mb-6">برای امنیت، رمز عبور حساب را وارد کنید</p>
           <form onSubmit={submitReset} className="space-y-4">
@@ -251,7 +252,7 @@ export default function ParentGate({ children }: Props) {
         transition={{ duration: 0.4 }}
         className="bg-white rounded-lg p-8 w-full max-w-xs shadow-2xl text-center"
       >
-        <div className="text-4xl mb-4">🔒</div>
+        <div className="mb-4 flex justify-center text-slate-400"><Icon name="locked" size={40} /></div>
         <h1 className="font-bold text-xl text-gray-800 mb-1">{titleText}</h1>
         <p className="text-sm text-gray-500 mb-6">{subtitleText}</p>
 

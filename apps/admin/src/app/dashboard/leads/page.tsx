@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { PageHeader, Badge, Spinner, EmptyState } from '@/components/ui'
+import { Icon, type IconName } from '@/components/icons'
 
 interface Lead {
   id: string
@@ -16,8 +17,10 @@ interface Lead {
   created_at: string
 }
 
-const TYPE_LABEL: Record<Lead['type'], string> = {
-  tablet: '🖥 تبلت', app_waitlist: '📱 اپ موبایل', contact: '✉️ تماس',
+const TYPE_LABEL: Record<Lead['type'], { icon: IconName; label: string }> = {
+  tablet: { icon: 'tablet', label: 'تبلت' },
+  app_waitlist: { icon: 'mobile', label: 'اپ موبایل' },
+  contact: { icon: 'email', label: 'تماس' },
 }
 const STATUS: { id: Lead['status']; label: string; tone: 'blue' | 'amber' | 'gray' }[] = [
   { id: 'new', label: 'جدید', tone: 'blue' },
@@ -72,7 +75,9 @@ export default function LeadsPage() {
               <div key={l.id} className="bg-white rounded-2xl border border-slate-200 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-slate-700">{TYPE_LABEL[l.type]}</span>
+                    <span className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-700">
+                      <Icon name={TYPE_LABEL[l.type].icon} size="sm" />{TYPE_LABEL[l.type].label}
+                    </span>
                     <Badge tone={st.tone}>{st.label}</Badge>
                     <span className="text-xs text-slate-400">{new Date(l.created_at).toLocaleDateString('fa-IR')}</span>
                   </div>
@@ -82,11 +87,11 @@ export default function LeadsPage() {
                   </select>
                 </div>
                 <div className="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-600">
-                  {l.name && <p>👤 {l.name}</p>}
-                  <p dir="ltr" className="text-left sm:text-right">✉️ {l.email}</p>
-                  {l.phone && <p dir="ltr" className="text-left sm:text-right">📞 {l.phone}</p>}
-                  {l.country && <p>🌍 {l.country}</p>}
-                  {l.quantity != null && l.quantity > 1 && <p>🔢 تعداد: {l.quantity}</p>}
+                  {l.name && <p><Icon name="users" size="xs" /> {l.name}</p>}
+                  <p dir="ltr" className="text-left sm:text-right"><Icon name="email" size="xs" /> {l.email}</p>
+                  {l.phone && <p dir="ltr" className="text-left sm:text-right"><Icon name="phone" size="xs" /> {l.phone}</p>}
+                  {l.country && <p><Icon name="country" size="xs" /> {l.country}</p>}
+                  {l.quantity != null && l.quantity > 1 && <p><Icon name="count" size="xs" /> تعداد: {l.quantity}</p>}
                 </div>
                 {l.message && <p className="mt-2 text-sm text-slate-500 bg-slate-50 rounded-xl px-3 py-2">{l.message}</p>}
               </div>
