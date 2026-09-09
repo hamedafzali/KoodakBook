@@ -134,6 +134,22 @@ What happens on `up -d --build`:
   Admin credentials therefore come from the server's `.env`
   (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) — not the dev defaults.
 
+### Environment files
+
+Plain **`.env`** in the deploy checkout is the one authoritative config file
+for the live server — `deploy.sh` now passes it explicitly with
+`--env-file .env`, and everything above (admin seed, DB password, etc.)
+reads from it. Do not add a second file like `.env.prod` "for production" —
+one existed on the server with the correct `NEXT_PUBLIC_SITE_URL` for weeks
+while `deploy.sh` silently used a different, incomplete `.env`, and nobody
+noticed until Google Search Console flagged `localhost:3000` in the live
+sitemap. If a var is missing from `.env`, `deploy.sh` now refuses to deploy
+and says which one; a genuinely required build-time var (`NEXT_PUBLIC_*` and
+friends) should also use `${VAR:?message}` in `docker-compose.yml`, not
+`${VAR:-default}`, so a bad `.env` fails loudly instead of shipping a
+plausible-looking wrong value. See the header comment in `deploy.sh` for the
+full checklist when adding a new required var.
+
 ---
 
 ## Renewing SSL Certificates
