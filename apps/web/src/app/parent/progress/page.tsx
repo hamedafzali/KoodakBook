@@ -17,7 +17,7 @@ import { Panel, Stat } from '@/components/parent/flat'
  *    amber-50/700, blue-50/700). They are now `Stat`s on shared ramps, so the
  *    soft/ink pairing is the one the ramp generator solved for AA rather than
  *    three separate guesses.
- *  - Every `text-slate-400` on a metadata line was 2.56:1 on white and 2.34:1
+ *  - Every `text-parent-muted` on a metadata line was 2.56:1 on white and 2.34:1
  *    on the parent ground — below AA for text. They are now `text-parent-muted`
  *    (7.58 / 6.92).
  *  - The back chevron was a hand-rolled inline SVG, the one place in this app
@@ -48,7 +48,7 @@ const MASTERY_COLOR: Record<MasteryKey, string> = {
   consolidated: 'bg-emerald-100 text-emerald-800',
   mastered:     'bg-green-100 text-green-800',
   practicing:   'bg-amber-100 text-amber-900',
-  introduced:   'bg-slate-100 text-slate-700',
+  introduced:   'bg-surface-subtle text-parent-text',
 }
 const MASTERY_LABEL: Record<MasteryKey, string> = {
   consolidated: 'تثبیت‌شده',
@@ -141,11 +141,11 @@ export default function ParentProgressPage() {
       <div className={`min-h-screen bg-parent-bg ${containerWidths.app}`}>
 
         {/* Header */}
-        <div className="bg-parent-surface border-b border-slate-200 px-5 py-4 flex items-center gap-3">
+        <div className="bg-parent-surface border-b border-border px-5 py-4 flex items-center gap-3">
           <Link
             href="/parent/dashboard"
             aria-label="برگشت به داشبورد"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-slate-100 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-surface-subtle transition-colors"
           >
             <Icon name="back" size="md" />
           </Link>
@@ -164,7 +164,7 @@ export default function ParentProgressPage() {
 
         {/* Sticky tabs */}
         <div
-          className="sticky top-0 z-10 bg-parent-bg border-b border-slate-200 flex gap-1 px-4 pt-3 pb-0 overflow-x-auto"
+          className="sticky top-0 z-10 bg-parent-bg border-b border-border flex gap-1 px-4 pt-3 pb-0 overflow-x-auto"
           role="tablist"
           aria-label="دسته‌بندی پیشرفت"
         >

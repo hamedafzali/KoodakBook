@@ -35,10 +35,10 @@ export default function ParentNav() {
   return (
     <nav className="w-56 shrink-0 p-4">
       <div className="px-3 py-3 mb-2">
-        <p className="font-bold text-slate-800">پنل والدین</p>
-        <p className="text-xs text-slate-400">پیشرفت کودک شما</p>
+        <p className="font-bold text-parent-text">پنل والدین</p>
+        <p className="text-xs text-parent-muted">پیشرفت کودک شما</p>
         {email && (
-          <p className="text-xs text-slate-500 truncate ltr text-left mt-1" dir="ltr" title={email}>{email}</p>
+          <p className="text-xs text-parent-muted truncate ltr text-left mt-1" dir="ltr" title={email}>{email}</p>
         )}
       </div>
       <div className="space-y-1">
@@ -47,7 +47,7 @@ export default function ParentNav() {
           return (
             <Link key={i.href} href={i.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                on ? 'bg-white text-amber-700 shadow-card' : 'text-slate-600 hover:bg-white/70'}`}>
+                on ? 'bg-white text-amber-700 shadow-card' : 'text-parent-muted hover:bg-white/70'}`}>
               <Icon name={i.icon} size="sm" />{i.label}
             </Link>
           )
@@ -56,7 +56,7 @@ export default function ParentNav() {
       {hasChildren && (
         <button
           onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
-          className="w-full text-right flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:bg-white/70 mt-6">
+          className="w-full text-right flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-parent-muted hover:bg-white/70 mt-6">
           <Icon name="child" size="sm" /> حالت کودک
         </button>
       )}

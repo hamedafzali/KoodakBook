@@ -155,11 +155,14 @@
   --color-text-secondary:#6B5D50;   /* darkened from #9E8E7E (~2.6:1) to clear WCAG AA on white */
   --color-text-disabled: #C5B8AC;
 
-  /* Parent App — Slate */
-  --color-parent-bg:     #F1F5F9;
+  /* Parent App — warm, calmer than the child side but the same family (Phase 5).
+     Cream ground so white cards lift off it; warm dark ink and a warm muted
+     that both clear WCAG AA on white and on the cream. Accents are saffron
+     (the brand) and the shared ramps, never cold slate. */
+  --color-parent-bg:     #F7F1E8;
   --color-parent-surface:#FFFFFF;
-  --color-parent-text:   #0F1F3D;
-  --color-parent-muted:  #475569;
+  --color-parent-text:   #33291F;
+  --color-parent-muted:  #6B5D50;
 
   /* Border Radius */
   --radius-sm:  0.75rem;   /* 12px — inputs, chips, tags */
