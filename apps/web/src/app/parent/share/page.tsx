@@ -10,6 +10,7 @@ import { pickChild } from '@/lib/activeChild'
 import type { DashboardSummary, Child } from '@koodakbook/shared'
 import { buildShareText } from '@koodakbook/shared'
 import { containerWidths } from '@/components/shared/layout'
+import { PageHeader } from '@/components/parent/flat'
 
 /* Portrait card sized for WhatsApp / status sharing. */
 const W = 1080
@@ -23,6 +24,18 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, r)
   ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
+}
+
+/* The card's colours used to be hard-coded hexes with a comment saying canvas
+ * "can't read CSS custom properties". It can — getComputedStyle resolves them
+ * on the root element like any other property. Reading them means the exported
+ * image tracks the ramp instead of drifting from it, which matters here more
+ * than anywhere: this PNG leaves the app and is the only thing a grandparent
+ * ever sees of the brand. */
+function token(name: string, fallback: string): string {
+  if (typeof window === 'undefined') return fallback
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return v || fallback
 }
 
 /** Draw the shareable progress card onto a canvas (no external deps). */
@@ -44,12 +57,14 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
   ctx.direction = 'rtl'
   ctx.textAlign = 'center'
 
-  // Background gradient — matches --color-brand-from/--color-brand-to (globals.css).
-  // Canvas can't read CSS custom properties, so the hex is duplicated here; keep
-  // it in sync if the brand tokens change.
+  const brandDeep   = token('--ramp-brand-deep',  '#714709')
+  const brandBright = token('--ramp-brand-bright', '#945E0F')
+  const brandSoft   = token('--ramp-brand-soft',  '#FCECD6')
+  const brandInk    = token('--ramp-brand-ink',   '#88550A')
+
   const bg = ctx.createLinearGradient(0, 0, W, H)
-  bg.addColorStop(0, '#B45309')
-  bg.addColorStop(1, '#C2410C')
+  bg.addColorStop(0, brandBright)
+  bg.addColorStop(1, brandDeep)
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, W, H)
 
@@ -73,7 +88,7 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
   ctx.font = '700 64px Vazirmatn, sans-serif'
   ctx.fillText('🌟 آفرین 🌟', cx, 430)
   ctx.font = '700 56px Vazirmatn, sans-serif'
-  ctx.fillStyle = '#ea580c'
+  ctx.fillStyle = brandInk
   ctx.fillText(`«${s.child.name}»`, cx, 520)
   ctx.fillStyle = '#1f2937'
   ctx.font = '500 44px Vazirmatn, sans-serif'
@@ -91,16 +106,16 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
   let px = cx - totalW / 2
   const py = 680
   for (const [emoji, num, label] of stats) {
-    ctx.fillStyle = '#fff7ed'
+    ctx.fillStyle = brandSoft
     roundRect(ctx, px, py, pillW, 230, 40)
     ctx.fill()
     const m = px + pillW / 2
     ctx.font = '90px sans-serif'
     ctx.fillText(emoji, m, py + 100)
-    ctx.fillStyle = '#ea580c'
+    ctx.fillStyle = brandInk
     ctx.font = '700 64px Vazirmatn, sans-serif'
     ctx.fillText(num, m, py + 165)
-    ctx.fillStyle = '#6b7280'
+    ctx.fillStyle = '#475569'   // parent-muted; 7.6:1 on the soft pill
     ctx.font = '500 34px Vazirmatn, sans-serif'
     ctx.fillText(label, m, py + 210)
     px += pillW + gap
@@ -109,19 +124,19 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
   // Latest badge
   const badge = s.recent_badges?.[0]?.badge
   if (badge) {
-    ctx.fillStyle = '#fef3c7'
+    ctx.fillStyle = brandSoft
     roundRect(ctx, 140, 960, W - 280, 110, 40)
     ctx.fill()
-    ctx.fillStyle = '#92400e'
+    ctx.fillStyle = brandInk
     ctx.font = '500 40px Vazirmatn, sans-serif'
     ctx.fillText(`🏆  ${badge.title}`, cx, 1028)
   }
 
   // Branding footer
-  ctx.fillStyle = '#9ca3af'
+  ctx.fillStyle = '#475569'
   ctx.font = '500 36px Vazirmatn, sans-serif'
   ctx.fillText('کودک‌بوک · KoodakBook', cx, H - 150)
-  ctx.fillStyle = '#cbd5e1'
+  ctx.fillStyle = '#64748B'
   ctx.font = '500 30px Vazirmatn, sans-serif'
   ctx.fillText('یادگیری فارسی برای کودکان', cx, H - 100)
 }
@@ -196,36 +211,34 @@ export default function SharePage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-gray-400 persian-text">در حال بارگذاری...</div>
+    <div className="min-h-screen flex items-center justify-center bg-parent-bg">
+      <div className="text-parent-muted persian-text">در حال بارگذاری...</div>
     </div>
   )
 
   if (!summary) return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-slate-50">
-        {/* EMOJI-CONTENT: empty-state portrait, wants real art. */}
-        <div className="text-6xl">👶</div>
-        <p className="text-gray-600 font-medium text-center persian-text">هنوز پیشرفتی برای اشتراک‌گذاری نیست</p>
-        <Link href="/parent/dashboard" className="text-amber-600 font-bold">برگشت به داشبورد</Link>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-parent-bg">
+        <span
+          className="w-16 h-16 rounded-full grid place-items-center"
+          style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}
+          aria-hidden="true"
+        >
+          <Icon name="progress" size="xl" />
+        </span>
+        <p className="text-parent-text font-medium text-center persian-text">هنوز پیشرفتی برای اشتراک‌گذاری نیست</p>
+        <Link href="/parent/dashboard" className="font-bold" style={{ color: 'var(--ramp-brand-ink)' }}>
+          برگشت به داشبورد
+        </Link>
       </div>
   )
 
   return (
-      <div className={`min-h-screen bg-slate-50 pb-20 ${containerWidths.app}`}>
-        {/* Header */}
-        <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
-          <Link
-            href="/parent/dashboard"
-            aria-label="برگشت"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-          </Link>
-          <div>
-            <h1 className="font-bold text-xl text-slate-800">کارت پیشرفت</h1>
-            <p className="text-sm text-slate-500 mt-0.5 inline-flex items-center gap-1.5">برای پدربزرگ و مادربزرگ بفرست<Icon name="love" size="xs" className="text-rose-400 fill-rose-400" /></p>
-          </div>
-        </div>
+      <div className={`min-h-screen bg-parent-bg pb-20 ${containerWidths.app}`}>
+        <PageHeader
+          title="کارت پیشرفت"
+          subtitle="برای پدربزرگ و مادربزرگ بفرست"
+          back="/parent/dashboard"
+        />
 
         <div className="px-4 pt-6 flex flex-col items-center gap-5">
           {/* Card preview */}
@@ -235,7 +248,7 @@ export default function SharePage() {
             height={H}
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-xs rounded-lg shadow-raised"
+            className="w-full max-w-xs rounded-xl shadow-raised"
             role="img"
             aria-label={`کارت پیشرفت ${summary.child.name}`}
           />
@@ -244,7 +257,8 @@ export default function SharePage() {
             <motion.button
               onClick={handleShare}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-raised min-h-[56px] flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl text-white font-bold text-lg min-h-[56px] flex items-center justify-center gap-2"
+              style={{ background: 'var(--ramp-brand-bright)' }}
             >
               <Icon name="share" size="md" />
               به اشتراک بگذار
@@ -252,12 +266,14 @@ export default function SharePage() {
             <motion.button
               onClick={handleDownload}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-3.5 rounded-md border-2 border-slate-200 text-slate-600 font-bold min-h-[52px] flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-xl border border-slate-200 bg-parent-surface text-parent-text font-bold min-h-[52px] flex items-center justify-center gap-2"
             >
               <Icon name="save" size="md" />
               ذخیره تصویر
             </motion.button>
-            {note && <p className="text-center text-green-600 text-sm font-medium">{note}</p>}
+            {/* aria-live: the download itself is invisible on desktop, so this
+                line is the whole confirmation. */}
+            <p aria-live="polite" className="text-center text-emerald-700 text-sm font-medium min-h-[20px]">{note}</p>
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { api } from '@/lib/api'
 import { clearToken, lockParent } from '@/lib/auth'
 import { getActiveChildId, setActiveChildId } from '@/lib/activeChild'
@@ -11,6 +10,7 @@ import { TRANSLATION_LANGS } from '@koodakbook/shared'
 import { getTranslationLang, setTranslationLang } from '@/lib/translation'
 import { containerWidths } from '@/components/shared/layout'
 import { Icon } from '@/components/icons'
+import { PageHeader, Group, NavRow } from '@/components/parent/flat'
 
 const GOAL_KEY = 'koodakbook_daily_goal_min'
 
@@ -137,32 +137,17 @@ export default function SettingsPage() {
   }
 
   return (
-      <div className={`min-h-screen bg-slate-50 ${containerWidths.app}`}>
-
-        {/* Header */}
-        <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
-          <Link
-            href="/parent/dashboard"
-            aria-label="برگشت به داشبورد"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </Link>
-          <h1 className="font-bold text-xl text-slate-800">تنظیمات</h1>
-        </div>
+      <div className={`min-h-screen bg-parent-bg ${containerWidths.app}`}>
+        <PageHeader title="تنظیمات" back="/parent/dashboard" backLabel="برگشت به داشبورد" />
 
         <div className="px-4 pt-5 space-y-4">
 
           {/* Learning settings */}
-          <section aria-labelledby="learning-settings-title">
-            <h2 id="learning-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">تنظیمات یادگیری</h2>
-            <div className="bg-white rounded-md shadow-card overflow-hidden">
+          <Group title="تنظیمات یادگیری" id="learning-settings-title">
 
               {/* Daily goal */}
               <div className="px-5 py-4 border-b border-slate-100">
-                <p className="font-medium text-slate-800 mb-3 text-sm">هدف روزانه</p>
+                <p className="font-medium text-parent-text mb-3 text-sm">هدف روزانه</p>
                 <div className="flex gap-2 flex-wrap">
                   {DAILY_GOALS.map(g => (
                     <button
@@ -171,9 +156,10 @@ export default function SettingsPage() {
                       aria-pressed={dailyGoal === g.value}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors min-h-[36px] ${
                         dailyGoal === g.value
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'text-white'
+                          : 'bg-slate-100 text-parent-text hover:bg-slate-200'
                       }`}
+                      style={dailyGoal === g.value ? { background: 'var(--ramp-brand-bright)' } : undefined}
                     >
                       {g.label}
                     </button>
@@ -186,14 +172,14 @@ export default function SettingsPage() {
                   demand and cached. */}
               <div className="px-5 py-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium text-slate-800 text-sm">زبان ترجمه‌ی داستان‌ها</p>
-                  <p className="text-xs text-slate-400 mt-0.5">زیر متن فارسی نمایش داده می‌شود</p>
+                  <p className="font-medium text-parent-text text-sm">زبان ترجمه‌ی داستان‌ها</p>
+                  <p className="text-xs text-parent-muted mt-0.5">زیر متن فارسی نمایش داده می‌شود</p>
                 </div>
                 <select
                   value={transLang}
                   onChange={e => handleLangChange(e.target.value)}
                   aria-label="زبان ترجمه"
-                  className="shrink-0 border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:border-amber-400"
+                  className="shrink-0 min-h-[44px] border border-slate-200 rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text focus:outline-none focus:ring-2"
                 >
                   <option value="none">خاموش</option>
                   {TRANSLATION_LANGS.map(l => (
@@ -201,25 +187,22 @@ export default function SettingsPage() {
                   ))}
                 </select>
               </div>
-            </div>
-          </section>
+          </Group>
 
           {/* Voice recording — its own section, not a row inside «تنظیمات
               یادگیری». Consent to record a child is not the same kind of
               decision as picking a daily goal, and burying it next to one
               would misrepresent what is being agreed to. */}
-          <section aria-labelledby="voice-settings-title">
-            <h2 id="voice-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">صدای کودک</h2>
-            <div className="bg-white rounded-md shadow-card">
+          <Group title="صدای کودک" id="voice-settings-title">
               <div className="px-5 py-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium text-slate-800 text-sm">ضبط صدای کتاب‌خواندن</p>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <p className="font-medium text-parent-text text-sm">ضبط صدای کتاب‌خواندن</p>
+                  <p className="text-xs text-parent-muted mt-1 leading-relaxed">
                     بعد از هر داستان، کودک می‌تواند آن را با صدای خودش بخواند و شما بعداً گوش بدهید.
                   </p>
                   {/* Everything the parent is agreeing to, stated before they
                       agree — not in a privacy page they will never open. */}
-                  <ul className="text-xs text-slate-400 mt-2 space-y-1 leading-relaxed list-disc pr-4">
+                  <ul className="text-xs text-parent-muted mt-2 space-y-1 leading-relaxed list-disc pr-4">
                     <li>صداها فقط برای شما پخش می‌شود و برای کسی فرستاده نمی‌شود.</li>
                     <li>هر ضبط پس از ۳۰ روز خودکار پاک می‌شود، مگر آن را نگه دارید.</li>
                     <li>هر وقت خاموش کنید، ضبط تازه انجام نمی‌شود.</li>
@@ -232,9 +215,11 @@ export default function SettingsPage() {
                   disabled={voiceBusy}
                   onClick={() => toggleVoice(!voiceConsent)}
                   className={`shrink-0 w-[52px] h-[32px] rounded-full p-1 transition-colors disabled:opacity-50 ${
-                    voiceConsent ? 'btn-brand' : 'bg-slate-300'
+                    voiceConsent ? 'btn-brand' : 'bg-slate-400'
                   }`}
                 >
+                  {/* slate-400, not slate-300: "off" still has to be visible
+                      against a white card, and the old track was 1.6:1. */}
                   <span className={`block w-6 h-6 rounded-full bg-white shadow-card transition-transform ${
                     voiceConsent ? '-translate-x-5' : ''
                   }`} />
@@ -242,20 +227,13 @@ export default function SettingsPage() {
               </div>
               {voiceConsent && (
                 <div className="border-t border-slate-100">
-                  <Link href="/parent/recordings"
-                    className="px-5 py-3.5 flex items-center justify-between gap-3 min-h-[52px] hover:bg-slate-50 transition-colors">
-                    <span className="text-sm font-medium text-slate-800">صداهای ضبط‌شده</span>
-                    <Icon name="back" size="sm" />
-                  </Link>
+                  <NavRow label="صداهای ضبط‌شده" href="/parent/recordings" />
                 </div>
               )}
-            </div>
-          </section>
+          </Group>
 
           {/* Children */}
-          <section aria-labelledby="children-title">
-            <h2 id="children-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">کودکان</h2>
-            <div className="bg-white rounded-md shadow-card divide-y divide-slate-100">
+          <Group title="کودکان" id="children-title" className="divide-y divide-slate-100">
               {children.map(c => (
                 <div key={c.id} className="px-5 py-4">
                   <button
@@ -263,27 +241,29 @@ export default function SettingsPage() {
                     className="w-full flex items-center justify-between text-right min-h-[32px]"
                     aria-pressed={c.id === activeId}
                   >
-                    <span className="font-medium text-slate-800 text-sm">{c.name}</span>
+                    <span className="font-medium text-parent-text text-sm">{c.name}</span>
                     {c.id === activeId
-                      ? <span className="text-xs text-white bg-amber-500 px-2 py-0.5 rounded-full">فعال</span>
-                      : <span className="text-xs text-slate-400">انتخاب</span>}
+                      ? <span className="text-xs text-white px-2 py-0.5 rounded-full"
+                          style={{ background: 'var(--ramp-brand-bright)' }}>فعال</span>
+                      : <span className="text-xs text-parent-muted">انتخاب</span>}
                   </button>
                   {/* Kid-login username: the child types just this on «ورود بچه‌ها» */}
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="text-[11px] text-slate-400 shrink-0">اسم ورود کودک:</span>
+                    <span className="text-[11px] text-parent-muted shrink-0">اسم ورود کودک:</span>
                     <input
                       value={unameDraft[c.id] ?? c.username ?? ''}
                       onChange={e => setUnameDraft(d => ({ ...d, [c.id]: e.target.value }))}
                       placeholder="مثلاً sara2018"
                       dir="ltr"
-                      className="ltr flex-1 min-w-0 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-amber-400"
+                      className="ltr flex-1 min-w-0 min-h-[36px] bg-parent-surface text-parent-text border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2"
                     />
                     <button onClick={() => saveUsername(c.id)}
-                      className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg px-3 py-1.5 shrink-0">
+                      className="text-xs font-bold rounded-lg px-3 py-1.5 min-h-[36px] shrink-0"
+                      style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}>
                       ذخیره
                     </button>
                   </div>
-                  {unameMsg[c.id] && <p className="text-[11px] text-slate-500 mt-1">{unameMsg[c.id]}</p>}
+                  {unameMsg[c.id] && <p aria-live="polite" className="text-[11px] text-parent-muted mt-1">{unameMsg[c.id]}</p>}
 
                   {/* Picture password (mig 059): 3-tap alternative to typing
                       the username above — for a child who can't type/read
@@ -291,22 +271,23 @@ export default function SettingsPage() {
                       parent PIN check (design: docs/child-login-security.md). */}
                   <div className="mt-3 pt-3 border-t border-slate-100">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-slate-400">رمز تصویری (۳ شخصیت):</span>
+                      <span className="text-[11px] text-parent-muted">رمز تصویری (۳ شخصیت):</span>
                       {c.picture_password ? (
                         <button onClick={() => clearPicturePassword(c.id)}
-                          className="text-xs font-bold text-slate-400 hover:text-red-500">حذف</button>
+                          className="text-xs font-bold text-parent-muted hover:text-rose-700 min-h-[36px] px-2">حذف</button>
                       ) : (
                         <button onClick={() => openPicturePassword(c.id)}
-                          className="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg px-3 py-1.5">
+                          className="text-xs font-bold rounded-lg px-3 py-1.5 min-h-[36px]"
+                          style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}>
                           تنظیم رمز تصویری
                         </button>
                       )}
                     </div>
-                    {pwMsg[c.id] && <p className="text-[11px] text-slate-500 mt-1">{pwMsg[c.id]}</p>}
+                    {pwMsg[c.id] && <p aria-live="polite" className="text-[11px] text-parent-muted mt-1">{pwMsg[c.id]}</p>}
 
                     {pwOpenFor === c.id && (
                       <div className="mt-3">
-                        <p className="text-[11px] text-slate-400 mb-2">
+                        <p className="text-[11px] text-parent-muted mb-2">
                           ۳ شخصیت را به ترتیبی که کودک باید بزند لمس کنید ({pwPicked.length}/۳)
                         </p>
                         <div className="grid grid-cols-5 gap-2">
@@ -315,7 +296,7 @@ export default function SettingsPage() {
                               key={ch.slug}
                               onClick={() => pickForPicturePassword(c.id, ch.slug)}
                               disabled={pwPicked.includes(ch.slug)}
-                              className="bg-slate-50 rounded-xl p-1 hover:bg-amber-50 disabled:opacity-30 transition-colors"
+                              className="bg-parent-bg rounded-xl p-1 hover:brightness-95 disabled:opacity-30 transition-all"
                               aria-label={ch.name_persian}
                             >
                               <CharacterAvatar slug={ch.slug} size={44} />
@@ -323,105 +304,67 @@ export default function SettingsPage() {
                           ))}
                         </div>
                         <button onClick={() => setPwOpenFor(null)}
-                          className="mt-2 text-[11px] text-slate-400 hover:text-amber-600">انصراف</button>
+                          className="mt-2 min-h-[36px] text-[11px] text-parent-muted hover:text-parent-text">انصراف</button>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
-              <Link
-                href="/parent/conversations"
-                className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px]"
-              >
-                <span className="font-medium text-slate-800 text-sm">گفت‌وگوهای کودک با شخصیت‌ها</span>
-                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-              <Link
-                href="/onboarding"
-                className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px] text-amber-700"
-              >
-                <span className="font-medium text-sm">+ افزودن کودک</span>
-                <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-            </div>
-          </section>
+              <NavRow label="گفت‌وگوهای کودک با شخصیت‌ها" href="/parent/conversations" />
+              <NavRow label="افزودن کودک" href="/onboarding" tone="brand" />
+          </Group>
 
           {/* Subscription */}
-          <section aria-labelledby="plan-section-title">
-            <h2 id="plan-section-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">اشتراک</h2>
-            <div className="bg-white rounded-md shadow-card">
-              <Link
-                href="/parent/plan"
-                className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors min-h-[56px]"
-              >
-                <span className="font-medium text-slate-800 text-sm">پلن و اشتراک</span>
-                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-            </div>
-          </section>
+          <Group title="اشتراک" id="plan-section-title">
+            <NavRow label="پلن و اشتراک" href="/parent/plan" />
+          </Group>
 
           {/* Account settings */}
-          <section aria-labelledby="account-settings-title">
-            <h2 id="account-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">حساب کاربری</h2>
-            <div className="bg-white rounded-md shadow-card divide-y divide-slate-100">
+          <Group title="حساب کاربری" id="account-settings-title" className="divide-y divide-slate-100">
               {email && (
                 <div className="flex items-center gap-3 px-5 py-4">
-                  <span className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-sm font-bold shrink-0" aria-hidden="true">
+                  <span className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                    style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }} aria-hidden="true">
                     {email[0].toUpperCase()}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs text-slate-400">وارد شده به عنوان</p>
-                    <p className="font-medium text-slate-800 text-sm truncate ltr text-left" dir="ltr">{email}</p>
+                    <p className="text-xs text-parent-muted">وارد شده به عنوان</p>
+                    <p className="font-medium text-parent-text text-sm truncate ltr text-left" dir="ltr">{email}</p>
                   </div>
                 </div>
               )}
-              <button
-                onClick={resetParentPin}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors text-right min-h-[56px]"
-              >
-                <span className="font-medium text-slate-800 text-sm">تغییر پین والدین</span>
-                <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
+              <NavRow label="تغییر پین والدین" onClick={resetParentPin} />
 
               {!logoutConfirm ? (
                 <button
                   onClick={() => setLogoutConfirm(true)}
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-red-50 transition-colors text-red-500 text-right min-h-[56px]"
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-rose-50 transition-colors text-rose-700 text-right min-h-[56px]"
                 >
                   <span className="font-medium text-sm">خروج از حساب</span>
-                  <Icon name="seeAll" size="sm" />
+                  <Icon name="logout" size="sm" />
                 </button>
               ) : (
                 <div className="px-5 py-4">
-                  <p className="text-sm text-slate-600 mb-3 persian-text">مطمئنید که می‌خواهید خارج شوید؟</p>
+                  <p className="text-sm text-parent-text mb-3 persian-text">مطمئنید که می‌خواهید خارج شوید؟</p>
                   <div className="flex gap-3">
                     <button
                       onClick={handleLogout}
-                      className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
+                      className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
                     >
                       بله، خروج
                     </button>
                     <button
                       onClick={() => setLogoutConfirm(false)}
-                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-parent-text font-bold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
                     >
                       انصراف
                     </button>
                   </div>
                 </div>
               )}
-            </div>
-          </section>
+          </Group>
 
-          <p className="text-center text-xs text-slate-400 pb-8">KoodakBook v0.1.0</p>
+          <p className="text-center text-xs text-parent-muted pb-8">KoodakBook v0.1.0</p>
         </div>
       </div>
   )

@@ -138,3 +138,64 @@ export function PageHeader({
     </header>
   )
 }
+
+/** A labelled group of rows — the settings idiom. The label is a real <h2>
+ *  tied to the list with aria-labelledby, not a styled <p>: a parent using a
+ *  screen reader navigates a settings screen by heading. */
+export function Group({
+  title, id, children, className = '',
+}: {
+  title: string; id: string; children: ReactNode; className?: string
+}) {
+  return (
+    <section aria-labelledby={id}>
+      <h2 id={id} className="text-xs font-bold text-parent-muted uppercase tracking-wide mb-2 px-1">
+        {title}
+      </h2>
+      <div className={`bg-parent-surface border border-slate-200 rounded-xl overflow-hidden ${className}`}>
+        {children}
+      </div>
+    </section>
+  )
+}
+
+/** One row inside a Group that goes somewhere. `href` renders a link, `onClick`
+ *  a button — the distinction matters for keyboard and for middle-click, and
+ *  this screen previously used a <button> for one navigation and a <Link> for
+ *  the next with no difference in behaviour intended.
+ *
+ *  The chevron points LEFT: in an RTL layout, forward is left. It is the icon
+ *  set's `forward`, not a hand-drawn path, so it can never disagree with the
+ *  back chevron in PageHeader. */
+export function NavRow({
+  label, href, onClick, tone = 'default', value,
+}: {
+  label: string
+  href?: string
+  onClick?: () => void
+  /** `danger` for a destructive row; `brand` for the one additive action. */
+  tone?: 'default' | 'brand' | 'danger'
+  value?: ReactNode
+}) {
+  const tint =
+    tone === 'danger' ? 'text-rose-700 hover:bg-rose-50'
+    : tone === 'brand' ? 'hover:bg-slate-50'
+    : 'text-parent-text hover:bg-slate-50'
+
+  const inner = (
+    <>
+      <span className="font-medium text-sm" style={tone === 'brand' ? { color: 'var(--ramp-brand-ink)' } : undefined}>
+        {label}
+      </span>
+      <span className="flex items-center gap-2 text-parent-muted shrink-0">
+        {value}
+        <Icon name="forward" size="sm" />
+      </span>
+    </>
+  )
+  const cls = `w-full flex items-center justify-between gap-3 px-5 py-4 min-h-[56px] text-right transition-colors ${tint}`
+
+  return href
+    ? <Link href={href} className={cls}>{inner}</Link>
+    : <button onClick={onClick} className={cls}>{inner}</button>
+}
