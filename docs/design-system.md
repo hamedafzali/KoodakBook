@@ -103,7 +103,9 @@ The child app and the parent app are deliberately different materials.
   for directing a pre-reader's attention), `Stat` (a number on a ramp's `soft`
   in its `ink`), `FlatBar` (thinner than `ClayBar`, eased not sprung).
   `.btn-brand` is the one filled action; it uses `--ramp-brand-bright` because
-  `bg-amber-500`/`-600` with white text measure 2.5:1 and 3.2:1.
+  `bg-amber-500`/`-600` with white text measure 2.5:1 and 3.2:1. The kit is
+  `Panel`, `Stat`, `FlatBar`, `PageHeader`, `Group`, `NavRow` — a parent screen
+  should need nothing outside them.
 
 This is not inconsistency. A parent checking progress at 11pm and a
 five-year-old choosing a story are different users, and one surface cannot
@@ -184,15 +186,31 @@ plan/conversations/share/ParentNav, and brought the few off-token radii
 `--radius-sm/md/lg/xl` in globals.css — a *different* scale from the child
 app's kit.tsx radii, not to be conflated). Also fixed share's canvas card,
 which was still drawing the pre-contrast-pass 3-stop brand gradient.
-🟡 parent app: `components/parent/flat.tsx` now exists (Panel/Stat/FlatBar) and
-the **dashboard** is re-cut onto it — the page opens with a sentence built from
-data that can support the claim (`lib/parentHeadline.ts`), then three numbers
-(stories finished / words that survived spaced repetition / days in a row),
-then one action; everything else is demoted under a «جزئیات» heading. Minutes-
-in-app is deliberately not a headline number, but the daily-minutes goal is
-**demoted, not deleted** — `koodakbook_daily_goal_min` is still editable in
-/parent/settings, so it keeps a display. Remaining parent screens
-(progress/friends/settings/plan/conversations/share) still hand-roll markup.
+✅ parent app (2026-09): all eight screens are on `components/parent/flat.tsx`.
+The **dashboard** sets the shape — it opens with a sentence built from data that
+can support the claim (`lib/parentHeadline.ts`), then three numbers (stories
+finished / words that survived spaced repetition / days in a row), then one
+action; everything else is demoted under a «جزئیات» heading. Minutes-in-app is
+deliberately not a headline number, but the daily-minutes goal is **demoted,
+not deleted** — `koodakbook_daily_goal_min` is still editable in
+/parent/settings, so it keeps a display.
+
+The kit grew three primitives while finishing the migration, each because the
+same markup had been hand-written on five or six screens: `PageHeader` (the
+back bar — four screens drew its chevron as an inline `<svg>`, and friends/
+pointed it **left** while everything else pointed right, which in an RTL app
+sends the reader the wrong way), `Group` (a labelled row list whose label is a
+real `<h2>` tied to the list, because a parent on a screen reader navigates
+settings by heading) and `NavRow` (`<Link>` for `href`, `<button>` for
+`onClick` — settings had been mixing the two with no difference intended).
+
+Three contrast defects came out of the pass: `text-slate-400` metadata,
+everywhere, at 2.34:1 on the parent ground; the consent switch's slate-300
+off-track at 1.6:1, which made "off" barely a state; and `text-parent-ink`, a
+class that does not exist — `--color-parent-*` defines bg/surface/text/muted
+only, and because it lives in an `@theme inline` block the class emitted
+nothing at all rather than failing loudly. Confirmed by grepping the built CSS;
+worth remembering as the failure mode of that block.
 ✅ child home is a path, not a menu (2026-09): `/child/home` now renders at most
 three rungs — what was just finished, the one step to take now, what comes next
 (locked) — plus the reprobe card, friends, the full alphabet row, an optional
