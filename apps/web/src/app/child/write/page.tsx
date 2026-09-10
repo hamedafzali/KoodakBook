@@ -44,7 +44,7 @@ export default function WritePage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="تمرین نوشتن" subtitle={`حرف ${idx + 1} از ${letters.length}`} gradientClass="from-blue-400 to-cyan-500" />
+      <PageHeader title="تمرین نوشتن" subtitle={`حرف ${idx + 1} از ${letters.length}`} module="write" />
 
       {/* pb-44: clears BOTH fixed bars below (the action bar + BottomNav),
           not just BottomNav's own .pb-nav reserve — see the action bar's
@@ -56,8 +56,8 @@ export default function WritePage() {
             className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[44px]"
             aria-label={`بشنو: ${letter.name_persian}`}
           >
-            <span className="text-2xl font-bold text-gray-800">{letter.character}</span>
-            <span className="text-gray-500">{letter.name_persian}</span>
+            <span className="text-2xl font-bold text-slate-800">{letter.character}</span>
+            <span className="text-slate-600">{letter.name_persian}</span>
             <span className="text-amber-500"><Icon name="listen" size="md" /></span>
           </button>
         </div>
@@ -79,7 +79,7 @@ export default function WritePage() {
             onClick={() => { playTap(); setIdx(i => Math.max(0, i - 1)) }}
             disabled={idx === 0}
             whileTap={{ scale: 0.94 }}
-            className="flex-1 py-4 rounded-2xl border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px]"
+            className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold disabled:opacity-30 min-h-[56px]"
           >
             → قبلی
           </motion.button>
@@ -183,7 +183,7 @@ function TracingCanvas({ letter }: { letter: string }) {
         onClick={clear}
         whileTap={{ scale: 0.94 }}
         className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px] ${
-          hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-400'
+          hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
         }`}
       >
         <Icon name="retry" size="sm" /> پاک کن

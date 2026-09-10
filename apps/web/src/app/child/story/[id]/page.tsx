@@ -135,8 +135,8 @@ export default function StoryPage() {
           <Mascot size={120} mood="excited" />
         </motion.div>
         <p className="flex justify-center text-amber-500"><Icon name="celebrate" size="lg" /></p>
-        <h1 className="text-2xl font-bold text-gray-800">محتوای جدید باز شد!</h1>
-        <p className="text-gray-500 persian-text">داستان‌ها و درس‌های تازه در خانه منتظرت هستند</p>
+        <h1 className="text-2xl font-bold text-slate-800">محتوای جدید باز شد!</h1>
+        <p className="text-slate-600 persian-text">داستان‌ها و درس‌های تازه در خانه منتظرت هستند</p>
       </div>
     )
   }

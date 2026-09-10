@@ -10,6 +10,7 @@ import { pickChild } from '@/lib/activeChild'
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
+import { clayVars } from '@/components/child/clay'
 import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 import MarpeleBoard, { Confetti, Dice } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
@@ -227,12 +228,13 @@ export default function MarpeleOnlinePage() {
         <span className={endReason === 'won' ? 'text-amber-500' : 'text-slate-400'}>
           <Icon name={endReason === 'won' ? 'rewards' : 'random'} size={96} strokeWidth={1.5} />
         </span>
-        <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
+        <h1 className="text-3xl font-bold text-slate-800">{title}</h1>
         <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
           <motion.button
             onClick={() => setPhase('lobby')}
             whileTap={{ scale: 0.96 }}
-            className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card"
+            style={clayVars('games')}
+            className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]"
           >
             بازی دوباره
           </motion.button>
@@ -245,7 +247,7 @@ export default function MarpeleOnlinePage() {
   if (phase === 'lobby' || phase === 'waiting') {
     return (
       <div className="min-h-screen child-bg pb-nav">
-        <PageHeader title="بازی آنلاین" subtitle="یک دوست آنلاین را برای بازی دعوت کن" onBack={() => router.push('/child/games/marpele')} gradientClass="from-sky-500 to-blue-500" />
+        <PageHeader title="بازی آنلاین" subtitle="یک دوست آنلاین را برای بازی دعوت کن" onBack={() => router.push('/child/games/marpele')} module="games" />
 
         <div className="px-4 pt-4 max-w-md mx-auto flex flex-col gap-3">
           {notice && <p className="text-center text-sm font-medium text-amber-600 persian-text">{notice}</p>}
@@ -253,7 +255,7 @@ export default function MarpeleOnlinePage() {
           {friends.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-2.5 shadow-card">
               <span className="text-sky-500"><Icon name="partner" size="xl" /></span>
-              <p className="text-center text-sm text-gray-500 persian-text leading-6">
+              <p className="text-center text-sm text-slate-600 persian-text leading-6">
                 هنوز دوستی نداری. از حالت والدین با کد دوستی، دوست اضافه کن.
               </p>
             </div>
@@ -266,9 +268,9 @@ export default function MarpeleOnlinePage() {
                 className="flex items-center gap-2.5 bg-white rounded-2xl p-3.5 shadow-card disabled:opacity-60 text-right"
               >
                 <span className="text-2xl">🧒</span>
-                <span className="flex-1 font-bold text-gray-800">{f.name}</span>
+                <span className="flex-1 font-bold text-slate-800">{f.name}</span>
                 <span className={`w-2.5 h-2.5 rounded-full ${f.online ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                <span className={`text-xs font-medium ${f.online ? 'text-emerald-600' : 'text-gray-400'}`}>
+                <span className={`text-xs font-medium ${f.online ? 'text-emerald-600' : 'text-slate-600'}`}>
                   {f.online ? 'آنلاین — دعوت کن' : 'آفلاین'}
                 </span>
               </button>
@@ -287,10 +289,10 @@ export default function MarpeleOnlinePage() {
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               >
                 <span className="text-5xl">{invite.fromEmoji || '🧒'}</span>
-                <p className="text-center font-bold text-gray-800 persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
+                <p className="text-center font-bold text-slate-800 persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
                 <div className="flex gap-2.5">
-                  <button onClick={acceptInvite} className="bg-brand-gradient text-white font-bold rounded-xl px-6 py-3">بریم!</button>
-                  <button onClick={declineInvite} className="bg-slate-100 text-gray-700 font-bold rounded-xl px-6 py-3">نه</button>
+                  <button onClick={acceptInvite} style={clayVars('games')} className="clay text-white font-bold px-6 py-3 min-h-[48px]">بریم!</button>
+                  <button onClick={declineInvite} className="bg-slate-100 text-slate-700 font-bold rounded-xl px-6 py-3">نه</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -309,7 +311,7 @@ export default function MarpeleOnlinePage() {
       <PageHeader
         title={myTurn ? 'نوبت توست!' : `نوبت ${cur?.name}…`}
         onBack={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); router.push('/child/games/marpele') }}
-        gradientClass="from-sky-500 to-blue-500"
+        module="games"
       />
 
       <div className="px-4 pt-4 max-w-md mx-auto flex flex-col gap-4">
@@ -323,11 +325,11 @@ export default function MarpeleOnlinePage() {
                 i === current ? 'bg-sky-500 border-yellow-300' : 'bg-white border-transparent'}`}
             >
               <span className="text-lg">{TOKEN_EMOJI[i]}</span>
-              <span className={`text-xs font-bold max-w-[70px] truncate ${i === current ? 'text-white' : 'text-gray-800'}`}>
+              <span className={`text-xs font-bold max-w-[70px] truncate ${i === current ? 'text-white' : 'text-slate-800'}`}>
                 {p.childId === me.id ? 'تو' : p.name}
               </span>
               <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${
-                i === current ? 'bg-white/25 text-white' : 'bg-slate-100 text-gray-700'}`}>
+                i === current ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-700'}`}>
                 {toPersianDigits(positions[i] ?? 0)}
               </span>
             </motion.div>
@@ -378,7 +380,7 @@ export default function MarpeleOnlinePage() {
               className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col gap-3"
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             >
-              <p className="text-center font-bold text-gray-800 persian-text">
+              <p className="text-center font-bold text-slate-800 persian-text">
                 {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}
               </p>
               <QuizCard

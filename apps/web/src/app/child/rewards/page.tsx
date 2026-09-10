@@ -49,12 +49,13 @@ export default function RewardsPage() {
       <div
         // Two steps darker than shipped (500/600 → 700/800): white heading text
         // on the old pair failed WCAG AA's 4.5:1 floor (2026-09 contrast audit).
-        className="bg-gradient-to-br from-purple-700 to-violet-800 px-5 pt-10 pb-8 rounded-b-3xl text-white flex items-end justify-between"
+        className="px-5 pt-10 pb-8 rounded-b-3xl text-white flex items-end justify-between"
+        style={{ background: 'linear-gradient(to bottom right, var(--ramp-rewards-bright), var(--ramp-rewards-deep))' }}
         role="banner"
       >
         <div>
           <h1 className="text-2xl font-bold">جوایز من</h1>
-          <p className="text-purple-100 text-sm mt-1">{earned.length} از {total} جایزه</p>
+          <p className="text-white/85 text-sm mt-1">{earned.length} از {total} جایزه</p>
           {/* Progress dots */}
           <div className="flex gap-2 mt-3" role="progressbar" aria-valuenow={earned.length} aria-valuemin={0} aria-valuemax={total} aria-label={`${earned.length} از ${total} جایزه گرفته شده`}>
             {Array.from({ length: total }).map((_, i) => (
@@ -75,7 +76,7 @@ export default function RewardsPage() {
 
         {/* Outcome badges */}
         <section aria-labelledby="outcome-badges-title">
-          <h2 id="outcome-badges-title" className="font-bold text-gray-700 mb-3 text-sm">دستاوردها</h2>
+          <h2 id="outcome-badges-title" className="font-bold text-slate-700 mb-3 text-sm">دستاوردها</h2>
           <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {outcomeBadges.map(([key, def]) => {
               const isEarned = earnedKeys.has(key as BadgeKey)
@@ -93,7 +94,7 @@ export default function RewardsPage() {
 
         {/* Effort badges */}
         <section aria-labelledby="effort-badges-title">
-          <h2 id="effort-badges-title" className="font-bold text-gray-700 mb-3 text-sm">تلاش و پشتکار</h2>
+          <h2 id="effort-badges-title" className="font-bold text-slate-700 mb-3 text-sm">تلاش و پشتکار</h2>
           <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {effortBadges.map(([key, def]) => {
               const isEarned = earnedKeys.has(key as BadgeKey)
@@ -148,8 +149,8 @@ function BadgeCard({
               same lock icon as every other locked thing in the app. */}
           {isEarned ? BADGE_EMOJI[badgeKey] ?? '🏆' : <Icon name="locked" size="xl" className="text-slate-400" />}
         </motion.span>
-        <p className={`font-bold text-sm ${isEarned ? 'text-gray-800' : 'text-gray-400'}`}>{def.title}</p>
-        <p className={`text-xs ${isEarned ? 'text-gray-500' : 'text-gray-400'}`}>
+        <p className={`font-bold text-sm ${isEarned ? 'text-slate-800' : 'text-slate-600'}`}>{def.title}</p>
+        <p className={`text-xs ${isEarned ? 'text-slate-600' : 'text-slate-600'}`}>
           {isEarned ? def.description : def.hint}
         </p>
         {isEarned && (

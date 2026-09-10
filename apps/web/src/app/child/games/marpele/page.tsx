@@ -10,6 +10,7 @@ import { characterEmoji } from '@/lib/characterEmoji'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
+import { clayVars } from '@/components/child/clay'
 import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 import MarpeleBoard, { Confetti, Dice } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
@@ -112,17 +113,17 @@ function Setup({ childName, characters, onStart, onBack }: {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="مارپله" subtitle="با کی بازی می‌کنی؟" onBack={onBack} gradientClass="from-violet-500 to-purple-500" />
+      <PageHeader title="مارپله" subtitle="با کی بازی می‌کنی؟" onBack={onBack} module="games" />
 
       <div className="px-4 pt-5 max-w-md mx-auto flex flex-col gap-5">
         <section>
-          <h2 className="font-bold text-gray-700 text-sm mb-2">بازیکن‌های دیگر (خواهر و برادر)</h2>
+          <h2 className="font-bold text-slate-700 text-sm mb-2">بازیکن‌های دیگر (خواهر و برادر)</h2>
           <div className="inline-flex items-center gap-4 bg-white rounded-2xl p-2.5 shadow-card">
             <button
               onClick={() => setExtraHumans(n => Math.max(0, n - 1))}
               className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 text-xl font-bold flex items-center justify-center"
             >−</button>
-            <span className="text-xl font-bold text-gray-800 min-w-[1.5rem] text-center">{toPersianDigits(extraHumans)}</span>
+            <span className="text-xl font-bold text-slate-800 min-w-[1.5rem] text-center">{toPersianDigits(extraHumans)}</span>
             <button
               disabled={full}
               onClick={() => setExtraHumans(n => Math.min(MAX_PLAYERS - 1 - chosen.length, n + 1))}
@@ -132,7 +133,7 @@ function Setup({ childName, characters, onStart, onBack }: {
         </section>
 
         <section>
-          <h2 className="font-bold text-gray-700 text-sm mb-2">یا با دوستانت مسابقه بده</h2>
+          <h2 className="font-bold text-slate-700 text-sm mb-2">یا با دوستانت مسابقه بده</h2>
           <div className="grid grid-cols-3 gap-2.5">
             {characters.map(ch => {
               const on = chosen.includes(ch.slug)
@@ -145,21 +146,22 @@ function Setup({ childName, characters, onStart, onBack }: {
                     on ? 'bg-violet-500 border-violet-500' : 'bg-white border-transparent'} ${!on && full ? 'opacity-40' : ''}`}
                 >
                   <span className="text-2xl">{characterEmoji(ch)}</span>
-                  <span className={`text-xs font-medium truncate w-full text-center ${on ? 'text-white' : 'text-gray-700'}`}>{ch.name_persian}</span>
+                  <span className={`text-xs font-medium truncate w-full text-center ${on ? 'text-white' : 'text-slate-700'}`}>{ch.name_persian}</span>
                 </button>
               )
             })}
           </div>
         </section>
 
-        <p className="text-center text-sm text-gray-400 persian-text">
+        <p className="text-center text-sm text-slate-600 persian-text">
           {toPersianDigits(total)} بازیکن{total === 1 ? ' · تنها بازی می‌کنی' : ''}
         </p>
 
         <motion.button
           onClick={start}
           whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card"
+          style={clayVars('games')}
+          className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]"
         >
           شروع بازی
         </motion.button>
@@ -187,8 +189,8 @@ function PlayerChip({ player, square, active }: { player: Player; square: number
         active ? 'bg-violet-500 border-yellow-300' : 'bg-white border-transparent'}`}
     >
       <span className="text-lg">{player.emoji}</span>
-      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-gray-800'}`}>{player.name}</span>
-      <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-gray-700'}`}>
+      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-slate-800'}`}>{player.name}</span>
+      <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-700'}`}>
         {toPersianDigits(square)}
       </span>
     </motion.div>
@@ -316,10 +318,10 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 child-bg p-6 text-center">
         <Confetti />
         <span className="text-8xl">{childWon ? <Icon name="rewards" size={96} strokeWidth={1.5} className="text-amber-500" /> : w.emoji}</span>
-        <h1 className="text-3xl font-bold text-gray-800">{childWon ? 'تو بردی!' : `${w.name} برد!`}</h1>
-        {stars > 0 && <p className="text-gray-600 persian-text">{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</p>}
+        <h1 className="text-3xl font-bold text-slate-800">{childWon ? 'تو بردی!' : `${w.name} برد!`}</h1>
+        {stars > 0 && <p className="text-slate-700 persian-text">{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</p>}
         <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
-          <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }} className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">
+          <motion.button onClick={onReplay} whileTap={{ y: 4 }} style={clayVars('games')} className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">
             دوباره بازی کن
           </motion.button>
           <motion.button onClick={onChangePlayers} whileTap={{ scale: 0.96 }} className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
@@ -335,7 +337,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
     <div className="min-h-screen child-bg pb-nav">
       <PageHeader
         title="مارپله"
-        gradientClass="from-violet-500 to-purple-500"
+        module="games"
         rightSlot={stars > 0 ? <span className="text-sm font-bold text-amber-500">⭐ {toPersianDigits(stars)}</span> : undefined}
       />
 
@@ -370,7 +372,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
               className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col gap-3"
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             >
-              <p className="text-center font-bold text-gray-800 persian-text">
+              <p className="text-center font-bold text-slate-800 persian-text">
                 {players[challenge.playerIdx].name}:{' '}
                 {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}
               </p>

@@ -9,6 +9,7 @@ import { pickChild } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
+import { clayVars } from '@/components/child/clay'
 import Mascot from '@/components/child/Mascot'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
@@ -122,11 +123,12 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         {host ? <CharacterAvatar slug={host.slug} size={130} mood="excited" /> : <Mascot size={130} mood="excited" />}
       </motion.div>
-      <h1 className="text-3xl font-bold text-gray-800">همه را پیدا کردی!</h1>
-      <p className="text-gray-600 persian-text">با {moves} حرکت — عالی بود!</p>
+      <h1 className="text-3xl font-bold text-slate-800">همه را پیدا کردی!</h1>
+      <p className="text-slate-700 persian-text">با {moves} حرکت — عالی بود!</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">
+          style={clayVars('games')}
+          className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">
           دوباره بازی کن
         </motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
@@ -139,12 +141,12 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="بازی حافظه 🃏" subtitle="جفت هر کلمه را پیدا کن" gradientClass="from-violet-500 to-purple-500" />
+      <PageHeader title="بازی حافظه 🃏" subtitle="جفت هر کلمه را پیدا کن" module="games" />
 
       <div className="px-4 pt-5 max-w-md mx-auto">
         <div className="flex items-center justify-between mb-3 text-sm">
-          <span className="text-gray-500 persian-text">جفت‌ها: {matched.size} از {PAIRS}</span>
-          <span className="text-gray-400">حرکت: {moves}</span>
+          <span className="text-slate-600 persian-text">جفت‌ها: {matched.size} از {PAIRS}</span>
+          <span className="text-slate-600">حرکت: {moves}</span>
         </div>
 
         <div className="grid grid-cols-3 gap-2.5" dir="rtl">
@@ -165,7 +167,8 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
                   transition={{ duration: 0.4, ease: 'easeInOut' }}
                 >
                   {/* back (face-down) */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-400 to-purple-500 shadow-card flex items-center justify-center [backface-visibility:hidden]">
+                  <div className="absolute inset-0 rounded-2xl shadow-card flex items-center justify-center [backface-visibility:hidden]"
+                    style={{ background: 'linear-gradient(to bottom right, var(--ramp-games-bright), var(--ramp-games-deep))' }}>
                     <span className="text-amber-400"><Icon name="star" size="lg" className="fill-amber-400" /></span>
                   </div>
                   {/* front (word) */}
@@ -176,8 +179,8 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={card.image} alt="" className="w-full h-10 object-cover rounded-t-xl -mt-1" loading="lazy" />
                     )}
-                    <span className={`font-bold text-gray-800 persian-text leading-tight ${card.image ? 'text-base' : 'text-xl'}`}>{card.persian}</span>
-                    <span className="text-[10px] text-gray-400 ltr truncate max-w-full">{card.english}</span>
+                    <span className={`font-bold text-slate-800 persian-text leading-tight ${card.image ? 'text-base' : 'text-xl'}`}>{card.persian}</span>
+                    <span className="text-[10px] text-slate-600 ltr truncate max-w-full">{card.english}</span>
                   </div>
                 </motion.div>
               </motion.button>
@@ -185,7 +188,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
           })}
         </div>
 
-        <p className="text-center text-xs text-gray-400 persian-text mt-4">
+        <p className="text-center text-xs text-slate-600 persian-text mt-4">
           روی کارت‌ها بزن، کلمه را بشنو و جفتش را پیدا کن
         </p>
       </div>

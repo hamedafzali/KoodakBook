@@ -9,6 +9,7 @@ import { pickChild } from '@/lib/activeChild'
 import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors, sayNumber, sayPhrase } from '@/lib/persianMath'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
+import { clayVars } from '@/components/child/clay'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
@@ -89,11 +90,12 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         <Mascot size={130} mood="excited" />
       </motion.div>
-      <h1 className="text-3xl font-bold text-gray-800">چه شمارشگری!</h1>
-      <p className="text-gray-600 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا گرفتی</p>
+      <h1 className="text-3xl font-bold text-slate-800">چه شمارشگری!</h1>
+      <p className="text-slate-700 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا گرفتی</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card">دوباره</motion.button>
+          style={clayVars('math')}
+          className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">دوباره</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
           className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد</motion.button>
       </div>
@@ -102,17 +104,17 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="شمارش" subtitle="ضربه بزن و بشمار" gradientClass="from-emerald-500 to-green-500" />
+      <PageHeader title="شمارش" subtitle="ضربه بزن و بشمار" module="math" />
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-5">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-500 persian-text">مرحله {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}</span>
+          <span className="text-slate-600 persian-text">مرحله {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}</span>
           <span className="text-amber-500">{'⭐'.repeat(stars)}</span>
         </div>
 
         {/* Tap stage — big targets for small fingers */}
         <div className="bg-white rounded-2xl shadow-card p-5 min-h-[220px]">
-          <p className="text-center text-gray-600 persian-text text-sm mb-4">
+          <p className="text-center text-slate-700 persian-text text-sm mb-4">
             {allCounted ? 'حالا بگو: چند تا بود؟' : 'روی همه ضربه بزن و با من بشمار!'}
           </p>
           <div className="flex flex-wrap justify-center gap-3">
@@ -142,8 +144,8 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
             const show = picked !== null
             const cls = show
               ? n === r.count ? 'bg-green-100 border-green-400 text-green-700'
-                : n === picked ? 'bg-red-100 border-red-300 text-red-500' : 'bg-white border-gray-100 text-gray-400'
-              : 'bg-white border-gray-100 text-gray-800'
+                : n === picked ? 'bg-red-100 border-red-300 text-red-500' : 'bg-white border-slate-100 text-slate-600'
+              : 'bg-white border-slate-100 text-slate-800'
             return (
               <motion.button key={n} onClick={() => answer(n)} whileTap={{ scale: 0.94 }}
                 className={`rounded-2xl border-2 py-5 shadow-card font-bold touch-target ${cls}`}

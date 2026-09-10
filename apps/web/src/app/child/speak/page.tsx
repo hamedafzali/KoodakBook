@@ -8,6 +8,7 @@ import { pickChild } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
+import { clayVars } from '@/components/child/clay'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess } from '@/lib/sounds'
@@ -85,7 +86,7 @@ export default function SpeakPage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="تمرین گفتن" subtitle={`کلمه ${idx + 1} از ${words.length}`} gradientClass="from-rose-400 to-pink-500" />
+      <PageHeader title="تمرین گفتن" subtitle={`کلمه ${idx + 1} از ${words.length}`} module="speak" />
 
       <div className="px-4 pt-6 flex flex-col items-center gap-5">
         {!supported && (
@@ -105,8 +106,8 @@ export default function SpeakPage() {
           ) : emoji ? (
             <span className="text-7xl leading-none" aria-hidden="true">{emoji}</span>
           ) : null}
-          <span className="text-5xl font-bold text-gray-800">{word.persian}</span>
-          <span className="text-base text-gray-500 ltr">{word.english}</span>
+          <span className="text-5xl font-bold text-slate-800">{word.persian}</span>
+          <span className="text-base text-slate-600 ltr">{word.english}</span>
           <span className="flex items-center gap-1 text-xs text-amber-700"><Icon name="listen" size="xs" /> اول گوش کن</span>
         </button>
 
@@ -121,8 +122,8 @@ export default function SpeakPage() {
           {phase === 'tryagain' && (
             <motion.div key="tryagain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
               <Mascot size={90} mood="idle" />
-              <p className="font-medium text-gray-500 persian-text">دوباره امتحان کن، می‌تونی!</p>
-              {heard && <p className="text-xs text-gray-400">شنیدم: «{heard}»</p>}
+              <p className="font-medium text-slate-600 persian-text">دوباره امتحان کن، می‌تونی!</p>
+              {heard && <p className="text-xs text-slate-600">شنیدم: «{heard}»</p>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -135,22 +136,26 @@ export default function SpeakPage() {
             whileTap={{ scale: 0.9 }}
             animate={phase === 'listening' ? { scale: [1, 1.12, 1] } : { scale: 1 }}
             transition={phase === 'listening' ? { duration: 1, repeat: Infinity } : {}}
-            className={`w-24 h-24 rounded-full flex items-center justify-center shadow-raised touch-target ${
-              phase === 'listening' ? 'bg-red-500' : 'bg-gradient-to-br from-rose-400 to-pink-500'
-            }`}
+            className="w-24 h-24 rounded-full flex items-center justify-center shadow-raised touch-target text-white"
+            /* Recording is a state, not a module, so the live mic keeps a red —
+               but rose-600 rather than red-500: it has to read as "different
+               from resting" against the speak ramp beside it, and at 500 it
+               did not. */
+            style={{ background: phase === 'listening' ? 'rgb(225 29 72)' : 'var(--ramp-speak-bright)' }}
             aria-label={phase === 'listening' ? 'در حال شنیدن' : 'ضربه بزن و بگو'}
           >
             <Icon name={phase === 'listening' ? 'headphones' : 'record'} size={40} />
           </motion.button>
         )}
-        <p className="text-sm text-gray-500 persian-text">
+        <p className="text-sm text-slate-600 persian-text">
           {phase === 'listening' ? 'بگو...' : supported ? 'ضربه بزن و کلمه را بگو' : ''}
         </p>
 
         <motion.button
           onClick={nextWord}
           whileTap={{ scale: 0.95 }}
-          className="w-full max-w-sm py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-card min-h-[56px]"
+          style={clayVars('speak')}
+          className="clay w-full max-w-sm py-4 text-white font-bold text-lg min-h-[56px]"
         >
           کلمه بعدی ←
         </motion.button>

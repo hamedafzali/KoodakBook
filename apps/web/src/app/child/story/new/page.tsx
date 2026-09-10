@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import PageHeader from '@/components/child/PageHeader'
+import { clayVars } from '@/components/child/clay'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import Mascot from '@/components/child/Mascot'
 import type { Child } from '@koodakbook/shared'
@@ -68,8 +69,8 @@ export default function NewStoryPage() {
         <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-gray-800">در حال نوشتن داستان تو...</h1>
-        <p className="text-gray-500 persian-text">یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</p>
+        <h1 className="text-2xl font-bold text-slate-800">در حال نوشتن داستان تو...</h1>
+        <p className="text-slate-600 persian-text">یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</p>
         <div className="flex gap-1.5">
           {[0, 1, 2].map(i => (
             <motion.span
@@ -89,7 +90,7 @@ export default function NewStoryPage() {
       <PageHeader
         title="یک داستان برای من بساز"
         subtitle="یک موضوع انتخاب کن"
-        gradientClass="from-fuchsia-500 to-purple-600"
+        module="stories"
       />
 
       <div className="px-4 pt-6 max-w-md mx-auto">
@@ -103,11 +104,11 @@ export default function NewStoryPage() {
               onClick={() => setTheme(t.key)}
               whileTap={{ scale: 0.96 }}
               className={`flex items-center gap-3 px-4 py-4 rounded-2xl border-2 text-right transition-colors min-h-[64px] ${
-                theme === t.key ? 'border-purple-500 bg-purple-50' : 'border-gray-200 bg-white hover:border-purple-300'
+                theme === t.key ? 'border-purple-500 bg-purple-50' : 'border-slate-200 bg-white hover:border-purple-300'
               }`}
             >
               <span className="text-3xl" aria-hidden="true">{t.emoji}</span>
-              <span className={`font-bold ${theme === t.key ? 'text-purple-800' : 'text-gray-700'}`}>{t.label}</span>
+              <span className={`font-bold ${theme === t.key ? 'text-purple-800' : 'text-slate-700'}`}>{t.label}</span>
             </motion.button>
           ))}
         </div>
@@ -118,7 +119,8 @@ export default function NewStoryPage() {
           onClick={generate}
           disabled={!child}
           whileTap={{ scale: 0.97 }}
-          className="w-full mt-6 bg-gradient-to-r from-fuchsia-700 to-purple-800 text-white font-bold py-4 rounded-2xl text-lg shadow-card disabled:opacity-50 touch-target"
+          style={clayVars('stories')}
+          className="clay w-full mt-6 text-white font-bold py-4 text-lg disabled:opacity-50 touch-target min-h-[56px]"
         >
           بساز!
         </motion.button>

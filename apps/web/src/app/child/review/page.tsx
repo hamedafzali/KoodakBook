@@ -8,6 +8,7 @@ import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 import Mascot from '@/components/child/Mascot'
+import { clayVars } from '@/components/child/clay'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
@@ -104,16 +105,17 @@ export default function ReviewPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="text-3xl font-bold text-gray-800">
+        <h1 className="text-3xl font-bold text-slate-800">
           {allCaughtUp ? 'همه را مرور کردی!' : 'آفرین! مرور تمام شد'}
         </h1>
-        <p className="text-gray-500 persian-text">
+        <p className="text-slate-600 persian-text">
           {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${correct} از ${allQuestions.length} درست`}
         </p>
         <motion.button
           onClick={() => router.push('/child/home')}
           whileTap={{ scale: 0.96 }}
-          className="w-full max-w-xs bg-brand-gradient text-white font-bold py-4 rounded-2xl text-lg shadow-card"
+          style={clayVars('review')}
+          className="clay w-full max-w-xs text-white font-bold py-4 text-lg min-h-[56px]"
         >
           برگشت به خانه
         </motion.button>
@@ -131,16 +133,16 @@ export default function ReviewPage() {
           onClick={() => router.push('/child/home')}
           whileTap={{ scale: 0.85 }}
           aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-700 hover:bg-slate-100"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
         </motion.button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-gray-800 text-sm">مرور کلمه‌ها</h1>
+            <h1 className="font-bold text-slate-800 text-sm">مرور کلمه‌ها</h1>
             <span className="text-sm font-bold text-amber-600">{idx + 1}/{allQuestions.length}</span>
           </div>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-slate-200 rounded-full overflow-hidden">
             <motion.div className="h-full bg-brand-gradient rounded-full" animate={{ width: `${progress}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
           </div>
         </div>

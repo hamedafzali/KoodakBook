@@ -191,7 +191,7 @@ export default function ChildHomePage() {
   if (showPicker) {
     return (
       <div className="fixed inset-0 z-50 child-bg flex flex-col items-center justify-center p-6 gap-8">
-        <h1 className="text-2xl font-bold text-gray-800 persian-text">کی می‌خواد بازی کنه؟</h1>
+        <h1 className="text-2xl font-bold text-slate-800 persian-text">کی می‌خواد بازی کنه؟</h1>
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
             <motion.button key={c.id} onClick={() => resolveChild(c)} whileTap={{ scale: 0.94 }}
@@ -199,16 +199,18 @@ export default function ChildHomePage() {
               {/* EMOJI-CONTENT: avatar placeholder standing in for a child's own photo —
                   this is a portrait slot, not an affordance. Wants real art from
                   pixel-wizards-charachters, not a UI glyph. */}
-              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center overflow-hidden text-4xl">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden text-4xl"
+                style={{ background: 'var(--ramp-brand-soft)' }}>
                 {mediaUrl(c.avatar_url) ? <img src={mediaUrl(c.avatar_url)!} alt="" className="w-full h-full object-cover" /> : '🧒'}
               </div>
-              <span className="font-bold text-gray-800">{c.name}</span>
+              <span className="font-bold text-slate-800">{c.name}</span>
             </motion.button>
           ))}
         </div>
         <button onClick={() => router.push('/parent/dashboard')}
-          className="text-sm text-gray-500 hover:text-amber-700 transition-colors persian-text mt-2">
-          → بازگشت به پنل والدین
+          className="text-sm text-slate-600 hover:text-slate-900 transition-colors persian-text mt-2 inline-flex items-center gap-1.5 min-h-[44px]">
+          <Icon name="back" size="sm" />
+          بازگشت به پنل والدین
         </button>
       </div>
     )
@@ -221,11 +223,16 @@ export default function ChildHomePage() {
       </AnimatePresence>
 
       {/* ── Hero: greeting + mascot; stats only for older kids ── */}
-      {/* from-amber-700/to-orange-700, not the lighter -400/-500 the hero used
-          before the 2026-09 contrast audit: white greeting text + the child's
-          own name render here, and the lighter pair measured ~1.7–2.8:1 —
-          below WCAG AA even for large bold text. Matches --color-brand-from/to. */}
-      <div className="relative bg-gradient-to-b from-amber-700 to-orange-700 pt-8 pb-24 px-5 rounded-b-[2.5rem]">
+      {/* The hero was a hand-picked amber-700→orange-700 pair, chosen by eye in
+          the 2026-09 contrast audit to get white text over the AA line. It now
+          runs off the brand ramp instead: `bright` is solved to carry white
+          text with headroom, and `deep` is guaranteed darker, so the gradient
+          can't be re-tuned into a failure the next time someone reaches for a
+          cheerier step. */}
+      <div
+        className="relative pt-8 pb-24 px-5 rounded-b-[2.5rem]"
+        style={{ background: 'linear-gradient(to bottom, var(--ramp-brand-bright), var(--ramp-brand-deep))' }}
+      >
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
         <motion.span className="absolute top-6 left-16 text-xl select-none" aria-hidden="true"
@@ -285,14 +292,17 @@ export default function ChildHomePage() {
         {reprobeDue && (
           <Link href="/onboarding/placement?mode=reprobe" aria-label="بازی سیمرغ">
             <motion.div whileTap={{ scale: 0.98 }}
-              className="bg-amber-50 rounded-2xl p-4 shadow-card flex items-center gap-3 ring-2 ring-amber-200/70">
+              className="rounded-2xl p-4 shadow-card flex items-center gap-3"
+              style={{ background: 'var(--ramp-brand-soft)' }}>
               {/* EMOJI-CONTENT: Simorgh is the character the game is about. */}
               <span className="text-3xl" aria-hidden="true">🦅</span>
               <div className="flex-1">
-                <p className="font-bold text-gray-800 text-sm">بازی سیمرغ</p>
-                <p className="text-xs text-gray-500">سیمرغ دلش می‌خواد باهات بازی کنه!</p>
+                <p className="font-bold text-slate-800 text-sm">بازی سیمرغ</p>
+                <p className="text-xs text-slate-600">سیمرغ دلش می‌خواد باهات بازی کنه!</p>
               </div>
-              <span className="text-amber-400 text-xl">←</span>
+              {/* Was a bare «←» in text — a glyph the font may or may not shape,
+                  at amber-400 (2.0:1). The icon set owns the RTL direction. */}
+              <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="prev" size="md" strokeWidth={2.5} /></span>
             </motion.div>
           </Link>
         )}
@@ -307,7 +317,7 @@ export default function ChildHomePage() {
                   className={`${band === 1 ? 'w-40' : 'w-32'} bg-white rounded-2xl shadow-card flex flex-col items-center gap-1 py-3`}>
                   <CharacterAvatar slug={f.slug} size={band === 1 ? 96 : 76} mood="idle" />
                   <p className="font-bold text-slate-800 text-sm">{f.name_persian}</p>
-                  <p className="text-[10px] text-amber-600 font-medium">بیا پیشم!</p>
+                  <p className="text-[10px] font-medium" style={{ color: 'var(--ramp-brand-ink)' }}>بیا پیشم!</p>
                 </motion.div>
               </Link>
             ))}
@@ -324,8 +334,12 @@ export default function ChildHomePage() {
                 className="flex-shrink-0 snap-start">
                 <motion.div whileTap={{ scale: 0.88 }}
                   className={`${band === 1 ? 'w-24 h-28' : 'w-20 h-24'} bg-white rounded-2xl shadow-card flex flex-col items-center justify-center gap-1`}>
-                  <span className={`${band === 1 ? 'text-5xl' : 'text-4xl'} font-bold text-sky-600 leading-none`}>{l.character}</span>
-                  <span className="text-[11px] text-slate-400 persian-text">{l.name_persian}</span>
+                  {/* sky-600 was the one hue on this screen that belonged to no
+                      module at all. The alphabet is `letters`. */}
+                  <span className={`${band === 1 ? 'text-5xl' : 'text-4xl'} font-bold leading-none`}
+                    style={{ color: 'var(--ramp-letters-ink)' }}>{l.character}</span>
+                  {/* slate-400 was 2.56:1 on white. */}
+                  <span className="text-[11px] text-slate-600 persian-text">{l.name_persian}</span>
                 </motion.div>
               </button>
             ))}
@@ -341,10 +355,10 @@ export default function ChildHomePage() {
             <motion.div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3" whileTap={{ scale: 0.98 }}>
               <span style={{ color: 'var(--ramp-review-ink)' }}><Icon name="review" size="lg" strokeWidth={2.2} /></span>
               <div className="flex-1">
-                <p className="font-bold text-gray-800 text-sm">مرور امروز</p>
-                <p className="text-xs text-gray-500">{reviewWords.length} کلمه منتظر توست</p>
+                <p className="font-bold text-slate-800 text-sm">مرور امروز</p>
+                <p className="text-xs text-slate-600">{reviewWords.length} کلمه منتظر توست</p>
               </div>
-              <Icon name="prev" size="md" className="text-amber-500" />
+              <span style={{ color: 'var(--ramp-review-ink)' }}><Icon name="prev" size="md" strokeWidth={2.5} /></span>
             </motion.div>
           </Link>
         )}
@@ -359,12 +373,12 @@ export default function ChildHomePage() {
             transition={{ type: 'spring', stiffness: 500, damping: 20 }}
             className={`bg-white rounded-2xl shadow-card flex items-center gap-3 ${band === 1 ? 'p-5' : 'p-4'}`}
           >
-            <span className="text-amber-700"><Icon name="seeAll" size={band === 1 ? 'xl' : 'lg'} strokeWidth={2.2} /></span>
+            <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="seeAll" size={band === 1 ? 'xl' : 'lg'} strokeWidth={2.2} /></span>
             <div className="flex-1 min-w-0">
-              <p className={`font-bold text-gray-800 ${band === 1 ? 'text-lg' : 'text-sm'}`}>همه‌ی بخش‌ها</p>
-              <p className="text-xs text-gray-500">بازی‌ها، نوشتن، گفتن، اعداد…</p>
+              <p className={`font-bold text-slate-800 ${band === 1 ? 'text-lg' : 'text-sm'}`}>همه‌ی بخش‌ها</p>
+              <p className="text-xs text-slate-600">بازی‌ها، نوشتن، گفتن، اعداد…</p>
             </div>
-            <Icon name="prev" size="md" className="text-amber-500" />
+            <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="prev" size="md" strokeWidth={2.5} /></span>
           </motion.div>
         </Link>
       </div>
@@ -414,7 +428,7 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
 
   return (
     <section>
-      <h2 className={`font-bold text-gray-800 mb-3 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
+      <h2 className={`font-bold text-slate-800 mb-3 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
       <div className="relative">
         {/* Full-bleed on mobile (-mx-4) so tiles swipe edge-to-edge instead of
             clipping at the page padding; pt-1/px-1 give the glow ring room. */}
@@ -434,13 +448,13 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
             it can never point at nothing. */}
         {!ends.end && (
           <button onClick={() => nudge(true)} aria-label="بعدی"
-            className="flex absolute left-0 sm:-left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">
+            className="flex absolute left-0 sm:-left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-slate-700 hover:text-slate-900 hover:scale-110 active:scale-95 transition">
             <Icon name="next" size="md" strokeWidth={2.5} />
           </button>
         )}
         {!ends.start && (
           <button onClick={() => nudge(false)} aria-label="قبلی"
-            className="flex absolute right-0 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-slate-500 hover:text-amber-600 hover:scale-110 active:scale-95 transition">
+            className="flex absolute right-0 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-slate-700 hover:text-slate-900 hover:scale-110 active:scale-95 transition">
             <Icon name="prev" size="md" strokeWidth={2.5} />
           </button>
         )}
@@ -471,20 +485,36 @@ function PathRung({ state, icon, label, title, href, big, hasNext }: {
   const now = state === 'now'
   const done = state === 'done'
 
+  /* The "now" rung used a yellow-300/70 ring — a fourth accent that appeared
+   * nowhere else in the app, sitting on top of white at about 1.4:1, so the
+   * emphasis it was meant to carry mostly wasn't visible. It is the brand
+   * `bright` now: same job, same hue family as the button inside it.
+   *
+   * The off-states were gray-400 (2.56:1) and gray-500 on a 60%-white ground.
+   * These rungs are context rather than controls, but "quiet" still has to
+   * mean readable — a parent reading the screen over a child's shoulder is a
+   * real user of this list. */
   const card = (
     <div
       className={`flex-1 min-w-0 flex items-center gap-3 rounded-2xl ${
-        now
-          ? `bg-white shadow-raised ring-4 ring-yellow-300/70 ${big ? 'p-5' : 'p-4'}`
-          : 'bg-white/60 p-3'
+        now ? `bg-white ${big ? 'p-5' : 'p-4'}` : 'bg-white/60 p-3'
       }`}
+      /* Ring and lift in one declaration: an inline box-shadow replaces
+         `.shadow-raised` wholesale rather than stacking with it, so the lift
+         is spelled out here instead of being silently dropped. */
+      style={now ? {
+        boxShadow: '0 0 0 4px var(--ramp-brand-bright), 0 2px 4px rgb(15 23 42 / 0.06), 0 12px 28px rgb(245 158 11 / 0.22)',
+      } : undefined}
     >
-      <span className={`shrink-0 ${now ? 'text-amber-600' : 'text-gray-400'}`}>
-        <Icon name={done ? 'doneCircle' : now ? icon : 'locked'} size={now && big ? 'hero' : now ? 'xl' : 'md'} strokeWidth={2.2} />
+      <span className="shrink-0" style={{ color: now ? 'var(--ramp-brand-ink)' : undefined }}>
+        <span className={now ? '' : 'text-slate-500'}>
+          <Icon name={done ? 'doneCircle' : now ? icon : 'locked'} size={now && big ? 'hero' : now ? 'xl' : 'md'} strokeWidth={2.2} />
+        </span>
       </span>
       <div className="flex-1 min-w-0">
-        <p className={`font-bold ${now ? 'text-amber-600 text-sm' : 'text-gray-400 text-xs'}`}>{label}</p>
-        <p className={`font-bold truncate ${now ? (big ? 'text-2xl text-gray-800' : 'text-lg text-gray-800') : 'text-sm text-gray-500'}`}>
+        <p className={`font-bold ${now ? 'text-sm' : 'text-slate-600 text-xs'}`}
+          style={now ? { color: 'var(--ramp-brand-ink)' } : undefined}>{label}</p>
+        <p className={`font-bold truncate ${now ? (big ? 'text-2xl text-slate-800' : 'text-lg text-slate-800') : 'text-sm text-slate-700'}`}>
           {title}
         </p>
       </div>
@@ -502,11 +532,15 @@ function PathRung({ state, icon, label, title, href, big, hasNext }: {
           last rung's line is absent rather than dangling into nothing. */}
       <div className="w-4 shrink-0 flex flex-col items-center pt-5" aria-hidden="true">
         <span
-          className={`w-3 h-3 rounded-full shrink-0 ${
-            done ? 'bg-amber-500' : now ? 'bg-amber-500 ring-4 ring-amber-200' : 'bg-gray-300'
-          }`}
+          className="w-3 h-3 rounded-full shrink-0"
+          style={{
+            background: done || now ? 'var(--ramp-brand-bright)' : 'rgb(203 213 225)',
+            boxShadow: now ? '0 0 0 4px var(--ramp-brand-soft)' : undefined,
+          }}
         />
-        {(done || (now && hasNext)) && <span className="w-0.5 flex-1 bg-amber-200 mt-1" />}
+        {(done || (now && hasNext)) && (
+          <span className="w-0.5 flex-1 mt-1" style={{ background: 'var(--ramp-brand-soft)' }} />
+        )}
       </div>
 
       <div className="flex-1 min-w-0 pb-3">

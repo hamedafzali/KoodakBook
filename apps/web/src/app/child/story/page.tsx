@@ -12,7 +12,6 @@ import PageHeader from '@/components/child/PageHeader'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import EmptyState from '@/components/child/EmptyState'
 import { pickChild } from '@/lib/activeChild'
-import { ACTIVITY_GRADIENTS } from '@koodakbook/shared'
 import type { Story, Child } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
 
@@ -64,7 +63,7 @@ export default function StoryListPage() {
       <PageHeader
         title="همه داستان‌ها"
         subtitle={`${stories.length} داستان موجود است`}
-        gradientClass="from-green-400 to-emerald-500"
+        module="stories"
       />
 
       <div className="px-4 lg:px-8 pt-5">
@@ -72,7 +71,8 @@ export default function StoryListPage() {
         <Link
           href="/child/story/new"
           aria-label="یک داستان جدید برای من بساز"
-          className="flex items-center gap-3 mb-4 bg-gradient-to-r from-fuchsia-700 to-purple-800 text-white rounded-3xl p-4 shadow-card"
+          className="flex items-center gap-3 mb-4 text-white rounded-3xl p-4 shadow-card"
+          style={{ background: 'linear-gradient(to left, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}
         >
           <span className="text-fuchsia-500"><Icon name="sparkle" size="lg" /></span>
           <div className="flex-1 text-right">
@@ -86,7 +86,7 @@ export default function StoryListPage() {
             so this is the only place they can re-open them). */}
         {myStories.length > 0 && (
           <section className="mb-6" aria-label="داستان‌های من">
-            <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های من</h2>
+            <h2 className="font-bold text-slate-800 text-base mb-3">داستان‌های من</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="list">
               {myStories.map(story => {
                 const done = completed.has(story.id)
@@ -103,9 +103,10 @@ export default function StoryListPage() {
                           <Icon name="done" size="xs" /> خوندم
                         </div>
                       )}
-                      <div className="w-full h-32 bg-gradient-to-br from-fuchsia-500 to-purple-600 flex items-center justify-center text-white" aria-hidden="true"><Icon name="sparkle" size={48} strokeWidth={1.5} /></div>
+                      <div className="w-full h-32 flex items-center justify-center text-white" aria-hidden="true"
+                        style={{ background: 'linear-gradient(to bottom right, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}><Icon name="sparkle" size={48} strokeWidth={1.5} /></div>
                       <div className="px-3 pt-3">
-                        <p className="font-bold text-gray-800 text-sm leading-tight persian-text">{story.title_persian}</p>
+                        <p className="font-bold text-slate-800 text-sm leading-tight persian-text">{story.title_persian}</p>
                         <p className="text-xs text-fuchsia-500 mt-1">داستان من</p>
                       </div>
                     </Link>
@@ -124,7 +125,7 @@ export default function StoryListPage() {
         )}
 
         {myStories.length > 0 && stories.length > 0 && (
-          <h2 className="font-bold text-gray-800 text-base mb-3">داستان‌های آماده</h2>
+          <h2 className="font-bold text-slate-800 text-base mb-3">داستان‌های آماده</h2>
         )}
 
         {stories.length === 0 ? (
@@ -141,7 +142,7 @@ export default function StoryListPage() {
             role="list"
             aria-label="لیست داستان‌ها"
           >
-            {stories.map((story, idx) => {
+            {stories.map(story => {
               const done = completed.has(story.id)
               return (
                 <motion.div key={story.id} variants={item} role="listitem">
@@ -170,16 +171,23 @@ export default function StoryListPage() {
                       </div>
                     ) : (
                       <div
-                        className={`w-full h-32 bg-gradient-to-br ${ACTIVITY_GRADIENTS[idx % ACTIVITY_GRADIENTS.length]} flex items-center justify-center text-5xl`}
+                        /* Was ACTIVITY_GRADIENTS[idx % 5] — five unrelated hues
+                           dealt out by list position. A story's colour would
+                           change the moment the list reordered, so it never
+                           meant anything; and five accents on one screen is the
+                           decoration the ramps exist to replace. Every card
+                           here is a story, so every card is the stories hue. */
+                        className="w-full h-32 flex items-center justify-center text-white"
+                        style={{ background: 'linear-gradient(to bottom right, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}
                         aria-hidden="true"
                       >
                         <Icon name="stories" size="lg" />
                       </div>
                     )}
                     <div className="p-3">
-                      <p className="font-bold text-gray-800 text-sm leading-tight persian-text">{story.title_persian}</p>
+                      <p className="font-bold text-slate-800 text-sm leading-tight persian-text">{story.title_persian}</p>
                       {story.age_min && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-slate-600 mt-1">
                           {story.age_min}–{story.age_max} سال
                         </p>
                       )}
