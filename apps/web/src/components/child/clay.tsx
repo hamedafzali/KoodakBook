@@ -105,6 +105,12 @@ export function ClayButton({
 type TileProps = {
   ramp: Ramp
   icon: IconName
+  /** Same escape hatch as ClayMiniTile: when the mark IS the content the tile
+   *  teaches (the Persian digit ۴ on the numerals room), the glyph replaces the
+   *  icon. `icon` stays required because it is what the locked state and the
+   *  aria path fall back to — a tile is never left without a glyph of some
+   *  kind. Never use this to smuggle an emoji in; see components/icons.tsx. */
+  glyph?: string
   title: string
   sub?: string
   href: string
@@ -118,7 +124,7 @@ type TileProps = {
  *  and only the top face moves. Mismatch those two numbers and it reads as
  *  sliding rather than being pushed. */
 export function ClayTile({
-  ramp, icon, title, sub, href, big, locked, lockedHint,
+  ramp, icon, glyph, title, sub, href, big, locked, lockedHint,
 }: TileProps) {
   const pad = big ? 'p-5 min-h-[92px]' : 'p-4 min-h-[76px]'
 
@@ -153,7 +159,16 @@ export function ClayTile({
         {/* Toy-like sheen. Decorative: it reinforces the light direction the
             inset highlight already establishes, so the two agree. */}
         <span className="absolute -top-6 -left-6 w-20 h-20 bg-white/15 rounded-full" aria-hidden="true" />
-        <Icon name={icon} size={big ? 'hero' : 'xl'} strokeWidth={2.2} className="drop-shadow-sm" />
+        {glyph
+          ? (
+            <span
+              className={`font-bold drop-shadow-sm leading-none shrink-0 text-center ${big ? 'text-5xl w-12' : 'text-4xl w-9'}`}
+              aria-hidden="true"
+            >
+              {glyph}
+            </span>
+          )
+          : <Icon name={icon} size={big ? 'hero' : 'xl'} strokeWidth={2.2} className="drop-shadow-sm" />}
         <div className="flex-1 min-w-0">
           <p className={`font-bold drop-shadow-sm ${big ? 'text-lg' : 'text-[15px]'}`}>{title}</p>
           {sub && <p className="text-xs text-white/85 truncate mt-0.5">{sub}</p>}

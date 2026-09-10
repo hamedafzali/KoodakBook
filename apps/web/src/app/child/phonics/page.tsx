@@ -15,8 +15,16 @@ import {
   type Syllable,
 } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
+import { SectionTitle, ClayButton } from '@/components/child/kit'
+import { ClayBar, clayVars } from '@/components/child/clay'
 
 const DEMO = 'ب' // base consonant used to demonstrate each vowel mark
+
+/* Every colour on this screen is the `phonics` ramp. The three vowel marks used
+ * to carry three unrelated gradients from SHORT_VOWELS.color, which said "three
+ * different subjects" when they are three marks of one. What actually separates
+ * them — the glyph — is already the largest thing on the tile, so the hue is
+ * free to go back to meaning "this is phonics". */
 
 function playErrorSound() {
   if (typeof window === 'undefined') return
@@ -31,6 +39,20 @@ function playErrorSound() {
 
 function shuffle<T>(a: T[]): T[] { return [...a].sort(() => Math.random() - 0.5) }
 
+/* canvas-confetti wants literal colours, so this reads the ramps at call time
+ * rather than freezing three hexes that drift the moment the ramp is
+ * regenerated. Falls back to the shipped values if a token is missing. */
+function confettiColors(): string[] {
+  const css = typeof window === 'undefined' ? null : getComputedStyle(document.documentElement)
+  const pick = (name: string, fallback: string) =>
+    css?.getPropertyValue(name).trim() || fallback
+  return [
+    pick('--ramp-phonics-bright', '#f97316'),
+    pick('--ramp-rewards-bright', '#22c55e'),
+    pick('--ramp-brand-bright', '#3b82f6'),
+  ]
+}
+
 /* ── Merge stage: the blending animation IS the phonics lesson ──────────────
  * Consonant slides in, the vowel mark drops onto it, they "snap" into the
  * syllable exactly as its sound plays — seeing the merge while hearing it is
@@ -40,40 +62,49 @@ interface MergeDemo { c: string; mark: string; text: string; markName: string; r
 function MergeStage({ demo }: { demo: MergeDemo | null }) {
   const reduce = useReducedMotion()
   if (!demo) return (
-    <div className="bg-white/70 border-2 border-dashed border-amber-200 rounded-2xl h-28 flex items-center justify-center text-gray-400 persian-text text-sm">
+    <div
+      className="bg-white/80 border-2 border-dashed rounded-2xl h-28 flex items-center justify-center persian-text text-sm text-center px-4"
+      style={{ borderColor: 'var(--ramp-phonics-soft)', color: 'var(--ramp-phonics-ink)' }}
+    >
       روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود
     </div>
   )
   if (reduce) return (
     <div className="bg-white rounded-2xl h-28 shadow-card flex items-center justify-center">
-      <span className="text-6xl font-bold text-amber-600">{demo.text}</span>
+      <span className="text-6xl font-bold" style={{ color: 'var(--ramp-phonics-ink)' }}>{demo.text}</span>
     </div>
   )
   return (
     <div key={demo.run} className="bg-white rounded-2xl h-28 shadow-card relative overflow-hidden" aria-label={`ساخت هجای ${demo.text}`}>
       {/* the two parts fly together… */}
-      <motion.span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-gray-800"
+      <motion.span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-slate-800"
         initial={{ x: 70, opacity: 0 }}
         animate={{ x: [70, 8, 8], opacity: [0, 1, 0] }}
         transition={{ duration: 0.75, times: [0, 0.6, 1], ease: 'easeOut' }}>
         {demo.c}
       </motion.span>
-      <motion.span className="absolute inset-0 flex items-center justify-center text-5xl font-bold text-orange-500"
+      {/* The vowel mark is the thing being added, so it is the one element
+          allowed a different value: `bright` against the consonant's slate. */}
+      <motion.span className="absolute inset-0 flex items-center justify-center text-5xl font-bold"
+        style={{ color: 'var(--ramp-phonics-bright)' }}
         initial={{ y: -60, opacity: 0 }}
         animate={{ y: [-60, -14, -14], opacity: [0, 1, 0] }}
         transition={{ duration: 0.75, times: [0, 0.6, 1], ease: 'easeOut' }}>
         {'◌' + demo.mark}
       </motion.span>
       {/* …and snap into the syllable as the audio fires */}
-      <motion.span className="absolute inset-0 flex items-center justify-center text-7xl font-bold text-amber-600"
+      <motion.span className="absolute inset-0 flex items-center justify-center text-7xl font-bold"
+        style={{ color: 'var(--ramp-phonics-ink)' }}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: [0, 0, 1.18, 1], opacity: [0, 0, 1, 1] }}
         transition={{ duration: 1.05, times: [0, 0.55, 0.8, 1], ease: 'easeOut' }}>
         {demo.text}
       </motion.span>
       <motion.span className="absolute left-4 top-3 text-xl" initial={{ scale: 0 }}
-        animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}><Icon name="sparkle" size={40} className="text-amber-400" /></motion.span>
-      <span className="absolute right-3 bottom-2 text-[11px] text-gray-400 persian-text">{demo.markName}</span>
+        animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}>
+        <span style={{ color: 'var(--ramp-rewards-bright)' }}><Icon name="sparkle" size={40} /></span>
+      </motion.span>
+      <span className="absolute right-3 bottom-2 text-[11px] text-slate-600 persian-text">{demo.markName}</span>
     </div>
   )
 }
@@ -112,15 +143,14 @@ export default function PhonicsPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="text-3xl font-bold text-gray-800">آفرین!</h1>
-        <p className="text-gray-600 persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
+        <h1 className="text-3xl font-bold text-slate-800">آفرین!</h1>
+        <p className="text-slate-600 persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
-          <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.96 }}
-            className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-raised">
+          <ClayButton ramp="phonics" size="lg" icon="retry" onClick={() => setPhase('quiz')}>
             یک بار دیگه
-          </motion.button>
+          </ClayButton>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
-            className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
+            className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold min-h-[52px]">
             برگشت به خانه
           </motion.button>
         </div>
@@ -130,12 +160,15 @@ export default function PhonicsPage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="صداها" subtitle="زبر، زیر، پیش" gradientClass="from-orange-500 to-amber-500" />
+      <PageHeader title="صداها" subtitle="زبر، زیر، پیش" module="phonics" />
 
       <div className="px-4 pt-5 space-y-7">
-        <div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3">
+        <div
+          className="rounded-2xl p-4 flex items-center gap-3"
+          style={{ background: 'var(--ramp-phonics-soft)', color: 'var(--ramp-phonics-ink)' }}
+        >
           <Mascot size={64} mood="happy" />
-          <p className="text-gray-700 persian-text text-sm flex-1">
+          <p className="persian-text text-sm flex-1 font-medium">
             این سه نشانه به حرف‌ها صدا می‌دهند. ضربه بزن، ببین و گوش کن!
           </p>
         </div>
@@ -147,17 +180,19 @@ export default function PhonicsPage() {
 
         {/* The three marks */}
         <section>
-          <h2 className="font-bold text-gray-800 text-base mb-3">حرکت‌ها</h2>
+          <SectionTitle module="phonics">حرکت‌ها</SectionTitle>
           <div className="grid grid-cols-3 gap-3">
             {SHORT_VOWELS.map(v => {
               const syll = DEMO + v.mark
               return (
-                <motion.button key={v.key} onClick={() => demoMerge(DEMO, v.mark, v.namePersian, syll, 'b' + v.latin)} whileTap={{ scale: 0.95 }}
-                  className={`bg-gradient-to-br ${v.color} rounded-3xl p-4 text-white shadow-card flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target`}
+                <motion.button key={v.key} onClick={() => demoMerge(DEMO, v.mark, v.namePersian, syll, 'b' + v.latin)}
+                  whileTap={{ y: 4 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  style={clayVars('phonics')}
+                  className="clay p-4 text-white flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target"
                   aria-label={`${v.namePersian}: ${syll}`}>
-                  <span className="text-5xl font-bold leading-none">{syll}</span>
+                  <span className="text-5xl font-bold leading-none drop-shadow-sm">{syll}</span>
                   <span className="text-sm font-medium mt-1">{v.namePersian}</span>
-                  <span className="text-xs opacity-80 ltr">{v.latin}</span>
+                  <span className="text-xs text-white/85 ltr">{v.latin}</span>
                 </motion.button>
               )
             })}
@@ -167,9 +202,9 @@ export default function PhonicsPage() {
         {/* Syllable grids per vowel */}
         {SHORT_VOWELS.map(v => (
           <section key={v.key}>
-            <h2 className="font-bold text-gray-800 text-base mb-3">
-              با {v.namePersian} <span className="text-gray-400 text-sm ltr">({v.latin})</span>
-            </h2>
+            <SectionTitle module="phonics">
+              با {v.namePersian} <span className="text-slate-600 text-sm ltr font-medium">({v.latin})</span>
+            </SectionTitle>
             <div className="grid grid-cols-4 gap-2">
               {PHONICS_CONSONANTS.map(c => {
                 const text = c.ch + v.mark
@@ -178,8 +213,8 @@ export default function PhonicsPage() {
                   <motion.button key={slug} onClick={() => demoMerge(c.ch, v.mark, v.namePersian, text, slug)} whileTap={{ scale: 0.92 }}
                     className="bg-white rounded-2xl py-3 shadow-card flex flex-col items-center gap-0.5 touch-target"
                     aria-label={`بخوان: ${text}`}>
-                    <span className="text-3xl font-bold text-gray-800">{text}</span>
-                    <span className="text-[11px] text-gray-400 ltr">{slug}</span>
+                    <span className="text-3xl font-bold text-slate-800">{text}</span>
+                    <span className="text-[11px] text-slate-600 ltr">{slug}</span>
                   </motion.button>
                 )
               })}
@@ -187,10 +222,9 @@ export default function PhonicsPage() {
           </section>
         ))}
 
-        <motion.button onClick={() => setPhase('quiz')} whileTap={{ scale: 0.97 }}
-          className="w-full py-4 rounded-2xl bg-brand-gradient text-white font-bold text-lg shadow-raised min-h-[56px]">
+        <ClayButton ramp="phonics" size="lg" icon="listen" onClick={() => setPhase('quiz')}>
           بریم تمرین
-        </motion.button>
+        </ClayButton>
       </div>
 
       <BottomNav />
@@ -233,7 +267,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
       if (idx >= questions.length - 1) {
         if (!firedRef.current) {
           firedRef.current = true
-          confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 }, colors: ['#f97316', '#22c55e', '#3b82f6'] })
+          confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 }, colors: confettiColors() })
           playComplete()
         }
         onDone()
@@ -243,42 +277,48 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
 
   return (
     <div className="min-h-screen child-bg flex flex-col">
-      <div className="bg-white/85 backdrop-blur-md border-b border-amber-100 px-5 py-3 flex items-center gap-3">
+      <div className="bg-white/90 backdrop-blur-md border-b border-slate-100 px-5 py-3 flex items-center gap-3">
         <motion.button onClick={onExit} whileTap={{ scale: 0.85 }} aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-800 hover:bg-slate-100">
+          <Icon name="back" size="md" strokeWidth={2.5} />
         </motion.button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-gray-800 text-sm">گوش کن و انتخاب کن</h1>
-            <span className="text-sm font-bold text-amber-600">{idx + 1}/{questions.length}</span>
+            <h1 className="font-bold text-slate-800 text-sm">گوش کن و انتخاب کن</h1>
+            <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--ramp-phonics-ink)' }}>
+              {idx + 1}/{questions.length}
+            </span>
           </div>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((idx / questions.length) * 100)}
-            className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div className="h-full bg-brand-gradient rounded-full"
-              animate={{ width: `${(idx / questions.length) * 100}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
-          </div>
+          <ClayBar ramp="phonics" value={(idx / questions.length) * 100} label="پیشرفت تمرین" />
         </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-5 gap-8">
         <motion.button onClick={() => say(q.correct.text, q.correct.slug)} whileTap={{ scale: 0.9 }}
           animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-28 h-28 rounded-full bg-brand-gradient-br flex items-center justify-center shadow-raised touch-target"
+          /* The material owns its radius — a `rounded-full` class would lose to
+             the unlayered `.clay` rule, so the circle comes through the var. */
+          style={{ ...clayVars('phonics'), '--clay-radius': '9999px' } as React.CSSProperties}
+          className="clay w-28 h-28 flex items-center justify-center touch-target text-white"
           aria-label="دوباره گوش کن">
-          <span className="text-white"><Icon name="listen" size="xl" /></span>
+          <Icon name="listen" size="xl" />
         </motion.button>
-        <p className="text-gray-600 persian-text">کدام را شنیدی؟</p>
+        <p className="text-slate-700 persian-text">کدام را شنیدی؟</p>
 
         <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
           <AnimatePresence>
             {q.options.map(opt => {
               const isCorrect = opt.slug === q.correct.slug
               const show = picked !== null
+              /* Feedback greens and reds are semantic, not the module hue, so
+               * they stay outside the ramps — but at the -700 steps, where the
+               * text clears AA on its own tint (the -600/-400 pair it replaced
+               * did not). The dimmed non-answers go to slate-500 (4.8:1), not
+               * gray-400 (2.6:1) — a wrong answer still has to be readable. */
               const cls = show
-                ? isCorrect ? 'bg-green-100 border-green-400 text-green-700'
-                  : opt.slug === picked ? 'bg-red-100 border-red-300 text-red-600' : 'bg-white border-gray-100 text-gray-400'
-                : 'bg-white border-gray-100 text-gray-800'
+                ? isCorrect ? 'bg-emerald-50 border-emerald-600 text-emerald-800'
+                  : opt.slug === picked ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white border-slate-100 text-slate-500'
+                : 'bg-white border-slate-100 text-slate-800'
               return (
                 <motion.button key={opt.slug} onClick={() => choose(opt.slug)} whileTap={{ scale: 0.95 }}
                   className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target ${cls}`}

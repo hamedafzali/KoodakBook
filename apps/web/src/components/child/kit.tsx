@@ -77,13 +77,13 @@ export function IconChip({ module: m, icon, size = 'md' }: {
 
 /** Chunky activity tile — the tactile "press me" language of great kids'
  *  apps. Still exactly one hue per module, so color keeps carrying meaning. */
-export function ModuleCard({ module: m, title, sub, href, icon, big, locked, lockedHint }: {
+export function ModuleCard({ module: m, title, sub, href, icon, glyph, big, locked, lockedHint }: {
   module: ModuleKey; title: string; sub?: string; href: string
-  icon?: IconName; big?: boolean; locked?: boolean; lockedHint?: string
+  icon?: IconName; glyph?: string; big?: boolean; locked?: boolean; lockedHint?: string
 }) {
   return (
     <ClayTile
-      ramp={m} icon={icon ?? MODULE[m].icon} title={title} sub={sub}
+      ramp={m} icon={icon ?? MODULE[m].icon} glyph={glyph} title={title} sub={sub}
       href={href} big={big} locked={locked} lockedHint={lockedHint}
     />
   )

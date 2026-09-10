@@ -1,6 +1,8 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { Icon } from '@/components/icons'
+import { MODULE, type ModuleKey } from '@/components/child/kit'
 
 interface Props {
   title: string
@@ -11,6 +13,10 @@ interface Props {
   className?: string
   variant?: 'gradient' | 'white'
   gradientClass?: string
+  /** The screen's module. Preferred over `gradientClass`: it puts the accent on
+   *  the same ramp the rest of the screen uses, so the header can't drift to a
+   *  hue that means a different module. */
+  module?: ModuleKey
 }
 
 export default function PageHeader({
@@ -22,6 +28,7 @@ export default function PageHeader({
   className = '',
   variant = 'gradient',
   gradientClass = 'from-amber-400 to-orange-500',
+  module: m,
 }: Props) {
   const router = useRouter()
 
@@ -43,7 +50,7 @@ export default function PageHeader({
     pink: 'bg-pink-400',
   }
   const hue = gradientClass.match(/from-([a-z]+)-/)?.[1] ?? 'amber'
-  const bar = ACCENT[hue] ?? 'bg-amber-400'
+  const bar = m ? MODULE[m].bar : (ACCENT[hue] ?? 'bg-amber-400')
 
   return (
     <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 pt-3 pb-3 ${className}`}>
@@ -52,19 +59,20 @@ export default function PageHeader({
           onClick={handleBack}
           aria-label="برگشت"
           whileTap={{ scale: 0.85 }}
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-2xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          /* Was text-slate-400: 2.56:1 on white, under the 3:1 floor for a
+             non-text control. slate-600 is 7.6:1 and still reads as quiet. */
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-2xl text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
         >
-          {/* RTL: right-pointing chevron = "back" (away from reading direction) */}
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 18l6-6-6-6" />
-          </svg>
+          {/* RTL: right-pointing chevron = "back". The icon set owns that
+              decision (`back`), so this no longer hand-rolls the path. */}
+          <Icon name="back" size="lg" strokeWidth={2.5} />
         </motion.button>
 
         <div className="flex-1 min-w-0">
           <h1 className="font-bold text-xl text-slate-800 truncate leading-tight">{title}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className={`w-8 h-1 rounded-full ${bar}`} aria-hidden="true" />
-            {subtitle && <p className="text-xs text-slate-400 truncate">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-slate-600 truncate">{subtitle}</p>}
           </div>
         </div>
 
