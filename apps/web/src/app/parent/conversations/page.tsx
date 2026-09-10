@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
+import { PageHeader, Panel } from '@/components/parent/flat'
 import type { Child, AppCharacter } from '@koodakbook/shared'
 
 /* Parent transcript view (character plan §4 — trust feature): every word the
@@ -39,42 +39,46 @@ export default function ConversationsPage() {
   const character = characters.find(c => c.slug === slug)
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4">
-      <div className="max-w-lg mx-auto space-y-4">
-        <div className="flex items-center gap-3 pt-2">
-          <Link href="/parent/settings" className="text-slate-400 hover:text-slate-600" aria-label="برگشت">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-          </Link>
-          <div>
-            <h1 className="font-bold text-xl text-slate-800">گفت‌وگوها</h1>
-            <p className="text-xs text-slate-400">هر چیزی که شخصیت‌ها با کودک شما گفته‌اند — شفاف و قابل بازبینی</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-parent-bg">
+      <PageHeader
+        title="گفت‌وگوها"
+        subtitle="هر چیزی که شخصیت‌ها با کودک شما گفته‌اند — شفاف و قابل بازبینی"
+        back="/parent/settings"
+      />
 
+      <div className="max-w-lg mx-auto p-4 space-y-4">
         <div className="flex gap-2">
           <select value={childId} onChange={e => setChildId(e.target.value)} aria-label="کودک"
-            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+            className="flex-1 min-h-[44px] border border-slate-200 rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text">
             {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select value={slug} onChange={e => setSlug(e.target.value)} aria-label="شخصیت"
-            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white">
+            className="flex-1 min-h-[44px] border border-slate-200 rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text">
             {characters.map(c => <option key={c.slug} value={c.slug}>{c.name_persian}</option>)}
           </select>
         </div>
 
         {turns === null ? (
-          <p className="text-center text-sm text-slate-400 py-8">در حال بارگذاری…</p>
+          <p className="text-center text-sm text-parent-muted py-8">در حال بارگذاری…</p>
         ) : turns.length === 0 ? (
-          <p className="text-center text-sm text-slate-400 bg-white rounded-md py-8 shadow-card">
-            هنوز گفت‌وگویی بین {child?.name ?? 'کودک'} و {character?.name_persian ?? 'این شخصیت'} انجام نشده.
-          </p>
+          <Panel>
+            <p className="text-center text-sm text-parent-muted py-4 persian-text">
+              هنوز گفت‌وگویی بین {child?.name ?? 'کودک'} و {character?.name_persian ?? 'این شخصیت'} انجام نشده.
+            </p>
+          </Panel>
         ) : (
-          <div className="bg-white rounded-md shadow-card p-4 space-y-2">
+          <Panel className="space-y-2">
+            {/* Who said what is carried by side AND by tint, not by side
+                alone — the two columns are only a few pixels apart at the
+                widths a phone gives this, and a transcript that can be
+                misattributed is worse than no transcript. */}
             {turns.map((t, i) => (
               <div key={i} className={`flex ${t.role === 'child' ? 'justify-start' : 'justify-end'}`}>
-                <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm persian-text ${
-                  t.role === 'child' ? 'bg-amber-50 text-slate-800' : 'bg-slate-100 text-slate-700'}`}>
-                  <span className="block text-[10px] text-slate-400 mb-0.5">
+                <div
+                  className="max-w-[85%] rounded-xl px-3 py-2 text-sm persian-text text-parent-text"
+                  style={{ background: t.role === 'child' ? 'var(--ramp-brand-soft)' : 'rgb(241 245 249)' }}
+                >
+                  <span className="block text-[10px] text-parent-muted mb-0.5">
                     {t.role === 'child' ? child?.name ?? 'کودک' : character?.name_persian}
                     {' · '}{new Date(t.created_at).toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' })}
                   </span>
@@ -82,7 +86,7 @@ export default function ConversationsPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </Panel>
         )}
       </div>
     </div>

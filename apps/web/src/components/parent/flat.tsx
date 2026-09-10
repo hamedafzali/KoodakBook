@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Icon, type IconName } from '@/components/icons'
 import type { Ramp } from '@/components/child/clay'
@@ -98,5 +99,42 @@ export function FlatBar({
         transition={{ duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}
       />
     </div>
+  )
+}
+
+/** The bar every parent screen opens with. It existed already — six times,
+ *  copy-pasted, four of them drawing the back chevron as a hand-rolled inline
+ *  <svg> rather than using the icon set, and each one picking its own muted
+ *  grey (`slate-400`, 2.34:1 on the parent ground, under AA). One component
+ *  means the back affordance is in the same place at the same size on every
+ *  screen, which is what makes a back button feel reliable rather than
+ *  decorative. */
+export function PageHeader({
+  title, subtitle, back, backLabel = 'برگشت', action,
+}: {
+  title: string
+  subtitle?: string
+  /** Omit for a screen with nowhere to go back to. */
+  back?: string
+  backLabel?: string
+  action?: ReactNode
+}) {
+  return (
+    <header className="bg-parent-surface border-b border-slate-200 px-5 py-4 flex items-center gap-3">
+      {back && (
+        <Link
+          href={back}
+          aria-label={backLabel}
+          className="min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-slate-100 transition-colors"
+        >
+          <Icon name="back" size="md" />
+        </Link>
+      )}
+      <div className="min-w-0 flex-1">
+        <h1 className="font-bold text-xl text-parent-text truncate">{title}</h1>
+        {subtitle && <p className="text-sm text-parent-muted persian-text">{subtitle}</p>}
+      </div>
+      {action}
+    </header>
   )
 }

@@ -1,12 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { containerWidths } from '@/components/shared/layout'
 import { PLAN_FEATURES } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
+import { PageHeader } from '@/components/parent/flat'
 
 interface PlanRow {
   id: string
@@ -31,11 +31,14 @@ function priceLabel(p: PlanRow): string {
 // Render a feature value: numbers as a count, booleans as a tick / dash.
 function FeatureValue({ featureKey, type, value }: { featureKey: string; type: string; value: string }) {
   if (type === 'number') {
-    return <span className="font-bold text-slate-800">{Number(value).toLocaleString('fa-IR')}</span>
+    return <span className="font-bold text-parent-text tabular-nums">{Number(value).toLocaleString('fa-IR')}</span>
   }
+  /* A dash for "not included" rather than a red cross: this is a comparison
+   * table, not a report card, and the absent row shouldn't read as a failure.
+   * It still carries an aria-label, because a dash reads as nothing. */
   return value === 'true'
-    ? <span className="text-green-600" role="img" aria-label="دارد"><Icon name="done" size="sm" strokeWidth={3} /></span>
-    : <span className="text-slate-300" aria-label="ندارد">—</span>
+    ? <span className="text-emerald-700" role="img" aria-label="دارد"><Icon name="done" size="sm" strokeWidth={3} /></span>
+    : <span className="text-parent-muted" role="img" aria-label="ندارد">—</span>
 }
 
 export default function PlanPage() {
@@ -59,55 +62,62 @@ export default function PlanPage() {
   }, [router])
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <p className="text-gray-400 persian-text">در حال بارگذاری...</p>
+    <div className="min-h-screen flex items-center justify-center bg-parent-bg">
+      <p className="text-parent-muted persian-text">در حال بارگذاری...</p>
     </div>
   )
 
   return (
-    <div className={`min-h-screen bg-slate-50 pb-16 ${containerWidths.app}`}>
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
-        <Link
-          href="/parent/dashboard"
-          aria-label="بازگشت به داشبورد"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-        </Link>
-        <div>
-          <h1 className="font-bold text-xl text-slate-800">پلن‌ها و اشتراک</h1>
-          <p className="text-sm text-slate-400">امکانات هر پلن را مقایسه کنید</p>
-        </div>
-      </div>
+    <div className={`min-h-screen bg-parent-bg pb-16 ${containerWidths.app}`}>
+      <PageHeader
+        title="پلن‌ها و اشتراک"
+        subtitle="امکانات هر پلن را مقایسه کنید"
+        back="/parent/dashboard"
+        backLabel="بازگشت به داشبورد"
+      />
 
       <div className="px-4 pt-5 grid gap-4 md:grid-cols-2">
         {plans.map(plan => {
           const isCurrent = plan.key === currentPlan
           const isPremium = plan.price_cents > 0
+          /* The current plan is marked by a full-weight border in the brand
+           * ramp; every other card sits on the hairline the rest of the parent
+           * app uses. Nothing here is a gradient any more — the premium card
+           * was the one place in the parent register still shouting, and a
+           * paid tier doesn't need to. */
           return (
             <section
               key={plan.id}
-              className={`bg-white rounded-lg shadow-card overflow-hidden border-2 ${isCurrent ? 'border-amber-400' : 'border-transparent'}`}
+              className="bg-parent-surface rounded-xl overflow-hidden border"
+              style={{
+                borderColor: isCurrent ? 'var(--ramp-brand-bright)' : 'rgb(226 232 240)',
+                borderWidth: isCurrent ? 2 : 1,
+              }}
               aria-labelledby={`plan-${plan.key}`}
             >
-              <div className={`px-5 py-4 ${isPremium ? 'bg-brand-gradient text-white' : 'bg-slate-100'}`}>
-                <div className="flex items-center justify-between">
-                  <h2 id={`plan-${plan.key}`} className={`font-bold text-lg ${isPremium ? 'text-white' : 'text-slate-800'}`}>{plan.name}</h2>
+              <div
+                className="px-5 py-4"
+                style={{ background: isPremium ? 'var(--ramp-brand-soft)' : undefined }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <h2 id={`plan-${plan.key}`} className="font-bold text-lg text-parent-text">{plan.name}</h2>
                   {isCurrent && (
-                    <span className="text-xs font-bold bg-white/90 text-amber-700 rounded-full px-2.5 py-1">پلن فعلی</span>
+                    <span
+                      className="text-xs font-bold rounded-full px-2.5 py-1 shrink-0"
+                      style={{ background: 'var(--ramp-brand-bright)', color: '#fff' }}
+                    >پلن فعلی</span>
                   )}
                 </div>
-                <p className={`text-2xl font-extrabold mt-1 ${isPremium ? 'text-white' : 'text-slate-800'}`}>{priceLabel(plan)}</p>
+                <p className="text-2xl font-extrabold mt-1 text-parent-text tabular-nums">{priceLabel(plan)}</p>
                 {plan.description && (
-                  <p className={`text-sm mt-1 persian-text ${isPremium ? 'text-white/85' : 'text-slate-500'}`}>{plan.description}</p>
+                  <p className="text-sm mt-1 persian-text text-parent-muted">{plan.description}</p>
                 )}
               </div>
 
               <ul className="divide-y divide-slate-100">
                 {PLAN_FEATURES.map(def => (
                   <li key={def.key} className="flex items-center justify-between px-5 py-3 gap-3">
-                    <span className="text-sm text-slate-600">{def.label}</span>
+                    <span className="text-sm text-parent-text">{def.label}</span>
                     <FeatureValue featureKey={def.key} type={def.type} value={plan.features[def.key] ?? def.default} />
                   </li>
                 ))}
@@ -115,11 +125,13 @@ export default function PlanPage() {
 
               <div className="px-5 py-4">
                 {isCurrent ? (
-                  <button disabled className="w-full py-3 rounded-md bg-slate-100 text-slate-400 font-bold cursor-default min-h-[48px]">
+                  <button disabled className="w-full py-3 rounded-xl bg-slate-100 text-parent-muted font-bold cursor-default min-h-[48px]">
                     پلن فعلی شما
                   </button>
                 ) : isPremium ? (
-                  <button disabled className="w-full py-3 rounded-md bg-amber-100 text-amber-700 font-bold cursor-default min-h-[48px]">
+                  <button disabled
+                    className="w-full py-3 rounded-xl font-bold cursor-default min-h-[48px]"
+                    style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}>
                     به‌زودی
                   </button>
                 ) : null}
@@ -129,7 +141,7 @@ export default function PlanPage() {
         })}
       </div>
 
-      <p className="text-center text-xs text-slate-400 mt-6 px-6 persian-text">
+      <p className="text-center text-xs text-parent-muted mt-6 px-6 persian-text">
         امکان ارتقای آنلاین به‌زودی اضافه می‌شود. فعلاً برای ارتقای پلن با پشتیبانی در تماس باشید.
       </p>
     </div>

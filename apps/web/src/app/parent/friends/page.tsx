@@ -1,10 +1,11 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { containerWidths } from '@/components/shared/layout'
+import { PageHeader, Panel } from '@/components/parent/flat'
+import { Icon } from '@/components/icons'
 import type { Child } from '@koodakbook/shared'
 
 /**
@@ -94,36 +95,36 @@ export default function ParentFriendsPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-gray-400 persian-text">در حال بارگذاری...</div>
+    <div className="min-h-screen flex items-center justify-center bg-parent-bg">
+      <div className="text-parent-muted persian-text">در حال بارگذاری...</div>
     </div>
   )
 
   const activeChild = children.find(c => c.id === selected)
 
   return (
-    <div className={`min-h-screen bg-slate-50 pb-20 ${containerWidths.app}`}>
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
-        <Link
-          href="/parent/dashboard"
-          aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-        </Link>
-        <div>
-          <h1 className="font-bold text-xl text-slate-800">دوستان</h1>
-          <p className="text-sm text-slate-500 mt-0.5">فقط با کد و تأیید شما — بدون غریبه</p>
-        </div>
-      </div>
+    <div className={`min-h-screen bg-parent-bg pb-20 ${containerWidths.app}`}>
+      {/* The old back chevron here pointed LEFT (`M15 18l-6-6 6-6`) while every
+          other parent screen's pointed right. In an RTL app one of the two was
+          walking the reader the wrong way; PageHeader settles it on the icon
+          set's `back`, which is a right chevron for Persian. */}
+      <PageHeader
+        title="دوستان"
+        subtitle="فقط با کد و تأیید شما — بدون غریبه"
+        back="/parent/dashboard"
+      />
 
       <div className="px-4 pt-5 flex flex-col gap-4">
         {!activeChild ? (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            {/* EMOJI-CONTENT: empty-state portrait, wants real art. */}
-            <div className="text-6xl">👶</div>
-            <p className="text-gray-600 font-medium persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
+            <span
+              className="w-16 h-16 rounded-full grid place-items-center"
+              style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}
+              aria-hidden="true"
+            >
+              <Icon name="child" size="xl" />
+            </span>
+            <p className="text-parent-text font-medium persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
           </div>
         ) : (
           <>
@@ -136,8 +137,9 @@ export default function ParentFriendsPage() {
                     aria-selected={c.id === selected}
                     onClick={() => pickChildTab(c.id)}
                     className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      c.id === selected ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      c.id === selected ? 'text-white' : 'bg-slate-100 text-parent-text hover:bg-slate-200'
                     }`}
+                    style={c.id === selected ? { background: 'var(--ramp-brand-bright)' } : undefined}
                   >
                     {c.name}
                   </button>
@@ -146,21 +148,24 @@ export default function ParentFriendsPage() {
             )}
 
             {/* This child's code */}
-            <section className="bg-white rounded-md p-4 shadow-card text-center" aria-labelledby="code-title">
-              <h2 id="code-title" className="font-bold text-slate-700 text-sm mb-2">کد دوستی {activeChild.name}</h2>
-              <p className="text-3xl font-bold text-amber-600 tracking-[0.3em] ltr" dir="ltr">{code ?? '…'}</p>
+            <Panel className="text-center" title={`کد دوستی ${activeChild.name}`} labelledById="code-title">
+              {/* The code is read aloud down a phone line as often as it is
+                  copied, so it stays wide-tracked and LTR even in an RTL
+                  page — an alphanumeric code reordered by bidi is unreadable. */}
+              <p className="text-3xl font-bold tracking-[0.3em] ltr tabular-nums" dir="ltr"
+                style={{ color: 'var(--ramp-brand-ink)' }}>{code ?? '…'}</p>
               <button
                 onClick={copyCode}
-                className="mt-3 w-full sm:w-auto sm:mx-auto sm:px-8 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold py-2.5 rounded-xl transition-colors"
+                className="mt-3 min-h-[44px] w-full sm:w-auto sm:mx-auto sm:px-8 font-bold py-2.5 rounded-xl transition-colors"
+                style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}
               >
                 کپی کد
               </button>
-              <p className="text-xs text-slate-400 mt-2 persian-text">این کد را به خانواده‌ی دوستِ کودک بدهید</p>
-            </section>
+              <p className="text-xs text-parent-muted mt-2 persian-text">این کد را به خانواده‌ی دوستِ کودک بدهید</p>
+            </Panel>
 
             {/* Add a friend by code */}
-            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="add-title">
-              <h2 id="add-title" className="font-bold text-slate-700 text-sm mb-2">افزودن دوست با کد</h2>
+            <Panel title="افزودن دوست با کد" labelledById="add-title">
               <form onSubmit={sendRequest} className="flex gap-2">
                 <input
                   value={input}
@@ -169,54 +174,77 @@ export default function ParentFriendsPage() {
                   dir="ltr"
                   autoCapitalize="characters"
                   autoComplete="off"
-                  className="ltr flex-1 min-w-0 text-center font-bold tracking-widest border-2 border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-400"
+                  className="ltr flex-1 min-w-0 min-h-[44px] text-center font-bold tracking-widest bg-parent-surface text-parent-text border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-offset-1"
                 />
-                <button type="submit" className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-6 rounded-xl transition-colors">
+                <button type="submit"
+                  className="min-h-[44px] text-white font-bold px-6 rounded-xl transition-opacity hover:opacity-90"
+                  style={{ background: 'var(--ramp-brand-bright)' }}>
                   ارسال
                 </button>
               </form>
-              {msg && <p className={`text-sm mt-2 persian-text ${msg.ok ? 'text-green-600' : 'text-red-500'}`}>{msg.text}</p>}
-            </section>
+              {/* aria-live, because the result of sending a code is the only
+                  feedback there is and it appears far from the focused field. */}
+              <p aria-live="polite" className={`text-sm mt-2 persian-text ${msg?.ok ? 'text-emerald-700' : 'text-rose-700'}`}>
+                {msg?.text}
+              </p>
+            </Panel>
 
             {/* Incoming requests */}
             {requests.length > 0 && (
-              <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="requests-title">
-                <h2 id="requests-title" className="font-bold text-slate-700 text-sm mb-3">درخواست‌های دوستی</h2>
+              <Panel title="درخواست‌های دوستی" labelledById="requests-title">
                 <div className="space-y-3">
                   {requests.map(r => (
                     <div key={r.id} className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
-                      <p className="text-sm text-slate-600 persian-text">«{r.requester_name}» می‌خواهد دوستِ {r.addressee_name} شود</p>
+                      <p className="text-sm text-parent-text persian-text">«{r.requester_name}» می‌خواهد دوستِ {r.addressee_name} شود</p>
                       <div className="flex gap-2 shrink-0">
-                        <button onClick={() => respond(r.id, true)} className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold px-4 py-1.5 rounded-lg transition-colors">تأیید</button>
-                        <button onClick={() => respond(r.id, false)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-bold px-4 py-1.5 rounded-lg transition-colors">رد</button>
+                        <button onClick={() => respond(r.id, true)} className="min-h-[40px] bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 rounded-lg transition-colors">تأیید</button>
+                        <button onClick={() => respond(r.id, false)} className="min-h-[40px] bg-slate-100 hover:bg-slate-200 text-parent-text text-sm font-bold px-4 rounded-lg transition-colors">رد</button>
                       </div>
                     </div>
                   ))}
                 </div>
-              </section>
+              </Panel>
             )}
 
             {/* Friends list */}
-            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="friends-title">
-              <h2 id="friends-title" className="font-bold text-slate-700 text-sm mb-3">دوستانِ {activeChild.name}</h2>
+            <Panel title={`دوستانِ ${activeChild.name}`} labelledById="friends-title">
               {friends.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4 persian-text">هنوز دوستی اضافه نشده — کد را به هم بدهید تا با هم بازی کنند</p>
+                <p className="text-sm text-parent-muted text-center py-4 persian-text">هنوز دوستی اضافه نشده — کد را به هم بدهید تا با هم بازی کنند</p>
               ) : (
                 <div className="space-y-2">
                   {friends.map(f => (
                     <div key={f.id} className="flex items-center gap-3">
-                      {/* EMOJI-CONTENT: stands in for a friend's avatar. */}
-                      <span className="text-2xl" aria-hidden="true">🧒</span>
-                      <span className="flex-1 font-bold text-slate-700 text-sm">{f.name}</span>
-                      <span className="text-xs text-slate-400">بازی آنلاین به‌زودی</span>
+                      <FriendAvatar name={f.name} src={f.avatar_url} />
+                      <span className="flex-1 font-bold text-parent-text text-sm">{f.name}</span>
+                      <span className="text-xs text-parent-muted">بازی آنلاین به‌زودی</span>
                     </div>
                   ))}
                 </div>
               )}
-            </section>
+            </Panel>
           </>
         )}
       </div>
     </div>
+  )
+}
+
+/* Was a 🧒 emoji for every friend — the same face for all of them, which is
+ * the opposite of what an avatar is for. A friend who has a picture gets it;
+ * one who doesn't gets their own initial, so the rows are distinguishable at
+ * a glance instead of identical. */
+function FriendAvatar({ name, src }: { name: string; src: string | null }) {
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt="" className="w-9 h-9 rounded-full object-cover bg-slate-100" />
+  }
+  return (
+    <span
+      className="w-9 h-9 rounded-full grid place-items-center text-sm font-bold shrink-0"
+      style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}
+      aria-hidden="true"
+    >
+      {name.trim().charAt(0)}
+    </span>
   )
 }
