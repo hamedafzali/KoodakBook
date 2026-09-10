@@ -357,6 +357,28 @@ export interface DashboardSummary {
   recent_badges: ChildBadge[]
 }
 
+// ── Read-aloud recordings (mig-061) ───────────────────────
+/* The record-only half of the north-star event. Note what is absent: there is
+ * no `url`. The audio is never addressable by a public URL — the client asks
+ * the API for it by id and gets a stream after an ownership check. */
+export interface ReadAloudRecording {
+  id: string
+  child_id: string
+  story_id: string | null
+  /** Joined in for display; the recordings list is read by a parent, who
+   *  thinks in story titles, not ids. */
+  story_title?: string | null
+  mime_type: string
+  bytes: number
+  duration_ms: number | null
+  /** Null until the parent has played it. Drives the honest "new" marker. */
+  heard_at: string | null
+  /** Parent pressed «نگه دار» — opts this one recording out of the sweeper. */
+  kept: boolean
+  expires_at: string
+  created_at: string
+}
+
 // ── API responses ─────────────────────────────────────────
 export interface ApiSuccess<T> {
   data: T

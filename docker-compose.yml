@@ -36,6 +36,10 @@ services:
       WEB_URL:           ${WEB_URL:-http://localhost:3001}
       ADMIN_URL:         ${ADMIN_URL:-http://localhost:3002}
       UPLOADS_DIR:       /app/uploads
+      # Child voice recordings (mig 061). A SEPARATE volume from uploads on
+      # purpose: nginx mounts `uploads` and serves it publicly, which is right
+      # for story art and wrong for a child's voice. Nothing serves this path.
+      READ_ALOUD_DIR:    /app/private/read-aloud
       ADMIN_EMAIL:       ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
       ADMIN_PASSWORD:    ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       # One key for whichever AI provider is selected in the admin panel.
@@ -62,6 +66,7 @@ services:
       ADMIN_TELEGRAM_CHAT_ID:   ${ADMIN_TELEGRAM_CHAT_ID:-}
     volumes:
       - uploads:/app/uploads
+      - read_aloud:/app/private/read-aloud
     # Loopback-only (Finding C, tunnel/auth audit 2026-08): nothing on the LAN
     # should hit the raw API. The public API is served SAME-ORIGIN
     # (koodakbook.eu.cc/api/*) — web proxies to backend:4000 over the internal
@@ -253,4 +258,5 @@ services:
 volumes:
   postgres_data:
   uploads:
+  read_aloud:
   backup_staging:

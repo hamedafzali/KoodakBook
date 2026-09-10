@@ -32,6 +32,7 @@ import charactersRouter from './routes/characters'
 import friendsRouter  from './routes/friends'
 import leadsRouter    from './routes/leads'
 import aiRouter       from './routes/ai'
+import readAloudRouter, { sweepExpiredReadAloud } from './routes/readAloud'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -111,6 +112,7 @@ app.use('/api/characters', charactersRouter)
 app.use('/api/friends',   friendsRouter)
 app.use('/api/leads',     leadsRouter)
 app.use('/api/ai',        aiRouter)
+app.use('/api/read-aloud', readAloudRouter)
 
 // Must be registered after every route — see errorHandler.ts.
 app.use(errorHandler)
@@ -125,4 +127,14 @@ server.listen(PORT, async () => {
   console.log(`Backend running on http://localhost:${PORT}`)
   await migrate()
   await seedAdmin()
+
+  // Child voice recordings expire unless a parent keeps them (mig 061). The
+  // sweep is cheap (a partial index covers it) and runs in-process rather than
+  // as a cron because a missed sweep means audio outliving its stated retention
+  // — that should fail with the app, not silently in a scheduler nobody watches.
+  const sweep = () => sweepExpiredReadAloud()
+    .then(n => { if (n) console.log(`read-aloud: swept ${n} expired recording(s)`) })
+    .catch(err => console.error('read-aloud sweep failed', err))
+  sweep()
+  setInterval(sweep, 6 * 60 * 60 * 1000).unref()
 })

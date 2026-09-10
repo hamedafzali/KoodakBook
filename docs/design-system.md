@@ -206,6 +206,12 @@ means adding it here. BottomNav swapped «جوایز» for «همه» rather tha
 four tabs plus `ParentDoorNav` is already five items, the bar's ceiling at 64px
 per item on a 360px phone. Rewards is reached from the hub and still announces
 itself the moment a badge is earned.
+🟡 read-aloud (2026-09): the north-star event now has an interface — the child
+records at the end of a story (`components/child/ReadAloud.tsx`, clay), the
+parent listens at `/parent/recordings` (flat). Both registers used as specified,
+no new colors/radii/shadows. The half that is *not* built is delivery to a
+grandparent; see `docs/read-aloud.md` for that and for the consent/retention
+model, which is new machinery this schema had none of.
 ⬜ admin: has a real, partially-adopted component kit already
 (`apps/admin/src/components/ui.tsx`) — needs a migration-completion pass
 (several dashboard pages still hand-roll gray-* markup instead of using

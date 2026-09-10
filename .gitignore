@@ -54,6 +54,8 @@ supabase/.temp
 
 # uploads / temp
 uploads/
+# Child voice recordings (mig 061). Never servable, never committed.
+private/
 tempImg/
 
 # python venv for asset generation

@@ -29,11 +29,16 @@ services:
       JWT_EXPIRES_IN: 30d
       WEB_URL:        https://${DOMAIN:?required}
       UPLOADS_DIR:    /app/uploads
+      # Child voice recordings (mig 061). A SEPARATE volume from uploads on
+      # purpose: nginx mounts `uploads` and serves it publicly, which is right
+      # for story art and wrong for a child's voice. Nothing serves this path.
+      READ_ALOUD_DIR: /app/private/read-aloud
       ADMIN_EMAIL:    ${ADMIN_EMAIL:?required}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?required}
       AI_API_KEY:     ${AI_API_KEY:-}
     volumes:
       - uploads:/app/uploads
+      - read_aloud:/app/private/read-aloud
     depends_on:
       db:
         condition: service_healthy
@@ -80,3 +85,4 @@ services:
 volumes:
   postgres_data:
   uploads:
+  read_aloud:

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -12,6 +12,7 @@ import { pickChild } from '@/lib/activeChild'
 import { getTranslationLang } from '@/lib/translation'
 import type { Story, StoryPage, Badge, Child, Promotion } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
+import ReadAloud from '@/components/child/ReadAloud'
 
 type FullStory = Story & { pages: StoryPage[] }
 
@@ -23,6 +24,16 @@ export default function StoryPage() {
   const [lang] = useState(() => getTranslationLang())   // parent-set family language
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
   const [showUnlock, setShowUnlock] = useState(false)
+  /* The read-aloud prompt only exists if the parent has switched recording on
+   * (mig 061). Fetched up-front rather than at completion time so the child
+   * never waits on a round-trip at the emotional peak of the story. */
+  const [canRecord, setCanRecord] = useState(false)
+  const [askRecord, setAskRecord] = useState(false)
+  /* What handleComplete decided to do next, deferred until the read-aloud is
+   * finished or skipped. The prompt goes FIRST: a badge popup is a reward for
+   * what they just did, but reading it aloud is the thing the product exists
+   * for, and it has to land while the story is still warm. */
+  const afterRecord = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -34,6 +45,8 @@ export default function StoryPage() {
       if (storyRes.data) setStory(storyRes.data)
       const child = pickChild(childRes.data ?? [])
       if (child) setChildId(child.id)
+      const consent = await api.get<{ consented_at: string | null }>('/api/read-aloud/consent')
+      setCanRecord(!!consent.data?.consented_at)
     }
     load()
   }, [id, router, lang])
@@ -85,18 +98,35 @@ export default function StoryPage() {
       const res = await api.post('/api/progress/story',
         { child_id: childId, story_id: story.id, last_page: story.pages.length - 1, completed: true }
       ) as { new_badges?: Badge[]; promotions?: Promotion[] }
-      if (res.new_badges?.[0]) setNewBadge(res.new_badges[0])
-      else if (res.promotions?.length) {
-        setShowUnlock(true)
-        setTimeout(() => router.push('/child/home'), 2600)
+      const next = () => {
+        if (res.new_badges?.[0]) setNewBadge(res.new_badges[0])
+        else if (res.promotions?.length) {
+          setShowUnlock(true)
+          setTimeout(() => router.push('/child/home'), 2600)
+        }
+        else router.push('/child/home')
       }
-      else router.push('/child/home')
+      if (canRecord && childId) { afterRecord.current = next; setAskRecord(true) }
+      else next()
     } catch {
       router.push('/child/home')   // never leave the child stuck on the last page
     }
   }
 
+  /* Runs on every exit from the prompt — sent, skipped, or failed — so a
+   * recording that doesn't upload still can't strand the child on this screen. */
+  function finishRecording() {
+    setAskRecord(false)
+    const next = afterRecord.current
+    afterRecord.current = null
+    if (next) next(); else router.push('/child/home')
+  }
+
   if (!story) return <LoadingScreen message="در حال بارگذاری داستان..." />
+
+  if (askRecord) {
+    return <ReadAloud childId={childId} storyId={story.id} onDone={finishRecording} />
+  }
 
   if (showUnlock) {
     return (

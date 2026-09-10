@@ -29,6 +29,12 @@ export default function SettingsPage() {
   const [children, setChildren] = useState<Child[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
+  /* Voice recording is off until the parent turns it on. Unlike every other
+   * setting on this page it is not a preference stored in localStorage — it is
+   * consent to store a child's voice, so it lives on the account (mig 061) and
+   * the API refuses to accept audio without it. */
+  const [voiceConsent, setVoiceConsent] = useState<string | null>(null)
+  const [voiceBusy, setVoiceBusy] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem(GOAL_KEY)
@@ -44,7 +50,17 @@ export default function SettingsPage() {
     api.get<{ email: string }>('/api/auth/me').then(res => {
       if (res.data?.email) setEmail(res.data.email)
     })
+    api.get<{ consented_at: string | null }>('/api/read-aloud/consent').then(res => {
+      setVoiceConsent(res.data?.consented_at ?? null)
+    })
   }, [])
+
+  async function toggleVoice(on: boolean) {
+    setVoiceBusy(true)
+    const r = await api.patch<{ consented_at: string | null }>('/api/read-aloud/consent', { consent: on })
+    setVoiceBusy(false)
+    if (!r.error) setVoiceConsent(r.data?.consented_at ?? null)
+  }
 
   // Kid-login username per child (mig 039): the child types just this on the
   // «ورود بچه‌ها» screen. Future: face detection replaces the typing.
@@ -185,6 +201,54 @@ export default function SettingsPage() {
                   ))}
                 </select>
               </div>
+            </div>
+          </section>
+
+          {/* Voice recording — its own section, not a row inside «تنظیمات
+              یادگیری». Consent to record a child is not the same kind of
+              decision as picking a daily goal, and burying it next to one
+              would misrepresent what is being agreed to. */}
+          <section aria-labelledby="voice-settings-title">
+            <h2 id="voice-settings-title" className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2 px-1">صدای کودک</h2>
+            <div className="bg-white rounded-md shadow-card">
+              <div className="px-5 py-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-800 text-sm">ضبط صدای کتاب‌خواندن</p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    بعد از هر داستان، کودک می‌تواند آن را با صدای خودش بخواند و شما بعداً گوش بدهید.
+                  </p>
+                  {/* Everything the parent is agreeing to, stated before they
+                      agree — not in a privacy page they will never open. */}
+                  <ul className="text-xs text-slate-400 mt-2 space-y-1 leading-relaxed list-disc pr-4">
+                    <li>صداها فقط برای شما پخش می‌شود و برای کسی فرستاده نمی‌شود.</li>
+                    <li>هر ضبط پس از ۳۰ روز خودکار پاک می‌شود، مگر آن را نگه دارید.</li>
+                    <li>هر وقت خاموش کنید، ضبط تازه انجام نمی‌شود.</li>
+                  </ul>
+                </div>
+                <button
+                  role="switch"
+                  aria-checked={!!voiceConsent}
+                  aria-label="ضبط صدای کتاب‌خواندن"
+                  disabled={voiceBusy}
+                  onClick={() => toggleVoice(!voiceConsent)}
+                  className={`shrink-0 w-[52px] h-[32px] rounded-full p-1 transition-colors disabled:opacity-50 ${
+                    voiceConsent ? 'btn-brand' : 'bg-slate-300'
+                  }`}
+                >
+                  <span className={`block w-6 h-6 rounded-full bg-white shadow-card transition-transform ${
+                    voiceConsent ? '-translate-x-5' : ''
+                  }`} />
+                </button>
+              </div>
+              {voiceConsent && (
+                <div className="border-t border-slate-100">
+                  <Link href="/parent/recordings"
+                    className="px-5 py-3.5 flex items-center justify-between gap-3 min-h-[52px] hover:bg-slate-50 transition-colors">
+                    <span className="text-sm font-medium text-slate-800">صداهای ضبط‌شده</span>
+                    <Icon name="back" size="sm" />
+                  </Link>
+                </div>
+              )}
             </div>
           </section>
 
