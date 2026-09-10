@@ -219,7 +219,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           aria-label={isLast ? 'پایان داستان' : 'صفحه بعدی'}
-          className="flex-[2] py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px] touch-target"
+          className="flex-[2] py-4 rounded-md bg-brand-gradient text-on-brand font-bold text-lg shadow-md min-h-[56px] touch-target"
         >
           {isLast ? <><span aria-hidden="true">✅</span> تمام شد!</> : 'بعدی ←'}
         </motion.button>

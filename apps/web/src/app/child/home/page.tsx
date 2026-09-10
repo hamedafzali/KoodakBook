@@ -181,7 +181,7 @@ export default function ChildHomePage() {
   if (showPicker) {
     return (
       <div className="fixed inset-0 z-50 child-bg flex flex-col items-center justify-center p-6 gap-8">
-        <h1 className="text-2xl font-bold text-text-primary persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
+        <h1 className="font-display text-h1 font-bold text-text-primary persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
             <motion.button key={c.id} onClick={() => resolveChild(c)} whileTap={{ scale: 0.94 }}
@@ -213,13 +213,14 @@ export default function ChildHomePage() {
       </AnimatePresence>
 
       {/* ── Hero: greeting + mascot; stats only for older kids ──
-          The gradient runs off the brand ramp: `bright` is solved to carry
-          white text with headroom and `deep` is guaranteed darker, so it can't
-          be re-tuned into a contrast failure. The twinkles are the app's own
-          emoji, not monochrome strokes (DESIGN_CHARTER.md). */}
+          The saffron identity gradient (#FBBF24 → #F97316) at full brightness,
+          with very dark warm-brown ink (--color-on-brand, text-on-brand) — the
+          DESIGN_CHARTER rule is dark ink on saffron, never white. Contrast:
+          8.97:1 at the amber end, 5.34:1 at the orange end. The twinkles are
+          the app's own emoji, not monochrome strokes. */}
       <div
-        className="relative pt-8 pb-24 px-5 rounded-b-[2.5rem]"
-        style={{ background: 'linear-gradient(to bottom, var(--ramp-brand-bright), var(--ramp-brand-deep))' }}
+        className="relative pt-8 pb-24 px-5 rounded-b-[2.5rem] text-on-brand"
+        style={{ background: 'linear-gradient(to bottom right, var(--color-brand-from), var(--color-brand-to))' }}
       >
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
         <div className="absolute top-4 -left-6 w-20 h-20 bg-white/10 rounded-full" aria-hidden="true" />
@@ -230,14 +231,14 @@ export default function ChildHomePage() {
         <motion.span className="absolute top-14 right-1/3 text-sm select-none opacity-90" aria-hidden="true"
           animate={{ y: [0, -5, 0], rotate: [0, -10, 0] }} transition={{ duration: 3.0, repeat: Infinity, ease: 'easeInOut', delay: 1.1 }}>✨</motion.span>
         <div className="relative flex items-end justify-between">
-          <div className="text-white">
-            <p className="text-white text-sm mb-1">{greeting()} 👋</p>
-            <h1 className="text-3xl font-bold leading-tight">{child?.name ?? 'کودک عزیز'}</h1>
+          <div>
+            <p className="text-body mb-1 opacity-80">{greeting()} 👋</p>
+            <h1 className="font-display text-h1 font-bold">{child?.name ?? 'کودک عزیز'}</h1>
             {band === 3 && (
               <div className="flex gap-2 mt-3 flex-wrap">
-                {stats.streak > 0 && <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium">🔥 {stats.streak} روز</div>}
-                {stats.words > 0 && <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium">⭐ {stats.words} کلمه</div>}
-                <div className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium">🎓 {resolveLevel(stats.xp).label}</div>
+                {stats.streak > 0 && <div className="bg-white/30 rounded-full px-3 py-1 text-small font-bold">🔥 {stats.streak} روز</div>}
+                {stats.words > 0 && <div className="bg-white/30 rounded-full px-3 py-1 text-small font-bold">⭐ {stats.words} کلمه</div>}
+                <div className="bg-white/30 rounded-full px-3 py-1 text-small font-bold">🎓 {resolveLevel(stats.xp).label}</div>
               </div>
             )}
             {/* Streak count hidden for bands 1-2 (expert review, streak
@@ -265,16 +266,16 @@ export default function ChildHomePage() {
             whileTap={{ scale: 0.97 }}
             animate={{ scale: [1, 1.015, 1] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            className={`relative overflow-hidden rounded-[1.75rem] shadow-raised flex items-center gap-4 ${band === 1 ? 'p-6' : 'p-5'}`}
-            style={{ background: 'linear-gradient(to bottom, var(--ramp-brand-bright), var(--ramp-brand-deep))' }}
+            className={`relative overflow-hidden rounded-[1.75rem] shadow-raised flex items-center gap-4 text-on-brand ${band === 1 ? 'p-6' : 'p-5'}`}
+            style={{ background: 'linear-gradient(to bottom right, var(--color-brand-from), var(--color-brand-to))' }}
           >
             <div className="absolute inset-0 opacity-30 pointer-events-none" aria-hidden="true">
               <SceneBackdrop scene={sceneFor(nextUp.href)} className="w-full h-full !rounded-none" />
             </div>
             <span className={`relative shrink-0 ${band === 1 ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{nextUp.emoji}</span>
             <div className="relative flex-1 min-w-0">
-              <p className="text-white/90 font-bold text-sm">{nextUp.label}</p>
-              <p className={`font-bold text-white truncate ${band === 1 ? 'text-2xl' : 'text-lg'}`}>{nextUp.title}</p>
+              <p className="font-bold text-small opacity-80">{nextUp.label}</p>
+              <p className={`font-display font-bold truncate ${band === 1 ? 'text-h1' : 'text-card-title'}`}>{nextUp.title}</p>
             </div>
             <ChunkyButton className={`relative ${band === 1 ? 'text-xl px-6 py-4' : 'px-5 py-3'}`}>
               بازی کن! 🎈

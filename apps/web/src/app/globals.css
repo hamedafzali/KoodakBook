@@ -12,6 +12,14 @@
   --font-persian: 'Vazirmatn', sans-serif;
   --font-vazirmatn: 'Vazirmatn', sans-serif;
   --font-sans: var(--font-vazirmatn);
+  /* Rounded display face for CHILD HEADINGS ONLY. next/font sets the real
+     hashed family on <html> as --font-baloo; the literal here is the SSR/no-JS
+     fallback. `--font-display` is a var() alias so the `font-display` utility
+     resolves through the cascade to next/font's value (same trick as
+     --font-sans → --font-vazirmatn). Body text and letters-being-taught never
+     use this — see DESIGN_CHARTER.md. */
+  --font-baloo: 'Baloo Bhaijaan 2', 'Vazirmatn', sans-serif;
+  --font-display: var(--font-baloo);
 
   /* Brand — Saffron */
   --color-brand:         #D4871A;
@@ -35,6 +43,16 @@
      would pass; we don't put white text here, so it goes back. */
   --color-brand-from:    #FBBF24;   /* amber-400 */
   --color-brand-to:      #F97316;   /* orange-500 */
+
+  /* Ink for ALL text/icons sitting on a saffron surface — the bright gradient,
+     the brand `bright` stop, hero cards, primary actions. A very dark warm
+     brown (Tailwind amber-950). Measured against BOTH gradient ends:
+       on #FBBF24 (amber-400)  8.97:1
+       on #F97316 (orange-500) 5.34:1
+     Both clear WCAG AA for normal text. The rule (DESIGN_CHARTER.md): keep the
+     gradient bright, never put white on saffron, darken THIS if a surface ever
+     fails — never the gradient. Generates the `text-on-brand` utility. */
+  --color-on-brand:      #451A03;
 
   /* Child Activity Colors — legacy single-stop hues.
      Superseded by the 4-stop ramps below; kept until the last call site moves. */
@@ -160,6 +178,23 @@
   --space-page-x:  1rem;
   --space-section: 1.75rem;
   --space-card:    1.25rem;
+
+  /* ── Type ladder ──────────────────────────────────────────────────────────
+     One explicit scale for child screens, tuned for Vazirmatn — a Persian
+     face needs more leading than a Latin one, so every step here carries a
+     generous line-height. Generates `text-display`, `text-h1`, `text-h2`,
+     `text-card-title`, `text-body`, `text-small`, `text-letter`.
+     15px (`text-small`) is the floor on child screens — nothing smaller.
+     `text-letter` is the glyph a screen is actively teaching: 72px, growing
+     to 120px on wider viewports. */
+  --text-display: 2.5rem;      --text-display--line-height: 1.4;
+  --text-h1: 2rem;             --text-h1--line-height: 1.45;
+  --text-h2: 1.5rem;           --text-h2--line-height: 1.5;
+  --text-card-title: 1.25rem;  --text-card-title--line-height: 1.5;
+  --text-body: 1.125rem;       --text-body--line-height: 1.8;
+  --text-small: 0.9375rem;     --text-small--line-height: 1.6;
+  --text-letter: clamp(4.5rem, 4rem + 12vw, 7.5rem);
+  --text-letter--line-height: 1;
 
   /* Motion — the child app's one signature curve.
      An overshoot at the end is what makes a pressed thing feel like an object
@@ -432,7 +467,9 @@ body {
    `bg-gradient-to-r from-amber-400 to-orange-500` string duplicated across pages. */
 @utility bg-brand-gradient {
   background-image: linear-gradient(to right, var(--color-brand-from), var(--color-brand-to));
+  color: var(--color-on-brand);
 }
 @utility bg-brand-gradient-br {
   background-image: linear-gradient(to bottom right, var(--color-brand-from), var(--color-brand-to));
+  color: var(--color-on-brand);
 }

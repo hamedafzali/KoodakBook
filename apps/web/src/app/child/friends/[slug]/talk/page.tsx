@@ -168,8 +168,8 @@ export default function TalkPage() {
               animate={busy === 'listen' ? { scale: [1, 1.12, 1] } : {}}
               transition={busy === 'listen' ? { duration: 0.9, repeat: Infinity } : {}}
               aria-label={busy === 'listen' ? 'دارم گوش می‌کنم…' : 'ضربه بزن و حرف بزن'}
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-raised text-4xl ${
-                busy === 'listen' ? 'bg-rose-500' : 'bg-brand-gradient-br'} text-white disabled:opacity-60`}>
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-raised text-4xl disabled:opacity-60 ${
+                busy === 'listen' ? 'bg-rose-500 text-white' : 'bg-brand-gradient-br text-on-brand'}`}>
               <Icon name="record" size="xl" />
             </motion.button>
           </div>

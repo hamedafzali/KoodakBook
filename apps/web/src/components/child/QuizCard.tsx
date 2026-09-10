@@ -242,7 +242,7 @@ function NextButton({ onClick }: { onClick: () => void }) {
   return (
     <motion.button
       onClick={onClick}
-      className="w-full py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md touch-target"
+      className="w-full py-4 rounded-md bg-brand-gradient text-on-brand font-bold text-lg shadow-md touch-target"
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.96 }}
     >

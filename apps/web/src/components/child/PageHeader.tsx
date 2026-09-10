@@ -79,7 +79,7 @@ export default function PageHeader({
         </motion.button>
 
         <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-xl text-text-primary truncate leading-tight">
+          <h1 className="font-display font-bold text-card-title text-text-primary truncate">
             {badge && <span className="mr-1.5" aria-hidden="true">{badge}</span>}
             {title}
           </h1>

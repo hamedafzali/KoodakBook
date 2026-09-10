@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Vazirmatn } from 'next/font/google'
+import { Vazirmatn, Baloo_Bhaijaan_2 } from 'next/font/google'
 import './globals.css'
 
 const vazirmatn = Vazirmatn({
@@ -7,6 +7,17 @@ const vazirmatn = Vazirmatn({
   variable: '--font-vazirmatn',
   display: 'swap',
   weight: ['400', '500', '700'],
+})
+
+// Rounded Arabic-script display face — child HEADINGS ONLY. Verified to carry
+// the full Persian set (پ چ ژ گ ک ی ۀ ZWNJ, Persian digits) with proper
+// init/medi/fina shaping. Letters being taught and all body text stay in
+// Vazirmatn: standard letterforms matter for learning. See DESIGN_CHARTER.md.
+const baloo = Baloo_Bhaijaan_2({
+  subsets: ['arabic'],
+  variable: '--font-baloo',
+  display: 'swap',
+  weight: ['500', '700', '800'],
 })
 
 // Needed to resolve absolute URLs for OG/Twitter images and the file-based
@@ -61,7 +72,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${baloo.variable} h-full`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
