@@ -12,24 +12,23 @@ import Mascot from '@/components/child/Mascot'
 import type { Child } from '@koodakbook/shared'
 import { type IconName } from '@/components/icons'
 import { ModuleCard, SectionTitle } from '@/components/child/kit'
-import { ClayChip } from '@/components/child/clay'
+import { ClayChip, type Tone } from '@/components/child/clay'
 
 /* دنیای اعداد — hub. Three rooms, one per age band; the child's age picks the
  * highlighted «برای تو» room, nothing is locked (older sibling curiosity is
  * fine — difficulty adapts inside each room). */
 
-/* Each room used to carry its own two-stop gradient — emerald, sky, amber —
- * which read as three unrelated products rather than three rooms of one house.
- * In this system colour is the MODULE, so all three are math-hued and the
- * differentiator moves to the glyph, the copy and the recommendation badge.
- * That also retires the contrast problem the gradients kept re-introducing:
- * `bright` is the only fill white text sits on, and it is solved for AA. */
-const ROOMS: { id: MathRoom; href: string; icon: IconName; glyph?: string; title: string; sub: string; ages: string }[] = [
-  { id: 'counting', href: '/child/math/counting', icon: 'counting', glyph: '🍎', title: 'شمارش', sub: 'بشمار و بگو چند تا!', ages: '۳–۵' },
+/* Three rooms of one house, but each with its own colour — the shipped
+ * emerald / sky / saffron (DESIGN_CHARTER.md: colour is delight, one strong
+ * hue per card is welcome). The old per-room gradients put WHITE on a -400
+ * fill and failed AA; these are the same hues rebuilt as chunky clay tiles
+ * with DARK ink (every fill↔ink pair ≥ 6:1 — see clay.tsx TONES). */
+const ROOMS: { id: MathRoom; href: string; icon: IconName; glyph?: string; tone: Tone; title: string; sub: string; ages: string }[] = [
+  { id: 'counting', href: '/child/math/counting', icon: 'counting', glyph: '🍎', tone: 'emerald', title: 'شمارش', sub: 'بشمار و بگو چند تا!', ages: '۳–۵' },
   // The Persian digit IS what this room teaches, so it stays a glyph — the
   // documented `glyph` escape hatch on the tile, not an emoji.
-  { id: 'digits', href: '/child/math/digits', icon: 'math', glyph: '۴', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', ages: '۶–۷' },
-  { id: 'bazaar', href: '/child/math/bazaar', icon: 'shop', glyph: '🛒', title: 'بازار', sub: 'با تومان خرید کن', ages: '۸–۱۰' },
+  { id: 'digits', href: '/child/math/digits', icon: 'math', glyph: '۴', tone: 'sky', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', ages: '۶–۷' },
+  { id: 'bazaar', href: '/child/math/bazaar', icon: 'shop', glyph: '🛒', tone: 'amber', title: 'بازار', sub: 'با تومان خرید کن', ages: '۸–۱۰' },
 ]
 
 export default function MathHubPage() {
@@ -53,7 +52,7 @@ export default function MathHubPage() {
           style={{ background: 'var(--ramp-math-soft)', color: 'var(--ramp-math-ink)' }}
         >
           <Mascot size={64} mood="happy" />
-          <p className="persian-text text-sm flex-1 font-medium">
+          <p className="persian-text text-body flex-1 font-medium">
             تو بلدی بشماری — حالا بیا به فارسی بشماریم!
           </p>
         </div>
@@ -81,6 +80,7 @@ export default function MathHubPage() {
                   )}
                   <ModuleCard
                     module="math"
+                    tone={room.tone}
                     icon={room.icon}
                     glyph={room.glyph}
                     title={room.title}
@@ -94,7 +94,7 @@ export default function MathHubPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-text-secondary persian-text leading-relaxed pt-1">
+        <p className="text-center text-small text-text-secondary persian-text leading-relaxed pt-1">
           ریاضی را در مدرسه یاد می‌گیری — اینجا یادش می‌گیری به فارسی بگویی <span aria-hidden="true">💛</span>
         </p>
       </div>

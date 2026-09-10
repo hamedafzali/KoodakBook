@@ -16,15 +16,15 @@ import {
 } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
 import { SectionTitle, ClayButton } from '@/components/child/kit'
-import { ClayBar, clayVars } from '@/components/child/clay'
+import { ClayBar, clayVars, toneVars, type Tone } from '@/components/child/clay'
 
 const DEMO = 'ب' // base consonant used to demonstrate each vowel mark
 
-/* Every colour on this screen is the `phonics` ramp. The three vowel marks used
- * to carry three unrelated gradients from SHORT_VOWELS.color, which said "three
- * different subjects" when they are three marks of one. What actually separates
- * them — the glyph — is already the largest thing on the tile, so the hue is
- * free to go back to meaning "this is phonics". */
+/* The three vowel marks each get their own vivid tile colour (DESIGN_CHARTER.md
+ * — colour is delight, and three big buttons a pre-reader taps between read as
+ * three things, not one). They are chunky clay tiles with DARK ink, never white
+ * on a -400 fill. Order matches SHORT_VOWELS (zebar / zir / pish). */
+const VOWEL_TONES: Tone[] = ['rose', 'sky', 'violet']
 
 function playErrorSound() {
   if (typeof window === 'undefined') return
@@ -143,8 +143,8 @@ export default function PhonicsPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="text-3xl font-bold text-text-primary">آفرین! 🌟</h1>
-        <p className="text-text-secondary persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
+        <h1 className="font-display text-h1 font-bold text-text-primary">آفرین! 🌟</h1>
+        <p className="text-body text-text-secondary persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <ClayButton ramp="phonics" size="lg" icon="retry" onClick={() => setPhase('quiz')}>
             یک بار دیگه
@@ -182,17 +182,17 @@ export default function PhonicsPage() {
         <section>
           <SectionTitle module="phonics">حرکت‌ها</SectionTitle>
           <div className="grid grid-cols-3 gap-3">
-            {SHORT_VOWELS.map(v => {
+            {SHORT_VOWELS.map((v, i) => {
               const syll = DEMO + v.mark
               return (
                 <motion.button key={v.key} onClick={() => demoMerge(DEMO, v.mark, v.namePersian, syll, 'b' + v.latin)}
                   whileTap={{ y: 4 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                  style={clayVars('phonics')}
-                  className="clay p-4 text-white flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target"
+                  style={toneVars(VOWEL_TONES[i % VOWEL_TONES.length])}
+                  className="clay p-4 flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target"
                   aria-label={`${v.namePersian}: ${syll}`}>
                   <span className="text-5xl font-bold leading-none drop-shadow-sm">{syll}</span>
                   <span className="text-sm font-medium mt-1">{v.namePersian}</span>
-                  <span className="text-xs text-white/85 ltr">{v.latin}</span>
+                  <span className="text-xs opacity-80 ltr">{v.latin}</span>
                 </motion.button>
               )
             })}

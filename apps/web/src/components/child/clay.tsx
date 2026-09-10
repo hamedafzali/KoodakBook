@@ -41,6 +41,33 @@ export function clayVars(ramp: Ramp): CSSProperties {
   } as CSSProperties
 }
 
+/** Ad-hoc clay hues for the few screens that deliberately want colour VARIETY
+ *  within one module — the math rooms, the memory-game decks — rather than the
+ *  single module hue. Each triple is fill (Tailwind -400) / edge (-700, the 3D
+ *  edge + where white may sit) / ink (-950, the dark label), and every
+ *  fill↔ink pair here clears WCAG AA (measured ≥ 6:1). Not a replacement for
+ *  the module ramps — reach for this only when a screen's own spec asks for
+ *  more than one colour. */
+export type Tone =
+  | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet' | 'orange' | 'teal' | 'fuchsia' | 'lime'
+
+const TONES: Record<Tone, [string, string, string]> = {
+  emerald: ['#34D399', '#047857', '#022C22'],
+  sky:     ['#38BDF8', '#0369A1', '#082F49'],
+  amber:   ['#FBBF24', '#B45309', '#451A03'],
+  rose:    ['#FB7185', '#BE123C', '#4C0519'],
+  violet:  ['#A78BFA', '#6D28D9', '#2E1065'],
+  orange:  ['#FB923C', '#C2410C', '#431407'],
+  teal:    ['#2DD4BF', '#0F766E', '#042F2E'],
+  fuchsia: ['#E879F9', '#A21CAF', '#4A044E'],
+  lime:    ['#A3E635', '#4D7C0F', '#1A2E05'],
+}
+
+export function toneVars(tone: Tone): CSSProperties {
+  const [fill, edge, ink] = TONES[tone]
+  return { '--clay-fill': fill, '--clay-edge': edge, '--clay-ink': ink } as CSSProperties
+}
+
 const SPRING = { type: 'spring', stiffness: 500, damping: 20 } as const
 
 /* ── Button ───────────────────────────────────────────────────────────────── */
@@ -109,6 +136,9 @@ export function ClayButton({
 
 type TileProps = {
   ramp: Ramp
+  /** Override the module hue with an ad-hoc bright tone — for screens that
+   *  deliberately want per-item colour variety (math rooms, game decks). */
+  tone?: Tone
   icon: IconName
   /** The mark shown large on the tile face. Usually the module's colourful
    *  emoji (DESIGN_CHARTER.md — emoji carry section identity for a pre-reader),
@@ -129,9 +159,10 @@ type TileProps = {
  *  and only the top face moves. Mismatch those two numbers and it reads as
  *  sliding rather than being pushed. */
 export function ClayTile({
-  ramp, icon, glyph, title, sub, href, big, locked, lockedHint,
+  ramp, tone, icon, glyph, title, sub, href, big, locked, lockedHint,
 }: TileProps) {
   const pad = big ? 'p-5 min-h-[92px]' : 'p-4 min-h-[76px]'
+  const vars = tone ? toneVars(tone) : clayVars(ramp)
 
   if (locked) {
     /* A locked tile keeps its shape so the grid doesn't reflow when it opens,
@@ -158,7 +189,7 @@ export function ClayTile({
       <motion.div
         whileTap={{ y: 4 }}
         transition={SPRING}
-        style={clayVars(ramp)}
+        style={vars}
         className={`clay relative overflow-hidden ${pad} flex items-center gap-3`}
       >
         {/* Toy-like sheen. Decorative: it reinforces the light direction the

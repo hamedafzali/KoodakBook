@@ -1,6 +1,6 @@
 import { Icon, type IconName } from '@/components/icons'
 import {
-  ClayBar, ClayButton, ClayChip, ClayIconChip, ClayTile, clayVars, type Ramp,
+  ClayBar, ClayButton, ClayChip, ClayIconChip, ClayTile, clayVars, type Ramp, type Tone,
 } from '@/components/child/clay'
 
 /* ── KoodakBook child design kit ────────────────────────────
@@ -79,13 +79,13 @@ export function IconChip({ module: m, icon, size = 'md' }: {
 
 /** Chunky activity tile — the tactile "press me" language of great kids'
  *  apps. Still exactly one hue per module, so color keeps carrying meaning. */
-export function ModuleCard({ module: m, title, sub, href, icon, glyph, big, locked, lockedHint }: {
-  module: ModuleKey; title: string; sub?: string; href: string
+export function ModuleCard({ module: m, tone, title, sub, href, icon, glyph, big, locked, lockedHint }: {
+  module: ModuleKey; tone?: Tone; title: string; sub?: string; href: string
   icon?: IconName; glyph?: string; big?: boolean; locked?: boolean; lockedHint?: string
 }) {
   return (
     <ClayTile
-      ramp={m} icon={icon ?? MODULE[m].icon}
+      ramp={m} tone={tone} icon={icon ?? MODULE[m].icon}
       glyph={glyph ?? (icon ? undefined : MODULE[m].emoji)}
       title={title} sub={sub}
       href={href} big={big} locked={locked} lockedHint={lockedHint}
@@ -118,7 +118,7 @@ export function SectionTitle({ module: m, id, children }: { module?: ModuleKey; 
       {m && <span className={`w-1.5 h-5 rounded-full ${MODULE[m].bar}`} aria-hidden="true" />}
       {/* `id` so a <section> can point its aria-labelledby at the heading it
           already has, instead of repeating the label in an aria-label. */}
-      <h2 id={id} className="font-bold text-text-primary text-base">{children}</h2>
+      <h2 id={id} className="font-display font-bold text-text-primary text-card-title">{children}</h2>
     </div>
   )
 }

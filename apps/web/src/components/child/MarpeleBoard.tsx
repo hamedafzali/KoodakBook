@@ -13,13 +13,21 @@ import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
  * emoji that animate between cells with a spring. Same board data
  * (packages/shared/marpele.ts) as mobile, so a game plays out identically. */
 
-/* The board used to deal six pastels out by `n % 6`, so a tile's colour was a
- * function of its number and nothing else — six accents that looked like signal
- * and carried none, on top of a green/red pair that meant something. Colour on
- * this board now marks the four kinds of square a child needs to spot from
- * across the table: start, finish, ladder, snake. Everything else is the quiet
- * checker that makes the grid readable. */
-function tileStyle(kind: 'start' | 'finish' | 'ladder' | 'snake' | 'plain', dark: boolean): React.CSSProperties {
+/* A مارپله board is a wall of colour — that IS the toy (DESIGN_CHARTER.md). The
+ * six pastels are dealt to the plain squares by `n % 6` so the grid reads as a
+ * playful patchwork; start / finish / ladder / snake then override with the four
+ * meanings a child spots from across the table. Tile numbers sit in dark warm
+ * ink so they stay readable on every pastel. */
+const TILE_PASTELS: readonly [string, string][] = [
+  ['#FFE4E6', '#FDA4AF'], // rose
+  ['#FEF3C7', '#FCD34D'], // amber
+  ['#DCFCE7', '#86EFAC'], // green
+  ['#E0F2FE', '#7DD3FC'], // sky
+  ['#EDE9FE', '#C4B5FD'], // violet
+  ['#FCE7F3', '#F9A8D4'], // pink
+]
+
+function tileStyle(kind: 'start' | 'finish' | 'ladder' | 'snake' | 'plain', n: number): React.CSSProperties {
   switch (kind) {
     case 'start':  return { background: 'var(--ramp-games-soft)', borderColor: 'var(--ramp-games-bright)' }
     case 'finish': return { background: 'var(--ramp-rewards-soft)', borderColor: 'var(--ramp-rewards-bright)' }
@@ -27,7 +35,10 @@ function tileStyle(kind: 'start' | 'finish' | 'ladder' | 'snake' | 'plain', dark
        "climb" and "careful" here before they read "this is the game tab". */
     case 'ladder': return { background: '#D1FAE5', borderColor: '#6EE7B7' }
     case 'snake':  return { background: '#FFE4E6', borderColor: '#FDA4AF' }
-    default:       return { background: dark ? '#FDF6EC' : '#FFFFFF', borderColor: 'rgb(255 255 255 / 0.7)' }
+    default: {
+      const [bg, border] = TILE_PASTELS[n % TILE_PASTELS.length]
+      return { background: bg, borderColor: border }
+    }
   }
 }
 
@@ -67,7 +78,7 @@ export default function MarpeleBoard({ positions, emojis }: { positions: number[
               <div
                 key={n}
                 className="relative aspect-square rounded-xl border-2 shadow-sm flex items-center justify-center"
-                style={{ gridRow: r + 1, gridColumn: c + 1, ...tileStyle(kind, (r + c) % 2 === 1) }}
+                style={{ gridRow: r + 1, gridColumn: c + 1, ...tileStyle(kind, n) }}
               >
                 {/* Was black/35 — about 2.3:1 on the tile. These numbers are how
                     a child checks whose token is ahead, so they have to read. */}

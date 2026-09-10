@@ -122,7 +122,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         {host ? <CharacterAvatar slug={host.slug} size={130} mood="excited" /> : <Mascot size={130} mood="excited" />}
       </motion.div>
-      <h1 className="text-3xl font-bold text-text-primary">همه را پیدا کردی! 🎉</h1>
+      <h1 className="font-display text-h1 font-bold text-text-primary">همه را پیدا کردی! 🎉</h1>
       <p className="text-text-primary persian-text">با {moves} حرکت — عالی بود!</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
