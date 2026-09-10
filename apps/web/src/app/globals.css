@@ -401,6 +401,21 @@ body {
   box-shadow: var(--shadow-1);
 }
 
+/* ── Parent primary action ──────────────────────────────────────────────────
+   The parent register's one filled button. It exists because `bg-amber-500`
+   and `bg-amber-600` with white text measure 2.5:1 and 3.19:1 — both under the
+   4.5:1 floor — and every parent screen was reaching for one of them. The brand
+   ramp's `bright` stop is solved to 5.4:1 for white text, so this is the same
+   colour family with the failure engineered out. Flat, no clay: the parent
+   register does not press. */
+.btn-brand {
+  background: var(--ramp-brand-bright);
+  color: #fff;
+  transition: background-color 160ms var(--ease-out);
+}
+.btn-brand:hover { background: var(--ramp-brand-ink); }
+.btn-brand:active { background: var(--ramp-brand-deep); }
+
 /* ── Brand Gradient utilities ──────────────────────────────────────────────────
    Both directions resolve to the same brand colours (--color-brand-from/to), so
    the primary identity gradient lives in exactly one place. Replaces the

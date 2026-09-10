@@ -1,8 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Icon, type IconName } from '@/components/icons'
+import { Icon } from '@/components/icons'
 import { motion } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -11,8 +11,29 @@ import { containerWidths } from '@/components/shared/layout'
 import { enterChildMode } from '@/lib/mode'
 import { resolveLevel } from '@koodakbook/shared'
 import type { DashboardSummary, Child, ChildSession } from '@koodakbook/shared'
+import { Panel, Stat, FlatBar } from '@/components/parent/flat'
+import { buildHeadline, fa } from '@/lib/parentHeadline'
 
-/* Build 7-day activity data from sessions */
+/* ── The parent dashboard ───────────────────────────────────────────────────
+ *
+ * Re-cut around one idea: a parent opens this to answer "is this working?",
+ * and the previous version answered it with nine equal-weight cards, twelve
+ * numbers, and minutes counted twice. Equal weight is the same as no weight.
+ *
+ * So the page now has a spine:
+ *   1. A SENTENCE. What happened this week, in words, built from data that can
+ *      actually support the claim (see lib/parentHeadline.ts).
+ *   2. THREE numbers, not twelve — stories, words that stuck, days in a row.
+ *      Minutes-in-app is deliberately not one of them: it rewards the wrong
+ *      behaviour, and a parent optimising for it is optimising for screen time
+ *      rather than reading.
+ *   3. ONE action.
+ *   4. Everything else, demoted below a divider, for the parent who wants it.
+ *
+ * Register: flat (components/parent/flat.tsx), never `.clay`. The child app's
+ * pressable, coloured material would read as unserious to the person paying.
+ */
+
 function buildWeekHeatmap(sessions: ChildSession[]) {
   const today = new Date()
   return Array.from({ length: 7 }, (_, i) => {
@@ -25,14 +46,34 @@ function buildWeekHeatmap(sessions: ChildSession[]) {
   })
 }
 
-function intensityClass(min: number) {
-  if (min === 0) return 'bg-gray-100'
-  if (min < 5)  return 'bg-amber-200'
-  if (min < 15) return 'bg-amber-400'
-  return 'bg-amber-600'
+/* Intensity now comes off the brand ramp instead of an ad-hoc amber-200/400/600
+ * scale, so the one place this page uses colour as data uses the same stops
+ * everything else does.
+ *
+ * The empty day returns a CLASS, not a `var(--color-parent-bg)` inline style:
+ * `--color-parent-*` lives in `@theme inline`, where Tailwind only emits the
+ * custom property if the CSS itself references it — a var() built in JS is
+ * invisible to the scanner and would silently resolve to nothing. The ramps are
+ * safe here because they are declared as real `--ramp-*` literals in :root
+ * exactly so runtime var() works. */
+function intensityCell(min: number): { className: string; style?: CSSProperties } {
+  if (min === 0) return { className: 'bg-parent-bg border border-slate-200' }
+  if (min < 5) return { className: '', style: { background: 'var(--ramp-brand-soft)' } }
+  if (min < 15) return { className: '', style: { background: 'var(--ramp-brand-bright)' } }
+  return { className: '', style: { background: 'var(--ramp-brand-deep)' } }
 }
 
 const SHORT_DAYS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج']
+
+/** The eyebrow above the sentence. Tone comes from the headline so the framing
+ *  and the claim can never disagree — no «این هفته عالی بود» over a sentence
+ *  that says nobody opened the app. */
+const EYEBROW: Record<string, string> = {
+  win: 'این هفته',
+  steady: 'این هفته',
+  quiet: 'این هفته',
+  invite: 'شروع کنید',
+}
 
 export default function ParentDashboardPage() {
   const router = useRouter()
@@ -66,276 +107,315 @@ export default function ParentDashboardPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-gray-400 persian-text">در حال بارگذاری...</div>
+    <div className="min-h-screen flex items-center justify-center bg-parent-bg">
+      <div className="text-parent-muted persian-text">در حال بارگذاری...</div>
     </div>
   )
 
   if (!summary) {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-slate-50">
-          {/* EMOJI-CONTENT: empty-state portrait, wants real art. */}
-          <div className="text-6xl">👶</div>
-          <p className="text-gray-600 font-medium text-center persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
-          <Link
-            href="/onboarding"
-            className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-md transition-colors min-h-[48px] flex items-center"
-          >
-            ایجاد پروفایل
-          </Link>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-parent-bg">
+        {/* EMOJI-CONTENT: empty-state portrait, wants real art. */}
+        <div className="text-6xl">👶</div>
+        <p className="text-parent-muted font-medium text-center persian-text">هنوز پروفایل کودکی ایجاد نشده</p>
+        <Link
+          href="/onboarding"
+          className="btn-brand font-bold py-3 px-6 rounded-xl transition-colors min-h-[48px] flex items-center"
+        >
+          ایجاد پروفایل
+        </Link>
+      </div>
     )
   }
 
-  const { child, streak_days, words_learned, stories_completed, lessons_completed, recent_badges, recent_sessions, xp, mastery_breakdown } = summary
+  const {
+    child, streak_days, words_learned, stories_completed, lessons_completed,
+    recent_badges, recent_sessions, xp, mastery_breakdown,
+  } = summary
+
   const heatmap = buildWeekHeatmap(recent_sessions)
   const todayMin = heatmap[heatmap.length - 1]?.totalMin ?? 0
   const goalMin = typeof window !== 'undefined' ? parseInt(localStorage.getItem('koodakbook_daily_goal_min') ?? '10') : 10
   const goalPct = Math.min(100, Math.round((todayMin / goalMin) * 100))
   const goalMet = todayMin >= goalMin
   const lvl = resolveLevel(xp ?? 0)
+  const headline = buildHeadline(summary)
+
+  /* Words that survived spaced repetition, not words merely seen once. This is
+   * the number the headline claims, so the tile has to agree with it. */
+  const knownWords = (mastery_breakdown?.mastered ?? 0) + (mastery_breakdown?.consolidated ?? 0)
 
   return (
-      <div className={`min-h-screen bg-slate-50 pb-20 ${containerWidths.wide}`}>
+    <div className={`min-h-screen bg-parent-bg pb-20 ${containerWidths.wide}`}>
 
-        {/* Header */}
-        <div className="bg-white border-b border-slate-200 px-5 py-4 lg:rounded-b-none">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-bold text-xl text-slate-800">داشبورد والدین</h1>
-              <p className="text-sm text-slate-500 mt-0.5">{child.name}</p>
-            </div>
-            <div className="flex items-center gap-1">
-              <Link
-                href="/parent/friends"
-                aria-label="دوستان"
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              >
-                <Icon name="partner" size="lg" />
-              </Link>
-              <Link
-                href="/parent/share"
-                aria-label="کارت پیشرفت برای اشتراک‌گذاری"
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              >
-                <Icon name="share" size="lg" />
-              </Link>
-              <Link
-                href="/parent/settings"
-                aria-label="تنظیمات"
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              >
-                <Icon name="settings" size="lg" />
-              </Link>
-            </div>
+      {/* Header */}
+      <div className="bg-parent-surface border-b border-slate-200 px-5 py-4 lg:rounded-b-none">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-bold text-xl text-parent-text">داشبورد والدین</h1>
+            <p className="text-sm text-parent-muted mt-0.5">{child.name}</p>
           </div>
-
-          {/* Child switcher */}
-          {children.length > 1 && (
-            <div className="flex gap-2 mt-3 overflow-x-auto pb-1" role="tablist" aria-label="انتخاب کودک">
-              {children.map(c => (
-                <button
-                  key={c.id}
-                  role="tab"
-                  aria-selected={c.id === child.id}
-                  onClick={() => switchChild(c.id)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    c.id === child.id ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {c.name}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <Link
+              href="/parent/friends"
+              aria-label="دوستان"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-parent-bg transition-colors"
+            >
+              <Icon name="partner" size="lg" />
+            </Link>
+            <Link
+              href="/parent/share"
+              aria-label="کارت پیشرفت برای اشتراک‌گذاری"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-parent-bg transition-colors"
+            >
+              <Icon name="share" size="lg" />
+            </Link>
+            <Link
+              href="/parent/settings"
+              aria-label="تنظیمات"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-parent-bg transition-colors"
+            >
+              <Icon name="settings" size="lg" />
+            </Link>
+          </div>
         </div>
 
-        <div className="px-4 lg:px-6 pt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3 lg:items-start">
+        {/* Child switcher */}
+        {children.length > 1 && (
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-1" role="tablist" aria-label="انتخاب کودک">
+            {children.map(c => (
+              <button
+                key={c.id}
+                role="tab"
+                aria-selected={c.id === child.id}
+                onClick={() => switchChild(c.id)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  c.id === child.id ? 'btn-brand' : 'bg-parent-bg text-parent-muted hover:bg-slate-200'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-          {/* ── Level / XP ── */}
-          {/* violet-700/purple-800 (not -500/-600): white text needs ≥4.5:1, the original pair only cleared ~2.5:1 */}
-          <section className="bg-gradient-to-br from-violet-700 to-purple-800 rounded-md p-4 shadow-card text-white" aria-labelledby="level-title">
-            <div className="flex items-center justify-between mb-2">
-              <h2 id="level-title" className="font-bold text-sm">سطح: {lvl.label}</h2>
-              <span className="text-sm font-bold">{xp ?? 0} XP</span>
-            </div>
-            <div
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={lvl.pct}
-              aria-label={`پیشرفت سطح: ${lvl.pct} درصد`}
-              className="h-3 bg-white/25 rounded-full overflow-hidden"
-            >
-              <motion.div
-                className="h-full bg-white rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${lvl.pct}%` }}
-                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-              />
-            </div>
-            <p className="text-xs text-white/80 mt-1.5">
-              {lvl.isMax ? 'بالاترین سطح!' : `${lvl.toNext} XP تا سطح بعدی`}
-            </p>
-          </section>
+      <div className="px-4 lg:px-6 pt-5">
 
-          {/* ── Daily goal ── */}
-          <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="goal-title">
-            <div className="flex items-center justify-between mb-2">
-              <h2 id="goal-title" className="font-bold text-slate-700 text-sm">هدف امروز</h2>
-              <span className={`text-sm font-bold ${goalMet ? 'text-green-600' : 'text-amber-600'}`}>
-                {goalMet
-                  ? <span className="inline-flex items-center gap-1.5"><Icon name="doneCircle" size="sm" />انجام شد</span>
-                  : `${todayMin} از ${goalMin} دقیقه`}
+        {/* ── The answer ──────────────────────────────────────────────────────
+            One panel, full width, carrying the sentence, the three numbers and
+            the single action. Nothing competes with it above the fold. */}
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 0.61, 0.36, 1] }}
+          className="bg-parent-surface border border-slate-200 rounded-2xl p-5 lg:p-6"
+          aria-labelledby="headline"
+        >
+          <p className="text-xs font-bold tracking-wide text-parent-muted uppercase">
+            {EYEBROW[headline.tone]}
+          </p>
+
+          {/* The emphasis is a separate span, not a substring match — slicing a
+              Persian string by index to re-find a clause is how bidi bugs get in. */}
+          <h2 id="headline" className="mt-2 text-xl lg:text-2xl font-bold text-parent-text leading-[1.7] text-balance">
+            {headline.before}
+            <span style={{ color: 'var(--ramp-brand-ink)', background: 'var(--ramp-brand-soft)' }} className="rounded px-1.5 py-0.5 box-decoration-clone">
+              {headline.emphasis}
+            </span>
+            {headline.after}
+          </h2>
+
+          {/* Three numbers. Stories first: finishing a story is the outcome the
+              product exists for, and the one a parent recognises without being
+              taught how to read the metric. */}
+          <div className="flex flex-wrap gap-3 mt-5">
+            <Stat ramp="stories" icon="stories" value={fa(stories_completed)} label="داستان تا آخر خوانده" />
+            <Stat ramp="write" icon="write" value={fa(knownWords)} label="کلمه که بدون کمک می‌شناسد" />
+            <Stat ramp="phonics" icon="streak" value={fa(streak_days)} label="روز پشت‌سرهم" />
+          </div>
+
+          {/* Level, demoted to a quiet line. It used to be a full white-on-violet
+              gradient card at the top — the loudest element on the screen for the
+              number a parent cares least about. */}
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <div className="flex items-baseline justify-between mb-2">
+              <span className="text-sm font-medium text-parent-text">سطح: {lvl.label}</span>
+              <span className="text-xs text-parent-muted tabular-nums">
+                {lvl.isMax ? 'بالاترین سطح' : `${fa(lvl.toNext)} امتیاز تا سطح بعد`}
               </span>
             </div>
-            <div
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={goalPct}
-              aria-label={`هدف روزانه: ${goalPct} درصد`}
-              className="h-3 bg-slate-100 rounded-full overflow-hidden"
-            >
-              <motion.div
-                className={`h-full rounded-full ${goalMet ? 'bg-green-500' : 'bg-amber-500'}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${goalPct}%` }}
-                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-              />
-            </div>
-          </section>
+            <FlatBar value={lvl.pct} label={`پیشرفت سطح: ${lvl.pct} درصد`} />
+          </div>
 
-          {/* ── 7-Day Activity Heatmap ── */}
-          <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="heatmap-title">
-            <h2 id="heatmap-title" className="font-bold text-slate-700 text-sm mb-3">فعالیت ۷ روز اخیر</h2>
+          {/* One action. It points at the progress card for now; when the
+              grandparent voice-reply loop lands this becomes "send the
+              recording", which is the actual retention mechanism. Shipping that
+              button today would ship a button with nothing behind it. */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-5">
+            <Link
+              href="/parent/share"
+              className="flex-1 flex items-center justify-center gap-2 btn-brand font-bold py-3.5 rounded-xl transition-colors min-h-[52px]"
+            >
+              <Icon name="share" size="md" />
+              کارت پیشرفت را برای خانواده بفرست
+            </Link>
+            {children.length > 0 && (
+              <button
+                onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
+                className="sm:w-auto flex items-center justify-center gap-2 px-5 border border-slate-300 text-parent-text font-bold py-3.5 rounded-xl hover:bg-parent-bg transition-colors min-h-[52px]"
+              >
+                حالت کودک
+              </button>
+            )}
+          </div>
+        </motion.section>
+
+        {/* ── The detail ──────────────────────────────────────────────────────
+            Below the fold on a phone, and labelled as detail. A parent who
+            wants to audit gets everything; a parent who wanted the answer has
+            already left. */}
+        <h2 className="text-xs font-bold tracking-wide text-parent-muted uppercase mt-8 mb-3 px-1">
+          جزئیات
+        </h2>
+
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3 lg:items-start">
+
+          {/* Consistency — the heatmap, plus the daily minutes goal folded in.
+              Minutes are DEMOTED, not deleted: `koodakbook_daily_goal_min` is a
+              setting the parent can still edit in /parent/settings, and removing
+              the only place it is displayed would orphan it. It just no longer
+              gets to be a headline number. */}
+          <Panel title="پیوستگی ۷ روز اخیر" labelledById="heatmap-title">
             <div className="flex gap-2 justify-between">
-              {heatmap.map((day, i) => (
+              {heatmap.map((day, i) => {
+                const cell = intensityCell(day.totalMin)
+                return (
                 <div key={i} className="flex flex-col items-center gap-1.5">
                   <motion.div
-                    className={`w-9 h-9 rounded-xl ${intensityClass(day.totalMin)}`}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                    title={`${day.totalMin} دقیقه`}
+                    className={`w-9 h-9 rounded-xl ${cell.className}`}
+                    style={cell.style}
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: i * 0.04, duration: 0.24, ease: [0.22, 0.61, 0.36, 1] }}
                     aria-label={`${SHORT_DAYS[(day.date.getDay() + 1) % 7]}: ${day.totalMin} دقیقه`}
                   />
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-parent-muted">
                     {SHORT_DAYS[(day.date.getDay() + 1) % 7]}
                   </span>
                 </div>
-              ))}
+                )
+              })}
             </div>
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-xs text-slate-400">کمتر</span>
-              {['bg-gray-100','bg-amber-200','bg-amber-400','bg-amber-600'].map(c => (
-                <div key={c} className={`w-4 h-4 rounded-sm ${c}`} />
-              ))}
-              <span className="text-xs text-slate-400">بیشتر</span>
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-parent-muted">هدف امروز</span>
+              <span className={`text-xs font-bold tabular-nums ${goalMet ? 'text-green-700' : 'text-parent-text'}`}>
+                {goalMet
+                  ? <span className="inline-flex items-center gap-1.5"><Icon name="doneCircle" size="xs" />انجام شد</span>
+                  : `${fa(todayMin)} از ${fa(goalMin)} دقیقه`}
+              </span>
             </div>
-          </section>
+            <FlatBar
+              className="mt-2"
+              value={goalPct}
+              ramp={goalMet ? 'lessons' : 'brand'}
+              label={`هدف روزانه: ${goalPct} درصد`}
+            />
+          </Panel>
 
-          {/* ── Stats grid ── */}
-          <section className="grid grid-cols-2 gap-3" aria-label="خلاصه پیشرفت">
-            <StatCard icon="streak"  value={streak_days}       label="روز متوالی"      color="bg-orange-50 border-orange-200 text-orange-600" />
-            <StatCard icon="write"   value={words_learned}     label="کلمه یاد گرفته"  color="bg-blue-50 border-blue-200 text-blue-600" />
-            <StatCard icon="stories" value={stories_completed} label="داستان خوانده"   color="bg-green-50 border-green-200 text-green-600" />
-            <StatCard icon="done"    value={lessons_completed} label="درس تمام شده"    color="bg-purple-50 border-purple-200 text-purple-600" />
-          </section>
-
-          {/* ── Word mastery breakdown (mig-016) ── */}
+          {/* Word mastery breakdown (mig-016) */}
           {mastery_breakdown && (() => {
             const total = mastery_breakdown.introduced + mastery_breakdown.practicing + mastery_breakdown.mastered + mastery_breakdown.consolidated
             if (total === 0) return null
             const segs = [
-              { key: 'consolidated', label: 'تثبیت‌شده',   count: mastery_breakdown.consolidated, bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
-              { key: 'mastered',     label: 'یاد گرفته',    count: mastery_breakdown.mastered,     bar: 'bg-green-500',   dot: 'bg-green-500' },
-              { key: 'practicing',   label: 'در حال تمرین', count: mastery_breakdown.practicing,   bar: 'bg-amber-400',   dot: 'bg-amber-400' },
-              { key: 'introduced',   label: 'معرفی شده',    count: mastery_breakdown.introduced,   bar: 'bg-slate-300',   dot: 'bg-slate-300' },
+              { key: 'consolidated', label: 'تثبیت‌شده', count: mastery_breakdown.consolidated, fill: 'var(--ramp-lessons-deep)' },
+              { key: 'mastered', label: 'یاد گرفته', count: mastery_breakdown.mastered, fill: 'var(--ramp-lessons-bright)' },
+              { key: 'practicing', label: 'در حال تمرین', count: mastery_breakdown.practicing, fill: 'var(--ramp-brand-bright)' },
+              { key: 'introduced', label: 'معرفی شده', count: mastery_breakdown.introduced, fill: '#64748b' },
             ]
             return (
-              <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="mastery-title">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 id="mastery-title" className="font-bold text-slate-700 text-sm">تسلط بر کلمه‌ها</h2>
-                  <span className="text-xs text-slate-400">{total} کلمه</span>
-                </div>
-                <div className="flex h-3 rounded-full overflow-hidden mb-3" role="img" aria-label="نمودار تسلط بر کلمه‌ها">
+              <Panel
+                title="تسلط بر کلمه‌ها"
+                labelledById="mastery-title"
+                action={<span className="text-xs text-parent-muted tabular-nums">{fa(total)} کلمه</span>}
+              >
+                <div className="flex h-2.5 rounded-full overflow-hidden mb-3" role="img" aria-label="نمودار تسلط بر کلمه‌ها">
                   {segs.filter(s => s.count > 0).map(s => (
-                    <div key={s.key} className={s.bar} style={{ width: `${(s.count / total) * 100}%` }} title={`${s.label}: ${s.count}`} />
+                    <div key={s.key} style={{ width: `${(s.count / total) * 100}%`, background: s.fill }} />
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                   {segs.map(s => (
                     <div key={s.key} className="flex items-center gap-2 text-xs">
-                      <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} aria-hidden="true" />
-                      <span className="text-slate-600">{s.label}</span>
-                      <span className="text-slate-400 font-medium ms-auto">{s.count}</span>
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.fill }} aria-hidden="true" />
+                      <span className="text-parent-muted">{s.label}</span>
+                      <span className="text-parent-text font-medium ms-auto tabular-nums">{fa(s.count)}</span>
                     </div>
                   ))}
                 </div>
-              </section>
+              </Panel>
             )
           })()}
 
-          {/* ── Recent badges ── */}
+          {/* Totals that didn't make the top three. They're real, they're just
+              not the answer to "is this working?". */}
+          <Panel title="مجموع" labelledById="totals-title">
+            <dl className="divide-y divide-slate-100">
+              {[
+                { label: 'کلمه‌های دیده‌شده', value: words_learned },
+                { label: 'درس‌های تمام‌شده', value: lessons_completed },
+                { label: 'امتیاز', value: xp ?? 0 },
+              ].map(row => (
+                <div key={row.label} className="flex items-center justify-between py-2.5 text-sm">
+                  <dt className="text-parent-muted">{row.label}</dt>
+                  <dd className="font-bold text-parent-text tabular-nums">{fa(row.value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </Panel>
+
+          {/* Recent badges */}
           {recent_badges.length > 0 && (
-            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="badges-title">
-              <h2 id="badges-title" className="font-bold text-slate-700 mb-3 text-sm">جوایز اخیر</h2>
-              <div className="flex gap-3 flex-wrap">
-                {recent_badges.map(cb => (
-                  <div key={cb.id} className="flex flex-col items-center gap-1 bg-amber-50 rounded-xl p-3 text-center">
-                    <span className="text-amber-500"><Icon name="rewards" size="lg" /></span>
-                    <span className="text-xs font-medium text-slate-700">{cb.badge?.title}</span>
-                  </div>
+            <Panel title="جوایز اخیر" labelledById="badges-title">
+              <ul className="space-y-2">
+                {recent_badges.slice(0, 5).map(cb => (
+                  <li key={cb.id} className="flex items-center gap-2.5 text-sm">
+                    <span style={{ color: 'var(--ramp-rewards-ink)' }}><Icon name="rewards" size="sm" /></span>
+                    <span className="text-parent-text font-medium">{cb.badge?.title}</span>
+                    <span className="text-xs text-parent-muted ms-auto tabular-nums">
+                      {new Date(cb.earned_at).toLocaleDateString('fa-IR')}
+                    </span>
+                  </li>
                 ))}
-              </div>
-            </section>
+              </ul>
+            </Panel>
           )}
 
-          {/* ── Recent sessions ── */}
+          {/* Recent sessions */}
           {recent_sessions.length > 0 && (
-            <section className="bg-white rounded-md p-4 shadow-card" aria-labelledby="sessions-title">
-              <h2 id="sessions-title" className="font-bold text-slate-700 mb-3 text-sm">جلسات اخیر</h2>
-              <div className="space-y-2">
+            <Panel title="جلسات اخیر" labelledById="sessions-title">
+              <ul className="space-y-2">
                 {recent_sessions.slice(0, 5).map((s, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600">{new Date(s.started_at).toLocaleDateString('fa-IR')}</span>
-                    <span className="text-slate-400">
-                      {s.duration_sec ? `${Math.round(s.duration_sec / 60)} دقیقه` : '—'}
+                  <li key={i} className="flex items-center justify-between text-sm">
+                    <span className="text-parent-text">{new Date(s.started_at).toLocaleDateString('fa-IR')}</span>
+                    <span className="text-parent-muted tabular-nums">
+                      {s.duration_sec ? `${fa(Math.round(s.duration_sec / 60))} دقیقه` : '—'}
                     </span>
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </section>
+              </ul>
+            </Panel>
           )}
 
           <Link
             href="/parent/progress"
-            className="flex items-center justify-center w-full bg-white hover:bg-slate-50 border-2 border-slate-200 text-slate-700 font-bold py-4 rounded-md transition-colors min-h-[56px] lg:col-span-2 xl:col-span-3"
+            className="flex items-center justify-center gap-2 w-full bg-parent-surface hover:bg-slate-100 border border-slate-200 text-parent-text font-bold py-4 rounded-xl transition-colors min-h-[52px]"
           >
-            <Icon name="progress" size="md" className="ms-2" />
+            <Icon name="progress" size="md" />
             گزارش کامل پیشرفت
           </Link>
-
-          {children.length > 0 && (
-            <button
-              onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
-              className="flex items-center justify-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 rounded-md transition-colors text-lg min-h-[56px] lg:col-span-2 xl:col-span-3"
-            >
-              رفتن به حالت کودک
-            </button>
-          )}
         </div>
       </div>
-  )
-}
-
-function StatCard({ icon, value, label, color }: { icon: IconName; value: number; label: string; color: string }) {
-  return (
-    <div className={`rounded-md border p-4 flex flex-col gap-1 ${color}`}>
-      <Icon name={icon} size="lg" />
-      <span className="text-3xl font-bold text-slate-800">{value}</span>
-      <span className="text-xs text-slate-600">{label}</span>
     </div>
   )
 }

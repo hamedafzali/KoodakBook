@@ -97,7 +97,13 @@ The child app and the parent app are deliberately different materials.
   travel on press. The travel matches the edge thickness the surface loses, so
   the bottom stays planted and only the top face moves — mismatch the two
   numbers and it reads as sliding rather than being pushed.
-- **Parent = flat.** `.card`, `.shadow-card`, slate, dense. No clay, no bounce.
+- **Parent = flat.** Flat surfaces, hairline borders, slate, dense. No clay, no
+  bounce. `components/parent/flat.tsx` is the material: `Panel` (the only
+  container — there is no raised variant, because "one raised element" is a rule
+  for directing a pre-reader's attention), `Stat` (a number on a ramp's `soft`
+  in its `ink`), `FlatBar` (thinner than `ClayBar`, eased not sprung).
+  `.btn-brand` is the one filled action; it uses `--ramp-brand-bright` because
+  `bg-amber-500`/`-600` with white text measure 2.5:1 and 3.2:1.
 
 This is not inconsistency. A parent checking progress at 11pm and a
 five-year-old choosing a story are different users, and one surface cannot
@@ -178,8 +184,15 @@ plan/conversations/share/ParentNav, and brought the few off-token radii
 `--radius-sm/md/lg/xl` in globals.css — a *different* scale from the child
 app's kit.tsx radii, not to be conflated). Also fixed share's canvas card,
 which was still drawing the pre-contrast-pass 3-stop brand gradient.
-⬜ parent app: not yet componentized into a shared kit the way child has
-kit.tsx — this pass fixed tokens in place, no new shared components.
+🟡 parent app: `components/parent/flat.tsx` now exists (Panel/Stat/FlatBar) and
+the **dashboard** is re-cut onto it — the page opens with a sentence built from
+data that can support the claim (`lib/parentHeadline.ts`), then three numbers
+(stories finished / words that survived spaced repetition / days in a row),
+then one action; everything else is demoted under a «جزئیات» heading. Minutes-
+in-app is deliberately not a headline number, but the daily-minutes goal is
+**demoted, not deleted** — `koodakbook_daily_goal_min` is still editable in
+/parent/settings, so it keeps a display. Remaining parent screens
+(progress/friends/settings/plan/conversations/share) still hand-roll markup.
 ⬜ admin: has a real, partially-adopted component kit already
 (`apps/admin/src/components/ui.tsx`) — needs a migration-completion pass
 (several dashboard pages still hand-roll gray-* markup instead of using
