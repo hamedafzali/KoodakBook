@@ -127,7 +127,8 @@ CSS beats Tailwind's layered utilities).
   a button otherwise, so affordance and semantics never disagree. Sizes are
   floors (40/48/56), all above the 44px WCAG 2.5.8 minimum rather than at it.
 - **ClayTile** — row tile (icon + title + sub), with a `locked` state that
-  keeps its shape so the grid doesn't reflow when it opens.
+  keeps its shape so the grid doesn't reflow when it opens. Takes the same
+  `glyph` escape hatch as ClayMiniTile.
 - **ClayMiniTile** — square carousel tile, `big` for the band-1 pair. Takes an
   `icon`, or a `glyph` for the one case where the mark *is* the content being
   taught (the Persian digit ۴, the counted apple).
@@ -152,7 +153,10 @@ not a screen that renders unstyled.
 - **ModuleCard** — clay row tile in the module hue (icon + title + sub), ≥76px.
 - **SectionTitle** — heading + module color tick.
 - **PageHeader v2** — sticky white/blur, 48px back target, title + module
-  accent bar (legacy `gradientClass` maps hue→bar; no saturated banners).
+  accent bar. Pass `module`; it takes the accent off the same ramp the screen
+  body uses, so the header cannot drift to a hue that means something else.
+  Legacy `gradientClass` still maps hue→bar for anything not yet converted.
+  No saturated banners.
 - **BottomNav v2** — active tab = soft amber pill (`layoutId` spring), ≥52px.
 - **CardTile / LockedTile / ActionTile** (home) — fixed heights per size
   (172/212), module-soft image area, clamped titles.
@@ -172,11 +176,36 @@ got a fixed thumb-zone action bar (mobile reachability) and directional
 arrows for pre-readers. Guarded by `scripts/check-child-design-tokens.sh`
 (`npm run lint:design`) so raw `rounded-md/lg/[1.5rem]` and
 `shadow-sm/md/lg` don't reappear.
-⬜ lesson/story/review/speak/write/math/memory inner screens: still need the
-deeper componentization — replace local gradient blocks with MODULE tints,
-use SectionTitle/ModuleCard throughout (the 2026-09 pass fixed contrast/shape
-tokens on these screens but did not restructure them onto the shared
-components).
+✅ child inner screens (2026-09): lesson/story/review/speak/write/math/phonics/
+games/rewards/home are on the system. Four things changed, all of them things
+the earlier token pass could not see:
+
+- **One neutral family.** The tree ran `gray-*` and `slate-*` side by side.
+  Everything is `slate-*` now. Two steps were carrying real text below AA —
+  `gray-400` (2.56:1 on white) on the speech transcript, a badge's own title,
+  the wrong-answer labels in three maths games and the memory-game move
+  counter, plus `gray-300` on the lesson list's lock. A label a child cannot
+  read is not a quiet label; it is a missing one.
+- **One hue per module.** Eleven screens passed `PageHeader` a `gradientClass`
+  chosen by eye — maths was emerald *and* sky *and* amber, games violet, speak
+  rose. They pass `module` now (the new prop; it beats `gradientClass` and
+  takes the accent off the same ramp the screen body uses). `math` and
+  `phonics` lost their per-room and per-vowel gradients the same way: the glyph
+  is already the largest thing on the tile, so it can carry the difference.
+- **`ACTIVITY_GRADIENTS` is deprecated.** It dealt five hues out by list index,
+  so a story's colour changed whenever the list reordered — signal-shaped
+  decoration. Story placeholders are the stories hue.
+- **Clay for every primary.** The main control on eleven screens was
+  `bg-brand-gradient`: an on-system token, but the *parent* register, reading
+  as a dead flat spot beside clay tiles.
+
+New in the kit for this pass: `PageHeader` takes `module`; `ClayTile` takes the
+`glyph` escape hatch `ClayMiniTile` already had, for the Persian digit the
+numerals room actually teaches.
+
+⬜ still outstanding on these screens: `marpele` / `marpele-online` (390-odd
+lines each) keep their bespoke board layout — on-system colour now, but not yet
+componentised.
 ✅ parent app contrast/shadow/radius pass (2026-09): fixed the one real
 WCAG-AA failure (dashboard level/XP card, white-on-violet-500→purple-600 —
 now violet-700→purple-800), replaced ad-hoc `shadow-sm/md/lg` with
