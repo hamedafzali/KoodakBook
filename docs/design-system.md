@@ -3,7 +3,7 @@
 **Scope:** the child app (`apps/web` child surfaces). Parent/admin follow later.
 **Code:** tokens in `globals.css` (`.shadow-card/.shadow-raised`, `.child-bg`),
 components in `components/child/kit.tsx` (MODULE, IconChip, ModuleCard,
-SectionTitle) + PageHeader/BottomNav v2.
+SectionTitle) + PageHeader/BottomNav v2. Icons: `components/icons.tsx`.
 
 ## 1. Audit — what was wrong (evidence-based)
 
@@ -26,9 +26,22 @@ SectionTitle) + PageHeader/BottomNav v2.
    everything else rests at `shadow-card`.
 4. **The app decides; the child confirms.** Every screen leads with one
    obvious next action (home: «بازی کن»).
-5. **Windowed rows, never truncated lists.** Continue + next ~10 + 🎲 + 🚪.
+5. **Windowed rows, never truncated lists.** Continue + next ~10 + a random
+   tile + a door to the full page. Row arrows are always visible, never
+   `hidden sm:flex` — WCAG 2.2 SC 2.5.7 wants a single-pointer alternative to
+   dragging, and a pre-reader does not read a clipped tile as "swipe me".
 6. **Age bands change density, not language.** 3–5 / 6–7 / 8–10 (NN/g bands).
-7. **Friendly states:** locks sleep (😴), errors encourage, empty states invite.
+7. **Friendly states:** the warmth lives in the copy («هنوز خوابه!»), not in
+   the glyph — a locked tile uses the same lock icon as every other locked
+   thing. Errors encourage, empty states invite.
+8. **No emoji as structural icons.** An emoji is a font, not a design token: it
+   renders differently per OS, cannot take a color, a stroke weight, or a size
+   from the type scale, and inside an RTL Persian run it forces a bidi context
+   switch. Every affordance comes from `components/icons.tsx` (Lucide, one
+   24px grid, names typed as `IconName`). *Content* emoji are exempt and
+   marked `EMOJI-CONTENT` — the apples a child counts, board-game tokens,
+   badge faces, character mascots. Those are subject matter for
+   `pixel-wizards-charachters`, and outline glyphs would make them worse.
 
 ## 3. Tokens
 
@@ -51,7 +64,12 @@ caption 12 · learning text ≥32 with line-height ≥1.8 (harakat legibility).
 
 ## 4. Components (kit.tsx)
 
-- **IconChip** — module emoji on soft tint, md/lg/xl. The color identity atom.
+- **Icon** (`components/icons.tsx`) — the only way to draw an icon. Lucide,
+  one 24px grid, sizes tied to the type scale (xs 14 → hero 48).
+  `aria-hidden` by default; pass `label` to make it a named `img`.
+- **IconChip** — module icon on soft tint, md/lg/xl. The color identity atom.
+  The glyph inherits the module tint via `currentColor`, and nav icons thicken
+  on active (stroke 2 → 2.4) — token behavior an emoji cannot express.
 - **ModuleCard** — white row card (chip + title + sub), ≥72px, quiet chevron.
 - **SectionTitle** — heading + module color tick.
 - **PageHeader v2** — sticky white/blur, 48px back target, title + module
