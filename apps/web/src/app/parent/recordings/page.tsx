@@ -63,13 +63,13 @@ export default function RecordingsPage() {
 
   return (
     <div className={`min-h-screen bg-parent-bg ${containerWidths.app}`}>
-      <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
+      <div className="bg-parent-surface border-b border-slate-200 px-5 py-4 flex items-center gap-3">
         <Link href="/parent/settings" aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-slate-100 transition-colors">
           <Icon name="back" size="md" />
         </Link>
         <div>
-          <h1 className="font-bold text-xl text-parent-ink">صداهای ضبط‌شده</h1>
+          <h1 className="font-bold text-xl text-parent-text">صداهای ضبط‌شده</h1>
           <p className="text-sm text-parent-muted">
             {child ? `${child.name} داستان‌ها را خوانده است` : 'کتاب‌خواندن با صدای کودک'}
           </p>
@@ -81,7 +81,7 @@ export default function RecordingsPage() {
 
         {!loading && items.length === 0 && (
           <Panel>
-            <p className="text-sm text-parent-ink font-medium">هنوز صدایی ضبط نشده است.</p>
+            <p className="text-sm text-parent-text font-medium">هنوز صدایی ضبط نشده است.</p>
             <p className="text-sm text-parent-muted mt-1.5 leading-relaxed">
               بعد از تمام‌شدن هر داستان، از کودک پرسیده می‌شود که آن را با صدای خودش بخواند.
             </p>
@@ -165,7 +165,7 @@ function RecordingRow({ rec, onHeard, onKeep, onDelete }: {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="font-medium text-parent-ink text-sm truncate">
+            <p className="font-medium text-parent-text text-sm truncate">
               {rec.story_title ?? 'داستان'}
             </p>
             {/* State encoded as a chip as well as position — a parent scanning
@@ -185,7 +185,7 @@ function RecordingRow({ rec, onHeard, onKeep, onDelete }: {
           <p className="text-xs text-parent-muted mt-0.5 tabular-nums">
             {date} · {rec.duration_ms ? faDuration(rec.duration_ms) : `${fa(Math.round(rec.bytes / 1024))} کیلوبایت`}
           </p>
-          {failed && <p className="text-xs text-rose-600 mt-1">پخش نشد. دوباره تلاش کنید.</p>}
+          {failed && <p className="text-xs text-rose-700 mt-1">پخش نشد. دوباره تلاش کنید.</p>}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
@@ -207,14 +207,14 @@ function RecordingRow({ rec, onHeard, onKeep, onDelete }: {
           button sits next to «نگه دار», so it asks first. */}
       {confirmDelete && (
         <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-          <p className="text-sm text-parent-ink">این صدا برای همیشه پاک شود؟</p>
+          <p className="text-sm text-parent-text">این صدا برای همیشه پاک شود؟</p>
           <div className="flex gap-2 shrink-0">
             <button onClick={onDelete}
               className="min-h-[40px] px-3 rounded-lg bg-rose-600 text-white text-sm font-bold">
               پاک کن
             </button>
             <button onClick={() => setConfirmDelete(false)}
-              className="min-h-[40px] px-3 rounded-lg bg-slate-100 text-parent-ink text-sm font-bold">
+              className="min-h-[40px] px-3 rounded-lg bg-slate-100 text-parent-text text-sm font-bold">
               بی‌خیال
             </button>
           </div>

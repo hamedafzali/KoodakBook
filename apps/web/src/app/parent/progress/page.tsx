@@ -8,6 +8,20 @@ import { pickChild } from '@/lib/activeChild'
 import type { Child, ChildWordProgress, ChildLessonProgress, ChildStoryProgress, ChildSession, Word, Lesson, Story } from '@koodakbook/shared'
 import { containerWidths } from '@/components/shared/layout'
 import { Icon } from '@/components/icons'
+import { Panel, Stat } from '@/components/parent/flat'
+
+/* Flat register (components/parent/flat.tsx). Three things changed in the
+ * migration beyond swapping containers for Panel:
+ *
+ *  - The summary trio was three hand-picked pastel families (green-50/700,
+ *    amber-50/700, blue-50/700). They are now `Stat`s on shared ramps, so the
+ *    soft/ink pairing is the one the ramp generator solved for AA rather than
+ *    three separate guesses.
+ *  - Every `text-slate-400` on a metadata line was 2.56:1 on white and 2.34:1
+ *    on the parent ground — below AA for text. They are now `text-parent-muted`
+ *    (7.58 / 6.92).
+ *  - The back chevron was a hand-rolled inline SVG, the one place in this app
+ *    still drawing an icon by hand instead of using the icon set. */
 
 interface RawProgress {
   words:           ChildWordProgress[]
@@ -27,11 +41,14 @@ interface EnrichedProgress {
 const MASTERY_ORDER = ['consolidated', 'mastered', 'practicing', 'introduced'] as const
 type MasteryKey = typeof MASTERY_ORDER[number]
 
+/* Four states, and the ordering has to be legible without reading the label:
+ * strongest is the most saturated. `introduced` was gray-100/gray-500 — 3.6:1,
+ * under AA, and the only tint on this page that wasn't from the palette. */
 const MASTERY_COLOR: Record<MasteryKey, string> = {
-  consolidated: 'bg-emerald-100 text-emerald-700',
-  mastered:     'bg-green-100 text-green-700',
-  practicing:   'bg-amber-100 text-amber-700',
-  introduced:   'bg-gray-100 text-gray-500',
+  consolidated: 'bg-emerald-100 text-emerald-800',
+  mastered:     'bg-green-100 text-green-800',
+  practicing:   'bg-amber-100 text-amber-900',
+  introduced:   'bg-slate-100 text-slate-700',
 }
 const MASTERY_LABEL: Record<MasteryKey, string> = {
   consolidated: 'تثبیت‌شده',
@@ -95,13 +112,13 @@ export default function ParentProgressPage() {
   }, [router])
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <p className="text-gray-400 persian-text">در حال بارگذاری...</p>
+    <div className="min-h-screen flex items-center justify-center bg-parent-bg">
+      <p className="text-parent-muted persian-text">در حال بارگذاری...</p>
     </div>
   )
   if (!child) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <p className="text-gray-400 persian-text">پروفایل کودک یافت نشد</p>
+    <div className="min-h-screen flex items-center justify-center bg-parent-bg">
+      <p className="text-parent-muted persian-text">پروفایل کودک یافت نشد</p>
     </div>
   )
 
@@ -121,44 +138,33 @@ export default function ParentProgressPage() {
   ]
 
   return (
-      <div className={`min-h-screen bg-slate-50 ${containerWidths.app}`}>
+      <div className={`min-h-screen bg-parent-bg ${containerWidths.app}`}>
 
         {/* Header */}
-        <div className="bg-white border-b border-slate-200 px-5 py-4 flex items-center gap-3">
+        <div className="bg-parent-surface border-b border-slate-200 px-5 py-4 flex items-center gap-3">
           <Link
             href="/parent/dashboard"
             aria-label="برگشت به داشبورد"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-slate-100 transition-colors"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            <Icon name="back" size="md" />
           </Link>
           <div>
-            <h1 className="font-bold text-xl text-slate-800">پیشرفت {child.name}</h1>
-            <p className="text-sm text-slate-400">گزارش کامل یادگیری</p>
+            <h1 className="font-bold text-xl text-parent-text">پیشرفت {child.name}</h1>
+            <p className="text-sm text-parent-muted">گزارش کامل یادگیری</p>
           </div>
         </div>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-3 px-4 pt-4">
-          <div className="bg-green-50 rounded-md p-4 text-center">
-            <p className="text-2xl font-bold text-green-700">{learnedCount}</p>
-            <p className="text-xs text-green-600 mt-0.5">کلمه یاد گرفته</p>
-          </div>
-          <div className="bg-amber-50 rounded-md p-4 text-center">
-            <p className="text-2xl font-bold text-amber-700">{progress?.lessons.filter(l => l.completed).length ?? 0}</p>
-            <p className="text-xs text-amber-600 mt-0.5">درس تمام شده</p>
-          </div>
-          <div className="bg-blue-50 rounded-md p-4 text-center">
-            <p className="text-2xl font-bold text-blue-700">{progress?.stories.filter(s => s.completed).length ?? 0}</p>
-            <p className="text-xs text-blue-600 mt-0.5">داستان خوانده</p>
-          </div>
+        <div className="flex gap-3 px-4 pt-4">
+          <Stat ramp="review"  icon="done"    value={learnedCount} label="کلمه یاد گرفته" />
+          <Stat ramp="lessons" icon="lessons" value={progress?.lessons.filter(l => l.completed).length ?? 0} label="درس تمام شده" />
+          <Stat ramp="stories" icon="stories" value={progress?.stories.filter(s => s.completed).length ?? 0} label="داستان خوانده" />
         </div>
 
         {/* Sticky tabs */}
         <div
-          className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 flex gap-1 px-4 pt-3 pb-0 overflow-x-auto"
+          className="sticky top-0 z-10 bg-parent-bg border-b border-slate-200 flex gap-1 px-4 pt-3 pb-0 overflow-x-auto"
           role="tablist"
           aria-label="دسته‌بندی پیشرفت"
         >
@@ -170,10 +176,11 @@ export default function ParentProgressPage() {
               aria-selected={tab === t.key}
               aria-controls={`panel-${t.key}`}
               onClick={() => setTab(t.key)}
+              style={tab === t.key ? { borderColor: 'var(--ramp-brand-bright)' } : undefined}
               className={`flex-shrink-0 px-4 py-2.5 rounded-t-xl text-sm font-medium transition-colors border-b-2 ${
                 tab === t.key
-                  ? 'bg-white border-amber-500 text-amber-700'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
+                  ? 'bg-parent-surface text-parent-text'
+                  : 'border-transparent text-parent-muted hover:text-parent-text'
               }`}
             >
               {t.label} ({t.count})
@@ -192,14 +199,14 @@ export default function ParentProgressPage() {
           >
             <div className="space-y-4">
               {(progress?.words.length ?? 0) === 0 && (
-                <p className="text-center text-slate-400 py-8 persian-text">هنوز کلمه‌ای یاد نگرفته</p>
+                <p className="text-center text-parent-muted py-8 persian-text">هنوز کلمه‌ای یاد نگرفته</p>
               )}
               {MASTERY_ORDER.map(level =>
                 wordsByMastery[level].length > 0 && (
                   <section key={level} aria-labelledby={`mastery-${level}`}>
-                    <h3 id={`mastery-${level}`} className="text-sm font-bold text-slate-600 mb-2 flex items-center gap-2">
+                    <h3 id={`mastery-${level}`} className="text-sm font-bold text-parent-text mb-2 flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded-full text-xs ${MASTERY_COLOR[level]}`}>{MASTERY_LABEL[level]}</span>
-                      <span className="text-slate-400">{wordsByMastery[level].length} کلمه</span>
+                      <span className="text-parent-muted font-normal">{wordsByMastery[level].length} کلمه</span>
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {wordsByMastery[level].map(w => (
@@ -223,21 +230,21 @@ export default function ParentProgressPage() {
           >
             <div className="space-y-2">
               {(progress?.lessons.length ?? 0) === 0 && (
-                <p className="text-center text-slate-400 py-8 persian-text">هنوز درسی شروع نشده</p>
+                <p className="text-center text-parent-muted py-8 persian-text">هنوز درسی شروع نشده</p>
               )}
               {progress?.lessons.map(l => (
-                <div key={l.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-card">
-                  <span className={l.completed ? 'text-green-600' : 'text-slate-400'}><Icon name={l.completed ? 'doneCircle' : 'time'} size="lg" /></span>
+                <Panel key={l.id} className="flex items-center gap-4">
+                  <span className={l.completed ? 'text-emerald-700' : 'text-parent-muted'}><Icon name={l.completed ? 'doneCircle' : 'time'} size="lg" /></span>
                   <div className="flex-1">
-                    <p className="font-medium text-slate-800">{l.lesson?.title ?? '—'}</p>
+                    <p className="font-medium text-parent-text">{l.lesson?.title ?? '—'}</p>
                     {l.completed && l.completed_at && (
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-parent-muted mt-0.5">
                         {new Date(l.completed_at).toLocaleDateString('fa-IR')}
                         {l.score != null && ` · نمره: ${l.score}٪`}
                       </p>
                     )}
                   </div>
-                </div>
+                </Panel>
               ))}
             </div>
           </div>
@@ -251,20 +258,20 @@ export default function ParentProgressPage() {
           >
             <div className="space-y-2">
               {(progress?.stories.length ?? 0) === 0 && (
-                <p className="text-center text-slate-400 py-8 persian-text">هنوز داستانی خوانده نشده</p>
+                <p className="text-center text-parent-muted py-8 persian-text">هنوز داستانی خوانده نشده</p>
               )}
               {progress?.stories.map(s => (
-                <div key={s.id} className="bg-white rounded-md p-4 flex items-center gap-4 shadow-card">
-                  <span className={s.completed ? 'text-green-600' : 'text-slate-400'}><Icon name={s.completed ? 'stories' : 'report'} size="lg" /></span>
+                <Panel key={s.id} className="flex items-center gap-4">
+                  <span className={s.completed ? 'text-emerald-700' : 'text-parent-muted'}><Icon name={s.completed ? 'stories' : 'report'} size="lg" /></span>
                   <div className="flex-1">
-                    <p className="font-medium text-slate-800">{s.story?.title_persian ?? '—'}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="font-medium text-parent-text">{s.story?.title_persian ?? '—'}</p>
+                    <p className="text-xs text-parent-muted mt-0.5">
                       {s.completed ? 'خوانده شده' : `صفحه ${s.last_page}`}
                       {s.replay_count > 0 && ` · ${s.replay_count} بار تکرار`}
                       {` · ${new Date(s.last_read_at).toLocaleDateString('fa-IR')}`}
                     </p>
                   </div>
-                </div>
+                </Panel>
               ))}
             </div>
           </div>
@@ -278,18 +285,18 @@ export default function ParentProgressPage() {
           >
             <div className="space-y-2">
               {(progress?.recent_sessions.length ?? 0) === 0 && (
-                <p className="text-center text-slate-400 py-8 persian-text">هنوز جلسه‌ای ثبت نشده</p>
+                <p className="text-center text-parent-muted py-8 persian-text">هنوز جلسه‌ای ثبت نشده</p>
               )}
               {progress?.recent_sessions.map((s, i) => (
-                <div key={i} className="bg-white rounded-md p-4 flex items-center justify-between shadow-card">
+                <Panel key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-slate-400"><Icon name="calendar" size="md" /></span>
-                    <span className="text-slate-700">{new Date(s.started_at).toLocaleDateString('fa-IR')}</span>
+                    <span className="text-parent-muted"><Icon name="calendar" size="md" /></span>
+                    <span className="text-parent-text">{new Date(s.started_at).toLocaleDateString('fa-IR')}</span>
                   </div>
-                  <span className="text-sm text-slate-400">
+                  <span className="text-sm text-parent-muted">
                     {s.duration_sec ? `${Math.round(s.duration_sec / 60)} دقیقه` : '—'}
                   </span>
-                </div>
+                </Panel>
               ))}
             </div>
           </div>
