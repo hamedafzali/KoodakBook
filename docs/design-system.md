@@ -193,6 +193,19 @@ in-app is deliberately not a headline number, but the daily-minutes goal is
 **demoted, not deleted** — `koodakbook_daily_goal_min` is still editable in
 /parent/settings, so it keeps a display. Remaining parent screens
 (progress/friends/settings/plan/conversations/share) still hand-roll markup.
+✅ child home is a path, not a menu (2026-09): `/child/home` now renders at most
+three rungs — what was just finished, the one step to take now, what comes next
+(locked) — plus the reprobe card, friends, the full alphabet row, an optional
+review strip and one door out. The windowed carousels (stories / lessons /
+games / the 7-tile practice grid) are gone: children don't model hidden
+content, so "first N + see all" showed the same four tiles forever. Everything
+they carried moved to **`/child/rooms` («همه‌ی بخش‌ها»)**, whose contract is
+written at the top of that file — every room is on the page, nothing windowed,
+nothing behind a "see all", never scrolls sideways; adding a room to the app
+means adding it here. BottomNav swapped «جوایز» for «همه» rather than growing:
+four tabs plus `ParentDoorNav` is already five items, the bar's ceiling at 64px
+per item on a 360px phone. Rewards is reached from the hub and still announces
+itself the moment a badge is earned.
 ⬜ admin: has a real, partially-adopted component kit already
 (`apps/admin/src/components/ui.tsx`) — needs a migration-completion pass
 (several dashboard pages still hand-roll gray-* markup instead of using

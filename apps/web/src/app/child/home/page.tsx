@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
@@ -17,24 +16,35 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
 import { LESSON_TYPE_ICON, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
-import { MODULE, ModuleCard, ChunkyButton } from '@/components/child/kit'
-import { ClayMiniTile } from '@/components/child/clay'
+import { ChunkyButton } from '@/components/child/kit'
 import { Icon, type IconName } from '@/components/icons'
-import SceneBackdrop from '@/components/child/SceneBackdrop'
-import { SCENE_SLUGS, type SceneSlug } from '@koodakbook/shared'
 import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels, Letter, AppCharacter } from '@koodakbook/shared'
 import CharacterAvatar from '@/components/child/CharacterAvatar'
 
-/* Child home, redesigned for its real audience.
+/* Child home — a path, not a menu.
  *
- * Principles (design/motion/content plan §1):
- *  - ONE giant "play" button that routes to the smartest next activity — a
- *    4-year-old should never have to decide, only tap the glowing thing.
- *  - Windowed carousels instead of truncated lists: continue + the next ~10
- *    relevant items, then a random tile and a door to the full page.
- *    Bounded UI at ANY catalog size (100+ stories still shows ~13 tiles).
- *  - Age bands: 3–5 see hero + stories + two giant tiles; 6–7 add lessons and
- *    the practice grid; 8–10 get the dense layout with stats and review. */
+ * What changed and why. Home used to be a stack of windowed carousels: stories,
+ * alphabet, lessons, games, and a seven-tile practice grid. Bounded at any
+ * catalog size, which solved the truncation bug it was built for — but it still
+ * asked a five-year-old to choose from ~40 tiles across six rows, and the one
+ * thing the app had already decided (what to do next) was competing with all of
+ * them for attention.
+ *
+ * Now: one step at a time. What was finished, what to do NOW, and a glimpse of
+ * what's next. The «بازی کن!» button is the only filled control on the screen.
+ * The ten modules moved to /child/rooms — a complete hub, nothing windowed —
+ * which is also the fourth tab in the bottom nav. That page had to exist BEFORE
+ * this one lost the grid: the nav only ever carried four tabs while eleven
+ * rooms exist, so home was the sole entry point for seven of them, and deleting
+ * the grid without a hub would have orphaned rooms rather than demoted them.
+ *
+ * What stayed on home, deliberately:
+ *  - The friends row and the alphabet strip. Neither is navigation to a room —
+ *    one is who the child plays with, the other is an activity performed in
+ *    place (tap a letter, hear it). Both render EVERY item, so neither
+ *    reintroduces the hidden-content problem carousels had.
+ *  - Age bands still change density: 3–5 get a bigger path and no stats.
+ */
 
 function greeting() {
   const h = new Date().getHours()
@@ -45,12 +55,9 @@ function greeting() {
 
 interface NextUp { href: string; label: string; title: string; icon: IconName; say: string }
 
-/** Deterministic scene per story id — tiles get stable illustrated covers. */
-function sceneFor(id: string): SceneSlug {
-  let h = 0
-  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
-  return SCENE_SLUGS[h % SCENE_SLUGS.length]
-}
+/** A step on the path that isn't today's. Title + icon only — these are
+ *  context, not controls, so they carry no href. */
+interface PathAside { title: string; icon: IconName }
 
 export default function ChildHomePage() {
   const router = useRouter()
@@ -66,6 +73,7 @@ export default function ChildHomePage() {
   const [doneStories, setDoneStories] = useState<Set<string>>(new Set())
   const [lastLesson, setLastLesson] = useState<Lesson | null>(null)
   const [lastStory, setLastStory] = useState<Story | null>(null)
+  const [justDone, setJustDone] = useState<PathAside | null>(null)
   const [showTutorial, setShowTutorial] = useState(false)
   const [pickList, setPickList] = useState<Child[]>([])
   const [showPicker, setShowPicker] = useState(false)
@@ -100,6 +108,21 @@ export default function ChildHomePage() {
       if (lastLessonId && lessonsRes.data) setLastLesson(lessonsRes.data.find(l => l.id === lastLessonId) ?? null)
       const lastStoryId = progressRes.data.stories.filter(s => !s.completed).at(-1)?.story_id
       if (lastStoryId && storiesRes.data) setLastStory(storiesRes.data.find(s => s.id === lastStoryId) ?? null)
+
+      /* The step behind today. This is the most recently COMPLETED item, taken
+       * from the same progress list — the API carries no completion timestamp,
+       * so "the last one in the completed list" is the strongest honest claim
+       * available. It is never labelled with a day («دیروز» would be a guess);
+       * it just says «تمام شد». */
+      const doneLessonId = progressRes.data.lessons.filter(l => l.completed).at(-1)?.lesson_id
+      const doneLesson = doneLessonId && lessonsRes.data ? lessonsRes.data.find(l => l.id === doneLessonId) : null
+      if (doneLesson) {
+        setJustDone({ title: doneLesson.title, icon: (LESSON_TYPE_ICON[doneLesson.type] ?? 'lessons') as IconName })
+      } else {
+        const doneStoryId = progressRes.data.stories.filter(s => s.completed).at(-1)?.story_id
+        const doneStory = doneStoryId && storiesRes.data ? storiesRes.data.find(s => s.id === doneStoryId) : null
+        setJustDone(doneStory ? { title: doneStory.title_persian, icon: 'stories' } : null)
+      }
     }
     if (lessonsRes.data) setLessons(lessonsRes.data)
     if (storiesRes.data) setStories(storiesRes.data)
@@ -144,29 +167,26 @@ export default function ChildHomePage() {
     return { href: '/child/phonics', label: 'بازی صداها', title: 'زبر، زیر، پیش', icon: 'phonics' as IconName, say: 'بیا با صداها بازی کنیم!' }
   }, [lastLesson, lastStory, reviewWords, lessons, stories, strandLevels, doneLessons, doneStories])
 
-  // ── Windowed carousels: bounded tiles at any catalog size ──
-  const lessonRow = useMemo(() => {
-    const unlocked = lessons.filter(l => isLessonUnlocked(l, strandLevels))
-    const todo = unlocked.filter(l => !doneLessons.has(l.id)).sort((a, b) => a.stage - b.stage)
-    const locked = lessons.filter(l => !isLessonUnlocked(l, strandLevels)).slice(0, 2)
-    return { window: todo.slice(0, 10), doneCount: doneLessons.size, locked, pool: todo }
-  }, [lessons, strandLevels, doneLessons])
-
-  const storyRow = useMemo(() => {
-    const unlocked = stories.filter(s => isStoryUnlocked(s, strandLevels))
-    const fresh = unlocked.filter(s => !doneStories.has(s.id) && s.id !== lastStory?.id).sort((a, b) => a.stage - b.stage)
-    const win = (lastStory ? [lastStory] : []).concat(fresh).slice(0, 10)
-    const locked = stories.filter(s => !isStoryUnlocked(s, strandLevels)).slice(0, 2)
-    return { window: win, doneCount: doneStories.size, locked, pool: unlocked }
-  }, [stories, strandLevels, doneStories, lastStory])
-
-  function surprise(kind: 'lesson' | 'story') {
-    const pool = kind === 'lesson' ? lessonRow.pool : storyRow.pool
-    if (pool.length === 0) return
-    const pick = pool[Math.floor(Math.random() * pool.length)]
-    speakPersian('سورپرایز!')
-    router.push(kind === 'lesson' ? `/child/lesson/${pick.id}` : `/child/story/${(pick as Story).id}`)
-  }
+  /* ── The step AFTER today ──────────────────────────────────
+   * Shown locked, on purpose. A pre-reader has no model of what's coming, and
+   * "there is a next thing, and it isn't open yet" is the single most reliable
+   * reason to come back tomorrow. It is deliberately not tappable: an
+   * affordance that refuses the tap teaches the child that tapping is
+   * pointless. It reads as scenery, not as a broken door. */
+  const comingUp = useMemo<PathAside | null>(() => {
+    const nextLesson = lessons
+      .filter(l => isLessonUnlocked(l, strandLevels) && !doneLessons.has(l.id))
+      .sort((a, b) => a.stage - b.stage)
+      .find(l => `/child/lesson/${l.id}` !== nextUp.href)
+    if (nextLesson) {
+      return { title: nextLesson.title, icon: (LESSON_TYPE_ICON[nextLesson.type] ?? 'lessons') as IconName }
+    }
+    const nextStory = stories
+      .filter(s => isStoryUnlocked(s, strandLevels) && !doneStories.has(s.id))
+      .sort((a, b) => a.stage - b.stage)
+      .find(s => `/child/story/${s.id}` !== nextUp.href)
+    return nextStory ? { title: nextStory.title_persian, icon: 'stories' } : null
+  }, [lessons, stories, strandLevels, doneLessons, doneStories, nextUp.href])
 
   if (showPicker) {
     return (
@@ -241,24 +261,22 @@ export default function ChildHomePage() {
 
       <div className={`relative -mt-14 px-4 space-y-7 pb-4 ${band === 3 ? 'lg:px-8 lg:max-w-5xl lg:mx-auto' : 'max-w-2xl mx-auto'}`}>
 
-        {/* ── THE button: the app already decided what's next ── */}
-        <Link href={nextUp.href} aria-label={`${nextUp.label}: ${nextUp.title}`}>
-          <motion.div
-            whileTap={{ scale: 0.97 }}
-            animate={{ scale: [1, 1.015, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            className={`bg-white rounded-[1.75rem] shadow-raised ring-4 ring-yellow-300/70 flex items-center gap-4 ${band === 1 ? 'p-6' : 'p-5'}`}
-          >
-            <span className={`shrink-0 text-amber-600 ${band === 1 ? 'p-1' : ''}`}><Icon name={nextUp.icon} size={band === 1 ? 'hero' : 'xl'} strokeWidth={2.2} /></span>
-            <div className="flex-1 min-w-0">
-              <p className="text-amber-600 font-bold text-sm">{nextUp.label}</p>
-              <p className={`font-bold text-gray-800 truncate ${band === 1 ? 'text-2xl' : 'text-lg'}`}>{nextUp.title}</p>
-            </div>
-            <ChunkyButton className={band === 1 ? 'text-xl px-6 py-4' : 'px-5 py-3'}>
-              بازی کن!
-            </ChunkyButton>
-          </motion.div>
-        </Link>
+        {/* ── The path ──────────────────────────────────────────
+             Three rungs at most: what was finished, what to do NOW, what comes
+             after. The middle one is the only thing on this screen with a
+             filled button. */}
+        <ol className="space-y-0" role="list" aria-label="مسیر امروز">
+          {justDone && (
+            <PathRung state="done" icon={justDone.icon} label="تمام شد" title={justDone.title} />
+          )}
+
+          <PathRung state="now" icon={nextUp.icon} label={nextUp.label} title={nextUp.title}
+            href={nextUp.href} big={band === 1} hasNext={!!comingUp} />
+
+          {comingUp && (
+            <PathRung state="locked" icon={comingUp.icon} label="بعدی" title={comingUp.title} />
+          )}
+        </ol>
 
         {/* ── Re-placement's entry point (all bands): a skippable game card,
              same visual weight as any other activity, flavor-labeled — never
@@ -296,26 +314,6 @@ export default function ChildHomePage() {
           </TileRow>
         )}
 
-        {/* ── Stories row (all bands — stories are the heart) ── */}
-        <TileRow label="قصه‌ها" bigTiles={band === 1}>
-          {storyRow.window.map(s => (
-            <CardTile key={s.id} href={`/child/story/${s.id}`} title={s.title_persian}
-              image={mediaUrl(s.cover_url)} icon="stories" tint={MODULE.stories.soft} scene={sceneFor(s.id)}
-              glow={s.id === (lastStory?.id ?? storyRow.window[0]?.id)} big={band === 1}
-              badge={s.id === lastStory?.id ? 'ادامه بده' : undefined} />
-          ))}
-          {storyRow.locked.map(s => (
-            <LockedTile key={s.id} title={s.title_persian} big={band === 1} />
-          ))}
-          {storyRow.pool.length > 1 && (
-            <ActionTile icon="random" title="شانسی!" onClick={() => surprise('story')} big={band === 1} />
-          )}
-          {storyRow.doneCount > 0 && (
-            <ActionTile icon="star" title={`خوانده‌ها (${storyRow.doneCount})`} href="/child/story" big={band === 1} />
-          )}
-          <ActionTile icon="seeAll" title="همه‌ی قصه‌ها" href="/child/story" big={band === 1} />
-        </TileRow>
-
         {/* ── Alphabet row: tap a letter, HEAR it (all bands) ── */}
         {letters.length > 0 && (
           <TileRow label="الفبا — ضربه بزن و بشنو" bigTiles={band === 1}>
@@ -331,83 +329,44 @@ export default function ChildHomePage() {
                 </motion.div>
               </button>
             ))}
-            <ActionTile icon="write" title="بنویس!" href="/child/write" big={band === 1} />
           </TileRow>
         )}
 
-        {/* ── Lessons row (bands 2–3) ── */}
-        {band >= 2 && (
-          <TileRow label="درس‌ها">
-            {lessonRow.window.map((l, idx) => (
-              <CardTile key={l.id} href={`/child/lesson/${l.id}`} title={l.title}
-                icon={(LESSON_TYPE_ICON[l.type] ?? 'stories') as IconName} tint={MODULE.lessons.soft}
-                sub={`مرحله ${l.stage}`} glow={idx === 0} />
-            ))}
-            {lessonRow.locked.map(l => <LockedTile key={l.id} title={l.title} />)}
-            {lessonRow.pool.length > 1 && <ActionTile icon="random" title="شانسی!" onClick={() => surprise('lesson')} />}
-            {lessonRow.doneCount > 0 && <ActionTile icon="star" title={`انجام‌شده (${lessonRow.doneCount})`} href="/child/lesson" />}
-            <ActionTile icon="seeAll" title="همه‌ی درس‌ها" href="/child/lesson" />
-          </TileRow>
-        )}
-
-        {/* ── Games row: the fun shelf (bands 2–3) ── */}
-        {band >= 2 && (
-          <TileRow label="بازی‌ها">
-            {([
-              { href: '/child/games/memory', icon: 'games' as IconName, title: 'بازی حافظه', m: 'games' as const },
-              { href: '/child/games/marpele', icon: 'random' as IconName, title: 'مارپله', m: 'games' as const },
-              { href: '/child/math/counting', icon: 'counting' as IconName, title: 'شمارش', m: 'lessons' as const },
-              // No icon: the digit IS what this room teaches, so it renders as
-              // the glyph itself rather than a picture standing in for it.
-              { href: '/child/math/digits', glyph: '۴', title: 'رقم‌ها', m: 'letters' as const },
-              { href: '/child/math/bazaar', icon: 'shop' as IconName, title: 'بازار', m: 'rewards' as const },
-              { href: '/child/speak', icon: 'speak' as IconName, title: 'بگو ببینم!', m: 'speak' as const },
-            ]).map(g => (
-              <ClayMiniTile key={g.href} inList ramp={g.m} icon={g.icon} glyph={g.glyph}
-                title={g.title} href={g.href} />
-            ))}
-          </TileRow>
-        )}
-
-        {/* ── Review strip (band 3: older kids like seeing the queue) ── */}
-        {band === 3 && reviewWords.length > 0 && (
+        {/* ── Review, when the queue is real (bands 2–3) ──
+             Not a module tile: this one carries a COUNT, which is the only
+             reason it earns a place on the path screen instead of living in
+             the hub with everything else. */}
+        {band >= 2 && reviewWords.length >= 3 && nextUp.href !== '/child/review' && (
           <Link href="/child/review" aria-label={`مرور ${reviewWords.length} کلمه`}>
             <motion.div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3" whileTap={{ scale: 0.98 }}>
-              <span className="text-violet-600"><Icon name="review" size="lg" strokeWidth={2.2} /></span>
+              <span style={{ color: 'var(--ramp-review-ink)' }}><Icon name="review" size="lg" strokeWidth={2.2} /></span>
               <div className="flex-1">
                 <p className="font-bold text-gray-800 text-sm">مرور امروز</p>
                 <p className="text-xs text-gray-500">{reviewWords.length} کلمه منتظر توست</p>
               </div>
-              <span className="text-amber-400 text-xl">←</span>
+              <Icon name="prev" size="md" className="text-amber-500" />
             </motion.div>
           </Link>
         )}
 
-        {/* ── Practice ── */}
-        {band === 1 ? (
-          /* Two giant, loud choices — that's the whole menu at this age */
-          <div className="grid grid-cols-2 gap-4">
-            <ClayMiniTile big ramp="phonics" icon="phonics" title="صداها"
-              href="/child/phonics" label="بازی صداها" />
-            {/* EMOJI-CONTENT: the apple is the thing being counted — subject
-                matter of the lesson, not a nav icon, so it passes as a glyph. */}
-            <ClayMiniTile big ramp="lessons" glyph="🍎" title="بشمار!"
-              href="/child/math/counting" label="بازی شمارش" />
-          </div>
-        ) : (
-          <section>
-            <h2 className="font-bold text-gray-800 text-base mb-3">تمرین کن</h2>
-            <div className={`grid grid-cols-2 gap-3 ${band === 3 ? 'lg:grid-cols-3' : ''}`}>
-              <ModuleCard module="phonics" href="/child/phonics" title="صداها" sub="زبر، زیر، پیش" />
-              <ModuleCard module="write" href="/child/write" title="نوشتن" sub="حرف‌ها را بنویس" />
-              <ModuleCard module="speak" href="/child/speak" title="گفتن" sub="کلمه‌ها را بگو" />
-              <ModuleCard module="math" href="/child/math" title="دنیای اعداد" sub="ریاضی به فارسی" />
-              <ModuleCard module="games" href="/child/games/memory" title="بازی حافظه" sub="جفت‌ها را پیدا کن" />
-              <ModuleCard module="games" href="/child/games/marpele" title="مارپله" sub="نردبان و مار" />
-              <ModuleCard module="rewards" href="/child/rewards" title="جوایز من" sub="مدال‌هایم" />
+        {/* ── The door to everything else ──
+             One door, not a grid. It is the last thing on the page on purpose:
+             a child who knows what they want will reach for it, and a child who
+             doesn't has already been given today's step at the top. */}
+        <Link href="/child/rooms" aria-label="همه‌ی بخش‌ها">
+          <motion.div
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            className={`bg-white rounded-2xl shadow-card flex items-center gap-3 ${band === 1 ? 'p-5' : 'p-4'}`}
+          >
+            <span className="text-amber-700"><Icon name="seeAll" size={band === 1 ? 'xl' : 'lg'} strokeWidth={2.2} /></span>
+            <div className="flex-1 min-w-0">
+              <p className={`font-bold text-gray-800 ${band === 1 ? 'text-lg' : 'text-sm'}`}>همه‌ی بخش‌ها</p>
+              <p className="text-xs text-gray-500">بازی‌ها، نوشتن، گفتن، اعداد…</p>
             </div>
-          </section>
-        )}
+            <Icon name="prev" size="md" className="text-amber-500" />
+          </motion.div>
+        </Link>
       </div>
 
       <BottomNav />
@@ -490,71 +449,82 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
   )
 }
 
-function CardTile({ href, title, sub, badge, icon, image, tint, scene, glow, big }: {
-  href: string; title: string; sub?: string; badge?: string
-  icon: IconName; image?: string | null; tint: string; scene?: SceneSlug; glow?: boolean; big?: boolean
+/* ── A rung on the path ─────────────────────────────────────
+ * Three states, one shape. Keeping the shape constant across states is the
+ * point: the child sees the SAME object move from "next" to "now" to "done"
+ * over successive visits, which is what makes it read as a path rather than
+ * as three unrelated cards.
+ *
+ * Only `now` is a link. `done` is a record and `locked` is a promise; neither
+ * accepts a tap, and neither pretends to — no ring, no button, no arrow. An
+ * affordance that refuses the tap teaches a pre-reader that tapping does
+ * nothing, which is the opposite of what this screen is for. */
+function PathRung({ state, icon, label, title, href, big, hasNext }: {
+  state: 'done' | 'now' | 'locked'
+  icon: IconName
+  label: string
+  title: string
+  href?: string
+  big?: boolean
+  hasNext?: boolean
 }) {
-  const w = big ? 'w-44' : 'w-36'
-  const h = big ? 'h-32' : 'h-24'
-  const total = big ? 'h-[212px]' : 'h-[172px]'
-  return (
-    <Link href={href} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>
-      <motion.div
-        className={`${w} ${total} bg-white rounded-2xl overflow-hidden shadow-card relative flex flex-col ${glow ? 'ring-4 ring-yellow-300/80' : ''}`}
-        whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.96 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-      >
-        {badge && <span className="absolute top-2 right-2 z-10 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>}
-        {image ? (
-          <div className={`relative w-full ${h} shrink-0`}>
-            <Image src={image} alt="" fill sizes="176px" className="object-cover" />
-          </div>
-        ) : scene ? (
-          <div className={`w-full ${h} shrink-0`}><SceneBackdrop scene={scene} className="w-full h-full !rounded-none" /></div>
-        ) : (
-          <div className={`w-full ${h} shrink-0 ${tint} flex items-center justify-center text-gray-500`}>
-            <Icon name={icon} size={big ? 'hero' : 'xl'} strokeWidth={2} />
-          </div>
-        )}
-        <div className="p-3 flex-1 min-h-0">
-          <p className={`font-bold text-gray-800 leading-tight line-clamp-2 ${big ? 'text-base' : 'text-sm'}`}>{title}</p>
-          {sub && <p className="text-xs text-gray-400 mt-0.5 truncate">{sub}</p>}
-        </div>
-      </motion.div>
-    </Link>
-  )
-}
+  const now = state === 'now'
+  const done = state === 'done'
 
-/** Friendly lock: sleeping tile, not a barrier. */
-function LockedTile({ title, big }: { title: string; big?: boolean }) {
-  return (
-    <div role="listitem" className="flex-shrink-0" aria-label={`${title} — هنوز خوابه`}>
-      <div className={`${big ? 'w-44 h-[212px]' : 'w-36 h-[172px]'} bg-white/60 rounded-2xl overflow-hidden shadow-card select-none flex flex-col`}>
-        {/* The warmth lives in the copy ("هنوز خوابه!"), not in the glyph — so the
-            icon can stay consistent with every other locked state in the app. */}
-        <div className={`w-full shrink-0 ${big ? 'h-32' : 'h-24'} bg-gray-100 flex items-center justify-center text-gray-400`}>
-          <Icon name="locked" size={big ? 'hero' : 'xl'} strokeWidth={2} />
-        </div>
-        <div className="p-3 flex-1 min-h-0">
-          <p className="font-bold text-gray-400 text-sm leading-tight line-clamp-2">{title}</p>
-          <p className="text-xs text-gray-400 mt-0.5 truncate">هنوز خوابه!</p>
-        </div>
+  const card = (
+    <div
+      className={`flex-1 min-w-0 flex items-center gap-3 rounded-2xl ${
+        now
+          ? `bg-white shadow-raised ring-4 ring-yellow-300/70 ${big ? 'p-5' : 'p-4'}`
+          : 'bg-white/60 p-3'
+      }`}
+    >
+      <span className={`shrink-0 ${now ? 'text-amber-600' : 'text-gray-400'}`}>
+        <Icon name={done ? 'doneCircle' : now ? icon : 'locked'} size={now && big ? 'hero' : now ? 'xl' : 'md'} strokeWidth={2.2} />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className={`font-bold ${now ? 'text-amber-600 text-sm' : 'text-gray-400 text-xs'}`}>{label}</p>
+        <p className={`font-bold truncate ${now ? (big ? 'text-2xl text-gray-800' : 'text-lg text-gray-800') : 'text-sm text-gray-500'}`}>
+          {title}
+        </p>
       </div>
+      {now && (
+        <ChunkyButton className={big ? 'text-xl px-6 py-4' : 'px-5 py-3'}>
+          بازی کن!
+        </ChunkyButton>
+      )}
     </div>
   )
-}
 
-/** Random / done-stack / see-all tiles at the end of each row. */
-function ActionTile({ icon, title, href, onClick, big }: {
-  icon: IconName; title: string; href?: string; onClick?: () => void; big?: boolean
-}) {
-  const inner = (
-    <motion.div whileTap={{ scale: 0.94 }}
-      className={`${big ? 'w-32 h-[212px]' : 'w-28 h-[172px]'} bg-amber-50 border-2 border-dashed border-amber-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-amber-700`}>
-      <Icon name={icon} size={big ? 'hero' : 'xl'} strokeWidth={2.2} />
-      <p className="font-bold text-amber-700 text-xs text-center px-2 leading-snug">{title}</p>
-    </motion.div>
+  return (
+    <li className="flex items-stretch gap-3">
+      {/* The rail. It runs from this rung's dot down to the next one, so the
+          last rung's line is absent rather than dangling into nothing. */}
+      <div className="w-4 shrink-0 flex flex-col items-center pt-5" aria-hidden="true">
+        <span
+          className={`w-3 h-3 rounded-full shrink-0 ${
+            done ? 'bg-amber-500' : now ? 'bg-amber-500 ring-4 ring-amber-200' : 'bg-gray-300'
+          }`}
+        />
+        {(done || (now && hasNext)) && <span className="w-0.5 flex-1 bg-amber-200 mt-1" />}
+      </div>
+
+      <div className="flex-1 min-w-0 pb-3">
+        {now && href ? (
+          <Link href={href} aria-label={`${label}: ${title}`} className="block">
+            <motion.div
+              whileTap={{ scale: 0.97 }}
+              animate={{ scale: [1, 1.015, 1] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex"
+            >
+              {card}
+            </motion.div>
+          </Link>
+        ) : (
+          <div className="flex" aria-disabled={state === 'locked' ? true : undefined}>{card}</div>
+        )}
+      </div>
+    </li>
   )
-  if (href) return <Link href={href} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>{inner}</Link>
-  return <button onClick={onClick} role="listitem" className="flex-shrink-0 snap-start" aria-label={title}>{inner}</button>
 }

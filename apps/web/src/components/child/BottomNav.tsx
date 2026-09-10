@@ -5,11 +5,20 @@ import { motion } from 'framer-motion'
 import ParentDoorNav from './ParentDoorNav'
 import { Icon, type IconName } from '@/components/icons'
 
+/* Four tabs plus the parent door = five items, which is the ceiling for a
+ * bottom bar (and the practical limit at 64px per item on a 360px phone).
+ *
+ * «همه‌ی بخش‌ها» took the slot «جوایز» used to hold. Home is now a path — one
+ * step at a time, chosen by the app — so the hub is the only way to reach the
+ * seven rooms the nav never covered (phonics, review, math, speak, write,
+ * games, friends), and it is opened every session. Rewards is visited
+ * occasionally and announces itself the moment a badge is earned, so it lives
+ * inside the hub instead of holding a permanent slot. */
 const NAV_ITEMS: { href: string; icon: IconName; label: string; ariaLabel: string }[] = [
-  { href: '/child/home',    icon: 'home',    label: 'خانه',    ariaLabel: 'صفحه اصلی' },
-  { href: '/child/lesson',  icon: 'lessons', label: 'درس‌ها',  ariaLabel: 'لیست درس‌ها' },
-  { href: '/child/story',   icon: 'stories', label: 'داستان',  ariaLabel: 'داستان‌ها' },
-  { href: '/child/rewards', icon: 'rewards', label: 'جوایز',   ariaLabel: 'جوایز و مدال‌ها' },
+  { href: '/child/home',   icon: 'home',    label: 'خانه',    ariaLabel: 'صفحه اصلی' },
+  { href: '/child/lesson', icon: 'lessons', label: 'درس‌ها',  ariaLabel: 'لیست درس‌ها' },
+  { href: '/child/story',  icon: 'stories', label: 'داستان',  ariaLabel: 'داستان‌ها' },
+  { href: '/child/rooms',  icon: 'seeAll',  label: 'همه',     ariaLabel: 'همه‌ی بخش‌ها' },
 ]
 
 export default function BottomNav() {
