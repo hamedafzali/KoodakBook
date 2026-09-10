@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import ParentDoorNav from './ParentDoorNav'
-import { Icon, type IconName } from '@/components/icons'
 
 /* Four tabs plus the parent door = five items, which is the ceiling for a
  * bottom bar (and the practical limit at 64px per item on a 360px phone).
@@ -12,12 +11,17 @@ import { Icon, type IconName } from '@/components/icons'
  * a tab because home had been reduced to a single path and it was the only way
  * to reach seven rooms; home carries every room itself now, so a tab pointing
  * at a second copy of home is a wasted slot. Rewards is the one destination a
- * child asks for by name and that home does not put in front of them. */
-const NAV_ITEMS: { href: string; icon: IconName; label: string; ariaLabel: string }[] = [
-  { href: '/child/home',    icon: 'home',    label: 'خانه',   ariaLabel: 'صفحه اصلی' },
-  { href: '/child/lesson',  icon: 'lessons', label: 'درس‌ها', ariaLabel: 'لیست درس‌ها' },
-  { href: '/child/story',   icon: 'stories', label: 'داستان', ariaLabel: 'داستان‌ها' },
-  { href: '/child/rewards', icon: 'rewards', label: 'جوایز',  ariaLabel: 'جایزه‌های من' },
+ * child asks for by name and that home does not put in front of them.
+ *
+ * The tab marks are the app's colourful emoji, not monochrome strokes
+ * (DESIGN_CHARTER.md): a pre-reader picks the tab by its picture. The label
+ * under it keeps the readable `text-text-secondary` when inactive — a
+ * deliberate contrast fix over the old gray-400 (2.56:1). */
+const NAV_ITEMS = [
+  { href: '/child/home',    emoji: '🏠', label: 'خانه',   ariaLabel: 'صفحه اصلی' },
+  { href: '/child/lesson',  emoji: '📚', label: 'درس‌ها', ariaLabel: 'لیست درس‌ها' },
+  { href: '/child/story',   emoji: '📖', label: 'داستان', ariaLabel: 'داستان‌ها' },
+  { href: '/child/rewards', emoji: '🏆', label: 'جوایز',  ariaLabel: 'جایزه‌های من' },
 ]
 
 export default function BottomNav() {
@@ -48,14 +52,12 @@ export default function BottomNav() {
               />
             )}
             <motion.span
-              /* Inactive tabs were gray-400: 2.56:1, under the 3:1 floor for a
-                 non-text control — three of the four tabs, on every child
-                 screen. slate-600 is 7.6:1 and still reads as "not here". */
-              className={`relative leading-none ${active ? 'text-amber-800' : 'text-text-secondary'}`}
+              className={`relative text-2xl leading-none ${active ? '' : 'opacity-75'}`}
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+              aria-hidden="true"
             >
-              <Icon name={nav.icon} size="lg" strokeWidth={active ? 2.4 : 2} />
+              {nav.emoji}
             </motion.span>
             <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-text-secondary'}`}>
               {nav.label}
