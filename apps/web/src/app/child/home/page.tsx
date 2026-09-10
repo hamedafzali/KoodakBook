@@ -219,7 +219,7 @@ export default function ChildHomePage() {
           8.97:1 at the amber end, 5.34:1 at the orange end. The twinkles are
           the app's own emoji, not monochrome strokes. */}
       <div
-        className="relative pt-8 pb-24 px-5 rounded-b-[2.5rem] text-on-brand"
+        className="relative overflow-hidden pt-8 pb-24 px-5 rounded-b-[2.5rem] text-on-brand"
         style={{ background: 'linear-gradient(to bottom right, var(--color-brand-from), var(--color-brand-to))' }}
       >
         <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" aria-hidden="true" />
