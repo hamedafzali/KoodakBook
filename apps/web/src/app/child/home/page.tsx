@@ -17,7 +17,8 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
 import { LESSON_TYPE_ICON, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
-import { MODULE, IconChip, ModuleCard, ChunkyButton } from '@/components/child/kit'
+import { MODULE, ModuleCard, ChunkyButton } from '@/components/child/kit'
+import { ClayMiniTile } from '@/components/child/clay'
 import { Icon, type IconName } from '@/components/icons'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import { SCENE_SLUGS, type SceneSlug } from '@koodakbook/shared'
@@ -356,19 +357,14 @@ export default function ChildHomePage() {
               { href: '/child/games/memory', icon: 'games' as IconName, title: 'بازی حافظه', m: 'games' as const },
               { href: '/child/games/marpele', icon: 'random' as IconName, title: 'مارپله', m: 'games' as const },
               { href: '/child/math/counting', icon: 'counting' as IconName, title: 'شمارش', m: 'lessons' as const },
-              { href: '/child/math/digits', emoji: '۴', title: 'رقم‌ها', m: 'letters' as const },
+              // No icon: the digit IS what this room teaches, so it renders as
+              // the glyph itself rather than a picture standing in for it.
+              { href: '/child/math/digits', glyph: '۴', title: 'رقم‌ها', m: 'letters' as const },
               { href: '/child/math/bazaar', icon: 'shop' as IconName, title: 'بازار', m: 'rewards' as const },
               { href: '/child/speak', icon: 'speak' as IconName, title: 'بگو ببینم!', m: 'speak' as const },
             ]).map(g => (
-              <Link key={g.href} href={g.href} role="listitem" aria-label={g.title}
-                className="flex-shrink-0 snap-start group">
-                <motion.div whileTap={{ y: 4 }}
-                  className={`w-32 h-[120px] ${MODULE[g.m].solid} ${MODULE[g.m].edge} border-b-[6px] group-active:border-b-2 rounded-2xl relative overflow-hidden flex flex-col items-center justify-center gap-1.5 text-white`}>
-                  <span className="absolute -top-5 -left-5 w-16 h-16 bg-white/15 rounded-full" aria-hidden="true" />
-                  <span className="text-4xl font-bold drop-shadow-sm" aria-hidden="true">{g.emoji}</span>
-                  <p className="font-bold text-sm drop-shadow-sm">{g.title}</p>
-                </motion.div>
-              </Link>
+              <ClayMiniTile key={g.href} inList ramp={g.m} icon={g.icon} glyph={g.glyph}
+                title={g.title} href={g.href} />
             ))}
           </TileRow>
         )}
@@ -391,24 +387,12 @@ export default function ChildHomePage() {
         {band === 1 ? (
           /* Two giant, loud choices — that's the whole menu at this age */
           <div className="grid grid-cols-2 gap-4">
-            <Link href="/child/phonics" aria-label="بازی صداها" className="group">
-              <motion.div whileTap={{ y: 4 }}
-                className={`relative overflow-hidden ${MODULE.phonics.solid} ${MODULE.phonics.edge} border-b-[6px] group-active:border-b-2 rounded-3xl p-5 text-white flex flex-col items-center gap-2 min-h-[136px] justify-center`}>
-                <span className="absolute -top-8 -left-8 w-24 h-24 bg-white/15 rounded-full" aria-hidden="true" />
-                <span className="text-white drop-shadow-sm"><Icon name="phonics" size={56} strokeWidth={2} /></span>
-                <p className="font-bold text-xl drop-shadow-sm">صداها</p>
-              </motion.div>
-            </Link>
-            <Link href="/child/math/counting" aria-label="بازی شمارش" className="group">
-              <motion.div whileTap={{ y: 4 }}
-                className={`relative overflow-hidden ${MODULE.lessons.solid} ${MODULE.lessons.edge} border-b-[6px] group-active:border-b-2 rounded-3xl p-5 text-white flex flex-col items-center gap-2 min-h-[136px] justify-center`}>
-                <span className="absolute -top-8 -left-8 w-24 h-24 bg-white/15 rounded-full" aria-hidden="true" />
-                {/* EMOJI-CONTENT: the apple is the thing being counted — subject
-                    matter of the lesson, not a nav icon. */}
-                <span className="text-6xl drop-shadow-sm" aria-hidden="true">🍎</span>
-                <p className="font-bold text-xl drop-shadow-sm">بشمار!</p>
-              </motion.div>
-            </Link>
+            <ClayMiniTile big ramp="phonics" icon="phonics" title="صداها"
+              href="/child/phonics" label="بازی صداها" />
+            {/* EMOJI-CONTENT: the apple is the thing being counted — subject
+                matter of the lesson, not a nav icon, so it passes as a glyph. */}
+            <ClayMiniTile big ramp="lessons" glyph="🍎" title="بشمار!"
+              href="/child/math/counting" label="بازی شمارش" />
           </div>
         ) : (
           <section>

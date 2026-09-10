@@ -7,7 +7,7 @@ import { isLoggedIn } from '@/lib/auth'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
-import { MODULE } from '@/components/child/kit'
+import { ClayButton } from '@/components/child/clay'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Letter } from '@koodakbook/shared'
@@ -83,14 +83,13 @@ export default function WritePage() {
           >
             → قبلی
           </motion.button>
-          <motion.button
+          <ClayButton
+            ramp="write" size="lg" className="flex-[2]"
             onClick={() => { playSuccess(); setIdx(i => Math.min(letters.length - 1, i + 1)) }}
             disabled={idx === letters.length - 1}
-            whileTap={{ scale: 0.94 }}
-            className={`flex-[2] py-4 ${MODULE.write.solid} ${MODULE.write.edge} border-b-[5px] active:border-b-2 active:translate-y-[3px] rounded-2xl text-white font-bold text-lg disabled:opacity-40 min-h-[56px] transition-all`}
           >
             بعدی ←
-          </motion.button>
+          </ClayButton>
         </div>
       </div>
 

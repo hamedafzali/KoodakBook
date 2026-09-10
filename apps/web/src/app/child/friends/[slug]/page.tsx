@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { speakOrPlay, stopSpeaking, initSpeech } from '@/lib/speech'
@@ -12,9 +12,9 @@ import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import CharacterAvatar, { type CharacterMood } from '@/components/child/CharacterAvatar'
-import { MODULE } from '@/components/child/kit'
+import { ModuleCard } from '@/components/child/kit'
 import { isSceneSlug, type AppCharacter, type CharacterLine } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
+
 
 /* Character home (plan §5): the friend in its own scene, greeting on arrival
  * (auto-play, replay by tapping the character), and three chunky doors. V1 =
@@ -94,41 +94,21 @@ export default function CharacterHomePage() {
 
         {/* Three doors — chunky, in the friend's module colors */}
         <div className="grid grid-cols-1 gap-3 pt-1">
-          <Link href={`/child/games/memory?host=${character.slug}`} aria-label="بازی با این دوست" className="group">
-            <motion.div whileTap={{ y: 4 }}
-              className={`relative overflow-hidden ${MODULE.games.solid} ${MODULE.games.edge} border-b-[6px] group-active:border-b-2 rounded-2xl p-4 text-white flex items-center gap-3 min-h-[76px]`}>
-              <span className="absolute -top-5 -left-5 w-16 h-16 bg-white/15 rounded-full" aria-hidden="true" />
-              <span className="text-4xl drop-shadow-sm" aria-hidden="true">🃏</span>
-              <div>
-                <p className="font-bold drop-shadow-sm">با هم بازی کنیم!</p>
-                <p className="text-xs text-white/85">بازی حافظه با {character.name_persian}</p>
-              </div>
-            </motion.div>
-          </Link>
-
-          <Link href="/child/story" aria-label="قصه‌ها" className="group">
-            <motion.div whileTap={{ y: 4 }}
-              className={`relative overflow-hidden ${MODULE.stories.solid} ${MODULE.stories.edge} border-b-[6px] group-active:border-b-2 rounded-2xl p-4 text-white flex items-center gap-3 min-h-[76px]`}>
-              <span className="absolute -top-5 -left-5 w-16 h-16 bg-white/15 rounded-full" aria-hidden="true" />
-              <span className="text-white drop-shadow-sm"><Icon name="stories" size={40} strokeWidth={2} /></span>
-              <div>
-                <p className="font-bold drop-shadow-sm">قصه بگو!</p>
-                <p className="text-xs text-white/85">برو سراغ قصه‌ها</p>
-              </div>
-            </motion.div>
-          </Link>
-
-          <Link href={`/child/friends/${character.slug}/talk`} aria-label="حرف بزنیم" className="group">
-            <motion.div whileTap={{ y: 4 }}
-              className={`relative overflow-hidden ${MODULE.speak.solid} ${MODULE.speak.edge} border-b-[6px] group-active:border-b-2 rounded-2xl p-4 text-white flex items-center gap-3 min-h-[76px]`}>
-              <span className="absolute -top-5 -left-5 w-16 h-16 bg-white/15 rounded-full" aria-hidden="true" />
-              <span className="text-white drop-shadow-sm"><Icon name="message" size={40} strokeWidth={2} /></span>
-              <div>
-                <p className="font-bold drop-shadow-sm">حرف بزنیم!</p>
-                <p className="text-xs text-white/85">{character.name_persian} گوش می‌کنه و جواب می‌ده</p>
-              </div>
-            </motion.div>
-          </Link>
+          {/* The 🃏 that used to sit on the first door was a structural icon,
+              not content — it named a control, so it followed the same rule as
+              every other affordance and became the games glyph. */}
+          <ModuleCard
+            module="games" href={`/child/games/memory?host=${character.slug}`}
+            title="با هم بازی کنیم!" sub={`بازی حافظه با ${character.name_persian}`}
+          />
+          <ModuleCard
+            module="stories" href="/child/story"
+            title="قصه بگو!" sub="برو سراغ قصه‌ها"
+          />
+          <ModuleCard
+            module="speak" icon="message" href={`/child/friends/${character.slug}/talk`}
+            title="حرف بزنیم!" sub={`${character.name_persian} گوش می‌کنه و جواب می‌ده`}
+          />
         </div>
       </div>
 
