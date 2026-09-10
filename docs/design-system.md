@@ -255,19 +255,40 @@ class that does not exist — `--color-parent-*` defines bg/surface/text/muted
 only, and because it lives in an `@theme inline` block the class emitted
 nothing at all rather than failing loudly. Confirmed by grepping the built CSS;
 worth remembering as the failure mode of that block.
-✅ child home is a path, not a menu (2026-09): `/child/home` now renders at most
-three rungs — what was just finished, the one step to take now, what comes next
-(locked) — plus the reprobe card, friends, the full alphabet row, an optional
-review strip and one door out. The windowed carousels (stories / lessons /
-games / the 7-tile practice grid) are gone: children don't model hidden
-content, so "first N + see all" showed the same four tiles forever. Everything
-they carried moved to **`/child/rooms` («همه‌ی بخش‌ها»)**, whose contract is
-written at the top of that file — every room is on the page, nothing windowed,
-nothing behind a "see all", never scrolls sideways; adding a room to the app
-means adding it here. BottomNav swapped «جوایز» for «همه» rather than growing:
-four tabs plus `ParentDoorNav` is already five items, the bar's ceiling at 64px
-per item on a 360px phone. Rewards is reached from the hub and still announces
-itself the moment a badge is earned.
+✅ child home: the path **and** the whole house (2026-09, revised). This screen
+has now been wrong in both directions, and both mistakes are worth keeping on
+the record.
+
+*First:* six rows of windowed carousels — ~40 tiles, most off-screen, with the
+one thing the app had already decided (what to do next) competing against all of
+them. Children don't model hidden content, so "first N + see all" showed the
+same four tiles forever.
+
+*Then, over-correcting:* home became only a path — three rungs, and every room
+behind a single «همه‌ی بخش‌ها» door. That door is adult reasoning. It assumes a
+user who can read its label, believes in content they can't see, and will spend
+a tap to go looking. The user is four. **A room behind a word-shaped door is a
+room the child does not have.**
+
+*Now:* both, in priority order. The path first (finished / now / next — the
+«بازی کن!» button is still the only filled control in that block, so a child who
+wants to be told what to do is told at the top), then **every room in full**,
+directly on home. The rooms come from `components/child/rooms.tsx`, shared with
+the `/child/rooms` route so the two can't drift; that route survives for the
+deep link but is no longer a gate, and nothing may live there that isn't on
+home. The old hub's rules are the ones that were right, and they still hold:
+nothing windowed, nothing behind a "see all", no sideways scrollers — the
+alphabet strip and the friends row became wrapping grids for the same reason.
+Reaching anything costs a scroll down and a tap, and scrolling down is the one
+gesture a pre-reader already owns.
+
+Age bands change **density, never inventory**: 3–5 get one big tile per row and
+no stats; they do not get fewer rooms.
+
+BottomNav gets «جوایز» back in the slot the hub briefly held — a tab pointing at
+a second copy of home is a wasted slot, and four tabs plus `ParentDoorNav` is
+already the bar's five-item ceiling. Its inactive tabs also came off `gray-400`
+(2.56:1, three of the four tabs on every child screen) to `slate-600`.
 🟡 read-aloud (2026-09): the north-star event now has an interface — the child
 records at the end of a story (`components/child/ReadAloud.tsx`, clay), the
 parent listens at `/parent/recordings` (flat). Both registers used as specified,

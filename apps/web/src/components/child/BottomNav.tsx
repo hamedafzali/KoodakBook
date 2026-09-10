@@ -8,17 +8,16 @@ import { Icon, type IconName } from '@/components/icons'
 /* Four tabs plus the parent door = five items, which is the ceiling for a
  * bottom bar (and the practical limit at 64px per item on a 360px phone).
  *
- * «همه‌ی بخش‌ها» took the slot «جوایز» used to hold. Home is now a path — one
- * step at a time, chosen by the app — so the hub is the only way to reach the
- * seven rooms the nav never covered (phonics, review, math, speak, write,
- * games, friends), and it is opened every session. Rewards is visited
- * occasionally and announces itself the moment a badge is earned, so it lives
- * inside the hub instead of holding a permanent slot. */
+ * «جوایز» is back in the slot the «همه‌ی بخش‌ها» hub briefly held. That hub was
+ * a tab because home had been reduced to a single path and it was the only way
+ * to reach seven rooms; home carries every room itself now, so a tab pointing
+ * at a second copy of home is a wasted slot. Rewards is the one destination a
+ * child asks for by name and that home does not put in front of them. */
 const NAV_ITEMS: { href: string; icon: IconName; label: string; ariaLabel: string }[] = [
-  { href: '/child/home',   icon: 'home',    label: 'خانه',    ariaLabel: 'صفحه اصلی' },
-  { href: '/child/lesson', icon: 'lessons', label: 'درس‌ها',  ariaLabel: 'لیست درس‌ها' },
-  { href: '/child/story',  icon: 'stories', label: 'داستان',  ariaLabel: 'داستان‌ها' },
-  { href: '/child/rooms',  icon: 'seeAll',  label: 'همه',     ariaLabel: 'همه‌ی بخش‌ها' },
+  { href: '/child/home',    icon: 'home',    label: 'خانه',   ariaLabel: 'صفحه اصلی' },
+  { href: '/child/lesson',  icon: 'lessons', label: 'درس‌ها', ariaLabel: 'لیست درس‌ها' },
+  { href: '/child/story',   icon: 'stories', label: 'داستان', ariaLabel: 'داستان‌ها' },
+  { href: '/child/rewards', icon: 'rewards', label: 'جوایز',  ariaLabel: 'جایزه‌های من' },
 ]
 
 export default function BottomNav() {
@@ -49,13 +48,16 @@ export default function BottomNav() {
               />
             )}
             <motion.span
-              className={`relative leading-none ${active ? 'text-amber-800' : 'text-gray-400'}`}
+              /* Inactive tabs were gray-400: 2.56:1, under the 3:1 floor for a
+                 non-text control — three of the four tabs, on every child
+                 screen. slate-600 is 7.6:1 and still reads as "not here". */
+              className={`relative leading-none ${active ? 'text-amber-800' : 'text-slate-600'}`}
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
             >
               <Icon name={nav.icon} size="lg" strokeWidth={active ? 2.4 : 2} />
             </motion.span>
-            <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-gray-400'}`}>
+            <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-slate-600'}`}>
               {nav.label}
             </span>
           </Link>

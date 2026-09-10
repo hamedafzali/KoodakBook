@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,34 +16,36 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
 import { LESSON_TYPE_ICON, resolveLevel, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
-import { ChunkyButton } from '@/components/child/kit'
+import { ChunkyButton, SectionTitle } from '@/components/child/kit'
 import { Icon, type IconName } from '@/components/icons'
 import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels, Letter, AppCharacter } from '@koodakbook/shared'
-import CharacterAvatar from '@/components/child/CharacterAvatar'
+import { RoomSections } from '@/components/child/rooms'
 
-/* Child home — a path, not a menu.
+/* Child home — a path AND the whole house.
  *
- * What changed and why. Home used to be a stack of windowed carousels: stories,
- * alphabet, lessons, games, and a seven-tile practice grid. Bounded at any
- * catalog size, which solved the truncation bug it was built for — but it still
- * asked a five-year-old to choose from ~40 tiles across six rows, and the one
- * thing the app had already decided (what to do next) was competing with all of
- * them for attention.
+ * The history matters, because this screen has now been wrong in both
+ * directions. It started as six rows of windowed carousels: ~40 tiles, most of
+ * them off-screen, with the one thing the app had already decided — what to do
+ * next — competing with all of them. The fix was a path: one step at a time,
+ * and every room moved behind a single «همه‌ی بخش‌ها» door.
  *
- * Now: one step at a time. What was finished, what to do NOW, and a glimpse of
- * what's next. The «بازی کن!» button is the only filled control on the screen.
- * The ten modules moved to /child/rooms — a complete hub, nothing windowed —
- * which is also the fourth tab in the bottom nav. That page had to exist BEFORE
- * this one lost the grid: the nav only ever carried four tabs while eleven
- * rooms exist, so home was the sole entry point for seven of them, and deleting
- * the grid without a hub would have orphaned rooms rather than demoted them.
+ * That over-corrected. The door was adult reasoning: it assumes a user who can
+ * read a label, believes in content they can't see, and will spend a tap to go
+ * looking. Our user is four, cannot read, and treats the screen as the entire
+ * app. A room behind a word-shaped door is a room they do not have.
  *
- * What stayed on home, deliberately:
- *  - The friends row and the alphabet strip. Neither is navigation to a room —
- *    one is who the child plays with, the other is an activity performed in
- *    place (tap a letter, hear it). Both render EVERY item, so neither
- *    reintroduces the hidden-content problem carousels had.
- *  - Age bands still change density: 3–5 get a bigger path and no stats.
+ * So both things are here now, in priority order:
+ *  1. The path — what was finished, what to do NOW, what comes next. The
+ *     «بازی کن!» button is still the only filled control in this block, so a
+ *     child who wants to be told what to do is told, immediately, at the top.
+ *  2. Every room, in full, right underneath (components/child/rooms.tsx —
+ *     shared with /child/rooms so the two can never disagree). Nothing
+ *     windowed, nothing behind a "see all", no sideways scrollers: reaching
+ *     anything in this app costs a scroll down and a tap, and scrolling down is
+ *     the one gesture a pre-reader already owns.
+ *
+ * Age bands change density, never inventory: 3–5 get bigger tiles, one per
+ * row, and no stats — they do not get fewer rooms.
  */
 
 function greeting() {
@@ -307,45 +309,6 @@ export default function ChildHomePage() {
           </Link>
         )}
 
-        {/* ── Friends row: the characters (all bands) ── */}
-        {friends.length > 0 && (
-          <TileRow label="دوست‌های من" bigTiles={band === 1}>
-            {friends.map(f => (
-              <Link key={f.slug} href={`/child/friends/${f.slug}`} role="listitem"
-                aria-label={`برو پیش ${f.name_persian}`} className="flex-shrink-0 snap-start">
-                <motion.div whileTap={{ scale: 0.93 }}
-                  className={`${band === 1 ? 'w-40' : 'w-32'} bg-white rounded-2xl shadow-card flex flex-col items-center gap-1 py-3`}>
-                  <CharacterAvatar slug={f.slug} size={band === 1 ? 96 : 76} mood="idle" />
-                  <p className="font-bold text-slate-800 text-sm">{f.name_persian}</p>
-                  <p className="text-[10px] font-medium" style={{ color: 'var(--ramp-brand-ink)' }}>بیا پیشم!</p>
-                </motion.div>
-              </Link>
-            ))}
-          </TileRow>
-        )}
-
-        {/* ── Alphabet row: tap a letter, HEAR it (all bands) ── */}
-        {letters.length > 0 && (
-          <TileRow label="الفبا — ضربه بزن و بشنو" bigTiles={band === 1}>
-            {letters.map(l => (
-              <button key={l.id} role="listitem"
-                onClick={() => { playTap(); speakOrPlay(l.audio_url, l.name_persian) }}
-                aria-label={`بشنو: ${l.name_persian}`}
-                className="flex-shrink-0 snap-start">
-                <motion.div whileTap={{ scale: 0.88 }}
-                  className={`${band === 1 ? 'w-24 h-28' : 'w-20 h-24'} bg-white rounded-2xl shadow-card flex flex-col items-center justify-center gap-1`}>
-                  {/* sky-600 was the one hue on this screen that belonged to no
-                      module at all. The alphabet is `letters`. */}
-                  <span className={`${band === 1 ? 'text-5xl' : 'text-4xl'} font-bold leading-none`}
-                    style={{ color: 'var(--ramp-letters-ink)' }}>{l.character}</span>
-                  {/* slate-400 was 2.56:1 on white. */}
-                  <span className="text-[11px] text-slate-600 persian-text">{l.name_persian}</span>
-                </motion.div>
-              </button>
-            ))}
-          </TileRow>
-        )}
-
         {/* ── Review, when the queue is real (bands 2–3) ──
              Not a module tile: this one carries a COUNT, which is the only
              reason it earns a place on the path screen instead of living in
@@ -363,24 +326,39 @@ export default function ChildHomePage() {
           </Link>
         )}
 
-        {/* ── The door to everything else ──
-             One door, not a grid. It is the last thing on the page on purpose:
-             a child who knows what they want will reach for it, and a child who
-             doesn't has already been given today's step at the top. */}
-        <Link href="/child/rooms" aria-label="همه‌ی بخش‌ها">
-          <motion.div
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-            className={`bg-white rounded-2xl shadow-card flex items-center gap-3 ${band === 1 ? 'p-5' : 'p-4'}`}
-          >
-            <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="seeAll" size={band === 1 ? 'xl' : 'lg'} strokeWidth={2.2} /></span>
-            <div className="flex-1 min-w-0">
-              <p className={`font-bold text-slate-800 ${band === 1 ? 'text-lg' : 'text-sm'}`}>همه‌ی بخش‌ها</p>
-              <p className="text-xs text-slate-600">بازی‌ها، نوشتن، گفتن، اعداد…</p>
+        {/* ── Everything, on the screen ──
+             Was a single «همه‌ی بخش‌ها» door. A child who cannot read the label
+             cannot open it, so eleven rooms were effectively gone. They are all
+             here now, from the same source the /child/rooms route renders. */}
+        <RoomSections friends={friends} band={band} />
+
+        {/* ── Alphabet: tap a letter, HEAR it ──
+             An activity performed in place, not a room — so it comes after the
+             rooms. A wrapping grid, not the side-scroller it used to be: every
+             letter is on the page, and a child who never learns to swipe still
+             reaches ی. */}
+        {letters.length > 0 && (
+          <section aria-labelledby="home-alphabet">
+            <SectionTitle module="letters" id="home-alphabet">الفبا — ضربه بزن و بشنو</SectionTitle>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5">
+              {letters.map(l => (
+                <button key={l.id}
+                  onClick={() => { playTap(); speakOrPlay(l.audio_url, l.name_persian) }}
+                  aria-label={`بشنو: ${l.name_persian}`}>
+                  <motion.div whileTap={{ scale: 0.88 }}
+                    className={`bg-white rounded-2xl shadow-card flex flex-col items-center justify-center gap-1 ${band === 1 ? 'h-24' : 'h-20'}`}>
+                    {/* sky-600 was the one hue on this screen that belonged to no
+                        module at all. The alphabet is `letters`. */}
+                    <span className={`${band === 1 ? 'text-4xl' : 'text-3xl'} font-bold leading-none`}
+                      style={{ color: 'var(--ramp-letters-ink)' }}>{l.character}</span>
+                    {/* slate-400 was 2.56:1 on white. */}
+                    <span className="text-[11px] text-slate-600 persian-text">{l.name_persian}</span>
+                  </motion.div>
+                </button>
+              ))}
             </div>
-            <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="prev" size="md" strokeWidth={2.5} /></span>
-          </motion.div>
-        </Link>
+          </section>
+        )}
       </div>
 
       <BottomNav />
@@ -389,79 +367,6 @@ export default function ChildHomePage() {
 }
 
 /* ── Building blocks ─────────────────────────────────────── */
-
-function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: boolean; children: React.ReactNode }) {
-  const scroller = useRef<HTMLDivElement>(null)
-  const [ends, setEnds] = useState({ start: true, end: true })   // hidden until measured
-
-  // Track position, not just overflow: each arrow exists only while there is
-  // content in ITS direction (self-evident semantics, disappears at the end).
-  // RTL note: modern engines report scrollLeft ≤ 0 in RTL; |scrollLeft| is the
-  // distance travelled from the start (which sits at the visual RIGHT).
-  useEffect(() => {
-    const el = scroller.current
-    if (!el) return
-    const check = () => {
-      const max = el.scrollWidth - el.clientWidth
-      const pos = Math.abs(el.scrollLeft)
-      const next = { start: max <= 8 || pos <= 8, end: max <= 8 || pos >= max - 8 }
-      // Functional + value-compared: a fresh object every call here would
-      // re-render → re-run → loop, freezing the whole page's interactivity.
-      setEnds(prev => (prev.start === next.start && prev.end === next.end ? prev : next))
-    }
-    check()
-    el.addEventListener('scroll', check, { passive: true })
-    const ro = new ResizeObserver(check)
-    ro.observe(el)
-    // Rows fill asynchronously (API data) without resizing the scroller box —
-    // watch the children too, or arrows would only appear after a manual scroll.
-    const mo = new MutationObserver(check)
-    mo.observe(el, { childList: true })
-    return () => { el.removeEventListener('scroll', check); ro.disconnect(); mo.disconnect() }
-  }, [])
-
-  /** forward = deeper into content = visual LEFT in RTL. */
-  function nudge(forward: boolean) {
-    const el = scroller.current
-    if (el) el.scrollBy({ left: (forward ? -1 : 1) * el.clientWidth * 0.8, behavior: 'smooth' })
-  }
-
-  return (
-    <section>
-      <h2 className={`font-bold text-slate-800 mb-3 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
-      <div className="relative">
-        {/* Full-bleed on mobile (-mx-4) so tiles swipe edge-to-edge instead of
-            clipping at the page padding; pt-1/px-1 give the glow ring room. */}
-        <div ref={scroller}
-          className="flex items-stretch gap-3 overflow-x-auto pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-1 snap-x scroll-smooth"
-          role="list" aria-label={label}>
-          {children}
-        </div>
-        {/* Arrows render at EVERY width, not just sm+. They used to be
-            `hidden sm:flex`, which left dragging as the only way to reach
-            content past the fold on the phone a 3-year-old actually holds —
-            WCAG 2.2 "Dragging Movements" (2.5.7) asks for a single-pointer
-            alternative, and pre-readers don't infer that a clipped tile
-            means "swipe me". On mobile they sit just inside the full-bleed
-            scroller; from sm they float half off it so they never cover a
-            tile. Each renders only while its direction has more content, so
-            it can never point at nothing. */}
-        {!ends.end && (
-          <button onClick={() => nudge(true)} aria-label="بعدی"
-            className="flex absolute left-0 sm:-left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-slate-700 hover:text-slate-900 hover:scale-110 active:scale-95 transition">
-            <Icon name="next" size="md" strokeWidth={2.5} />
-          </button>
-        )}
-        {!ends.start && (
-          <button onClick={() => nudge(false)} aria-label="قبلی"
-            className="flex absolute right-0 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-raised ring-1 ring-slate-200/80 items-center justify-center text-slate-700 hover:text-slate-900 hover:scale-110 active:scale-95 transition">
-            <Icon name="prev" size="md" strokeWidth={2.5} />
-          </button>
-        )}
-      </div>
-    </section>
-  )
-}
 
 /* ── A rung on the path ─────────────────────────────────────
  * Three states, one shape. Keeping the shape constant across states is the

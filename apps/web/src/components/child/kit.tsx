@@ -106,11 +106,13 @@ export function ChunkyButton({ children, className = '' }: {
 }
 
 /** Section heading with the module's accent tick — quiet, consistent. */
-export function SectionTitle({ module: m, children }: { module?: ModuleKey; children: React.ReactNode }) {
+export function SectionTitle({ module: m, id, children }: { module?: ModuleKey; id?: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-3">
       {m && <span className={`w-1.5 h-5 rounded-full ${MODULE[m].bar}`} aria-hidden="true" />}
-      <h2 className="font-bold text-slate-800 text-base">{children}</h2>
+      {/* `id` so a <section> can point its aria-labelledby at the heading it
+          already has, instead of repeating the label in an aria-label. */}
+      <h2 id={id} className="font-bold text-slate-800 text-base">{children}</h2>
     </div>
   )
 }
