@@ -1,5 +1,32 @@
 # KoodakBook Design System — «نارنج»
 
+> **⚠️ PARTIALLY SUPERSEDED by [`/DESIGN_CHARTER.md`](../DESIGN_CHARTER.md) (2026-09, `design-recovery`).**
+> The 2026-09 "visual UX pass" documented below pulled the child app toward a
+> flat, low-color, no-emoji, no-gradient "professional" look. That direction is
+> reversed: this is a children's app and **color, illustration, gradient and
+> playfulness are the product**. Rules from that pass are marked
+> `❌ SUPERSEDED` inline below. Specifically dead:
+> - **"Color = information, never decoration" / one hue, no delight** — color is
+>   information *and* delight; a strong gradient per screen (hero / CTA / section
+>   header) is welcome.
+> - **"No emoji as structural icons"** — colorful emoji carry section identity,
+>   feedback and celebration on child screens. Lucide line icons are for small
+>   utility controls (back/close/settings/menu/media) and the parent app only.
+> - **"White text on `bright`, ≥5.4:1 vs white" ramp contract** — inverted:
+>   **dark `ink` text sits on `bright` and `soft`**; white text only on `deep`.
+>   See `tools/design/ramps.py` and `globals.css` for the current contract.
+> - **Brand darkened to amber-700→orange-700** — restored to saffron
+>   `#FBBF24 → #F97316`; text on it is dark ink, not white.
+> - **Cold `slate-*` neutrals on child screens** — warm neutrals
+>   (`text-text-primary`, `text-text-secondary`, `bg-surface-subtle`,
+>   `bg-warm-white`, `border-border`).
+> - **`scripts/check-child-design-tokens.sh` as a hard CI gate** — now advisory,
+>   always exits 0; must never block gradients/shadows/radii/color.
+>
+> The parent-app sections, the ramp *mechanism* (4 stops, generated, taken by
+> name), the `<Icon>` component, one-hue-per-module, every-room-visible-on-home,
+> the read-aloud feature, and all a11y/RTL fixes still stand.
+
 **Scope:** both registers of `apps/web` — the child surfaces (clay) and the
 parent surfaces (flat, all eight screens). Admin follows later.
 **Code:** tokens in `globals.css` (ramps, `.clay`, `.shadow-card/.shadow-raised`,
@@ -23,8 +50,13 @@ Icons: `components/icons.tsx`.
 1. **Color = information, never decoration.** One brand accent (saffron amber).
    Each learning module owns ONE hue used only as: icon chip, accent bar,
    soft fill, progress. A child navigates by color before reading.
+   > ❌ SUPERSEDED (charter): color is information **and** delight. One hue per
+   > module still holds, but the hue is used large and saturated on tiles, and a
+   > strong gradient per screen (hero / CTA / section header) is welcome.
 2. **White cards on warm cream.** All reading text is slate-800 on white
    (AA+). Saturation lives in small areas (chips, bars), not backgrounds.
+   > ❌ SUPERSEDED (charter): warm neutral ink (`text-text-primary` #3D3028), not
+   > cold slate. Saturation is welcome in large areas on child screens.
 3. **One raised element per screen** — the primary action (`shadow-raised`);
    everything else rests at `shadow-card`.
 4. **The app decides; the child confirms.** Every screen leads with one
@@ -37,7 +69,13 @@ Icons: `components/icons.tsx`.
 7. **Friendly states:** the warmth lives in the copy («هنوز خوابه!»), not in
    the glyph — a locked tile uses the same lock icon as every other locked
    thing. Errors encourage, empty states invite.
-8. **No emoji as structural icons.** An emoji is a font, not a design token: it
+8. **No emoji as structural icons.**
+   > ❌ SUPERSEDED (charter): on child screens, colorful emoji carry section
+   > identity, feedback and celebration (📚 ✏️ 🎵 📖 🔄 🎤 ✍️ 🔢 🃏 🏆 · ✅ ⭐ 🌟 🎉 ✨ 🔊).
+   > Lucide line icons stay for small utility controls and the parent app only.
+   > The reasoning below is why they still don't belong in the *parent* app.
+
+   An emoji is a font, not a design token: it
    renders differently per OS, cannot take a color, a stroke weight, or a size
    from the type scale, and inside an RTL Persian run it forces a bidi context
    switch. Every affordance comes from `components/icons.tsx` (Lucide, one
@@ -48,21 +86,27 @@ Icons: `components/icons.tsx`.
 
 ## 3. Tokens
 
-**Canvas** `.child-bg` cream gradient · **Surface** white · **Ink** slate-800 /
-slate-400 (secondary) · **Brand** amber-700→orange-700 (hero only; darkened
-from amber-400→orange-500 in the 2026-09 contrast pass — the original pair
-put white text at ~1.7–2.8:1, well under WCAG AA's 4.5:1 floor).
+**Canvas** `.child-bg` cream gradient · **Surface** warm white · **Ink**
+`text-text-primary` #3D3028 / `text-text-secondary` #6B5D50 (5.5:1) ·
+**Brand** saffron `#FBBF24 → #F97316` (restored 2026-09 `design-recovery`).
+
+> ❌ SUPERSEDED (charter): the darkened **amber-700→orange-700** brand and the
+> **slate** ink below are from the 2026-09 contrast pass. Text on the saffron
+> brand is now **dark ink**, not white, so the fill does not need darkening.
 
 **Module hues** — eleven **4-stop ramps** (the ten modules + `brand`), generated
 by `tools/design/ramps.py` into `--ramp-<name>-<stop>` in `globals.css`.
 Regenerate the script; never hand-edit a stop.
 
+> ❌ SUPERSEDED (charter): the contract in this table is inverted. Current
+> contract (`tools/design/ramps.py`, 2026-09 `design-recovery`):
+
 | stop | job | guarantee |
 | --- | --- | --- |
-| `deep` | 3D bottom edge, borders, text on `soft` | ≥8:1 on white |
-| `bright` | saturated fill — **white text sits here** | ≥5.4:1 vs white |
-| `soft` | pale tint: chip ground, tile image area | ≤1.16:1 vs white |
-| `ink` | icon/label colour used **on** `soft` | ≥5.4:1 vs `soft` |
+| `bright` | the joyful Tailwind -400 fill — **dark `ink` text sits here** | anchored (not solved) |
+| `soft` | pale Tailwind -50 tint — dark `ink` text sits here too | anchored |
+| `ink` | dark label/icon colour used **on** `bright` and `soft` | ≥5.0:1 vs `bright` |
+| `deep` | 3D bottom edge, borders, text on `soft`, **the only stop white text may sit on** | ≥7:1 vs white, always darker than `bright` |
 
 Ramps exist because a single-stop hue has a *dead zone* — a mid-tone where
 neither white nor dark text clears 4.5:1, which is exactly where the eye wants
@@ -70,6 +114,10 @@ to put a cheerful fill. That is how the 2026-09 audit found white tile titles
 at ~1.9–2.5:1. With ramps the failure is unreachable rather than merely fixed:
 `bright` is the only fill white text is allowed on, and components take stops
 by name instead of picking a palette number.
+> ❌ SUPERSEDED (charter): `deep` is the only fill white text may sit on;
+> `bright` carries **dark ink**. The "dead zone" is avoided by pairing dark ink
+> with the bright fill, not by darkening the fill for white text. The rest of
+> this paragraph (ramps exist, stops taken by name) still holds.
 
 Targets carry margin over the 4.5 floor deliberately. Solving *to* 4.5 lands
 every stop at 4.50 — enough to pass an audit and nothing else, once sub-pixel
@@ -179,6 +227,11 @@ arrows for pre-readers. Guarded by `scripts/check-child-design-tokens.sh`
 ✅ child inner screens (2026-09): lesson/story/review/speak/write/math/phonics/
 games/rewards/home are on the system. Four things changed, all of them things
 the earlier token pass could not see:
+
+> ❌ PARTLY SUPERSEDED (charter): "one neutral family" is now **warm** neutrals,
+> not `slate-*`, on child screens. "Clay for every primary" over-reached —
+> chunky `ModuleCard` tiles and per-screen hero/CTA gradients come back
+> (Phase 3–4). One-hue-per-module and the a11y contrast fixes below still hold.
 
 - **One neutral family.** The tree ran `gray-*` and `slate-*` side by side.
   Everything is `slate-*` now. Two steps were carrying real text below AA —
