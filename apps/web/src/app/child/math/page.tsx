@@ -94,7 +94,7 @@ export default function MathHubPage() {
           </div>
         </div>
 
-        <p className="flex items-start gap-2.5 text-xs text-slate-600 persian-text leading-relaxed">
+        <p className="flex items-start gap-2.5 text-xs text-text-secondary persian-text leading-relaxed">
           <IconChip module="math" icon="sparkle" />
           <span className="pt-1.5">ریاضی را در مدرسه یاد می‌گیری — اینجا یادش می‌گیری به فارسی بگویی</span>
         </p>

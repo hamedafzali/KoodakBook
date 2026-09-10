@@ -98,14 +98,14 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         <Mascot size={130} mood="excited" />
       </motion.div>
-      <h1 className="text-3xl font-bold text-slate-800">چه خریدار زرنگی!</h1>
-      <p className="text-slate-700 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} خرید</p>
+      <h1 className="text-3xl font-bold text-text-primary">چه خریدار زرنگی!</h1>
+      <p className="text-text-primary persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} خرید</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
           style={clayVars('math')}
           className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">دوباره</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold">دنیای اعداد</motion.button>
       </div>
     </div>
   )
@@ -118,7 +118,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-4">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600 persian-text">خرید {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}</span>
+          <span className="text-text-secondary persian-text">خرید {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}</span>
           <span className="text-amber-500">{'⭐'.repeat(stars)}</span>
         </div>
 
@@ -129,7 +129,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
             {q.stall.items.map((it, i) => (
               <div key={i} className={`bg-white/95 rounded-2xl p-2 text-center shadow ${q.targets.includes(i) && picked === null ? 'ring-2 ring-amber-400' : ''}`}>
                 <span className="text-3xl block" aria-hidden="true">{it.emoji}</span>
-                <span className="text-[11px] text-slate-700 persian-text block">{it.name}</span>
+                <span className="text-[11px] text-text-primary persian-text block">{it.name}</span>
                 <span className="text-sm font-bold text-amber-700 block">{toPersianDigits(it.price)} تومان</span>
               </div>
             ))}
@@ -137,7 +137,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
         </div>
 
         <div className="bg-white rounded-2xl shadow-card p-4 text-center">
-          <p className="persian-text text-slate-700 font-bold">
+          <p className="persian-text text-text-primary font-bold">
             {q.mode === 'read'
               ? <>{names[0]} چند تومان است؟</>
               : <>یک {names[0]} و یک {names[1]} — روی هم چند تومان می‌شود؟</>}
@@ -149,8 +149,8 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
             const show = picked !== null
             const cls = show
               ? n === q.answer ? 'bg-green-100 border-green-400 text-green-700'
-                : n === picked ? 'bg-red-100 border-red-300 text-red-500' : 'bg-white border-slate-100 text-slate-600'
-              : 'bg-white border-slate-100 text-slate-800'
+                : n === picked ? 'bg-red-100 border-red-300 text-red-500' : 'bg-white border-border text-text-secondary'
+              : 'bg-white border-border text-text-primary'
             return (
               <motion.button key={n} onClick={() => pick(n)} whileTap={{ scale: 0.94 }}
                 className={`rounded-2xl border-2 py-4 shadow-card font-bold touch-target ${cls}`}

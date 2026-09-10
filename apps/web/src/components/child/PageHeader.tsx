@@ -53,15 +53,15 @@ export default function PageHeader({
   const bar = m ? MODULE[m].bar : (ACCENT[hue] ?? 'bg-amber-400')
 
   return (
-    <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 pt-3 pb-3 ${className}`}>
+    <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border px-4 pt-3 pb-3 ${className}`}>
       <div className="flex items-center gap-2">
         <motion.button
           onClick={handleBack}
           aria-label="برگشت"
           whileTap={{ scale: 0.85 }}
-          /* Was text-slate-400: 2.56:1 on white, under the 3:1 floor for a
+          /* Was text-text-secondary: 2.56:1 on white, under the 3:1 floor for a
              non-text control. slate-600 is 7.6:1 and still reads as quiet. */
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-2xl text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+          className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
         >
           {/* RTL: right-pointing chevron = "back". The icon set owns that
               decision (`back`), so this no longer hand-rolls the path. */}
@@ -69,10 +69,10 @@ export default function PageHeader({
         </motion.button>
 
         <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-xl text-slate-800 truncate leading-tight">{title}</h1>
+          <h1 className="font-bold text-xl text-text-primary truncate leading-tight">{title}</h1>
           <div className="flex items-center gap-2 mt-1">
             <span className={`w-8 h-1 rounded-full ${bar}`} aria-hidden="true" />
-            {subtitle && <p className="text-xs text-slate-600 truncate">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-text-secondary truncate">{subtitle}</p>}
           </div>
         </div>
 

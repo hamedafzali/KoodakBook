@@ -69,8 +69,8 @@ export default function NewStoryPage() {
         <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-slate-800">در حال نوشتن داستان تو...</h1>
-        <p className="text-slate-600 persian-text">یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</p>
+        <h1 className="text-2xl font-bold text-text-primary">در حال نوشتن داستان تو...</h1>
+        <p className="text-text-secondary persian-text">یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</p>
         <div className="flex gap-1.5">
           {[0, 1, 2].map(i => (
             <motion.span
@@ -104,11 +104,11 @@ export default function NewStoryPage() {
               onClick={() => setTheme(t.key)}
               whileTap={{ scale: 0.96 }}
               className={`flex items-center gap-3 px-4 py-4 rounded-2xl border-2 text-right transition-colors min-h-[64px] ${
-                theme === t.key ? 'border-purple-500 bg-purple-50' : 'border-slate-200 bg-white hover:border-purple-300'
+                theme === t.key ? 'border-purple-500 bg-purple-50' : 'border-border bg-white hover:border-purple-300'
               }`}
             >
               <span className="text-3xl" aria-hidden="true">{t.emoji}</span>
-              <span className={`font-bold ${theme === t.key ? 'text-purple-800' : 'text-slate-700'}`}>{t.label}</span>
+              <span className={`font-bold ${theme === t.key ? 'text-purple-800' : 'text-text-primary'}`}>{t.label}</span>
             </motion.button>
           ))}
         </div>

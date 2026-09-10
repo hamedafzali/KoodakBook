@@ -5,23 +5,23 @@ import {
 
 /* ── KoodakBook child design kit ────────────────────────────
  *
- * The system in one sentence: a warm cream canvas, white cards, ONE brand
- * accent (saffron amber), and a fixed semantic color per learning module —
- * used as soft tints and icon chips, never as full-bleed gradients.
+ * The system in one sentence: a warm cream canvas, joyful cards, a saffron
+ * brand accent, and a fixed bright color per learning module — so a child
+ * navigates by color long before they can read.
  *
  * This file owns the VOCABULARY: which hue and which glyph mean "stories".
  * `clay.tsx` owns the MATERIAL — how a pressable thing is built. The split
  * matters because the material is now shared and the vocabulary is not: the
  * parent app uses neither.
  *
- * Rationale (docs/design-system.md):
- *  - Color = information. A module's color appears on its chip, its accent
- *    bar and its progress — so a child navigates by color long before they
- *    read. Six saturated gradients on one screen is decoration, not signal.
- *  - White cards on cream: highest text contrast (WCAG AA on slate-800),
- *    calmer for long sessions, and reads "premium" (Khan Kids, Duo ABC).
+ * Rationale (DESIGN_CHARTER.md):
+ *  - Color = information AND delight. Each module owns one bright hue, shown
+ *    large and saturated on its tiles — this is a children's app, the color
+ *    is the product. A strong gradient per screen (hero / CTA) is welcome.
+ *  - Contrast is met with DARK INK on the bright/soft fill, never white on a
+ *    darkened one. Warm neutrals (cream, warm ink), not cold slate.
  *  - Touch: primary actions ≥56px, list items ≥48px (NN/g child research).
- *  - One radius scale (12/16/24), two shadow levels, one spring. */
+ *  - One radius scale (12/16/24), springy press feedback. */
 
 /** Every module key is also a ramp name in globals.css — that is the point of
  *  the ramps, and the type below enforces it: adding a module without adding
@@ -41,20 +41,16 @@ export const MODULE: Record<ModuleKey, {
   icon: IconName    // Lucide glyph — never an emoji, see components/icons.tsx
   chip: string      // icon chip: soft tint + strong icon color
   bar: string       // accent bar / active states
-  soft: string      // large soft fill (tile image area)
-  solid: string     // chunky tile fill — white text sits on this
-  edge: string      // chunky tile 3D bottom edge
+  soft: string      // large soft fill (tile image area) — dark ink sits on this
+  solid: string     // chunky tile fill (bright) — dark ink sits on this
+  edge: string      // chunky tile 3D bottom edge (deep) — white text sits on this
 }> = {
-  /* These were Tailwind palette steps (-100/-400/-50/-700/-900) until the
-   * 2026-09 token pass. They now point at the app's own 4-stop ramps, which
-   * exist precisely because picking a step by eye is how the earlier audit
-   * happened: a cheerful mid-tone fill carried white titles at ~1.9–2.5:1.
-   *
-   * Each ramp stop is SOLVED for its job (tools/design/ramps.py), so the
-   * pairings below are guaranteed rather than checked after the fact:
-   *   solid + white text  >= 5.4:1     chip/soft + ink  >= 5.4:1
-   *   edge is always visibly darker than solid, so the 3D cue survives.
-   * Regenerate the script; never hand-edit a stop. */
+  /* These point at the app's own 4-stop ramps (tools/design/ramps.py), which
+   * keep each module's shipped Tailwind hue (-400 fill, -50 tint) and solve
+   * the two dark support stops around it. DESIGN_CHARTER.md pairing:
+   *   solid (bright) + ink text  >= 5.0:1     soft + ink text  >= 5.0:1
+   *   deep carries white text and is the 3D edge — visibly darker than solid.
+   * Dark ink on a joyful fill, never white on a darkened one. */
   lessons: { icon: 'lessons', chip: 'bg-lessons-soft text-lessons-ink', bar: 'bg-lessons-bright', soft: 'bg-lessons-soft', solid: 'bg-lessons-bright', edge: 'border-lessons-deep' },
   letters: { icon: 'letters', chip: 'bg-letters-soft text-letters-ink', bar: 'bg-letters-bright', soft: 'bg-letters-soft', solid: 'bg-letters-bright', edge: 'border-letters-deep' },
   phonics: { icon: 'phonics', chip: 'bg-phonics-soft text-phonics-ink', bar: 'bg-phonics-bright', soft: 'bg-phonics-soft', solid: 'bg-phonics-bright', edge: 'border-phonics-deep' },
@@ -98,7 +94,9 @@ export function ChunkyButton({ children, className = '' }: {
   return (
     <span
       style={clayVars('brand')}
-      className={`clay inline-flex items-center justify-center gap-1.5 text-white font-bold ${className}`}
+      /* No text colour: `.clay` sets dark `--clay-ink` on the saffron fill
+         (DESIGN_CHARTER.md — dark ink on bright, never white). */
+      className={`clay inline-flex items-center justify-center gap-1.5 font-bold ${className}`}
     >
       {children}
     </span>
@@ -112,7 +110,7 @@ export function SectionTitle({ module: m, id, children }: { module?: ModuleKey; 
       {m && <span className={`w-1.5 h-5 rounded-full ${MODULE[m].bar}`} aria-hidden="true" />}
       {/* `id` so a <section> can point its aria-labelledby at the heading it
           already has, instead of repeating the label in an aria-label. */}
-      <h2 id={id} className="font-bold text-slate-800 text-base">{children}</h2>
+      <h2 id={id} className="font-bold text-text-primary text-base">{children}</h2>
     </div>
   )
 }

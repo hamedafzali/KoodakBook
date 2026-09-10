@@ -81,14 +81,14 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         <Mascot size={130} mood="excited" />
       </motion.div>
-      <h1 className="text-3xl font-bold text-slate-800">رقم‌شناس شدی!</h1>
-      <p className="text-slate-700 persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا</p>
+      <h1 className="text-3xl font-bold text-text-primary">رقم‌شناس شدی!</h1>
+      <p className="text-text-primary persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
           style={clayVars('math')}
           className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">دوباره</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">دنیای اعداد</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold">دنیای اعداد</motion.button>
       </div>
     </div>
   )
@@ -102,17 +102,17 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-6">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600 persian-text">سؤال {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}</span>
+          <span className="text-text-secondary persian-text">سؤال {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}</span>
           <span className="text-amber-500">{'⭐'.repeat(stars)}</span>
         </div>
 
         <div className="bg-white rounded-2xl shadow-card p-7 text-center">
-          <p className="text-slate-600 persian-text text-sm mb-3">
+          <p className="text-text-secondary persian-text text-sm mb-3">
             {q.dir === 'toPersian' ? 'این عدد به رقمِ فارسی کدام است؟' : 'این عدد به رقمِ انگلیسی کدام است؟'}
           </p>
           <motion.p key={idx} initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 16 }}
             className="text-7xl font-bold text-sky-600" dir="ltr">{prompt}</motion.p>
-          <p className="text-sm text-slate-600 mt-2 persian-text">{numberToPersianWord(q.value)}</p>
+          <p className="text-sm text-text-secondary mt-2 persian-text">{numberToPersianWord(q.value)}</p>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -120,8 +120,8 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
             const show = picked !== null
             const cls = show
               ? n === q.value ? 'bg-green-100 border-green-400 text-green-700'
-                : n === picked ? 'bg-red-100 border-red-300 text-red-500' : 'bg-white border-slate-100 text-slate-600'
-              : 'bg-white border-slate-100 text-slate-800'
+                : n === picked ? 'bg-red-100 border-red-300 text-red-500' : 'bg-white border-border text-text-secondary'
+              : 'bg-white border-border text-text-primary'
             return (
               <motion.button key={n} onClick={() => pick(n)} whileTap={{ scale: 0.94 }}
                 className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target ${cls}`} dir="ltr"

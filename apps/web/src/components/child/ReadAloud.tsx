@@ -73,8 +73,8 @@ export default function ReadAloud({
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}>
             <Mascot size={120} mood="happy" />
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">حالا تو بخوان!</h1>
-              <p className="text-slate-600 persian-text mt-1.5">
+              <h1 className="text-2xl font-bold text-text-primary">حالا تو بخوان!</h1>
+              <p className="text-text-secondary persian-text mt-1.5">
                 داستان را با صدای خودت بخوان تا بعداً گوشش بدهیم
               </p>
             </div>
@@ -82,7 +82,7 @@ export default function ReadAloud({
             {micBlocked && (
               /* Stated plainly and without blame, because the child did nothing
                * wrong and can't fix it — the parent has to. */
-              <p className="text-sm text-slate-600 persian-text max-w-xs">
+              <p className="text-sm text-text-secondary persian-text max-w-xs">
                 {state === 'unsupported'
                   ? 'این دستگاه نمی‌تواند صدا ضبط کند.'
                   : 'برای ضبط صدا، باید به برنامه اجازه‌ی میکروفون بدهی.'}
@@ -96,7 +96,7 @@ export default function ReadAloud({
                 </ClayButton>
               )}
               <button onClick={onDone}
-                className="min-h-[48px] px-5 text-slate-600 font-bold persian-text">
+                className="min-h-[48px] px-5 text-text-secondary font-bold persian-text">
                 الان نه
               </button>
             </div>
@@ -106,14 +106,14 @@ export default function ReadAloud({
         {phase === 'record' && (
           <motion.div key="record" className="flex flex-col items-center gap-6"
             initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-            <p className="text-xl font-bold text-slate-800 persian-text">دارم گوش می‌دهم…</p>
+            <p className="text-xl font-bold text-text-primary persian-text">دارم گوش می‌دهم…</p>
             <LevelRing level={level} active={state === 'recording'} />
-            <p className="text-3xl font-bold text-slate-700 tabular-nums" aria-live="off">
+            <p className="text-3xl font-bold text-text-primary tabular-nums" aria-live="off">
               {faDuration(elapsedMs)}
             </p>
             {/* Visible before it matters, so hitting the ceiling is never a
                 surprise that eats a recording. */}
-            <p className="text-xs text-slate-600 persian-text">
+            <p className="text-xs text-text-secondary persian-text">
               تا {faDuration(MAX_MS)} می‌توانی بخوانی
             </p>
             <ClayButton ramp="rewards" size="lg" icon="done" onClick={stop}>
@@ -126,7 +126,7 @@ export default function ReadAloud({
           <motion.div key="review" className="flex flex-col items-center gap-5 w-full max-w-xs"
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
             <Mascot size={104} mood="happy" />
-            <h1 className="text-2xl font-bold text-slate-800">به صدای خودت گوش بده</h1>
+            <h1 className="text-2xl font-bold text-text-primary">به صدای خودت گوش بده</h1>
             <SelfPlayback url={recording.url} durationMs={recording.durationMs} />
 
             {error && <p className="text-sm text-rose-700 persian-text">{error}</p>}
@@ -140,7 +140,7 @@ export default function ReadAloud({
                 دوباره بخوان
               </ClayButton>
               <button onClick={onDone}
-                className="min-h-[48px] text-slate-600 font-bold persian-text">
+                className="min-h-[48px] text-text-secondary font-bold persian-text">
                 بی‌خیال
               </button>
             </div>
@@ -154,8 +154,8 @@ export default function ReadAloud({
               transition={{ type: 'spring', stiffness: 380, damping: 18 }}>
               <Mascot size={120} mood="excited" />
             </motion.div>
-            <h1 className="text-2xl font-bold text-slate-800">ذخیره شد!</h1>
-            <p className="text-slate-600 persian-text">مامان و بابا می‌توانند گوش بدهند</p>
+            <h1 className="text-2xl font-bold text-text-primary">ذخیره شد!</h1>
+            <p className="text-text-secondary persian-text">مامان و بابا می‌توانند گوش بدهند</p>
           </motion.div>
         )}
 
@@ -205,8 +205,8 @@ function SelfPlayback({ url, durationMs }: { url: string; durationMs: number }) 
         <Icon name={playing ? 'pause' : 'play'} size="lg" />
       </button>
       <div className="text-right flex-1">
-        <p className="font-bold text-slate-800 persian-text">صدای من</p>
-        <p className="text-sm text-slate-500 tabular-nums">{faDuration(durationMs)}</p>
+        <p className="font-bold text-text-primary persian-text">صدای من</p>
+        <p className="text-sm text-text-secondary tabular-nums">{faDuration(durationMs)}</p>
       </div>
     </div>
   )

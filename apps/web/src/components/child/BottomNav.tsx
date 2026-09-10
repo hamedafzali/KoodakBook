@@ -51,13 +51,13 @@ export default function BottomNav() {
               /* Inactive tabs were gray-400: 2.56:1, under the 3:1 floor for a
                  non-text control — three of the four tabs, on every child
                  screen. slate-600 is 7.6:1 and still reads as "not here". */
-              className={`relative leading-none ${active ? 'text-amber-800' : 'text-slate-600'}`}
+              className={`relative leading-none ${active ? 'text-amber-800' : 'text-text-secondary'}`}
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
             >
               <Icon name={nav.icon} size="lg" strokeWidth={active ? 2.4 : 2} />
             </motion.span>
-            <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-slate-600'}`}>
+            <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-text-secondary'}`}>
               {nav.label}
             </span>
           </Link>

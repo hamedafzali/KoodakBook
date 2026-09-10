@@ -123,8 +123,8 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         {host ? <CharacterAvatar slug={host.slug} size={130} mood="excited" /> : <Mascot size={130} mood="excited" />}
       </motion.div>
-      <h1 className="text-3xl font-bold text-slate-800">همه را پیدا کردی!</h1>
-      <p className="text-slate-700 persian-text">با {moves} حرکت — عالی بود!</p>
+      <h1 className="text-3xl font-bold text-text-primary">همه را پیدا کردی!</h1>
+      <p className="text-text-primary persian-text">با {moves} حرکت — عالی بود!</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
           style={clayVars('games')}
@@ -132,7 +132,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
           دوباره بازی کن
         </motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
+          className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold">
           برگشت به خانه
         </motion.button>
       </div>
@@ -145,8 +145,8 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
 
       <div className="px-4 pt-5 max-w-md mx-auto">
         <div className="flex items-center justify-between mb-3 text-sm">
-          <span className="text-slate-600 persian-text">جفت‌ها: {matched.size} از {PAIRS}</span>
-          <span className="text-slate-600">حرکت: {moves}</span>
+          <span className="text-text-secondary persian-text">جفت‌ها: {matched.size} از {PAIRS}</span>
+          <span className="text-text-secondary">حرکت: {moves}</span>
         </div>
 
         <div className="grid grid-cols-3 gap-2.5" dir="rtl">
@@ -179,8 +179,8 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={card.image} alt="" className="w-full h-10 object-cover rounded-t-xl -mt-1" loading="lazy" />
                     )}
-                    <span className={`font-bold text-slate-800 persian-text leading-tight ${card.image ? 'text-base' : 'text-xl'}`}>{card.persian}</span>
-                    <span className="text-[10px] text-slate-600 ltr truncate max-w-full">{card.english}</span>
+                    <span className={`font-bold text-text-primary persian-text leading-tight ${card.image ? 'text-base' : 'text-xl'}`}>{card.persian}</span>
+                    <span className="text-[10px] text-text-secondary ltr truncate max-w-full">{card.english}</span>
                   </div>
                 </motion.div>
               </motion.button>
@@ -188,7 +188,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
           })}
         </div>
 
-        <p className="text-center text-xs text-slate-600 persian-text mt-4">
+        <p className="text-center text-xs text-text-secondary persian-text mt-4">
           روی کارت‌ها بزن، کلمه را بشنو و جفتش را پیدا کن
         </p>
       </div>

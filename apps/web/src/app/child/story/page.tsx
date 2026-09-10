@@ -86,7 +86,7 @@ export default function StoryListPage() {
             so this is the only place they can re-open them). */}
         {myStories.length > 0 && (
           <section className="mb-6" aria-label="داستان‌های من">
-            <h2 className="font-bold text-slate-800 text-base mb-3">داستان‌های من</h2>
+            <h2 className="font-bold text-text-primary text-base mb-3">داستان‌های من</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="list">
               {myStories.map(story => {
                 const done = completed.has(story.id)
@@ -106,7 +106,7 @@ export default function StoryListPage() {
                       <div className="w-full h-32 flex items-center justify-center text-white" aria-hidden="true"
                         style={{ background: 'linear-gradient(to bottom right, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}><Icon name="sparkle" size={48} strokeWidth={1.5} /></div>
                       <div className="px-3 pt-3">
-                        <p className="font-bold text-slate-800 text-sm leading-tight persian-text">{story.title_persian}</p>
+                        <p className="font-bold text-text-primary text-sm leading-tight persian-text">{story.title_persian}</p>
                         <p className="text-xs text-fuchsia-500 mt-1">داستان من</p>
                       </div>
                     </Link>
@@ -125,7 +125,7 @@ export default function StoryListPage() {
         )}
 
         {myStories.length > 0 && stories.length > 0 && (
-          <h2 className="font-bold text-slate-800 text-base mb-3">داستان‌های آماده</h2>
+          <h2 className="font-bold text-text-primary text-base mb-3">داستان‌های آماده</h2>
         )}
 
         {stories.length === 0 ? (
@@ -185,9 +185,9 @@ export default function StoryListPage() {
                       </div>
                     )}
                     <div className="p-3">
-                      <p className="font-bold text-slate-800 text-sm leading-tight persian-text">{story.title_persian}</p>
+                      <p className="font-bold text-text-primary text-sm leading-tight persian-text">{story.title_persian}</p>
                       {story.age_min && (
-                        <p className="text-xs text-slate-600 mt-1">
+                        <p className="text-xs text-text-secondary mt-1">
                           {story.age_min}–{story.age_max} سال
                         </p>
                       )}

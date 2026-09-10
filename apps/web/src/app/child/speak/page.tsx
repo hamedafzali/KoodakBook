@@ -106,8 +106,8 @@ export default function SpeakPage() {
           ) : emoji ? (
             <span className="text-7xl leading-none" aria-hidden="true">{emoji}</span>
           ) : null}
-          <span className="text-5xl font-bold text-slate-800">{word.persian}</span>
-          <span className="text-base text-slate-600 ltr">{word.english}</span>
+          <span className="text-5xl font-bold text-text-primary">{word.persian}</span>
+          <span className="text-base text-text-secondary ltr">{word.english}</span>
           <span className="flex items-center gap-1 text-xs text-amber-700"><Icon name="listen" size="xs" /> اول گوش کن</span>
         </button>
 
@@ -122,8 +122,8 @@ export default function SpeakPage() {
           {phase === 'tryagain' && (
             <motion.div key="tryagain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
               <Mascot size={90} mood="idle" />
-              <p className="font-medium text-slate-600 persian-text">دوباره امتحان کن، می‌تونی!</p>
-              {heard && <p className="text-xs text-slate-600">شنیدم: «{heard}»</p>}
+              <p className="font-medium text-text-secondary persian-text">دوباره امتحان کن، می‌تونی!</p>
+              {heard && <p className="text-xs text-text-secondary">شنیدم: «{heard}»</p>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -147,7 +147,7 @@ export default function SpeakPage() {
             <Icon name={phase === 'listening' ? 'headphones' : 'record'} size={40} />
           </motion.button>
         )}
-        <p className="text-sm text-slate-600 persian-text">
+        <p className="text-sm text-text-secondary persian-text">
           {phase === 'listening' ? 'بگو...' : supported ? 'ضربه بزن و کلمه را بگو' : ''}
         </p>
 

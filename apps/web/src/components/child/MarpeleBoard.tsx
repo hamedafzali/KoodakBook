@@ -72,7 +72,7 @@ export default function MarpeleBoard({ positions, emojis }: { positions: number[
               >
                 {/* Was black/35 — about 2.3:1 on the tile. These numbers are how
                     a child checks whose token is ahead, so they have to read. */}
-                <span className="absolute top-0.5 right-1 text-[10px] font-bold text-slate-700">{toPersianDigits(n)}</span>
+                <span className="absolute top-0.5 right-1 text-[10px] font-bold text-text-primary">{toPersianDigits(n)}</span>
                 {start && <Icon name="home" size="md" />}
                 {finish && <Icon name="rewards" size="md" />}
                 {/* EMOJI-CONTENT: the ladder and the snake are the board's two
@@ -124,7 +124,7 @@ export function Dice({ value, rolling }: { value: number | null; rolling: boolea
   const face = value ?? 1
   return (
     <motion.div
-      className="w-16 h-16 rounded-2xl bg-white shadow-md border border-slate-200 p-2 grid grid-rows-3 gap-1 shrink-0"
+      className="w-16 h-16 rounded-2xl bg-white shadow-md border border-border p-2 grid grid-rows-3 gap-1 shrink-0"
       animate={rolling ? { rotate: [0, 360] } : { rotate: 0, scale: [1.2, 1] }}
       transition={rolling ? { duration: 0.24, repeat: Infinity, ease: 'linear' } : { duration: 0.3 }}
     >
@@ -202,9 +202,9 @@ export function TurnChip({ emoji, name, square, active }: {
         : { background: '#FFFFFF' }}
     >
       <span className="text-lg" aria-hidden="true">{emoji}</span>
-      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-slate-800'}`}>{name}</span>
+      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-text-primary'}`}>{name}</span>
       <span
-        className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-700'}`}
+        className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-surface-subtle text-text-primary'}`}
         aria-label={`خانه ${toPersianDigits(square)}`}
       >
         {toPersianDigits(square)}
@@ -249,7 +249,7 @@ export function ChallengeModal({ prompt, question, onResolve }: {
         className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col gap-3"
         initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
       >
-        <p className="text-center font-bold text-slate-800 persian-text">{prompt}</p>
+        <p className="text-center font-bold text-text-primary persian-text">{prompt}</p>
         <QuizCard
           question={question}
           onCorrect={() => onResolve(true)}
@@ -278,13 +278,13 @@ export function GameOverScreen({ won, title, note, token, children }: {
         ? <span style={{ color: 'var(--ramp-rewards-bright)' }}><Icon name="rewards" size={96} strokeWidth={1.5} /></span>
         : token
           ? <span className="text-8xl leading-none" aria-hidden="true">{token}</span>
-          : <span className="text-slate-500"><Icon name="random" size={96} strokeWidth={1.5} /></span>}
-      <h1 className="text-3xl font-bold text-slate-800">{title}</h1>
-      {note && <p className="text-slate-700 persian-text">{note}</p>}
+          : <span className="text-text-secondary"><Icon name="random" size={96} strokeWidth={1.5} /></span>}
+      <h1 className="text-3xl font-bold text-text-primary">{title}</h1>
+      {note && <p className="text-text-primary persian-text">{note}</p>}
       <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
         {children}
         {/* Was slate-400: 2.56:1, and the only way out of this screen. */}
-        <Link href="/child/home" className="text-sm text-slate-600 hover:text-slate-800 mt-1">برگشت به خانه</Link>
+        <Link href="/child/home" className="text-sm text-text-secondary hover:text-text-primary mt-1">برگشت به خانه</Link>
       </div>
     </div>
   )

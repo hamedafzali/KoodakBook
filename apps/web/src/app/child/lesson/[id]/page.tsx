@@ -138,8 +138,8 @@ export default function LessonPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h1 className="text-3xl font-bold text-slate-800">آفرین!</h1>
-          <p className="text-slate-600 mt-1 persian-text">درس «{lesson.title}» تمام شد</p>
+          <h1 className="text-3xl font-bold text-text-primary">آفرین!</h1>
+          <p className="text-text-secondary mt-1 persian-text">درس «{lesson.title}» تمام شد</p>
         </motion.div>
 
         {/* Score card */}
@@ -152,17 +152,17 @@ export default function LessonPage() {
           <div className="flex justify-around">
             <div>
               <p className="text-3xl font-bold text-green-600">{correctCount}</p>
-              <p className="text-xs text-slate-600 mt-0.5">درست</p>
+              <p className="text-xs text-text-secondary mt-0.5">درست</p>
             </div>
-            <div className="w-px bg-slate-100" />
+            <div className="w-px bg-surface-subtle" />
             <div>
               <p className="text-3xl font-bold text-red-400">{incorrectCount}</p>
-              <p className="text-xs text-slate-600 mt-0.5">نادرست</p>
+              <p className="text-xs text-text-secondary mt-0.5">نادرست</p>
             </div>
-            <div className="w-px bg-slate-100" />
+            <div className="w-px bg-surface-subtle" />
             <div>
               <p className="text-3xl font-bold text-amber-500">{score}٪</p>
-              <p className="text-xs text-slate-600 mt-0.5">نمره</p>
+              <p className="text-xs text-text-secondary mt-0.5">نمره</p>
             </div>
           </div>
         </motion.div>
@@ -215,7 +215,7 @@ export default function LessonPage() {
           onClick={() => router.back()}
           whileTap={{ scale: 0.85 }}
           aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18l6-6-6-6" />
@@ -224,7 +224,7 @@ export default function LessonPage() {
 
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-slate-800 text-sm truncate">{lesson.title}</h1>
+            <h1 className="font-bold text-text-primary text-sm truncate">{lesson.title}</h1>
             <span className="text-sm font-bold text-amber-600 shrink-0 mr-2">{currentIdx + 1}/{questions.length}</span>
           </div>
           <div
@@ -233,7 +233,7 @@ export default function LessonPage() {
             aria-valuemax={100}
             aria-valuenow={Math.round(progress)}
             aria-label={`پیشرفت درس: ${Math.round(progress)} درصد`}
-            className="h-2 bg-slate-200 rounded-full overflow-hidden"
+            className="h-2 bg-surface-subtle rounded-full overflow-hidden"
           >
             <motion.div
               className="h-full bg-brand-gradient rounded-full"

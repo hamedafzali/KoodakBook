@@ -193,7 +193,7 @@ export default function ChildHomePage() {
   if (showPicker) {
     return (
       <div className="fixed inset-0 z-50 child-bg flex flex-col items-center justify-center p-6 gap-8">
-        <h1 className="text-2xl font-bold text-slate-800 persian-text">کی می‌خواد بازی کنه؟</h1>
+        <h1 className="text-2xl font-bold text-text-primary persian-text">کی می‌خواد بازی کنه؟</h1>
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
             <motion.button key={c.id} onClick={() => resolveChild(c)} whileTap={{ scale: 0.94 }}
@@ -205,12 +205,12 @@ export default function ChildHomePage() {
                 style={{ background: 'var(--ramp-brand-soft)' }}>
                 {mediaUrl(c.avatar_url) ? <img src={mediaUrl(c.avatar_url)!} alt="" className="w-full h-full object-cover" /> : '🧒'}
               </div>
-              <span className="font-bold text-slate-800">{c.name}</span>
+              <span className="font-bold text-text-primary">{c.name}</span>
             </motion.button>
           ))}
         </div>
         <button onClick={() => router.push('/parent/dashboard')}
-          className="text-sm text-slate-600 hover:text-slate-900 transition-colors persian-text mt-2 inline-flex items-center gap-1.5 min-h-[44px]">
+          className="text-sm text-text-secondary hover:text-text-primary transition-colors persian-text mt-2 inline-flex items-center gap-1.5 min-h-[44px]">
           <Icon name="back" size="sm" />
           بازگشت به پنل والدین
         </button>
@@ -299,8 +299,8 @@ export default function ChildHomePage() {
               {/* EMOJI-CONTENT: Simorgh is the character the game is about. */}
               <span className="text-3xl" aria-hidden="true">🦅</span>
               <div className="flex-1">
-                <p className="font-bold text-slate-800 text-sm">بازی سیمرغ</p>
-                <p className="text-xs text-slate-600">سیمرغ دلش می‌خواد باهات بازی کنه!</p>
+                <p className="font-bold text-text-primary text-sm">بازی سیمرغ</p>
+                <p className="text-xs text-text-secondary">سیمرغ دلش می‌خواد باهات بازی کنه!</p>
               </div>
               {/* Was a bare «←» in text — a glyph the font may or may not shape,
                   at amber-400 (2.0:1). The icon set owns the RTL direction. */}
@@ -318,8 +318,8 @@ export default function ChildHomePage() {
             <motion.div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3" whileTap={{ scale: 0.98 }}>
               <span style={{ color: 'var(--ramp-review-ink)' }}><Icon name="review" size="lg" strokeWidth={2.2} /></span>
               <div className="flex-1">
-                <p className="font-bold text-slate-800 text-sm">مرور امروز</p>
-                <p className="text-xs text-slate-600">{reviewWords.length} کلمه منتظر توست</p>
+                <p className="font-bold text-text-primary text-sm">مرور امروز</p>
+                <p className="text-xs text-text-secondary">{reviewWords.length} کلمه منتظر توست</p>
               </div>
               <span style={{ color: 'var(--ramp-review-ink)' }}><Icon name="prev" size="md" strokeWidth={2.5} /></span>
             </motion.div>
@@ -352,7 +352,7 @@ export default function ChildHomePage() {
                     <span className={`${band === 1 ? 'text-4xl' : 'text-3xl'} font-bold leading-none`}
                       style={{ color: 'var(--ramp-letters-ink)' }}>{l.character}</span>
                     {/* slate-400 was 2.56:1 on white. */}
-                    <span className="text-[11px] text-slate-600 persian-text">{l.name_persian}</span>
+                    <span className="text-[11px] text-text-secondary persian-text">{l.name_persian}</span>
                   </motion.div>
                 </button>
               ))}
@@ -412,14 +412,14 @@ function PathRung({ state, icon, label, title, href, big, hasNext }: {
       } : undefined}
     >
       <span className="shrink-0" style={{ color: now ? 'var(--ramp-brand-ink)' : undefined }}>
-        <span className={now ? '' : 'text-slate-500'}>
+        <span className={now ? '' : 'text-text-secondary'}>
           <Icon name={done ? 'doneCircle' : now ? icon : 'locked'} size={now && big ? 'hero' : now ? 'xl' : 'md'} strokeWidth={2.2} />
         </span>
       </span>
       <div className="flex-1 min-w-0">
-        <p className={`font-bold ${now ? 'text-sm' : 'text-slate-600 text-xs'}`}
+        <p className={`font-bold ${now ? 'text-sm' : 'text-text-secondary text-xs'}`}
           style={now ? { color: 'var(--ramp-brand-ink)' } : undefined}>{label}</p>
-        <p className={`font-bold truncate ${now ? (big ? 'text-2xl text-slate-800' : 'text-lg text-slate-800') : 'text-sm text-slate-700'}`}>
+        <p className={`font-bold truncate ${now ? (big ? 'text-2xl text-text-primary' : 'text-lg text-text-primary') : 'text-sm text-text-primary'}`}>
           {title}
         </p>
       </div>

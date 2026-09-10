@@ -117,7 +117,7 @@ function Setup({ childName, characters, onStart, onBack }: {
 
       <div className="px-4 pt-5 max-w-md mx-auto flex flex-col gap-5">
         <section>
-          <h2 className="font-bold text-slate-700 text-sm mb-2">بازیکن‌های دیگر (خواهر و برادر)</h2>
+          <h2 className="font-bold text-text-primary text-sm mb-2">بازیکن‌های دیگر (خواهر و برادر)</h2>
           {/* violet was this screen's own accent, related to nothing else in the
               app. The stepper is games-soft/games-ink now — the same pair every
               quiet control on a games screen uses. */}
@@ -127,7 +127,7 @@ function Setup({ childName, characters, onStart, onBack }: {
               aria-label="یک بازیکن کمتر"
               className="w-11 h-11 rounded-xl bg-games-soft text-games-ink text-xl font-bold flex items-center justify-center"
             >−</button>
-            <span className="text-xl font-bold text-slate-800 min-w-[1.5rem] text-center">{toPersianDigits(extraHumans)}</span>
+            <span className="text-xl font-bold text-text-primary min-w-[1.5rem] text-center">{toPersianDigits(extraHumans)}</span>
             <button
               disabled={full}
               onClick={() => setExtraHumans(n => Math.min(MAX_PLAYERS - 1 - chosen.length, n + 1))}
@@ -138,7 +138,7 @@ function Setup({ childName, characters, onStart, onBack }: {
         </section>
 
         <section>
-          <h2 className="font-bold text-slate-700 text-sm mb-2">یا با دوستانت مسابقه بده</h2>
+          <h2 className="font-bold text-text-primary text-sm mb-2">یا با دوستانت مسابقه بده</h2>
           <div className="grid grid-cols-3 gap-2.5">
             {characters.map(ch => {
               const on = chosen.includes(ch.slug)
@@ -152,14 +152,14 @@ function Setup({ childName, characters, onStart, onBack }: {
                     on ? 'bg-games-bright border-games-deep' : 'bg-white border-transparent'} ${!on && full ? 'opacity-40' : ''}`}
                 >
                   <span className="text-2xl" aria-hidden="true">{characterEmoji(ch)}</span>
-                  <span className={`text-xs font-medium truncate w-full text-center ${on ? 'text-white' : 'text-slate-700'}`}>{ch.name_persian}</span>
+                  <span className={`text-xs font-medium truncate w-full text-center ${on ? 'text-white' : 'text-text-primary'}`}>{ch.name_persian}</span>
                 </button>
               )
             })}
           </div>
         </section>
 
-        <p className="text-center text-sm text-slate-600 persian-text">
+        <p className="text-center text-sm text-text-secondary persian-text">
           {toPersianDigits(total)} بازیکن{total === 1 ? ' · تنها بازی می‌کنی' : ''}
         </p>
 
@@ -305,7 +305,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
         note={stars > 0 ? `${toPersianDigits(stars)} پاسخ درست دادی — عالی بود!` : undefined}
       >
         <ClayButton ramp="games" size="lg" onClick={onReplay}>دوباره بازی کن</ClayButton>
-        <button onClick={onChangePlayers} className="w-full py-3.5 rounded-2xl border-2 border-slate-300 text-slate-700 font-bold">
+        <button onClick={onChangePlayers} className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold">
           تغییر بازیکن‌ها
         </button>
       </GameOverScreen>

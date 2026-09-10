@@ -56,8 +56,8 @@ export default function WritePage() {
             className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[44px]"
             aria-label={`بشنو: ${letter.name_persian}`}
           >
-            <span className="text-2xl font-bold text-slate-800">{letter.character}</span>
-            <span className="text-slate-600">{letter.name_persian}</span>
+            <span className="text-2xl font-bold text-text-primary">{letter.character}</span>
+            <span className="text-text-secondary">{letter.name_persian}</span>
             <span className="text-amber-500"><Icon name="listen" size="md" /></span>
           </button>
         </div>
@@ -79,7 +79,7 @@ export default function WritePage() {
             onClick={() => { playTap(); setIdx(i => Math.max(0, i - 1)) }}
             disabled={idx === 0}
             whileTap={{ scale: 0.94 }}
-            className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold disabled:opacity-30 min-h-[56px]"
+            className="flex-1 py-4 rounded-2xl border-2 border-border text-text-secondary font-bold disabled:opacity-30 min-h-[56px]"
           >
             → قبلی
           </motion.button>
@@ -183,7 +183,7 @@ function TracingCanvas({ letter }: { letter: string }) {
         onClick={clear}
         whileTap={{ scale: 0.94 }}
         className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px] ${
-          hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+          hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-surface-subtle text-text-secondary'
         }`}
       >
         <Icon name="retry" size="sm" /> پاک کن

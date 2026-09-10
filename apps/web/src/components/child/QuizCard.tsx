@@ -145,7 +145,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
             : <span className="text-[8rem] leading-none" aria-hidden="true">
                 {/* EMOJI-CONTENT: the visual IS the word being taught. The '?'
                     fallback is chrome, so it gets a real icon. */}
-                {visual?.value ?? <Icon name="warning" size={96} strokeWidth={1.5} className="text-slate-300" />}
+                {visual?.value ?? <Icon name="warning" size={96} strokeWidth={1.5} className="text-text-secondary" />}
               </span>}
         </div>
         <p className="font-bold text-gray-700 text-lg persian-text">این چه کلمه‌ای است؟</p>
