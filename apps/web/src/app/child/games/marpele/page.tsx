@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
@@ -10,9 +10,9 @@ import { characterEmoji } from '@/lib/characterEmoji'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
-import { clayVars } from '@/components/child/clay'
-import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
-import MarpeleBoard, { Confetti, Dice } from '@/components/child/MarpeleBoard'
+import { ClayButton } from '@/components/child/clay'
+import { type QuizQuestion } from '@/components/child/QuizCard'
+import MarpeleBoard, { ChallengeModal, GameOverScreen, RollRow, TurnChip } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import type { AppCharacter, Child, Word } from '@koodakbook/shared'
 import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDigits, wordEmoji } from '@koodakbook/shared'
@@ -118,16 +118,21 @@ function Setup({ childName, characters, onStart, onBack }: {
       <div className="px-4 pt-5 max-w-md mx-auto flex flex-col gap-5">
         <section>
           <h2 className="font-bold text-slate-700 text-sm mb-2">بازیکن‌های دیگر (خواهر و برادر)</h2>
+          {/* violet was this screen's own accent, related to nothing else in the
+              app. The stepper is games-soft/games-ink now — the same pair every
+              quiet control on a games screen uses. */}
           <div className="inline-flex items-center gap-4 bg-white rounded-2xl p-2.5 shadow-card">
             <button
               onClick={() => setExtraHumans(n => Math.max(0, n - 1))}
-              className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 text-xl font-bold flex items-center justify-center"
+              aria-label="یک بازیکن کمتر"
+              className="w-11 h-11 rounded-xl bg-games-soft text-games-ink text-xl font-bold flex items-center justify-center"
             >−</button>
             <span className="text-xl font-bold text-slate-800 min-w-[1.5rem] text-center">{toPersianDigits(extraHumans)}</span>
             <button
               disabled={full}
               onClick={() => setExtraHumans(n => Math.min(MAX_PLAYERS - 1 - chosen.length, n + 1))}
-              className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 text-xl font-bold flex items-center justify-center disabled:opacity-40"
+              aria-label="یک بازیکن بیشتر"
+              className="w-11 h-11 rounded-xl bg-games-soft text-games-ink text-xl font-bold flex items-center justify-center disabled:opacity-40"
             >+</button>
           </div>
         </section>
@@ -142,10 +147,11 @@ function Setup({ childName, characters, onStart, onBack }: {
                   key={ch.slug}
                   disabled={!on && full}
                   onClick={() => toggleChar(ch.slug)}
+                  aria-pressed={on}
                   className={`rounded-2xl p-3 flex flex-col items-center gap-1 border-2 transition-colors ${
-                    on ? 'bg-violet-500 border-violet-500' : 'bg-white border-transparent'} ${!on && full ? 'opacity-40' : ''}`}
+                    on ? 'bg-games-bright border-games-deep' : 'bg-white border-transparent'} ${!on && full ? 'opacity-40' : ''}`}
                 >
-                  <span className="text-2xl">{characterEmoji(ch)}</span>
+                  <span className="text-2xl" aria-hidden="true">{characterEmoji(ch)}</span>
                   <span className={`text-xs font-medium truncate w-full text-center ${on ? 'text-white' : 'text-slate-700'}`}>{ch.name_persian}</span>
                 </button>
               )
@@ -157,18 +163,14 @@ function Setup({ childName, characters, onStart, onBack }: {
           {toPersianDigits(total)} بازیکن{total === 1 ? ' · تنها بازی می‌کنی' : ''}
         </p>
 
-        <motion.button
-          onClick={start}
-          whileTap={{ scale: 0.96 }}
-          style={clayVars('games')}
-          className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]"
-        >
-          شروع بازی
-        </motion.button>
+        <ClayButton ramp="games" size="lg" icon="play" onClick={start}>شروع بازی</ClayButton>
 
+        {/* The secondary route out of this screen, so it stays an outline
+            rather than a second clay slab — but on the games ramp, not the
+            sky pair it used to borrow from no module at all. */}
         <Link
           href="/child/games/marpele-online"
-          className="w-full py-3.5 rounded-2xl border-2 border-sky-200 text-sky-600 font-bold text-center"
+          className="w-full py-3.5 rounded-2xl border-2 border-games-bright text-games-ink font-bold text-center"
         >
           بازی آنلاین با دوستان
         </Link>
@@ -176,24 +178,6 @@ function Setup({ childName, characters, onStart, onBack }: {
 
       <BottomNav />
     </div>
-  )
-}
-
-/* ── A player's leaderboard chip; the current player glows ───────────────── */
-function PlayerChip({ player, square, active }: { player: Player; square: number; active: boolean }) {
-  return (
-    <motion.div
-      animate={active ? { scale: [1, 1.06, 1] } : { scale: 1 }}
-      transition={{ duration: 1.2, repeat: active ? Infinity : 0, ease: 'easeInOut' }}
-      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 border-2 ${
-        active ? 'bg-violet-500 border-yellow-300' : 'bg-white border-transparent'}`}
-    >
-      <span className="text-lg">{player.emoji}</span>
-      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-slate-800'}`}>{player.name}</span>
-      <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-700'}`}>
-        {toPersianDigits(square)}
-      </span>
-    </motion.div>
   )
 }
 
@@ -208,7 +192,6 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
   onReplay: () => void
   onChangePlayers: () => void
 }) {
-  const router = useRouter()
   const [positions, setPositions] = useState<number[]>(() => players.map(() => 0))
   const [current, setCurrent] = useState(0)
   const [die, setDie] = useState<number | null>(null)
@@ -315,21 +298,17 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
     const w = players[winner]
     const childWon = w.isActiveChild
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 child-bg p-6 text-center">
-        <Confetti />
-        <span className="text-8xl">{childWon ? <Icon name="rewards" size={96} strokeWidth={1.5} className="text-amber-500" /> : w.emoji}</span>
-        <h1 className="text-3xl font-bold text-slate-800">{childWon ? 'تو بردی!' : `${w.name} برد!`}</h1>
-        {stars > 0 && <p className="text-slate-700 persian-text">{toPersianDigits(stars)} پاسخ درست دادی — عالی بود!</p>}
-        <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
-          <motion.button onClick={onReplay} whileTap={{ y: 4 }} style={clayVars('games')} className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">
-            دوباره بازی کن
-          </motion.button>
-          <motion.button onClick={onChangePlayers} whileTap={{ scale: 0.96 }} className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold">
-            تغییر بازیکن‌ها
-          </motion.button>
-          <button onClick={() => router.push('/child/home')} className="text-sm text-slate-400 hover:text-slate-600 mt-1">برگشت به خانه</button>
-        </div>
-      </div>
+      <GameOverScreen
+        won={childWon}
+        token={childWon ? undefined : w.emoji}
+        title={childWon ? 'تو بردی!' : `${w.name} برد!`}
+        note={stars > 0 ? `${toPersianDigits(stars)} پاسخ درست دادی — عالی بود!` : undefined}
+      >
+        <ClayButton ramp="games" size="lg" onClick={onReplay}>دوباره بازی کن</ClayButton>
+        <button onClick={onChangePlayers} className="w-full py-3.5 rounded-2xl border-2 border-slate-300 text-slate-700 font-bold">
+          تغییر بازیکن‌ها
+        </button>
+      </GameOverScreen>
     )
   }
 
@@ -338,53 +317,44 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
       <PageHeader
         title="مارپله"
         module="games"
-        rightSlot={stars > 0 ? <span className="text-sm font-bold text-amber-500">⭐ {toPersianDigits(stars)}</span> : undefined}
+        /* Was a bare ⭐ glyph in amber-500 (2.4:1). The star is a UI count, so
+           it comes from the icon set, on the rewards ramp like every other
+           score in the app. */
+        rightSlot={stars > 0 ? (
+          <span className="flex items-center gap-1 text-sm font-bold" style={{ color: 'var(--ramp-rewards-ink)' }}>
+            <Icon name="star" size="sm" strokeWidth={2.4} />
+            {toPersianDigits(stars)}
+          </span>
+        ) : undefined}
       />
 
       <div className="px-4 pt-4 max-w-md mx-auto flex flex-col gap-4">
         <div className="flex gap-2 justify-center flex-wrap">
-          {players.map((p, i) => <PlayerChip key={p.key} player={p} square={positions[i]} active={i === current} />)}
+          {players.map((p, i) => (
+            <TurnChip key={p.key} emoji={p.emoji} name={p.name} square={positions[i]} active={i === current} />
+          ))}
         </div>
 
         <MarpeleBoard positions={positions} emojis={players.map(p => p.emoji)} />
 
-        <div className="flex items-center gap-3.5">
-          <Dice value={die} rolling={animating} />
-          <motion.button
-            onClick={humanRoll}
-            disabled={!canRoll}
-            whileTap={canRoll ? { scale: 0.96 } : {}}
-            className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-card transition-colors ${
-              canRoll ? 'bg-violet-600' : 'bg-slate-300'}`}
-          >
-            {cur?.kind === 'human' ? 'تاس بینداز!' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}
-          </motion.button>
-        </div>
+        <RollRow
+          die={die}
+          rolling={animating}
+          canRoll={canRoll}
+          onRoll={humanRoll}
+          label={cur?.kind === 'human' ? 'تاس بینداز!' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}
+        />
       </div>
 
       <AnimatePresence>
         {challenge && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-5"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col gap-3"
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-            >
-              <p className="text-center font-bold text-slate-800 persian-text">
-                {players[challenge.playerIdx].name}:{' '}
-                {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}
-              </p>
-              <QuizCard
-                key={challenge.target + '-' + (challenge.question.correctWord?.id ?? '')}
-                question={challenge.question}
-                onCorrect={() => resolve(true)}
-                onIncorrect={() => resolve(false)}
-                onFlashcardNext={() => resolve(true)}
-              />
-            </motion.div>
-          </motion.div>
+          <ChallengeModal
+            key={challenge.target + '-' + (challenge.question.correctWord?.id ?? '')}
+            prompt={`${players[challenge.playerIdx].name}: ${
+              challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}`}
+            question={challenge.question}
+            onResolve={resolve}
+          />
         )}
       </AnimatePresence>
 

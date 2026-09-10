@@ -203,9 +203,23 @@ New in the kit for this pass: `PageHeader` takes `module`; `ClayTile` takes the
 `glyph` escape hatch `ClayMiniTile` already had, for the Persian digit the
 numerals room actually teaches.
 
-⬜ still outstanding on these screens: `marpele` / `marpele-online` (390-odd
-lines each) keep their bespoke board layout — on-system colour now, but not yet
-componentised.
+✅ مارپله, both screens (2026-09). The two boards were ports of two mobile
+screens and kept *two copies* of the same four objects, which is how the same
+state ended up violet on one and sky on the other. One copy each now, in
+`components/child/MarpeleBoard.tsx`, all on the games ramp:
+
+| export | what it is |
+| --- | --- |
+| `TurnChip` | whose turn, and how far along. Active = games `bright` + a rewards ring (the old `yellow-300` ring was ~1.4:1 on white — emphasis you couldn't see). |
+| `RollRow` | dice + roll button. The button is `ClayButton`, so "not your turn" is the material's own disabled state instead of a `bg-slate-300` slab that read as a different component. |
+| `ChallengeModal` | the ladder/snake question. |
+| `GameOverScreen` | confetti, result, actions. `won` is about the child holding the phone, not who won — losing to a friend still gets a real screen, minus the confetti. |
+
+The board grid stays bespoke — it is a board, not a list — but its tiles no
+longer deal six pastels out by `n % 6`. Colour there marks the four kinds of
+square worth spotting: start and finish on the module/rewards ramps, ladder and
+snake on the semantic green/red pair. Everything else is a quiet checker, with
+the tile numbers off `black/35` (~2.3:1) so they can actually be read.
 ✅ parent app contrast/shadow/radius pass (2026-09): fixed the one real
 WCAG-AA failure (dashboard level/XP card, white-on-violet-500→purple-600 —
 now violet-700→purple-800), replaced ad-hoc `shadow-sm/md/lg` with

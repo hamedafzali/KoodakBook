@@ -3,16 +3,16 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Child, Word } from '@koodakbook/shared'
-import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDigits, wordEmoji } from '@koodakbook/shared'
+import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, wordEmoji } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
-import { clayVars } from '@/components/child/clay'
-import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
-import MarpeleBoard, { Confetti, Dice } from '@/components/child/MarpeleBoard'
+import { ClayButton, clayVars } from '@/components/child/clay'
+import { type QuizQuestion } from '@/components/child/QuizCard'
+import MarpeleBoard, { ChallengeModal, GameOverScreen, RollRow, TurnChip } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { Icon } from '@/components/icons'
 
@@ -223,24 +223,9 @@ export default function MarpeleOnlinePage() {
   if (phase === 'ended') {
     const title = endReason === 'won' ? 'تو بردی!' : endReason === 'lost' ? 'این بار دوستت برد!' : 'دوستت از بازی خارج شد'
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 child-bg p-6 text-center">
-        {endReason === 'won' && <Confetti />}
-        <span className={endReason === 'won' ? 'text-amber-500' : 'text-slate-400'}>
-          <Icon name={endReason === 'won' ? 'rewards' : 'random'} size={96} strokeWidth={1.5} />
-        </span>
-        <h1 className="text-3xl font-bold text-slate-800">{title}</h1>
-        <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
-          <motion.button
-            onClick={() => setPhase('lobby')}
-            whileTap={{ scale: 0.96 }}
-            style={clayVars('games')}
-            className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]"
-          >
-            بازی دوباره
-          </motion.button>
-          <button onClick={() => router.push('/child/home')} className="text-sm text-slate-400 hover:text-slate-600 mt-1">برگشت به خانه</button>
-        </div>
-      </div>
+      <GameOverScreen won={endReason === 'won'} title={title}>
+        <ClayButton ramp="games" size="lg" onClick={() => setPhase('lobby')}>بازی دوباره</ClayButton>
+      </GameOverScreen>
     )
   }
 
@@ -250,11 +235,12 @@ export default function MarpeleOnlinePage() {
         <PageHeader title="بازی آنلاین" subtitle="یک دوست آنلاین را برای بازی دعوت کن" onBack={() => router.push('/child/games/marpele')} module="games" />
 
         <div className="px-4 pt-4 max-w-md mx-auto flex flex-col gap-3">
-          {notice && <p className="text-center text-sm font-medium text-amber-600 persian-text">{notice}</p>}
+          {notice && <p /* amber-600 is 3.3:1 — under the floor for text this small. */
+            className="text-center text-sm font-medium text-amber-700 persian-text">{notice}</p>}
 
           {friends.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-2.5 shadow-card">
-              <span className="text-sky-500"><Icon name="partner" size="xl" /></span>
+              <span style={{ color: 'var(--ramp-games-ink)' }}><Icon name="partner" size="xl" /></span>
               <p className="text-center text-sm text-slate-600 persian-text leading-6">
                 هنوز دوستی نداری. از حالت والدین با کد دوستی، دوست اضافه کن.
               </p>
@@ -316,23 +302,17 @@ export default function MarpeleOnlinePage() {
 
       <div className="px-4 pt-4 max-w-md mx-auto flex flex-col gap-4">
         <div className="flex gap-2 justify-center flex-wrap">
+          {/* Same chip the solo board uses — this screen used to render its own
+              copy in sky, so the identical state was two different colours
+              depending on which مارپله you had opened. */}
           {room?.players.map((p, i) => (
-            <motion.div
+            <TurnChip
               key={p.childId}
-              animate={i === current ? { scale: [1, 1.06, 1] } : { scale: 1 }}
-              transition={{ duration: 1.2, repeat: i === current ? Infinity : 0, ease: 'easeInOut' }}
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 border-2 ${
-                i === current ? 'bg-sky-500 border-yellow-300' : 'bg-white border-transparent'}`}
-            >
-              <span className="text-lg">{TOKEN_EMOJI[i]}</span>
-              <span className={`text-xs font-bold max-w-[70px] truncate ${i === current ? 'text-white' : 'text-slate-800'}`}>
-                {p.childId === me.id ? 'تو' : p.name}
-              </span>
-              <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${
-                i === current ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-700'}`}>
-                {toPersianDigits(positions[i] ?? 0)}
-              </span>
-            </motion.div>
+              emoji={TOKEN_EMOJI[i]}
+              name={p.childId === me.id ? 'تو' : p.name}
+              square={positions[i] ?? 0}
+              active={i === current}
+            />
           ))}
         </div>
 
@@ -356,42 +336,17 @@ export default function MarpeleOnlinePage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-3.5">
-          <Dice value={die} rolling={animating} />
-          <motion.button
-            onClick={roll}
-            disabled={!canRoll}
-            whileTap={canRoll ? { scale: 0.96 } : {}}
-            className={`flex-1 py-4 rounded-2xl font-bold text-lg text-white shadow-card transition-colors ${
-              canRoll ? 'bg-sky-600' : 'bg-slate-300'}`}
-          >
-            {myTurn ? 'تاس بینداز!' : 'صبر کن…'}
-          </motion.button>
-        </div>
+        <RollRow die={die} rolling={animating} canRoll={canRoll} onRoll={roll} label={myTurn ? 'تاس بینداز!' : 'صبر کن…'} />
       </div>
 
       <AnimatePresence>
         {challenge && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-5"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col gap-3"
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-            >
-              <p className="text-center font-bold text-slate-800 persian-text">
-                {challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}
-              </p>
-              <QuizCard
-                key={challenge.target + '-' + (challenge.question.correctWord?.id ?? '')}
-                question={challenge.question}
-                onCorrect={() => resolve(true)}
-                onIncorrect={() => resolve(false)}
-                onFlashcardNext={() => resolve(true)}
-              />
-            </motion.div>
-          </motion.div>
+          <ChallengeModal
+            key={challenge.target + '-' + (challenge.question.correctWord?.id ?? '')}
+            prompt={challenge.kind === 'ladder' ? 'جواب بده تا از نردبان بالا بروی!' : 'جواب بده تا از مار فرار کنی!'}
+            question={challenge.question}
+            onResolve={resolve}
+          />
         )}
       </AnimatePresence>
     </div>
