@@ -163,7 +163,7 @@ function Setup({ childName, characters, onStart, onBack }: {
           {toPersianDigits(total)} بازیکن{total === 1 ? ' · تنها بازی می‌کنی' : ''}
         </p>
 
-        <ClayButton ramp="games" size="lg" icon="play" onClick={start}>شروع بازی</ClayButton>
+        <ClayButton ramp="games" size="lg" icon="play" onClick={start}>شروع بازی 🎲</ClayButton>
 
         {/* The secondary route out of this screen, so it stays an outline
             rather than a second clay slab — but on the games ramp, not the
@@ -301,7 +301,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
       <GameOverScreen
         won={childWon}
         token={childWon ? undefined : w.emoji}
-        title={childWon ? 'تو بردی!' : `${w.name} برد!`}
+        title={childWon ? 'تو بردی! 🎉' : `${w.name} برد!`}
         note={stars > 0 ? `${toPersianDigits(stars)} پاسخ درست دادی — عالی بود!` : undefined}
       >
         <ClayButton ramp="games" size="lg" onClick={onReplay}>دوباره بازی کن</ClayButton>
@@ -342,7 +342,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
           rolling={animating}
           canRoll={canRoll}
           onRoll={humanRoll}
-          label={cur?.kind === 'human' ? 'تاس بینداز!' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}
+          label={cur?.kind === 'human' ? 'تاس بینداز! 🎲' : `${cur?.emoji} ${cur?.name} بازی می‌کند…`}
         />
       </div>
 

@@ -11,7 +11,6 @@ import Mascot from '@/components/child/Mascot'
 import { pickChild } from '@/lib/activeChild'
 import { getTranslationLang } from '@/lib/translation'
 import type { Story, StoryPage, Badge, Child, Promotion } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
 import ReadAloud from '@/components/child/ReadAloud'
 
 type FullStory = Story & { pages: StoryPage[] }
@@ -134,7 +133,7 @@ export default function StoryPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <p className="flex justify-center text-amber-500"><Icon name="celebrate" size="lg" /></p>
+        <p className="text-3xl" aria-hidden="true">🔓✨</p>
         <h1 className="text-2xl font-bold text-text-primary">محتوای جدید باز شد!</h1>
         <p className="text-text-secondary persian-text">داستان‌ها و درس‌های تازه در خانه منتظرت هستند</p>
       </div>

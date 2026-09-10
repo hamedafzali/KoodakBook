@@ -16,7 +16,6 @@ import { speakOrPlay, initSpeech } from '@/lib/speech'
 import { recognitionSupported, listenOnce } from '@/lib/recognition'
 import { wordEmoji } from '@koodakbook/shared'
 import type { Word, Child } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
 
 type Phase = 'idle' | 'listening' | 'correct' | 'tryagain'
 
@@ -108,7 +107,7 @@ export default function SpeakPage() {
           ) : null}
           <span className="text-5xl font-bold text-text-primary">{word.persian}</span>
           <span className="text-base text-text-secondary ltr">{word.english}</span>
-          <span className="flex items-center gap-1 text-xs text-amber-700"><Icon name="listen" size="xs" /> اول گوش کن</span>
+          <span className="flex items-center gap-1 text-xs text-amber-700"><span aria-hidden="true">🔊</span> اول گوش کن</span>
         </button>
 
         {/* Mascot feedback */}
@@ -116,7 +115,7 @@ export default function SpeakPage() {
           {phase === 'correct' && (
             <motion.div key="correct" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
               <Mascot size={90} mood="excited" />
-              <p className="font-bold text-green-600 text-lg">آفرین! درست گفتی</p>
+              <p className="font-bold text-green-600 text-lg">آفرین! درست گفتی 🌟</p>
             </motion.div>
           )}
           {phase === 'tryagain' && (
@@ -144,7 +143,7 @@ export default function SpeakPage() {
             style={{ background: phase === 'listening' ? 'rgb(225 29 72)' : 'var(--ramp-speak-bright)' }}
             aria-label={phase === 'listening' ? 'در حال شنیدن' : 'ضربه بزن و بگو'}
           >
-            <Icon name={phase === 'listening' ? 'headphones' : 'record'} size={40} />
+            <span className="text-4xl" aria-hidden="true">{phase === 'listening' ? '👂' : '🎤'}</span>
           </motion.button>
         )}
         <p className="text-sm text-text-secondary persian-text">
@@ -155,7 +154,7 @@ export default function SpeakPage() {
           onClick={nextWord}
           whileTap={{ scale: 0.95 }}
           style={clayVars('speak')}
-          className="clay w-full max-w-sm py-4 text-white font-bold text-lg min-h-[56px]"
+          className="clay w-full max-w-sm py-4 font-bold text-lg min-h-[56px]"
         >
           کلمه بعدی ←
         </motion.button>

@@ -15,8 +15,15 @@ interface Props {
   gradientClass?: string
   /** The screen's module. Preferred over `gradientClass`: it puts the accent on
    *  the same ramp the rest of the screen uses, so the header can't drift to a
-   *  hue that means a different module. */
+   *  hue that means a different module. Also supplies the section's identity
+   *  emoji (DESIGN_CHARTER.md) unless `emoji` overrides or `noEmoji` suppresses. */
   module?: ModuleKey
+  /** Section identity emoji shown before the title. Defaults to the module's
+   *  emoji when `module` is set. */
+  emoji?: string
+  /** Opt a `module` screen out of the identity emoji (e.g. the title already
+   *  carries its own content glyph). */
+  noEmoji?: boolean
 }
 
 export default function PageHeader({
@@ -29,6 +36,8 @@ export default function PageHeader({
   variant = 'gradient',
   gradientClass = 'from-amber-400 to-orange-500',
   module: m,
+  emoji,
+  noEmoji = false,
 }: Props) {
   const router = useRouter()
 
@@ -51,6 +60,7 @@ export default function PageHeader({
   }
   const hue = gradientClass.match(/from-([a-z]+)-/)?.[1] ?? 'amber'
   const bar = m ? MODULE[m].bar : (ACCENT[hue] ?? 'bg-amber-400')
+  const badge = noEmoji ? undefined : (emoji ?? (m ? MODULE[m].emoji : undefined))
 
   return (
     <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border px-4 pt-3 pb-3 ${className}`}>
@@ -69,7 +79,10 @@ export default function PageHeader({
         </motion.button>
 
         <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-xl text-text-primary truncate leading-tight">{title}</h1>
+          <h1 className="font-bold text-xl text-text-primary truncate leading-tight">
+            {badge && <span className="mr-1.5" aria-hidden="true">{badge}</span>}
+            {title}
+          </h1>
           <div className="flex items-center gap-2 mt-1">
             <span className={`w-8 h-1 rounded-full ${bar}`} aria-hidden="true" />
             {subtitle && <p className="text-xs text-text-secondary truncate">{subtitle}</p>}

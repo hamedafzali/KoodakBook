@@ -66,7 +66,7 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
       className="bg-white/80 border-2 border-dashed rounded-2xl h-28 flex items-center justify-center persian-text text-sm text-center px-4"
       style={{ borderColor: 'var(--ramp-phonics-soft)', color: 'var(--ramp-phonics-ink)' }}
     >
-      روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود
+      روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود ✨
     </div>
   )
   if (reduce) return (
@@ -102,7 +102,7 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
       </motion.span>
       <motion.span className="absolute left-4 top-3 text-xl" initial={{ scale: 0 }}
         animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}>
-        <span style={{ color: 'var(--ramp-rewards-bright)' }}><Icon name="sparkle" size={40} /></span>
+        <span className="text-3xl" aria-hidden="true">✨</span>
       </motion.span>
       <span className="absolute right-3 bottom-2 text-[11px] text-text-secondary persian-text">{demo.markName}</span>
     </div>
@@ -143,7 +143,7 @@ export default function PhonicsPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="text-3xl font-bold text-text-primary">آفرین!</h1>
+        <h1 className="text-3xl font-bold text-text-primary">آفرین! 🌟</h1>
         <p className="text-text-secondary persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <ClayButton ramp="phonics" size="lg" icon="retry" onClick={() => setPhase('quiz')}>
@@ -151,7 +151,7 @@ export default function PhonicsPage() {
           </ClayButton>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
             className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold min-h-[52px]">
-            برگشت به خانه
+            برگشت به خانه 🏠
           </motion.button>
         </div>
       </div>
@@ -299,9 +299,9 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
           /* The material owns its radius — a `rounded-full` class would lose to
              the unlayered `.clay` rule, so the circle comes through the var. */
           style={{ ...clayVars('phonics'), '--clay-radius': '9999px' } as React.CSSProperties}
-          className="clay w-28 h-28 flex items-center justify-center touch-target text-white"
+          className="clay w-28 h-28 flex items-center justify-center touch-target"
           aria-label="دوباره گوش کن">
-          <Icon name="listen" size="xl" />
+          <span className="text-5xl" aria-hidden="true">🔊</span>
         </motion.button>
         <p className="text-text-primary persian-text">کدام را شنیدی؟</p>
 

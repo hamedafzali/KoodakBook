@@ -110,11 +110,11 @@ export function ClayButton({
 type TileProps = {
   ramp: Ramp
   icon: IconName
-  /** Same escape hatch as ClayMiniTile: when the mark IS the content the tile
-   *  teaches (the Persian digit ۴ on the numerals room), the glyph replaces the
-   *  icon. `icon` stays required because it is what the locked state and the
-   *  aria path fall back to — a tile is never left without a glyph of some
-   *  kind. Never use this to smuggle an emoji in; see components/icons.tsx. */
+  /** The mark shown large on the tile face. Usually the module's colourful
+   *  emoji (DESIGN_CHARTER.md — emoji carry section identity for a pre-reader),
+   *  or the content the tile teaches (the Persian digit ۴ on the numerals
+   *  room). `icon` stays required as the fall-back the locked state and the
+   *  aria path use — a tile is never left without a glyph of some kind. */
   glyph?: string
   title: string
   sub?: string
@@ -184,9 +184,9 @@ export function ClayTile({
 }
 
 /** Square tile for horizontal carousels — same material, stacked layout.
- *  `glyph` is the escape hatch for the one case where the mark IS the content
- *  the tile teaches (the Persian digit ۴ on the numerals room); everything
- *  else passes an `icon` and gets the shared glyph set. */
+ *  Pass `glyph` for the module's colourful emoji or the content the tile
+ *  teaches (the Persian digit ۴ on the numerals room); pass `icon` for the
+ *  small utility cases that want a Lucide glyph instead. */
 export function ClayMiniTile({
   ramp, icon, glyph, title, href, big, inList, label,
 }: {
@@ -298,18 +298,21 @@ export function ClayChip({
   )
 }
 
-/** Rounded-square icon chip. The glyph takes `currentColor` from the chip, so
- *  a single ramp drives both the tint and the icon — the token behaviour the
- *  emoji it replaced could never express. */
+/** Rounded-square identity chip: a module's colour on its `soft` tint. Shows
+ *  the module's colourful emoji by default (DESIGN_CHARTER.md — emoji carry
+ *  section identity for a child); pass `icon` for the small utility cases where
+ *  a Lucide glyph is wanted instead, and it takes `currentColor` from the chip
+ *  so the ramp still drives the tint. */
 export function ClayIconChip({
-  ramp, icon, size = 'md',
+  ramp, icon, glyph, size = 'md',
 }: {
-  ramp: Ramp; icon: IconName; size?: 'md' | 'lg' | 'xl'
+  ramp: Ramp; icon?: IconName; glyph?: string; size?: 'md' | 'lg' | 'xl'
 }) {
   const box = size === 'xl' ? 'w-16 h-16 rounded-2xl'
     : size === 'lg' ? 'w-14 h-14 rounded-2xl'
       : 'w-12 h-12 rounded-xl'
-  const glyph = size === 'xl' ? 'xl' : size === 'lg' ? 'lg' : 'md'
+  const iconSize = size === 'xl' ? 'xl' : size === 'lg' ? 'lg' : 'md'
+  const emojiSize = size === 'xl' ? 'text-4xl' : size === 'lg' ? 'text-3xl' : 'text-2xl'
   return (
     <span
       className={`${box} flex items-center justify-center shrink-0`}
@@ -317,8 +320,11 @@ export function ClayIconChip({
         background: `var(--ramp-${ramp}-soft)`,
         color: `var(--ramp-${ramp}-ink)`,
       }}
+      aria-hidden={glyph && !icon ? true : undefined}
     >
-      <Icon name={icon} size={glyph} strokeWidth={2.2} />
+      {icon
+        ? <Icon name={icon} size={iconSize} strokeWidth={2.2} />
+        : <span className={`${emojiSize} leading-none`}>{glyph}</span>}
     </span>
   )
 }

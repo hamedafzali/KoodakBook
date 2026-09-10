@@ -7,7 +7,6 @@ import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakPersian } from '@/lib/speech'
 import { tapMotionFor } from '@/lib/animation'
-import { Icon } from '@/components/icons'
 
 interface Props {
   word: Word
@@ -81,7 +80,7 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
       </motion.span>
       <span lang="en" className="text-gray-400 text-base ltr">{word.english}</span>
       <span className="text-xs text-amber-500 flex items-center gap-1 mt-0.5" aria-hidden="true">
-        <Icon name="listen" size="xs" /> بشنو
+        🔊 بشنو
       </span>
       {recorded && <audio ref={audioRef} src={recorded} preload="none" />}
     </motion.button>

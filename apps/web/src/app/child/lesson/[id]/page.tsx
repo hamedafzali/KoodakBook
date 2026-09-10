@@ -14,7 +14,6 @@ import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import { pickChild } from '@/lib/activeChild'
 import type { Lesson, LessonItem, Badge, Child, Promotion } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
 
 type LessonWithItems = Lesson & { items: LessonItem[] }
 
@@ -138,7 +137,7 @@ export default function LessonPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h1 className="text-3xl font-bold text-text-primary">آفرین!</h1>
+          <h1 className="text-3xl font-bold text-text-primary">آفرین! 🌟</h1>
           <p className="text-text-secondary mt-1 persian-text">درس «{lesson.title}» تمام شد</p>
         </motion.div>
 
@@ -152,12 +151,12 @@ export default function LessonPage() {
           <div className="flex justify-around">
             <div>
               <p className="text-3xl font-bold text-green-600">{correctCount}</p>
-              <p className="text-xs text-text-secondary mt-0.5">درست</p>
+              <p className="text-xs text-text-secondary mt-0.5">درست ✅</p>
             </div>
             <div className="w-px bg-surface-subtle" />
             <div>
               <p className="text-3xl font-bold text-red-400">{incorrectCount}</p>
-              <p className="text-xs text-text-secondary mt-0.5">نادرست</p>
+              <p className="text-xs text-text-secondary mt-0.5">نادرست ❌</p>
             </div>
             <div className="w-px bg-surface-subtle" />
             <div>
@@ -175,7 +174,7 @@ export default function LessonPage() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.55, type: 'spring', stiffness: 300, damping: 16 }}
           >
-            <p className="mb-1 flex justify-center gap-1 text-amber-500"><Icon name="celebrate" size="lg" /></p>
+            <p className="text-2xl mb-1" aria-hidden="true">🔓✨</p>
             <p className="font-bold">محتوای جدید باز شد!</p>
             <p className="text-xs text-white/85 mt-0.5 persian-text">درس‌ها و داستان‌های تازه در خانه منتظرت هستند</p>
           </motion.div>
@@ -184,14 +183,14 @@ export default function LessonPage() {
         <motion.button
           onClick={() => router.push('/child/home')}
           style={clayVars('lessons')}
-          className="clay w-full max-w-xs text-white font-bold py-4 text-lg touch-target min-h-[56px]"
+          className="clay w-full max-w-xs font-bold py-4 text-lg touch-target min-h-[56px]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
         >
-          برگشت به خانه
+          برگشت به خانه 🏠
         </motion.button>
       </div>
     )

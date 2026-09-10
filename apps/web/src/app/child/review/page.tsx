@@ -106,7 +106,7 @@ export default function ReviewPage() {
           <Mascot size={130} mood="excited" />
         </motion.div>
         <h1 className="text-3xl font-bold text-text-primary">
-          {allCaughtUp ? 'همه را مرور کردی!' : 'آفرین! مرور تمام شد'}
+          {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}
         </h1>
         <p className="text-text-secondary persian-text">
           {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${correct} از ${allQuestions.length} درست`}
@@ -115,9 +115,9 @@ export default function ReviewPage() {
           onClick={() => router.push('/child/home')}
           whileTap={{ scale: 0.96 }}
           style={clayVars('review')}
-          className="clay w-full max-w-xs text-white font-bold py-4 text-lg min-h-[56px]"
+          className="clay w-full max-w-xs font-bold py-4 text-lg min-h-[56px]"
         >
-          برگشت به خانه
+          برگشت به خانه 🏠
         </motion.button>
       </div>
     )
@@ -139,7 +139,7 @@ export default function ReviewPage() {
         </motion.button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-text-primary text-sm">مرور کلمه‌ها</h1>
+            <h1 className="font-bold text-text-primary text-sm">مرور کلمه‌ها 🔄</h1>
             <span className="text-sm font-bold text-amber-600">{idx + 1}/{allQuestions.length}</span>
           </div>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-surface-subtle rounded-full overflow-hidden">

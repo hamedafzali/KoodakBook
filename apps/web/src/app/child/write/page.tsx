@@ -11,7 +11,6 @@ import { ClayButton } from '@/components/child/clay'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Letter } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
 
 export default function WritePage() {
   const router = useRouter()
@@ -58,7 +57,7 @@ export default function WritePage() {
           >
             <span className="text-2xl font-bold text-text-primary">{letter.character}</span>
             <span className="text-text-secondary">{letter.name_persian}</span>
-            <span className="text-amber-500"><Icon name="listen" size="md" /></span>
+            <span className="text-amber-500 text-lg" aria-hidden="true">🔊</span>
           </button>
         </div>
 
@@ -186,7 +185,7 @@ function TracingCanvas({ letter }: { letter: string }) {
           hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-surface-subtle text-text-secondary'
         }`}
       >
-        <Icon name="retry" size="sm" /> پاک کن
+        <span aria-hidden="true">🧹</span> پاک کن
       </motion.button>
     </div>
   )

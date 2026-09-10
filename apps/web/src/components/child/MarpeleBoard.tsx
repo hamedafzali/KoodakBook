@@ -3,7 +3,6 @@ import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { COLS, LADDERS, ROWS, SIZE, SNAKES, boardRows, toPersianDigits } from '@koodakbook/shared'
 import Link from 'next/link'
-import { Icon } from '@/components/icons'
 import { ClayButton } from '@/components/child/clay'
 import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 
@@ -73,8 +72,8 @@ export default function MarpeleBoard({ positions, emojis }: { positions: number[
                 {/* Was black/35 — about 2.3:1 on the tile. These numbers are how
                     a child checks whose token is ahead, so they have to read. */}
                 <span className="absolute top-0.5 right-1 text-[10px] font-bold text-text-primary">{toPersianDigits(n)}</span>
-                {start && <Icon name="home" size="md" />}
-                {finish && <Icon name="rewards" size="md" />}
+                {start && <span className="text-xl" aria-hidden="true">🏠</span>}
+                {finish && <span className="text-xl" aria-hidden="true">🏆</span>}
                 {/* EMOJI-CONTENT: the ladder and the snake are the board's two
                     game mechanics, drawn as pieces — not affordances. They want
                     real board art, and an outline glyph would read as a control. */}
@@ -274,17 +273,15 @@ export function GameOverScreen({ won, title, note, token, children }: {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 child-bg p-6 text-center">
       {won && <Confetti />}
-      {won
-        ? <span style={{ color: 'var(--ramp-rewards-bright)' }}><Icon name="rewards" size={96} strokeWidth={1.5} /></span>
-        : token
-          ? <span className="text-8xl leading-none" aria-hidden="true">{token}</span>
-          : <span className="text-text-secondary"><Icon name="random" size={96} strokeWidth={1.5} /></span>}
+      <span className="text-8xl leading-none" aria-hidden="true">
+        {won ? '🏆' : (token ?? '🎲')}
+      </span>
       <h1 className="text-3xl font-bold text-text-primary">{title}</h1>
       {note && <p className="text-text-primary persian-text">{note}</p>}
       <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
         {children}
         {/* Was slate-400: 2.56:1, and the only way out of this screen. */}
-        <Link href="/child/home" className="text-sm text-text-secondary hover:text-text-primary mt-1">برگشت به خانه</Link>
+        <Link href="/child/home" className="text-sm text-text-secondary hover:text-text-primary mt-1">برگشت به خانه 🏠</Link>
       </div>
     </div>
   )

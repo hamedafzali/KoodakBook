@@ -90,14 +90,14 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         <Mascot size={130} mood="excited" />
       </motion.div>
-      <h1 className="text-3xl font-bold text-text-primary">چه شمارشگری!</h1>
+      <h1 className="text-3xl font-bold text-text-primary">چه شمارشگری! 🌟</h1>
       <p className="text-text-primary persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا گرفتی</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
           style={clayVars('math')}
-          className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">دوباره</motion.button>
+          className="clay w-full py-4 font-bold text-lg min-h-[56px]">دوباره 🔁</motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold">دنیای اعداد</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold">دنیای اعداد 🏠</motion.button>
       </div>
     </div>
   )

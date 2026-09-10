@@ -13,7 +13,6 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import EmptyState from '@/components/child/EmptyState'
 import { pickChild } from '@/lib/activeChild'
 import type { Story, Child } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } }
 const item = { hidden: { opacity: 0, scale: 0.94 }, show: { opacity: 1, scale: 1 } }
@@ -74,7 +73,7 @@ export default function StoryListPage() {
           className="flex items-center gap-3 mb-4 text-white rounded-3xl p-4 shadow-card"
           style={{ background: 'linear-gradient(to left, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}
         >
-          <span className="text-fuchsia-500"><Icon name="sparkle" size="lg" /></span>
+          <span className="text-3xl" aria-hidden="true">✨</span>
           <div className="flex-1 text-right">
             <p className="font-bold leading-tight">یک داستان برای من بساز</p>
             <p className="text-xs text-white/85 mt-0.5 persian-text">داستان مخصوص خودت با موضوع دلخواه</p>
@@ -100,11 +99,11 @@ export default function StoryListPage() {
                     >
                       {done && (
                         <div className="absolute top-2 left-2 bg-green-700 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium" aria-hidden="true">
-                          <Icon name="done" size="xs" /> خوندم
+                          <span aria-hidden="true">✅</span> خوندم
                         </div>
                       )}
                       <div className="w-full h-32 flex items-center justify-center text-white" aria-hidden="true"
-                        style={{ background: 'linear-gradient(to bottom right, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}><Icon name="sparkle" size={48} strokeWidth={1.5} /></div>
+                        style={{ background: 'linear-gradient(to bottom right, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}><span className="text-5xl" aria-hidden="true">✨</span></div>
                       <div className="px-3 pt-3">
                         <p className="font-bold text-text-primary text-sm leading-tight persian-text">{story.title_persian}</p>
                         <p className="text-xs text-fuchsia-500 mt-1">داستان من</p>
@@ -115,7 +114,7 @@ export default function StoryListPage() {
                       disabled={busy}
                       className="w-full mt-2 mb-2.5 text-xs font-medium text-purple-700 hover:text-purple-900 disabled:opacity-60"
                     >
-                      {busy ? '...در حال ساخت صدا' : <><Icon name="listen" size="xs" /> ساخت صدا</>}
+                      {busy ? '...در حال ساخت صدا' : <><span aria-hidden="true">🔊</span> ساخت صدا</>}
                     </button>
                   </div>
                 )
@@ -156,7 +155,7 @@ export default function StoryListPage() {
                         className="absolute top-2 left-2 bg-green-700 text-white text-xs px-2 py-0.5 rounded-full z-10 font-medium"
                         aria-hidden="true"
                       >
-                        <Icon name="done" size="xs" /> خوندم
+                        <span aria-hidden="true">✅</span> خوندم
                       </div>
                     )}
                     {mediaUrl(story.cover_url) ? (
@@ -181,7 +180,7 @@ export default function StoryListPage() {
                         style={{ background: 'linear-gradient(to bottom right, var(--ramp-stories-bright), var(--ramp-stories-deep))' }}
                         aria-hidden="true"
                       >
-                        <Icon name="stories" size="lg" />
+                        <span className="text-5xl" aria-hidden="true">📖</span>
                       </div>
                     )}
                     <div className="p-3">

@@ -94,19 +94,16 @@ export default function CharacterHomePage() {
 
         {/* Three doors — chunky, in the friend's module colors */}
         <div className="grid grid-cols-1 gap-3 pt-1">
-          {/* The 🃏 that used to sit on the first door was a structural icon,
-              not content — it named a control, so it followed the same rule as
-              every other affordance and became the games glyph. */}
           <ModuleCard
-            module="games" href={`/child/games/memory?host=${character.slug}`}
+            module="games" glyph="🃏" href={`/child/games/memory?host=${character.slug}`}
             title="با هم بازی کنیم!" sub={`بازی حافظه با ${character.name_persian}`}
           />
           <ModuleCard
-            module="stories" href="/child/story"
+            module="stories" glyph="📖" href="/child/story"
             title="قصه بگو!" sub="برو سراغ قصه‌ها"
           />
           <ModuleCard
-            module="speak" icon="message" href={`/child/friends/${character.slug}/talk`}
+            module="speak" glyph="💬" href={`/child/friends/${character.slug}/talk`}
             title="حرف بزنیم!" sub={`${character.name_persian} گوش می‌کنه و جواب می‌ده`}
           />
         </div>

@@ -16,7 +16,6 @@ import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Word, Child, AppCharacter, CharacterLine } from '@koodakbook/shared'
 import CharacterAvatar from '@/components/child/CharacterAvatar'
-import { Icon } from '@/components/icons'
 
 /* Memory match — the first data-driven game template: it feeds off the word
  * catalog, so every new word row is automatically new game content. Matching
@@ -123,17 +122,17 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         {host ? <CharacterAvatar slug={host.slug} size={130} mood="excited" /> : <Mascot size={130} mood="excited" />}
       </motion.div>
-      <h1 className="text-3xl font-bold text-text-primary">همه را پیدا کردی!</h1>
+      <h1 className="text-3xl font-bold text-text-primary">همه را پیدا کردی! 🎉</h1>
       <p className="text-text-primary persian-text">با {moves} حرکت — عالی بود!</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
           style={clayVars('games')}
-          className="clay w-full py-4 text-white font-bold text-lg min-h-[56px]">
-          دوباره بازی کن
+          className="clay w-full py-4 font-bold text-lg min-h-[56px]">
+          دوباره بازی کن 🔁
         </motion.button>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
           className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold">
-          برگشت به خانه
+          برگشت به خانه 🏠
         </motion.button>
       </div>
     </div>
@@ -141,7 +140,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="بازی حافظه 🃏" subtitle="جفت هر کلمه را پیدا کن" module="games" />
+      <PageHeader title="بازی حافظه" subtitle="جفت هر کلمه را پیدا کن" module="games" />
 
       <div className="px-4 pt-5 max-w-md mx-auto">
         <div className="flex items-center justify-between mb-3 text-sm">
@@ -169,7 +168,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
                   {/* back (face-down) */}
                   <div className="absolute inset-0 rounded-2xl shadow-card flex items-center justify-center [backface-visibility:hidden]"
                     style={{ background: 'linear-gradient(to bottom right, var(--ramp-games-bright), var(--ramp-games-deep))' }}>
-                    <span className="text-amber-400"><Icon name="star" size="lg" className="fill-amber-400" /></span>
+                    <span className="text-3xl" aria-hidden="true">🌟</span>
                   </div>
                   {/* front (word) */}
                   <div className={`absolute inset-0 rounded-2xl shadow-card flex flex-col items-center justify-center gap-0.5 px-1 overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)] ${

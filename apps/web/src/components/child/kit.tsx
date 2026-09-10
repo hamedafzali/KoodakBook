@@ -38,37 +38,43 @@ const _moduleKeysAreRamps: Record<ModuleKey, Ramp> = {
 void _moduleKeysAreRamps
 
 export const MODULE: Record<ModuleKey, {
-  icon: IconName    // Lucide glyph — never an emoji, see components/icons.tsx
+  emoji: string     // the module's identity for a child (DESIGN_CHARTER.md) — shown large on tiles
+  icon: IconName    // Lucide fall-back for small utility spots + the locked/aria path
   chip: string      // icon chip: soft tint + strong icon color
   bar: string       // accent bar / active states
   soft: string      // large soft fill (tile image area) — dark ink sits on this
   solid: string     // chunky tile fill (bright) — dark ink sits on this
   edge: string      // chunky tile 3D bottom edge (deep) — white text sits on this
 }> = {
-  /* These point at the app's own 4-stop ramps (tools/design/ramps.py), which
+  /* Colour points at the app's own 4-stop ramps (tools/design/ramps.py), which
    * keep each module's shipped Tailwind hue (-400 fill, -50 tint) and solve
    * the two dark support stops around it. DESIGN_CHARTER.md pairing:
    *   solid (bright) + ink text  >= 5.0:1     soft + ink text  >= 5.0:1
    *   deep carries white text and is the 3D edge — visibly darker than solid.
-   * Dark ink on a joyful fill, never white on a darkened one. */
-  lessons: { icon: 'lessons', chip: 'bg-lessons-soft text-lessons-ink', bar: 'bg-lessons-bright', soft: 'bg-lessons-soft', solid: 'bg-lessons-bright', edge: 'border-lessons-deep' },
-  letters: { icon: 'letters', chip: 'bg-letters-soft text-letters-ink', bar: 'bg-letters-bright', soft: 'bg-letters-soft', solid: 'bg-letters-bright', edge: 'border-letters-deep' },
-  phonics: { icon: 'phonics', chip: 'bg-phonics-soft text-phonics-ink', bar: 'bg-phonics-bright', soft: 'bg-phonics-soft', solid: 'bg-phonics-bright', edge: 'border-phonics-deep' },
-  stories: { icon: 'stories', chip: 'bg-stories-soft text-stories-ink', bar: 'bg-stories-bright', soft: 'bg-stories-soft', solid: 'bg-stories-bright', edge: 'border-stories-deep' },
-  review:  { icon: 'review',  chip: 'bg-review-soft text-review-ink',   bar: 'bg-review-bright',  soft: 'bg-review-soft',  solid: 'bg-review-bright',  edge: 'border-review-deep' },
-  speak:   { icon: 'speak',   chip: 'bg-speak-soft text-speak-ink',     bar: 'bg-speak-bright',   soft: 'bg-speak-soft',   solid: 'bg-speak-bright',   edge: 'border-speak-deep' },
-  write:   { icon: 'write',   chip: 'bg-write-soft text-write-ink',     bar: 'bg-write-bright',   soft: 'bg-write-soft',   solid: 'bg-write-bright',   edge: 'border-write-deep' },
-  math:    { icon: 'math',    chip: 'bg-math-soft text-math-ink',       bar: 'bg-math-bright',    soft: 'bg-math-soft',    solid: 'bg-math-bright',    edge: 'border-math-deep' },
-  games:   { icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
-  rewards: { icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
+   * Dark ink on a joyful fill, never white on a darkened one.
+   * `emoji` is the section identity a pre-reader actually navigates by; `icon`
+   * is the monochrome fall-back for the locked state and small utility spots. */
+  lessons: { emoji: '📚', icon: 'lessons', chip: 'bg-lessons-soft text-lessons-ink', bar: 'bg-lessons-bright', soft: 'bg-lessons-soft', solid: 'bg-lessons-bright', edge: 'border-lessons-deep' },
+  letters: { emoji: '✏️', icon: 'letters', chip: 'bg-letters-soft text-letters-ink', bar: 'bg-letters-bright', soft: 'bg-letters-soft', solid: 'bg-letters-bright', edge: 'border-letters-deep' },
+  phonics: { emoji: '🎵', icon: 'phonics', chip: 'bg-phonics-soft text-phonics-ink', bar: 'bg-phonics-bright', soft: 'bg-phonics-soft', solid: 'bg-phonics-bright', edge: 'border-phonics-deep' },
+  stories: { emoji: '📖', icon: 'stories', chip: 'bg-stories-soft text-stories-ink', bar: 'bg-stories-bright', soft: 'bg-stories-soft', solid: 'bg-stories-bright', edge: 'border-stories-deep' },
+  review:  { emoji: '🔄', icon: 'review',  chip: 'bg-review-soft text-review-ink',   bar: 'bg-review-bright',  soft: 'bg-review-soft',  solid: 'bg-review-bright',  edge: 'border-review-deep' },
+  speak:   { emoji: '🎤', icon: 'speak',   chip: 'bg-speak-soft text-speak-ink',     bar: 'bg-speak-bright',   soft: 'bg-speak-soft',   solid: 'bg-speak-bright',   edge: 'border-speak-deep' },
+  write:   { emoji: '✍️', icon: 'write',   chip: 'bg-write-soft text-write-ink',     bar: 'bg-write-bright',   soft: 'bg-write-soft',   solid: 'bg-write-bright',   edge: 'border-write-deep' },
+  math:    { emoji: '🔢', icon: 'math',    chip: 'bg-math-soft text-math-ink',       bar: 'bg-math-bright',    soft: 'bg-math-soft',    solid: 'bg-math-bright',    edge: 'border-math-deep' },
+  games:   { emoji: '🃏', icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
+  rewards: { emoji: '🏆', icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
 }
 
-/** Rounded-square icon chip — the module's color identity, everywhere.
- *  The glyph inherits the chip's text color, so one hue drives tint AND icon. */
+/** Rounded-square identity chip — the module's colour + its emoji, the pairing
+ *  a child recognises a section by (DESIGN_CHARTER.md). Pass `icon` to force a
+ *  Lucide glyph instead for the small utility cases. */
 export function IconChip({ module: m, icon, size = 'md' }: {
   module: ModuleKey; icon?: IconName; size?: 'md' | 'lg' | 'xl'
 }) {
-  return <ClayIconChip ramp={m} icon={icon ?? MODULE[m].icon} size={size} />
+  return icon
+    ? <ClayIconChip ramp={m} icon={icon} size={size} />
+    : <ClayIconChip ramp={m} glyph={MODULE[m].emoji} size={size} />
 }
 
 /** Chunky activity tile — the tactile "press me" language of great kids'
@@ -79,7 +85,9 @@ export function ModuleCard({ module: m, title, sub, href, icon, glyph, big, lock
 }) {
   return (
     <ClayTile
-      ramp={m} icon={icon ?? MODULE[m].icon} glyph={glyph} title={title} sub={sub}
+      ramp={m} icon={icon ?? MODULE[m].icon}
+      glyph={glyph ?? (icon ? undefined : MODULE[m].emoji)}
+      title={title} sub={sub}
       href={href} big={big} locked={locked} lockedHint={lockedHint}
     />
   )

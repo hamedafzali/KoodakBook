@@ -6,7 +6,6 @@ import { wordEmoji } from '@koodakbook/shared'
 import { mediaUrl } from '@/lib/media'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay } from '@/lib/speech'
-import { Icon } from '@/components/icons'
 
 export type QuizMode = 'flashcard' | 'listen_tap' | 'match_image' | 'name_it'
 
@@ -105,7 +104,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
             {visual?.type === 'emoji' && <span className="text-[7rem] leading-none" aria-hidden="true">{visual.value}</span>}
             <span className="text-5xl font-bold text-gray-800">{correctWord.persian}</span>
             <span className="text-base text-gray-400 ltr">{correctWord.english}</span>
-            <span className="text-xs text-amber-500 flex items-center gap-1"><Icon name="listen" size="xs" /> ضربه بزن تا بشنوی</span>
+            <span className="text-xs text-amber-500 flex items-center gap-1"><span aria-hidden="true">🔊</span> ضربه بزن تا بشنوی</span>
           </motion.button>
           <NextButton onClick={onFlashcardNext} />
         </motion.div>
@@ -124,7 +123,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
             <span className="text-7xl font-bold text-gray-800">{correctLetter.character}</span>
             <span className="text-xl text-gray-600">{correctLetter.name_persian}</span>
             <span className="text-sm text-gray-400 ltr">{correctLetter.name_english}</span>
-            <span className="text-xs text-amber-500 flex items-center gap-1"><Icon name="listen" size="xs" /> ضربه بزن تا بشنوی</span>
+            <span className="text-xs text-amber-500 flex items-center gap-1"><span aria-hidden="true">🔊</span> ضربه بزن تا بشنوی</span>
           </motion.button>
           <NextButton onClick={onFlashcardNext} />
         </motion.div>
@@ -142,11 +141,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
         <div className="w-full bg-white rounded-lg shadow-md p-4 flex items-center justify-center min-h-[180px]">
           {visual?.type === 'img'
             ? <img src={visual.value} alt="این چیست؟" className="w-44 h-44 object-contain rounded-xl" />
-            : <span className="text-[8rem] leading-none" aria-hidden="true">
-                {/* EMOJI-CONTENT: the visual IS the word being taught. The '?'
-                    fallback is chrome, so it gets a real icon. */}
-                {visual?.value ?? <Icon name="warning" size={96} strokeWidth={1.5} className="text-text-secondary" />}
-              </span>}
+            : <span className="text-[8rem] leading-none" aria-hidden="true">{visual?.value ?? '❓'}</span>}
         </div>
         <p className="font-bold text-gray-700 text-lg persian-text">این چه کلمه‌ای است؟</p>
         <div className="grid grid-cols-2 gap-3 w-full">
@@ -179,7 +174,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
           aria-label="پخش صدا — دوباره گوش کن"
         >
-          <Icon name="listen" size={48} />
+          <span className="text-5xl" aria-hidden="true">🔊</span>
         </motion.button>
         <p className="font-bold text-gray-700 text-lg persian-text">کدام کلمه را شنیدی؟</p>
         <div className="grid grid-cols-2 gap-3 w-full">
@@ -215,7 +210,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
           aria-label={`کلمه: ${correctWord.persian}. ضربه بزن تا بشنوی`}
         >
           <span className="text-5xl font-bold text-gray-800">{correctWord.persian}</span>
-          <span className="flex items-center justify-center gap-1 text-xs text-amber-500 mt-1"><Icon name="listen" size="xs" /> بشنو</span>
+          <span className="block text-xs text-amber-500 mt-1" aria-hidden="true">🔊 بشنو</span>
         </button>
         <p className="font-bold text-gray-700 text-lg persian-text">کدام تصویر درست است؟</p>
         <div className="grid grid-cols-2 gap-3 w-full">
@@ -289,8 +284,8 @@ function OptionButton({
       {imageUrl && <img src={imageUrl} alt="" aria-hidden="true" className={bigVisual ? 'w-20 h-20 object-contain' : 'w-14 h-14 object-contain rounded-lg'} />}
       {!imageUrl && emoji && <span aria-hidden="true" className={bigVisual ? 'text-6xl leading-none' : 'text-4xl leading-none'}>{emoji}</span>}
       {label && <span className="font-bold text-gray-800 text-xl">{label}</span>}
-      {revealResult && <span className={`mt-0.5 ${isCorrect ? 'text-green-600' : 'text-rose-600'}`}><Icon name={isCorrect ? 'doneCircle' : 'close'} size="md" strokeWidth={2.6} /></span>}
-      {showCorrect && <span className="mt-0.5 text-green-600"><Icon name="doneCircle" size="md" strokeWidth={2.6} /></span>}
+      {revealResult && <span className="text-lg mt-0.5" aria-hidden="true">{isCorrect ? '✅' : '❌'}</span>}
+      {showCorrect && <span className="text-lg mt-0.5" aria-hidden="true">✅</span>}
     </motion.button>
   )
 }

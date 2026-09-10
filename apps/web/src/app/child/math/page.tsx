@@ -11,7 +11,7 @@ import BottomNav from '@/components/child/BottomNav'
 import Mascot from '@/components/child/Mascot'
 import type { Child } from '@koodakbook/shared'
 import { type IconName } from '@/components/icons'
-import { ModuleCard, SectionTitle, IconChip } from '@/components/child/kit'
+import { ModuleCard, SectionTitle } from '@/components/child/kit'
 import { ClayChip } from '@/components/child/clay'
 
 /* دنیای اعداد — hub. Three rooms, one per age band; the child's age picks the
@@ -25,11 +25,11 @@ import { ClayChip } from '@/components/child/clay'
  * That also retires the contrast problem the gradients kept re-introducing:
  * `bright` is the only fill white text sits on, and it is solved for AA. */
 const ROOMS: { id: MathRoom; href: string; icon: IconName; glyph?: string; title: string; sub: string; ages: string }[] = [
-  { id: 'counting', href: '/child/math/counting', icon: 'counting', title: 'شمارش', sub: 'بشمار و بگو چند تا!', ages: '۳–۵' },
+  { id: 'counting', href: '/child/math/counting', icon: 'counting', glyph: '🍎', title: 'شمارش', sub: 'بشمار و بگو چند تا!', ages: '۳–۵' },
   // The Persian digit IS what this room teaches, so it stays a glyph — the
   // documented `glyph` escape hatch on the tile, not an emoji.
   { id: 'digits', href: '/child/math/digits', icon: 'math', glyph: '۴', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', ages: '۶–۷' },
-  { id: 'bazaar', href: '/child/math/bazaar', icon: 'shop', title: 'بازار', sub: 'با تومان خرید کن', ages: '۸–۱۰' },
+  { id: 'bazaar', href: '/child/math/bazaar', icon: 'shop', glyph: '🛒', title: 'بازار', sub: 'با تومان خرید کن', ages: '۸–۱۰' },
 ]
 
 export default function MathHubPage() {
@@ -76,7 +76,7 @@ export default function MathHubPage() {
                 >
                   {isRec && (
                     <div className="flex justify-end mb-1.5">
-                      <ClayChip ramp="rewards" icon="star">برای تو</ClayChip>
+                      <ClayChip ramp="rewards">برای تو <span aria-hidden="true">⭐</span></ClayChip>
                     </div>
                   )}
                   <ModuleCard
@@ -94,9 +94,8 @@ export default function MathHubPage() {
           </div>
         </div>
 
-        <p className="flex items-start gap-2.5 text-xs text-text-secondary persian-text leading-relaxed">
-          <IconChip module="math" icon="sparkle" />
-          <span className="pt-1.5">ریاضی را در مدرسه یاد می‌گیری — اینجا یادش می‌گیری به فارسی بگویی</span>
+        <p className="text-center text-xs text-text-secondary persian-text leading-relaxed pt-1">
+          ریاضی را در مدرسه یاد می‌گیری — اینجا یادش می‌گیری به فارسی بگویی <span aria-hidden="true">💛</span>
         </p>
       </div>
 

@@ -69,7 +69,7 @@ export default function NewStoryPage() {
         <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-text-primary">در حال نوشتن داستان تو...</h1>
+        <h1 className="text-2xl font-bold text-text-primary">در حال نوشتن داستان تو... ✨</h1>
         <p className="text-text-secondary persian-text">یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</p>
         <div className="flex gap-1.5">
           {[0, 1, 2].map(i => (
@@ -91,6 +91,7 @@ export default function NewStoryPage() {
         title="یک داستان برای من بساز"
         subtitle="یک موضوع انتخاب کن"
         module="stories"
+        emoji="✨"
       />
 
       <div className="px-4 pt-6 max-w-md mx-auto">
@@ -120,9 +121,9 @@ export default function NewStoryPage() {
           disabled={!child}
           whileTap={{ scale: 0.97 }}
           style={clayVars('stories')}
-          className="clay w-full mt-6 text-white font-bold py-4 text-lg disabled:opacity-50 touch-target min-h-[56px]"
+          className="clay w-full mt-6 font-bold py-4 text-lg disabled:opacity-50 touch-target min-h-[56px]"
         >
-          بساز!
+          بساز! ✨
         </motion.button>
       </div>
     </div>
