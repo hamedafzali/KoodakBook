@@ -56,6 +56,7 @@ export default function BottomNav() {
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
               aria-hidden="true"
+              tabIndex={-1}
             >
               {nav.emoji}
             </motion.span>

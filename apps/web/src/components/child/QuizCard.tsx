@@ -103,7 +103,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
             {visual?.type === 'img' && <img src={visual.value} alt="" className="w-48 h-48 object-contain rounded-2xl" />}
             {visual?.type === 'emoji' && <span className="text-[7rem] leading-none" aria-hidden="true">{visual.value}</span>}
             <span className="text-5xl font-bold text-gray-800">{correctWord.persian}</span>
-            <span className="text-base text-gray-400 ltr">{correctWord.english}</span>
+            <span className="text-base text-text-secondary ltr">{correctWord.english}</span>
             <span className="text-xs text-amber-500 flex items-center gap-1"><span aria-hidden="true">🔊</span> ضربه بزن تا بشنوی</span>
           </motion.button>
           <NextButton onClick={onFlashcardNext} />
@@ -122,7 +122,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
           >
             <span className="text-7xl font-bold text-gray-800">{correctLetter.character}</span>
             <span className="text-xl text-gray-600">{correctLetter.name_persian}</span>
-            <span className="text-sm text-gray-400 ltr">{correctLetter.name_english}</span>
+            <span className="text-sm text-text-secondary ltr">{correctLetter.name_english}</span>
             <span className="text-xs text-amber-500 flex items-center gap-1"><span aria-hidden="true">🔊</span> ضربه بزن تا بشنوی</span>
           </motion.button>
           <NextButton onClick={onFlashcardNext} />

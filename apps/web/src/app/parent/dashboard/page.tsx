@@ -310,6 +310,7 @@ export default function ParentDashboardPage() {
                 return (
                 <div key={i} className="flex flex-col items-center gap-1.5">
                   <motion.div
+                    role="img"
                     className={`w-9 h-9 rounded-xl ${cell.className}`}
                     style={cell.style}
                     initial={{ scale: 0.6, opacity: 0 }}

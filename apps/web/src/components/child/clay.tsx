@@ -211,7 +211,10 @@ export function ClayTile({
           : <Icon name={icon} size={big ? 'hero' : 'xl'} strokeWidth={2.2} />}
         <div className="flex-1 min-w-0">
           <p className={`font-bold ${big ? 'text-lg' : 'text-[15px]'}`}>{title}</p>
-          {sub && <p className="text-xs opacity-75 truncate mt-0.5">{sub}</p>}
+          {/* Full ink, not opacity-75 — the ramps' ink colour is tuned to
+              clear AA at full strength; dropping opacity toward the fill
+              colour pushed several bright/soft ramps below 4.5:1. */}
+          {sub && <p className="text-xs font-medium truncate mt-0.5">{sub}</p>}
         </div>
       </motion.div>
     </Link>
