@@ -8,10 +8,10 @@ import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { ClayButton } from '@/components/child/clay'
+import Emoji from '@/components/shared/Emoji'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Letter } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
 
 export default function WritePage() {
   const router = useRouter()
@@ -53,12 +53,12 @@ export default function WritePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => { playTap(); speakOrPlay(letter.audio_url, letter.name_persian) }}
-            className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[44px]"
+            className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[56px]"
             aria-label={`بشنو: ${letter.name_persian}`}
           >
-            <span className="text-2xl font-bold text-slate-800">{letter.character}</span>
-            <span className="text-slate-600">{letter.name_persian}</span>
-            <span className="text-amber-500"><Icon name="listen" size="md" /></span>
+            <span className="text-2xl font-bold text-text-primary">{letter.character}</span>
+            <span className="text-text-secondary">{letter.name_persian}</span>
+            <Emoji name="speaker-high-volume" size={20} />
           </button>
         </div>
 
@@ -79,7 +79,7 @@ export default function WritePage() {
             onClick={() => { playTap(); setIdx(i => Math.max(0, i - 1)) }}
             disabled={idx === 0}
             whileTap={{ scale: 0.94 }}
-            className="flex-1 py-4 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold disabled:opacity-30 min-h-[56px]"
+            className="flex-1 py-4 rounded-2xl border-2 border-border text-text-secondary font-bold disabled:opacity-30 min-h-[56px]"
           >
             → قبلی
           </motion.button>
@@ -182,11 +182,11 @@ function TracingCanvas({ letter }: { letter: string }) {
       <motion.button
         onClick={clear}
         whileTap={{ scale: 0.94 }}
-        className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px] ${
-          hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+        className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[56px] ${
+          hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-surface-subtle text-text-secondary'
         }`}
       >
-        <Icon name="retry" size="sm" /> پاک کن
+        <span aria-hidden="true">🧹</span> پاک کن
       </motion.button>
     </div>
   )

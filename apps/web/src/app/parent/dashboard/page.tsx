@@ -57,7 +57,7 @@ function buildWeekHeatmap(sessions: ChildSession[]) {
  * safe here because they are declared as real `--ramp-*` literals in :root
  * exactly so runtime var() works. */
 function intensityCell(min: number): { className: string; style?: CSSProperties } {
-  if (min === 0) return { className: 'bg-parent-bg border border-slate-200' }
+  if (min === 0) return { className: 'bg-parent-bg border border-border' }
   if (min < 5) return { className: '', style: { background: 'var(--ramp-brand-soft)' } }
   if (min < 15) return { className: '', style: { background: 'var(--ramp-brand-bright)' } }
   return { className: '', style: { background: 'var(--ramp-brand-deep)' } }
@@ -149,7 +149,7 @@ export default function ParentDashboardPage() {
     <div className={`min-h-screen bg-parent-bg pb-20 ${containerWidths.wide}`}>
 
       {/* Header */}
-      <div className="bg-parent-surface border-b border-slate-200 px-5 py-4 lg:rounded-b-none">
+      <div className="bg-parent-surface border-b border-border px-5 py-4 lg:rounded-b-none">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-bold text-xl text-parent-text">داشبورد والدین</h1>
@@ -190,7 +190,7 @@ export default function ParentDashboardPage() {
                 aria-selected={c.id === child.id}
                 onClick={() => switchChild(c.id)}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  c.id === child.id ? 'btn-brand' : 'bg-parent-bg text-parent-muted hover:bg-slate-200'
+                  c.id === child.id ? 'btn-brand' : 'bg-parent-bg text-parent-muted hover:bg-surface-subtle'
                 }`}
               >
                 {c.name}
@@ -209,7 +209,7 @@ export default function ParentDashboardPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.32, ease: [0.22, 0.61, 0.36, 1] }}
-          className="bg-parent-surface border border-slate-200 rounded-2xl p-5 lg:p-6"
+          className="bg-parent-surface border border-border rounded-2xl shadow-card p-5 lg:p-6"
           aria-labelledby="headline"
         >
           <p className="text-xs font-bold tracking-wide text-parent-muted uppercase">
@@ -230,22 +230,39 @@ export default function ParentDashboardPage() {
               product exists for, and the one a parent recognises without being
               taught how to read the metric. */}
           <div className="flex flex-wrap gap-3 mt-5">
-            <Stat ramp="stories" icon="stories" value={fa(stories_completed)} label="داستان تا آخر خوانده" />
-            <Stat ramp="write" icon="write" value={fa(knownWords)} label="کلمه که بدون کمک می‌شناسد" />
-            <Stat ramp="phonics" icon="streak" value={fa(streak_days)} label="روز پشت‌سرهم" />
+            <Stat ramp="stories" icon="stories" emoji="📖" value={fa(stories_completed)} label="داستان تا آخر خوانده" />
+            <Stat ramp="write" icon="write" emoji="✅" value={fa(knownWords)} label="کلمه که بدون کمک می‌شناسد" />
+            <Stat ramp="phonics" icon="streak" emoji="🔥" value={fa(streak_days)} label="روز پشت‌سرهم" />
           </div>
 
-          {/* Level, demoted to a quiet line. It used to be a full white-on-violet
-              gradient card at the top — the loudest element on the screen for the
-              number a parent cares least about. */}
-          <div className="mt-5 pt-4 border-t border-slate-100">
+          {/* Level / XP — the illustrated banner from f94794e is back (Phase 5),
+              on the saffron brand gradient with DARK ink rather than the old
+              white-on-violet that failed WCAG AA (--color-on-brand: 8.97:1 on
+              #FBBF24, 5.34:1 on #F97316). The track and fill are the same warm
+              ink at low/full opacity so the whole banner stays one hue. */}
+          <div className="mt-5 rounded-2xl p-4 bg-brand-gradient-br text-on-brand">
             <div className="flex items-baseline justify-between mb-2">
-              <span className="text-sm font-medium text-parent-text">سطح: {lvl.label}</span>
-              <span className="text-xs text-parent-muted tabular-nums">
-                {lvl.isMax ? 'بالاترین سطح' : `${fa(lvl.toNext)} امتیاز تا سطح بعد`}
-              </span>
+              <span className="text-sm font-bold">سطح: {lvl.label}</span>
+              <span className="text-sm font-bold tabular-nums">{fa(xp ?? 0)} امتیاز</span>
             </div>
-            <FlatBar value={lvl.pct} label={`پیشرفت سطح: ${lvl.pct} درصد`} />
+            <div
+              role="progressbar"
+              aria-valuemin={0} aria-valuemax={100} aria-valuenow={lvl.pct}
+              aria-label={`پیشرفت سطح: ${lvl.pct} درصد`}
+              className="h-2.5 rounded-full overflow-hidden"
+              style={{ background: 'rgb(69 26 3 / 0.18)' }}
+            >
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: 'var(--color-on-brand)' }}
+                initial={{ width: 0 }}
+                animate={{ width: `${lvl.pct}%` }}
+                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+              />
+            </div>
+            <p className="text-xs opacity-80 mt-1.5">
+              {lvl.isMax ? 'بالاترین سطح 🌟' : `${fa(lvl.toNext)} امتیاز تا سطح بعد`}
+            </p>
           </div>
 
           {/* One action. It points at the progress card for now; when the
@@ -263,7 +280,7 @@ export default function ParentDashboardPage() {
             {children.length > 0 && (
               <button
                 onClick={() => { enterChildMode({ pick: true }); router.push('/child/home') }}
-                className="sm:w-auto flex items-center justify-center gap-2 px-5 border border-slate-300 text-parent-text font-bold py-3.5 rounded-xl hover:bg-parent-bg transition-colors min-h-[52px]"
+                className="sm:w-auto flex items-center justify-center gap-2 px-5 border border-border text-parent-text font-bold py-3.5 rounded-xl hover:bg-surface-subtle transition-colors min-h-[52px]"
               >
                 حالت کودک
               </button>
@@ -293,6 +310,7 @@ export default function ParentDashboardPage() {
                 return (
                 <div key={i} className="flex flex-col items-center gap-1.5">
                   <motion.div
+                    role="img"
                     className={`w-9 h-9 rounded-xl ${cell.className}`}
                     style={cell.style}
                     initial={{ scale: 0.6, opacity: 0 }}
@@ -307,7 +325,7 @@ export default function ParentDashboardPage() {
                 )
               })}
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
               <span className="text-xs text-parent-muted">هدف امروز</span>
               <span className={`text-xs font-bold tabular-nums ${goalMet ? 'text-green-700' : 'text-parent-text'}`}>
                 {goalMet
@@ -331,7 +349,7 @@ export default function ParentDashboardPage() {
               { key: 'consolidated', label: 'تثبیت‌شده', count: mastery_breakdown.consolidated, fill: 'var(--ramp-lessons-deep)' },
               { key: 'mastered', label: 'یاد گرفته', count: mastery_breakdown.mastered, fill: 'var(--ramp-lessons-bright)' },
               { key: 'practicing', label: 'در حال تمرین', count: mastery_breakdown.practicing, fill: 'var(--ramp-brand-bright)' },
-              { key: 'introduced', label: 'معرفی شده', count: mastery_breakdown.introduced, fill: '#64748b' },
+              { key: 'introduced', label: 'معرفی شده', count: mastery_breakdown.introduced, fill: '#A8998A' },
             ]
             return (
               <Panel
@@ -360,7 +378,7 @@ export default function ParentDashboardPage() {
           {/* Totals that didn't make the top three. They're real, they're just
               not the answer to "is this working?". */}
           <Panel title="مجموع" labelledById="totals-title">
-            <dl className="divide-y divide-slate-100">
+            <dl className="divide-y divide-border">
               {[
                 { label: 'کلمه‌های دیده‌شده', value: words_learned },
                 { label: 'درس‌های تمام‌شده', value: lessons_completed },
@@ -409,7 +427,7 @@ export default function ParentDashboardPage() {
 
           <Link
             href="/parent/progress"
-            className="flex items-center justify-center gap-2 w-full bg-parent-surface hover:bg-slate-100 border border-slate-200 text-parent-text font-bold py-4 rounded-xl transition-colors min-h-[52px]"
+            className="flex items-center justify-center gap-2 w-full bg-parent-surface hover:bg-surface-subtle border border-border text-parent-text font-bold py-4 rounded-xl transition-colors min-h-[52px]"
           >
             <Icon name="progress" size="md" />
             گزارش کامل پیشرفت

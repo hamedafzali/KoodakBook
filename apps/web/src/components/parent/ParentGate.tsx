@@ -195,7 +195,7 @@ export default function ParentGate({ children }: Props) {
         >
           <div className="mb-4 flex justify-center text-slate-400"><Icon name="parent" size={40} /></div>
           <h1 className="font-bold text-xl text-gray-800 mb-1">بازنشانی پین</h1>
-          <p className="text-sm text-gray-500 mb-6">برای امنیت، رمز عبور حساب را وارد کنید</p>
+          <p className="text-sm text-text-secondary mb-6">برای امنیت، رمز عبور حساب را وارد کنید</p>
           <form onSubmit={submitReset} className="space-y-4">
             <input
               type="password"
@@ -225,7 +225,7 @@ export default function ParentGate({ children }: Props) {
           ) : (
             <button
               onClick={() => { setState('enter_pin'); setPassword(''); setError(null) }}
-              className="mt-4 text-xs text-gray-400 hover:text-amber-600 transition-colors"
+              className="mt-4 text-xs text-text-secondary hover:text-amber-600 transition-colors"
             >
               انصراف
             </button>
@@ -254,7 +254,7 @@ export default function ParentGate({ children }: Props) {
       >
         <div className="mb-4 flex justify-center text-slate-400"><Icon name="locked" size={40} /></div>
         <h1 className="font-bold text-xl text-gray-800 mb-1">{titleText}</h1>
-        <p className="text-sm text-gray-500 mb-6">{subtitleText}</p>
+        <p className="text-sm text-text-secondary mb-6">{subtitleText}</p>
 
         {/* PIN dots */}
         <div className="flex justify-center gap-4 mb-6" aria-label={`پین وارد شده: ${currentPin.length} از ${PIN_LENGTH} رقم`}>
@@ -314,7 +314,7 @@ export default function ParentGate({ children }: Props) {
             onClick={handleDelete}
             disabled={busy}
             whileTap={{ scale: 0.88 }}
-            className="h-14 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 font-bold text-lg transition-colors touch-target disabled:opacity-50"
+            className="h-14 rounded-xl bg-gray-100 hover:bg-red-50 text-text-secondary hover:text-red-500 font-bold text-lg transition-colors touch-target disabled:opacity-50"
             aria-label="پاک کردن آخرین رقم"
           >
             ⌫
@@ -333,7 +333,7 @@ export default function ParentGate({ children }: Props) {
         {state === 'enter_pin' && (
           <button
             onClick={() => { setState('reset'); setPin(''); setError(null) }}
-            className="mt-5 text-xs text-gray-400 hover:text-amber-600 transition-colors"
+            className="mt-5 text-xs text-text-secondary hover:text-amber-600 transition-colors"
           >
             پین را فراموش کردید؟
           </button>

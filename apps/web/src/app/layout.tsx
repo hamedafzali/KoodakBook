@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { Vazirmatn } from 'next/font/google'
+import { Vazirmatn, Baloo_Bhaijaan_2 } from 'next/font/google'
+import MotionProvider from '@/components/shared/MotionProvider'
 import './globals.css'
 
 const vazirmatn = Vazirmatn({
@@ -7,6 +8,21 @@ const vazirmatn = Vazirmatn({
   variable: '--font-vazirmatn',
   display: 'swap',
   weight: ['400', '500', '700'],
+})
+
+// Rounded Arabic-script display face — child HEADINGS ONLY. Verified to carry
+// the full Persian set (پ چ ژ گ ک ی ۀ ZWNJ, Persian digits) with proper
+// init/medi/fina shaping. Letters being taught and all body text stay in
+// Vazirmatn: standard letterforms matter for learning. See DESIGN_CHARTER.md.
+//
+// Every `font-display` heading in the app pairs it with `font-bold` (700) —
+// nothing uses 500 or 800 — so only 700 is loaded. Re-audit
+// (`grep -rn font-display apps/web/src`) before adding another weight here.
+const baloo = Baloo_Bhaijaan_2({
+  subsets: ['arabic'],
+  variable: '--font-baloo',
+  display: 'swap',
+  weight: ['700'],
 })
 
 // Needed to resolve absolute URLs for OG/Twitter images and the file-based
@@ -61,7 +77,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${baloo.variable} h-full`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -81,7 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           رفتن به محتوای اصلی
         </a>
         <main id="main-content">
-          {children}
+          <MotionProvider>{children}</MotionProvider>
         </main>
       </body>
     </html>

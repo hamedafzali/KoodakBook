@@ -32,7 +32,7 @@ export default function SignupPage() {
         <div className="text-center mb-6">
           <p className="mb-2 flex justify-center text-emerald-500"><Icon name="celebrate" size={40} strokeWidth={1.6} /></p>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">شروع ماجراجویی فارسی</h1>
-          <p className="text-gray-500 text-sm">رایگان است — نه کارت بانکی، نه تعهدی</p>
+          <p className="text-text-secondary text-sm">رایگان است — نه کارت بانکی، نه تعهدی</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -82,13 +82,13 @@ export default function SignupPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6 persian-text">
+        <p className="text-center text-sm text-text-secondary mt-6 persian-text">
           حساب دارید؟{' '}
           <Link href="/login" className="text-emerald-700 font-medium hover:underline">
             ورود
           </Link>
         </p>
-        <p className="text-center text-[11px] text-gray-400 mt-4 persian-text leading-relaxed">
+        <p className="text-center text-[11px] text-text-secondary mt-4 persian-text leading-relaxed">
           با ثبت‌نام، <Link href="/terms" className="underline hover:text-emerald-600">شرایط استفاده</Link> و{' '}
           <Link href="/privacy" className="underline hover:text-emerald-600">حریم خصوصی</Link> را می‌پذیرید.
         </p>

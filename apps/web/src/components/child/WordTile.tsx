@@ -3,11 +3,11 @@ import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { Word } from '@koodakbook/shared'
 import { wordEmoji } from '@koodakbook/shared'
+import Emoji from '@/components/shared/Emoji'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakPersian } from '@/lib/speech'
 import { tapMotionFor } from '@/lib/animation'
-import { Icon } from '@/components/icons'
 
 interface Props {
   word: Word
@@ -43,7 +43,7 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
   return (
     <motion.button
       onClick={handleClick}
-      className={`flex flex-col items-center gap-2 bg-white shadow-md w-full min-h-[64px] touch-target ${containerClasses[size]}`}
+      className={`flex flex-col items-center gap-2 bg-white shadow-md w-full min-h-[64px] touch-target-child ${containerClasses[size]}`}
       whileTap={tap.animated ? { scale: tap.scale } : undefined}
       whileHover={{ scale: 1.03 }}
       transition={tap.transition}
@@ -79,9 +79,9 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
       >
         {word.persian}
       </motion.span>
-      <span lang="en" className="text-gray-400 text-base ltr">{word.english}</span>
+      <span lang="en" className="text-text-secondary text-base ltr">{word.english}</span>
       <span className="text-xs text-amber-500 flex items-center gap-1 mt-0.5" aria-hidden="true">
-        <Icon name="listen" size="xs" /> بشنو
+        <Emoji name="speaker-high-volume" size={14} /> بشنو
       </span>
       {recorded && <audio ref={audioRef} src={recorded} preload="none" />}
     </motion.button>

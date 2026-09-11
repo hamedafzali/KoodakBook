@@ -11,12 +11,12 @@ import BottomNav from '@/components/child/BottomNav'
 import { clayVars } from '@/components/child/clay'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import Mascot from '@/components/child/Mascot'
+import Emoji from '@/components/shared/Emoji'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import { recognitionSupported, listenOnce } from '@/lib/recognition'
 import { wordEmoji } from '@koodakbook/shared'
 import type { Word, Child } from '@koodakbook/shared'
-import { Icon } from '@/components/icons'
 
 type Phase = 'idle' | 'listening' | 'correct' | 'tryagain'
 
@@ -98,7 +98,7 @@ export default function SpeakPage() {
         {/* Word card */}
         <button
           onClick={() => { playTap(); speakOrPlay(word.audio_url, word.persian) }}
-          className="w-full max-w-sm bg-white rounded-2xl shadow-card p-6 flex flex-col items-center gap-2 touch-target"
+          className="w-full max-w-sm bg-white rounded-2xl shadow-card p-6 flex flex-col items-center gap-2 touch-target-child"
           aria-label={`بشنو: ${word.persian}`}
         >
           {image ? (
@@ -106,9 +106,9 @@ export default function SpeakPage() {
           ) : emoji ? (
             <span className="text-7xl leading-none" aria-hidden="true">{emoji}</span>
           ) : null}
-          <span className="text-5xl font-bold text-slate-800">{word.persian}</span>
-          <span className="text-base text-slate-600 ltr">{word.english}</span>
-          <span className="flex items-center gap-1 text-xs text-amber-700"><Icon name="listen" size="xs" /> اول گوش کن</span>
+          <span className="text-5xl font-bold text-text-primary">{word.persian}</span>
+          <span className="text-base text-text-secondary ltr">{word.english}</span>
+          <span className="flex items-center gap-1 text-xs text-amber-700"><Emoji name="speaker-high-volume" size={16} /> اول گوش کن</span>
         </button>
 
         {/* Mascot feedback */}
@@ -116,14 +116,14 @@ export default function SpeakPage() {
           {phase === 'correct' && (
             <motion.div key="correct" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
               <Mascot size={90} mood="excited" />
-              <p className="font-bold text-green-600 text-lg">آفرین! درست گفتی</p>
+              <p className="font-bold text-green-600 text-lg">آفرین! درست گفتی 🌟</p>
             </motion.div>
           )}
           {phase === 'tryagain' && (
             <motion.div key="tryagain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
               <Mascot size={90} mood="idle" />
-              <p className="font-medium text-slate-600 persian-text">دوباره امتحان کن، می‌تونی!</p>
-              {heard && <p className="text-xs text-slate-600">شنیدم: «{heard}»</p>}
+              <p className="font-medium text-text-secondary persian-text">دوباره امتحان کن، می‌تونی!</p>
+              {heard && <p className="text-xs text-text-secondary">شنیدم: «{heard}»</p>}
             </motion.div>
           )}
         </AnimatePresence>
@@ -136,7 +136,7 @@ export default function SpeakPage() {
             whileTap={{ scale: 0.9 }}
             animate={phase === 'listening' ? { scale: [1, 1.12, 1] } : { scale: 1 }}
             transition={phase === 'listening' ? { duration: 1, repeat: Infinity } : {}}
-            className="w-24 h-24 rounded-full flex items-center justify-center shadow-raised touch-target text-white"
+            className="w-24 h-24 rounded-full flex items-center justify-center shadow-raised touch-target-child text-white"
             /* Recording is a state, not a module, so the live mic keeps a red —
                but rose-600 rather than red-500: it has to read as "different
                from resting" against the speak ramp beside it, and at 500 it
@@ -144,10 +144,10 @@ export default function SpeakPage() {
             style={{ background: phase === 'listening' ? 'rgb(225 29 72)' : 'var(--ramp-speak-bright)' }}
             aria-label={phase === 'listening' ? 'در حال شنیدن' : 'ضربه بزن و بگو'}
           >
-            <Icon name={phase === 'listening' ? 'headphones' : 'record'} size={40} />
+            <span className="text-4xl" aria-hidden="true">{phase === 'listening' ? '👂' : '🎤'}</span>
           </motion.button>
         )}
-        <p className="text-sm text-slate-600 persian-text">
+        <p className="text-sm text-text-secondary persian-text">
           {phase === 'listening' ? 'بگو...' : supported ? 'ضربه بزن و کلمه را بگو' : ''}
         </p>
 
@@ -155,7 +155,7 @@ export default function SpeakPage() {
           onClick={nextWord}
           whileTap={{ scale: 0.95 }}
           style={clayVars('speak')}
-          className="clay w-full max-w-sm py-4 text-white font-bold text-lg min-h-[56px]"
+          className="clay w-full max-w-sm py-4 font-bold text-lg min-h-[56px]"
         >
           کلمه بعدی ←
         </motion.button>

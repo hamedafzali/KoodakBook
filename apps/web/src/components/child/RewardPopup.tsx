@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import confetti from 'canvas-confetti'
+import { celebrate } from '@/lib/confetti'
 import type { Badge } from '@koodakbook/shared'
 import Mascot from './Mascot'
+import Emoji from '../shared/Emoji'
 import { playComplete } from '@/lib/sounds'
-import { Icon } from '@/components/icons'
 
 interface Props {
   badge: Badge
@@ -21,8 +21,8 @@ export default function RewardPopup({ badge, onClose }: Props) {
     playComplete()
 
     const burst = () => {
-      confetti({ particleCount: 80, spread: 70, origin: { y: 0.55 }, colors: ['#f97316','#eab308','#22c55e','#3b82f6','#ec4899'] })
-      confetti({ particleCount: 40, spread: 120, origin: { y: 0.55 }, startVelocity: 20, colors: ['#fbbf24','#fb923c','#f43f5e'] })
+      celebrate({ particleCount: 80, spread: 70, origin: { y: 0.55 }, colors: ['#f97316','#eab308','#22c55e','#3b82f6','#ec4899'] })
+      celebrate({ particleCount: 40, spread: 120, origin: { y: 0.55 }, startVelocity: 20, colors: ['#fbbf24','#fb923c','#f43f5e'] })
     }
     burst()
     const t2 = setTimeout(burst, 600)
@@ -97,10 +97,10 @@ export default function RewardPopup({ badge, onClose }: Props) {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.3 }}
-            className="text-6xl mb-3"
+            className="mb-3"
             aria-hidden="true"
           >
-            <Icon name="rewards" size={64} strokeWidth={1.6} />
+            <Emoji name="trophy" size={64} />
           </motion.div>
 
           <motion.h2
@@ -115,7 +115,7 @@ export default function RewardPopup({ badge, onClose }: Props) {
 
           <motion.p
             id="reward-desc"
-            className="text-gray-500 text-sm mb-6 persian-text"
+            className="text-text-secondary text-sm mb-6 persian-text"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
@@ -126,14 +126,14 @@ export default function RewardPopup({ badge, onClose }: Props) {
           <motion.button
             ref={closeButtonRef}
             onClick={handleClose}
-            className="bg-brand-gradient text-white font-bold py-3 px-8 rounded-md text-lg shadow-md w-full min-h-[52px] touch-target"
+            className="bg-brand-gradient text-on-brand font-bold py-3 px-8 rounded-md text-lg shadow-md w-full min-h-[56px] touch-target-child"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.96 }}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            ممنون!
+            ممنون! <Emoji name="party-popper" size={20} />
           </motion.button>
         </motion.div>
       </motion.div>

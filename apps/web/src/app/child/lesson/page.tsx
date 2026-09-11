@@ -9,10 +9,9 @@ import BottomNav from '@/components/child/BottomNav'
 import PageHeader from '@/components/child/PageHeader'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import EmptyState from '@/components/child/EmptyState'
-import { LESSON_TYPE_ICON, LESSON_TYPE_LABEL, isLessonUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
+import { LESSON_TYPE_EMOJI, LESSON_TYPE_LABEL, isLessonUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
 import { pickChild } from '@/lib/activeChild'
 import type { Lesson, Child, StrandLevels } from '@koodakbook/shared'
-import { Icon, type IconName } from '@/components/icons'
 
 export default function LessonListPage() {
   const router = useRouter()
@@ -72,8 +71,8 @@ export default function LessonListPage() {
 
         {Object.entries(grouped).map(([type, items]) => (
           <section key={type} aria-labelledby={`section-${type}`}>
-            <h2 id={`section-${type}`} className="font-bold text-slate-700 mb-3 flex items-center gap-2 text-base">
-              <Icon name={(LESSON_TYPE_ICON[type] as IconName) ?? 'lessons'} size="md" />
+            <h2 id={`section-${type}`} className="font-bold text-text-primary mb-3 flex items-center gap-2 text-base">
+              <span aria-hidden="true" className="text-xl">{LESSON_TYPE_EMOJI[type]}</span>
               {LESSON_TYPE_LABEL[type] ?? type}
             </h2>
             <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3" role="list" aria-label={`درس‌های ${LESSON_TYPE_LABEL[type] ?? type}`}>
@@ -91,12 +90,12 @@ export default function LessonListPage() {
                         className="flex items-center gap-4 bg-white/50 rounded-2xl p-4 opacity-60 cursor-not-allowed"
                         aria-label={`${lesson.title} — قفل شده، مرحله ${lesson.stage} لازم است`}
                       >
-                        <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0 bg-slate-100">
-                          <Icon name="locked" size="md" />
+                        <div className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0 bg-surface-subtle">
+                          <span aria-hidden="true">🔒</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-600">{lesson.title}</p>
-                          <p className="text-xs text-slate-600">مرحله {lesson.stage} لازم است</p>
+                          <p className="font-bold text-text-secondary">{lesson.title}</p>
+                          <p className="text-xs text-text-secondary">مرحله {lesson.stage} لازم است</p>
                         </div>
                       </div>
                     ) : (
@@ -106,17 +105,17 @@ export default function LessonListPage() {
                         className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-card hover:shadow-raised transition-shadow"
                       >
                         <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${done ? 'bg-green-100' : 'bg-amber-100'}`}>
-                          <Icon name={done ? 'done' : (LESSON_TYPE_ICON[lesson.type] as IconName) ?? 'lessons'} size="md" />
+                          <span aria-hidden="true">{done ? '✅' : LESSON_TYPE_EMOJI[lesson.type]}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-800">{lesson.title}</p>
+                          <p className="font-bold text-text-primary">{lesson.title}</p>
                           {lesson.description && (
-                            <p className="text-sm text-slate-600 truncate mt-0.5">{lesson.description}</p>
+                            <p className="text-sm text-text-secondary truncate mt-0.5">{lesson.description}</p>
                           )}
                         </div>
                         <svg
                           aria-hidden="true"
-                          className="w-5 h-5 text-slate-500 flex-shrink-0"
+                          className="w-5 h-5 text-text-secondary flex-shrink-0"
                           fill="none" stroke="currentColor" strokeWidth="2"
                           viewBox="0 0 24 24"
                         >

@@ -221,7 +221,7 @@ export default function MarpeleOnlinePage() {
   if (phase === 'loading') return <LoadingScreen message="در حال اتصال..." />
 
   if (phase === 'ended') {
-    const title = endReason === 'won' ? 'تو بردی!' : endReason === 'lost' ? 'این بار دوستت برد!' : 'دوستت از بازی خارج شد'
+    const title = endReason === 'won' ? 'تو بردی! 🏆' : endReason === 'lost' ? 'این بار دوستت برد!' : 'دوستت از بازی خارج شد'
     return (
       <GameOverScreen won={endReason === 'won'} title={title}>
         <ClayButton ramp="games" size="lg" onClick={() => setPhase('lobby')}>بازی دوباره</ClayButton>
@@ -241,7 +241,7 @@ export default function MarpeleOnlinePage() {
           {friends.length === 0 ? (
             <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-2.5 shadow-card">
               <span style={{ color: 'var(--ramp-games-ink)' }}><Icon name="partner" size="xl" /></span>
-              <p className="text-center text-sm text-slate-600 persian-text leading-6">
+              <p className="text-center text-sm text-text-secondary persian-text leading-6">
                 هنوز دوستی نداری. از حالت والدین با کد دوستی، دوست اضافه کن.
               </p>
             </div>
@@ -254,9 +254,9 @@ export default function MarpeleOnlinePage() {
                 className="flex items-center gap-2.5 bg-white rounded-2xl p-3.5 shadow-card disabled:opacity-60 text-right"
               >
                 <span className="text-2xl">🧒</span>
-                <span className="flex-1 font-bold text-slate-800">{f.name}</span>
-                <span className={`w-2.5 h-2.5 rounded-full ${f.online ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                <span className={`text-xs font-medium ${f.online ? 'text-emerald-600' : 'text-slate-600'}`}>
+                <span className="flex-1 font-bold text-text-primary">{f.name}</span>
+                <span className={`w-2.5 h-2.5 rounded-full ${f.online ? 'bg-emerald-500' : 'bg-border'}`} />
+                <span className={`text-xs font-medium ${f.online ? 'text-emerald-600' : 'text-text-secondary'}`}>
                   {f.online ? 'آنلاین — دعوت کن' : 'آفلاین'}
                 </span>
               </button>
@@ -275,10 +275,10 @@ export default function MarpeleOnlinePage() {
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               >
                 <span className="text-5xl">{invite.fromEmoji || '🧒'}</span>
-                <p className="text-center font-bold text-slate-800 persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
+                <p className="text-center font-bold text-text-primary persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
                 <div className="flex gap-2.5">
-                  <button onClick={acceptInvite} style={clayVars('games')} className="clay text-white font-bold px-6 py-3 min-h-[48px]">بریم!</button>
-                  <button onClick={declineInvite} className="bg-slate-100 text-slate-700 font-bold rounded-xl px-6 py-3">نه</button>
+                  <button onClick={acceptInvite} style={clayVars('games')} className="clay font-bold px-6 py-3 min-h-[56px]">بریم! 🎲</button>
+                  <button onClick={declineInvite} className="bg-surface-subtle text-text-primary font-bold rounded-xl px-6 py-3">نه</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -295,7 +295,7 @@ export default function MarpeleOnlinePage() {
   return (
     <div className="min-h-screen child-bg pb-nav">
       <PageHeader
-        title={myTurn ? 'نوبت توست!' : `نوبت ${cur?.name}…`}
+        title={myTurn ? 'نوبت توست! 🎲' : `نوبت ${cur?.name}…`}
         onBack={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); router.push('/child/games/marpele') }}
         module="games"
       />
@@ -336,7 +336,7 @@ export default function MarpeleOnlinePage() {
           ))}
         </div>
 
-        <RollRow die={die} rolling={animating} canRoll={canRoll} onRoll={roll} label={myTurn ? 'تاس بینداز!' : 'صبر کن…'} />
+        <RollRow die={die} rolling={animating} canRoll={canRoll} onRoll={roll} label={myTurn ? 'تاس بینداز! 🎲' : 'صبر کن…'} />
       </div>
 
       <AnimatePresence>

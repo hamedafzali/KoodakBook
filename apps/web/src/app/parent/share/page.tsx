@@ -266,7 +266,7 @@ export default function SharePage() {
             <motion.button
               onClick={handleDownload}
               whileTap={{ scale: 0.96 }}
-              className="w-full py-3.5 rounded-xl border border-slate-200 bg-parent-surface text-parent-text font-bold min-h-[52px] flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-xl border border-border bg-parent-surface text-parent-text font-bold min-h-[52px] flex items-center justify-center gap-2"
             >
               <Icon name="save" size="md" />
               ذخیره تصویر

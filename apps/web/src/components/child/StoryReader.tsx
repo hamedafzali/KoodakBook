@@ -2,13 +2,13 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { parseSceneRef, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
+import { parseSceneRef, toPersianDigits, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
 import BilingualText from '../shared/BilingualText'
+import Emoji from '../shared/Emoji'
 import SceneBackdrop from './SceneBackdrop'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakOrPlay, stopSpeaking } from '@/lib/speech'
-import { Icon } from '@/components/icons'
 
 interface Props {
   story: Story & { pages: StoryPage[] }
@@ -100,7 +100,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
               onClick={onBack}
               whileTap={{ scale: 0.85 }}
               aria-label="برگشت به لیست داستان‌ها"
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-gray-700 hover:bg-gray-100 transition-colors"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 18l6-6-6-6" />
@@ -108,7 +108,11 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
             </motion.button>
           )}
           <h1 className="flex-1 font-bold text-gray-800 truncate persian-text">{story.title_persian}</h1>
-          <span className="text-sm text-gray-400 shrink-0">{currentPage + 1} / {story.pages.length}</span>
+          {/* Persian ordinal reads correctly in RTL on its own — an LTR
+              "N / total" string flips under bidi (e.g. "12 / 1"). */}
+          <span className="text-sm text-text-secondary shrink-0 persian-text">
+            {toPersianDigits(currentPage + 1)} از {toPersianDigits(story.pages.length)}
+          </span>
         </div>
 
         {/* Progress path — a trail of stepping stones, one per page; the
@@ -137,7 +141,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
               )}
             </div>
           ))}
-          <span className="shrink-0 mr-1 leading-none text-amber-500" aria-hidden="true"><Icon name="star" size="xs" /></span>
+          <span className="shrink-0 text-sm mr-1 leading-none select-none" aria-hidden="true">🚩</span>
         </div>
       </div>
 
@@ -191,9 +195,9 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 onClick={() => { playTap(); readPage() }}
                 whileTap={{ scale: 0.9 }}
                 aria-label="پخش دوباره‌ی صدای این صفحه"
-                className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px]"
+                className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[56px]"
               >
-                <Icon name="listen" size="md" />
+                <Emoji name="speaker-high-volume" size={22} />
                 <span>دوباره بشنو</span>
               </motion.button>
             </div>
@@ -211,7 +215,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           disabled={currentPage === 0}
           whileTap={{ scale: 0.93 }}
           aria-label="صفحه قبلی"
-          className="flex-1 py-4 rounded-md border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px] touch-target"
+          className="flex-1 py-4 rounded-md border-2 border-gray-200 text-text-secondary font-bold disabled:opacity-30 min-h-[56px] touch-target-child"
         >
           صفحه قبل
         </motion.button>
@@ -220,9 +224,9 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           aria-label={isLast ? 'پایان داستان' : 'صفحه بعدی'}
-          className="flex-[2] py-4 rounded-md bg-brand-gradient text-white font-bold text-lg shadow-md min-h-[56px] touch-target"
+          className="flex-[2] py-4 rounded-md bg-brand-gradient text-on-brand font-bold text-lg shadow-md min-h-[56px] touch-target-child"
         >
-          {isLast ? <><Icon name="done" size="sm" /> تمام شد!</> : 'بعدی ←'}
+          {isLast ? <><span aria-hidden="true">✅</span> تمام شد!</> : 'بعدی ←'}
         </motion.button>
       </div>
     </div>

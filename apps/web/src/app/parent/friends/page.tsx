@@ -137,7 +137,7 @@ export default function ParentFriendsPage() {
                     aria-selected={c.id === selected}
                     onClick={() => pickChildTab(c.id)}
                     className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      c.id === selected ? 'text-white' : 'bg-slate-100 text-parent-text hover:bg-slate-200'
+                      c.id === selected ? 'text-white' : 'bg-surface-subtle text-parent-text hover:bg-surface-subtle'
                     }`}
                     style={c.id === selected ? { background: 'var(--ramp-brand-bright)' } : undefined}
                   >
@@ -174,7 +174,7 @@ export default function ParentFriendsPage() {
                   dir="ltr"
                   autoCapitalize="characters"
                   autoComplete="off"
-                  className="ltr flex-1 min-w-0 min-h-[44px] text-center font-bold tracking-widest bg-parent-surface text-parent-text border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-offset-1"
+                  className="ltr flex-1 min-w-0 min-h-[44px] text-center font-bold tracking-widest bg-parent-surface text-parent-text border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-offset-1"
                 />
                 <button type="submit"
                   className="min-h-[44px] text-white font-bold px-6 rounded-xl transition-opacity hover:opacity-90"
@@ -194,11 +194,11 @@ export default function ParentFriendsPage() {
               <Panel title="درخواست‌های دوستی" labelledById="requests-title">
                 <div className="space-y-3">
                   {requests.map(r => (
-                    <div key={r.id} className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
+                    <div key={r.id} className="flex items-center justify-between gap-3 pb-3 border-b border-border last:border-0 last:pb-0">
                       <p className="text-sm text-parent-text persian-text">«{r.requester_name}» می‌خواهد دوستِ {r.addressee_name} شود</p>
                       <div className="flex gap-2 shrink-0">
                         <button onClick={() => respond(r.id, true)} className="min-h-[40px] bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 rounded-lg transition-colors">تأیید</button>
-                        <button onClick={() => respond(r.id, false)} className="min-h-[40px] bg-slate-100 hover:bg-slate-200 text-parent-text text-sm font-bold px-4 rounded-lg transition-colors">رد</button>
+                        <button onClick={() => respond(r.id, false)} className="min-h-[40px] bg-surface-subtle hover:bg-surface-subtle text-parent-text text-sm font-bold px-4 rounded-lg transition-colors">رد</button>
                       </div>
                     </div>
                   ))}
@@ -236,7 +236,7 @@ export default function ParentFriendsPage() {
 function FriendAvatar({ name, src }: { name: string; src: string | null }) {
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" className="w-9 h-9 rounded-full object-cover bg-slate-100" />
+    return <img src={src} alt="" className="w-9 h-9 rounded-full object-cover bg-surface-subtle" />
   }
   return (
     <span

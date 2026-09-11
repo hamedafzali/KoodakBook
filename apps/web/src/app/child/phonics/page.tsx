@@ -11,20 +11,21 @@ import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { speakOrPlay, speakOrPlayFirst, initSpeech } from '@/lib/speech'
 import { audioCandidates } from '@/lib/premium'
 import {
-  SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl,
+  SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl, toPersianDigits,
   type Syllable,
 } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
 import { SectionTitle, ClayButton } from '@/components/child/kit'
-import { ClayBar, clayVars } from '@/components/child/clay'
+import { ClayBar, clayVars, toneVars, type Tone } from '@/components/child/clay'
+import Emoji from '@/components/shared/Emoji'
 
 const DEMO = 'ب' // base consonant used to demonstrate each vowel mark
 
-/* Every colour on this screen is the `phonics` ramp. The three vowel marks used
- * to carry three unrelated gradients from SHORT_VOWELS.color, which said "three
- * different subjects" when they are three marks of one. What actually separates
- * them — the glyph — is already the largest thing on the tile, so the hue is
- * free to go back to meaning "this is phonics". */
+/* The three vowel marks each get their own vivid tile colour (DESIGN_CHARTER.md
+ * — colour is delight, and three big buttons a pre-reader taps between read as
+ * three things, not one). They are chunky clay tiles with DARK ink, never white
+ * on a -400 fill. Order matches SHORT_VOWELS (zebar / zir / pish). */
+const VOWEL_TONES: Tone[] = ['rose', 'sky', 'violet']
 
 function playErrorSound() {
   if (typeof window === 'undefined') return
@@ -66,7 +67,7 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
       className="bg-white/80 border-2 border-dashed rounded-2xl h-28 flex items-center justify-center persian-text text-sm text-center px-4"
       style={{ borderColor: 'var(--ramp-phonics-soft)', color: 'var(--ramp-phonics-ink)' }}
     >
-      روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود
+      روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود ✨
     </div>
   )
   if (reduce) return (
@@ -77,7 +78,7 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
   return (
     <div key={demo.run} className="bg-white rounded-2xl h-28 shadow-card relative overflow-hidden" aria-label={`ساخت هجای ${demo.text}`}>
       {/* the two parts fly together… */}
-      <motion.span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-slate-800"
+      <motion.span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-text-primary"
         initial={{ x: 70, opacity: 0 }}
         animate={{ x: [70, 8, 8], opacity: [0, 1, 0] }}
         transition={{ duration: 0.75, times: [0, 0.6, 1], ease: 'easeOut' }}>
@@ -102,9 +103,9 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
       </motion.span>
       <motion.span className="absolute left-4 top-3 text-xl" initial={{ scale: 0 }}
         animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}>
-        <span style={{ color: 'var(--ramp-rewards-bright)' }}><Icon name="sparkle" size={40} /></span>
+        <span className="text-3xl" aria-hidden="true">✨</span>
       </motion.span>
-      <span className="absolute right-3 bottom-2 text-[11px] text-slate-600 persian-text">{demo.markName}</span>
+      <span className="absolute right-3 bottom-2 text-[11px] text-text-secondary persian-text">{demo.markName}</span>
     </div>
   )
 }
@@ -143,15 +144,15 @@ export default function PhonicsPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="text-3xl font-bold text-slate-800">آفرین!</h1>
-        <p className="text-slate-600 persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
+        <h1 className="font-display text-h1 font-bold text-text-primary">آفرین! 🌟</h1>
+        <p className="text-body text-text-secondary persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <ClayButton ramp="phonics" size="lg" icon="retry" onClick={() => setPhase('quiz')}>
             یک بار دیگه
           </ClayButton>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
-            className="w-full py-3.5 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold min-h-[52px]">
-            برگشت به خانه
+            className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold min-h-[56px]">
+            برگشت به خانه 🏠
           </motion.button>
         </div>
       </div>
@@ -182,17 +183,17 @@ export default function PhonicsPage() {
         <section>
           <SectionTitle module="phonics">حرکت‌ها</SectionTitle>
           <div className="grid grid-cols-3 gap-3">
-            {SHORT_VOWELS.map(v => {
+            {SHORT_VOWELS.map((v, i) => {
               const syll = DEMO + v.mark
               return (
                 <motion.button key={v.key} onClick={() => demoMerge(DEMO, v.mark, v.namePersian, syll, 'b' + v.latin)}
                   whileTap={{ y: 4 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                  style={clayVars('phonics')}
-                  className="clay p-4 text-white flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target"
+                  style={toneVars(VOWEL_TONES[i % VOWEL_TONES.length])}
+                  className="clay p-4 flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target-child"
                   aria-label={`${v.namePersian}: ${syll}`}>
                   <span className="text-5xl font-bold leading-none drop-shadow-sm">{syll}</span>
                   <span className="text-sm font-medium mt-1">{v.namePersian}</span>
-                  <span className="text-xs text-white/85 ltr">{v.latin}</span>
+                  <span className="text-xs opacity-80 ltr">{v.latin}</span>
                 </motion.button>
               )
             })}
@@ -203,7 +204,7 @@ export default function PhonicsPage() {
         {SHORT_VOWELS.map(v => (
           <section key={v.key}>
             <SectionTitle module="phonics">
-              با {v.namePersian} <span className="text-slate-600 text-sm ltr font-medium">({v.latin})</span>
+              با {v.namePersian} <span className="text-text-secondary text-sm ltr font-medium">({v.latin})</span>
             </SectionTitle>
             <div className="grid grid-cols-4 gap-2">
               {PHONICS_CONSONANTS.map(c => {
@@ -211,10 +212,10 @@ export default function PhonicsPage() {
                 const slug = c.latin + v.latin
                 return (
                   <motion.button key={slug} onClick={() => demoMerge(c.ch, v.mark, v.namePersian, text, slug)} whileTap={{ scale: 0.92 }}
-                    className="bg-white rounded-2xl py-3 shadow-card flex flex-col items-center gap-0.5 touch-target"
+                    className="bg-white rounded-2xl py-3 shadow-card flex flex-col items-center gap-0.5 touch-target-child"
                     aria-label={`بخوان: ${text}`}>
-                    <span className="text-3xl font-bold text-slate-800">{text}</span>
-                    <span className="text-[11px] text-slate-600 ltr">{slug}</span>
+                    <span className="text-3xl font-bold text-text-primary">{text}</span>
+                    <span className="text-[11px] text-text-secondary ltr">{slug}</span>
                   </motion.button>
                 )
               })}
@@ -277,16 +278,16 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
 
   return (
     <div className="min-h-screen child-bg flex flex-col">
-      <div className="bg-white/90 backdrop-blur-md border-b border-slate-100 px-5 py-3 flex items-center gap-3">
+      <div className="bg-white/90 backdrop-blur-md border-b border-border px-5 py-3 flex items-center gap-3">
         <motion.button onClick={onExit} whileTap={{ scale: 0.85 }} aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-800 hover:bg-slate-100">
+          className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle">
           <Icon name="back" size="md" strokeWidth={2.5} />
         </motion.button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-slate-800 text-sm">گوش کن و انتخاب کن</h1>
-            <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--ramp-phonics-ink)' }}>
-              {idx + 1}/{questions.length}
+            <h1 className="font-bold text-text-primary text-sm">گوش کن و انتخاب کن</h1>
+            <span className="text-sm font-bold tabular-nums persian-text" style={{ color: 'var(--ramp-phonics-ink)' }}>
+              {toPersianDigits(idx + 1)} از {toPersianDigits(questions.length)}
             </span>
           </div>
           <ClayBar ramp="phonics" value={(idx / questions.length) * 100} label="پیشرفت تمرین" />
@@ -299,11 +300,11 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
           /* The material owns its radius — a `rounded-full` class would lose to
              the unlayered `.clay` rule, so the circle comes through the var. */
           style={{ ...clayVars('phonics'), '--clay-radius': '9999px' } as React.CSSProperties}
-          className="clay w-28 h-28 flex items-center justify-center touch-target text-white"
+          className="clay w-28 h-28 flex items-center justify-center touch-target-child"
           aria-label="دوباره گوش کن">
-          <Icon name="listen" size="xl" />
+          <Emoji name="speaker-high-volume" size={56} />
         </motion.button>
-        <p className="text-slate-700 persian-text">کدام را شنیدی؟</p>
+        <p className="text-text-primary persian-text">کدام را شنیدی؟</p>
 
         <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
           <AnimatePresence>
@@ -317,11 +318,11 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
                * gray-400 (2.6:1) — a wrong answer still has to be readable. */
               const cls = show
                 ? isCorrect ? 'bg-emerald-50 border-emerald-600 text-emerald-800'
-                  : opt.slug === picked ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white border-slate-100 text-slate-500'
-                : 'bg-white border-slate-100 text-slate-800'
+                  : opt.slug === picked ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white border-border text-text-secondary'
+                : 'bg-white border-border text-text-primary'
               return (
                 <motion.button key={opt.slug} onClick={() => choose(opt.slug)} whileTap={{ scale: 0.95 }}
-                  className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target ${cls}`}
+                  className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target-child ${cls}`}
                   aria-label={`انتخاب ${opt.text}`}>
                   {opt.text}
                 </motion.button>

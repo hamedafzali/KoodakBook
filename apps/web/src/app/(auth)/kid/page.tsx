@@ -136,7 +136,7 @@ export default function KidLoginPage() {
                 <motion.button
                   type="submit" disabled={loading || username.trim().length < 3}
                   whileTap={{ scale: 0.96 }}
-                  className="w-full bg-brand-gradient text-white font-bold text-xl py-4 rounded-[1.5rem] shadow-lg disabled:opacity-50 min-h-[64px]"
+                  className="w-full bg-brand-gradient text-on-brand font-bold text-xl py-4 rounded-[1.5rem] shadow-lg disabled:opacity-50 min-h-[64px]"
                 >
                   {loading ? 'دارم می‌آیم…' : 'بریم بازی!'}
                 </motion.button>
@@ -173,7 +173,7 @@ export default function KidLoginPage() {
                     disabled={loading}
                     whileTap={{ scale: 0.9 }}
                     aria-label={c.name_persian}
-                    className="bg-white rounded-2xl p-2 shadow-sm hover:shadow-md transition-shadow disabled:opacity-50 touch-target"
+                    className="bg-white rounded-2xl p-2 shadow-sm hover:shadow-md transition-shadow disabled:opacity-50 touch-target-child"
                   >
                     <CharacterAvatar slug={c.slug} size={72} />
                   </motion.button>
@@ -213,7 +213,7 @@ export default function KidLoginPage() {
                 <motion.button
                   type="submit" disabled={loading || pin.length < 4}
                   whileTap={{ scale: 0.96 }}
-                  className="w-full bg-brand-gradient text-white font-bold text-xl py-4 rounded-[1.5rem] shadow-lg disabled:opacity-50 min-h-[64px]"
+                  className="w-full bg-brand-gradient text-on-brand font-bold text-xl py-4 rounded-[1.5rem] shadow-lg disabled:opacity-50 min-h-[64px]"
                 >
                   {loading ? '...' : 'تأیید'}
                 </motion.button>

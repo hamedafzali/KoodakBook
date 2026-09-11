@@ -38,7 +38,7 @@ export default function LoginPage() {
         <div className="text-center mb-6">
           <p className="mb-2 flex justify-center text-amber-500"><Icon name="wave" size={40} strokeWidth={1.6} /></p>
           <h1 className="text-2xl font-bold text-slate-800 mb-1">خوش برگشتید!</h1>
-          <p className="text-gray-500 text-sm">قصه‌ها منتظرند — وارد شوید</p>
+          <p className="text-text-secondary text-sm">قصه‌ها منتظرند — وارد شوید</p>
         </div>
 
         {expired && (
@@ -91,7 +91,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6 persian-text">
+        <p className="text-center text-sm text-text-secondary mt-6 persian-text">
           حساب ندارید؟{' '}
           <Link href="/signup" className="text-amber-700 font-medium hover:underline">
             ثبت‌نام رایگان

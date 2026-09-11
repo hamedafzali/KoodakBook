@@ -29,7 +29,7 @@ export default function ParentDoorNav({ variant = 'bar' }: { variant?: 'bar' | '
   const isRail = variant === 'rail'
   const frame = isRail
     ? 'w-16 h-16 rounded-2xl gap-1'
-    : 'min-w-[60px] min-h-[44px] rounded-xl gap-0.5'
+    : 'min-w-[60px] min-h-[56px] rounded-xl gap-0.5'
 
   return (
     <button
@@ -39,7 +39,7 @@ export default function ParentDoorNav({ variant = 'bar' }: { variant?: 'bar' | '
       onContextMenu={e => e.preventDefault()}
       aria-label="ورود والدین — نگه دارید"
       title="برای ورود والدین نگه دارید"
-      className={`relative overflow-hidden flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 transition-colors select-none touch-target ${frame}`}
+      className={`relative overflow-hidden flex flex-col items-center justify-center text-text-secondary hover:text-gray-600 transition-colors select-none touch-target-child ${frame}`}
     >
       {/* Hold-progress fill (RTL: grows from the right) */}
       <motion.span

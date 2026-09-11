@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import confetti from 'canvas-confetti'
+import { celebrate } from '@/lib/confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
@@ -13,7 +13,7 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import type { Child, Word, ReviewItem } from '@koodakbook/shared'
-import { buildReviewQuestions, buildPaddingQuestions } from '@koodakbook/shared'
+import { buildReviewQuestions, buildPaddingQuestions, toPersianDigits } from '@koodakbook/shared'
 
 // Frustration loop (mig-051): the backend attaches `easing`/`needsReteach` to
 // each due word — thresholds live server-side (frustration.ts) so this file
@@ -80,7 +80,7 @@ export default function ReviewPage() {
   useEffect(() => {
     if (!done || firedRef.current) return
     firedRef.current = true
-    confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 }, colors: ['#f97316', '#22c55e', '#3b82f6'] })
+    celebrate({ particleCount: 90, spread: 80, origin: { y: 0.5 }, colors: ['#f97316', '#22c55e', '#3b82f6'] })
     playComplete()
   }, [done])
 
@@ -105,19 +105,19 @@ export default function ReviewPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="text-3xl font-bold text-slate-800">
-          {allCaughtUp ? 'همه را مرور کردی!' : 'آفرین! مرور تمام شد'}
+        <h1 className="font-display text-h1 font-bold text-text-primary">
+          {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}
         </h1>
-        <p className="text-slate-600 persian-text">
+        <p className="text-body text-text-secondary persian-text">
           {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${correct} از ${allQuestions.length} درست`}
         </p>
         <motion.button
           onClick={() => router.push('/child/home')}
           whileTap={{ scale: 0.96 }}
           style={clayVars('review')}
-          className="clay w-full max-w-xs text-white font-bold py-4 text-lg min-h-[56px]"
+          className="clay w-full max-w-xs font-bold py-4 text-lg min-h-[56px]"
         >
-          برگشت به خانه
+          برگشت به خانه 🏠
         </motion.button>
       </div>
     )
@@ -133,16 +133,18 @@ export default function ReviewPage() {
           onClick={() => router.push('/child/home')}
           whileTap={{ scale: 0.85 }}
           aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-600 hover:text-slate-700 hover:bg-slate-100"
+          className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
         </motion.button>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-slate-800 text-sm">مرور کلمه‌ها</h1>
-            <span className="text-sm font-bold text-amber-600">{idx + 1}/{allQuestions.length}</span>
+            <h1 className="font-bold text-text-primary text-sm">مرور کلمه‌ها 🔄</h1>
+            <span className="text-sm font-bold text-amber-600 persian-text">
+              {toPersianDigits(idx + 1)} از {toPersianDigits(allQuestions.length)}
+            </span>
           </div>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-slate-200 rounded-full overflow-hidden">
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-surface-subtle rounded-full overflow-hidden">
             <motion.div className="h-full bg-brand-gradient rounded-full" animate={{ width: `${progress}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
           </div>
         </div>

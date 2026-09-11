@@ -146,7 +146,7 @@ export default function SettingsPage() {
           <Group title="تنظیمات یادگیری" id="learning-settings-title">
 
               {/* Daily goal */}
-              <div className="px-5 py-4 border-b border-slate-100">
+              <div className="px-5 py-4 border-b border-border">
                 <p className="font-medium text-parent-text mb-3 text-sm">هدف روزانه</p>
                 <div className="flex gap-2 flex-wrap">
                   {DAILY_GOALS.map(g => (
@@ -157,7 +157,7 @@ export default function SettingsPage() {
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors min-h-[36px] ${
                         dailyGoal === g.value
                           ? 'text-white'
-                          : 'bg-slate-100 text-parent-text hover:bg-slate-200'
+                          : 'bg-surface-subtle text-parent-text hover:bg-surface-subtle'
                       }`}
                       style={dailyGoal === g.value ? { background: 'var(--ramp-brand-bright)' } : undefined}
                     >
@@ -179,7 +179,7 @@ export default function SettingsPage() {
                   value={transLang}
                   onChange={e => handleLangChange(e.target.value)}
                   aria-label="زبان ترجمه"
-                  className="shrink-0 min-h-[44px] border border-slate-200 rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text focus:outline-none focus:ring-2"
+                  className="shrink-0 min-h-[44px] border border-border rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text focus:outline-none focus:ring-2"
                 >
                   <option value="none">خاموش</option>
                   {TRANSLATION_LANGS.map(l => (
@@ -215,25 +215,25 @@ export default function SettingsPage() {
                   disabled={voiceBusy}
                   onClick={() => toggleVoice(!voiceConsent)}
                   className={`shrink-0 w-[52px] h-[32px] rounded-full p-1 transition-colors disabled:opacity-50 ${
-                    voiceConsent ? 'btn-brand' : 'bg-slate-400'
+                    voiceConsent ? 'btn-brand' : 'bg-[#A8998A]'
                   }`}
                 >
-                  {/* slate-400, not slate-300: "off" still has to be visible
-                      against a white card, and the old track was 1.6:1. */}
+                  {/* A mid warm grey for "off": it still has to read against a
+                      white card, where a paler track was only ~1.6:1. */}
                   <span className={`block w-6 h-6 rounded-full bg-white shadow-card transition-transform ${
                     voiceConsent ? '-translate-x-5' : ''
                   }`} />
                 </button>
               </div>
               {voiceConsent && (
-                <div className="border-t border-slate-100">
+                <div className="border-t border-border">
                   <NavRow label="صداهای ضبط‌شده" href="/parent/recordings" />
                 </div>
               )}
           </Group>
 
           {/* Children */}
-          <Group title="کودکان" id="children-title" className="divide-y divide-slate-100">
+          <Group title="کودکان" id="children-title" className="divide-y divide-border">
               {children.map(c => (
                 <div key={c.id} className="px-5 py-4">
                   <button
@@ -255,7 +255,7 @@ export default function SettingsPage() {
                       onChange={e => setUnameDraft(d => ({ ...d, [c.id]: e.target.value }))}
                       placeholder="مثلاً sara2018"
                       dir="ltr"
-                      className="ltr flex-1 min-w-0 min-h-[36px] bg-parent-surface text-parent-text border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2"
+                      className="ltr flex-1 min-w-0 min-h-[36px] bg-parent-surface text-parent-text border border-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2"
                     />
                     <button onClick={() => saveUsername(c.id)}
                       className="text-xs font-bold rounded-lg px-3 py-1.5 min-h-[36px] shrink-0"
@@ -269,7 +269,7 @@ export default function SettingsPage() {
                       the username above — for a child who can't type/read
                       reliably. First time on a new device still needs one
                       parent PIN check (design: docs/child-login-security.md). */}
-                  <div className="mt-3 pt-3 border-t border-slate-100">
+                  <div className="mt-3 pt-3 border-t border-border">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-parent-muted">رمز تصویری (۳ شخصیت):</span>
                       {c.picture_password ? (
@@ -320,7 +320,7 @@ export default function SettingsPage() {
           </Group>
 
           {/* Account settings */}
-          <Group title="حساب کاربری" id="account-settings-title" className="divide-y divide-slate-100">
+          <Group title="حساب کاربری" id="account-settings-title" className="divide-y divide-border">
               {email && (
                 <div className="flex items-center gap-3 px-5 py-4">
                   <span className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
@@ -355,7 +355,7 @@ export default function SettingsPage() {
                     </button>
                     <button
                       onClick={() => setLogoutConfirm(false)}
-                      className="flex-1 bg-slate-100 hover:bg-slate-200 text-parent-text font-bold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
+                      className="flex-1 bg-surface-subtle hover:bg-surface-subtle text-parent-text font-bold py-2.5 rounded-xl text-sm transition-colors min-h-[44px]"
                     >
                       انصراف
                     </button>

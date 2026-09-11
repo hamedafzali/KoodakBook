@@ -1,27 +1,27 @@
 import { Icon, type IconName } from '@/components/icons'
 import {
-  ClayBar, ClayButton, ClayChip, ClayIconChip, ClayTile, clayVars, type Ramp,
+  ClayBar, ClayButton, ClayChip, ClayIconChip, ClayTile, clayVars, type Ramp, type Tone,
 } from '@/components/child/clay'
 
 /* ── KoodakBook child design kit ────────────────────────────
  *
- * The system in one sentence: a warm cream canvas, white cards, ONE brand
- * accent (saffron amber), and a fixed semantic color per learning module —
- * used as soft tints and icon chips, never as full-bleed gradients.
+ * The system in one sentence: a warm cream canvas, joyful cards, a saffron
+ * brand accent, and a fixed bright color per learning module — so a child
+ * navigates by color long before they can read.
  *
  * This file owns the VOCABULARY: which hue and which glyph mean "stories".
  * `clay.tsx` owns the MATERIAL — how a pressable thing is built. The split
  * matters because the material is now shared and the vocabulary is not: the
  * parent app uses neither.
  *
- * Rationale (docs/design-system.md):
- *  - Color = information. A module's color appears on its chip, its accent
- *    bar and its progress — so a child navigates by color long before they
- *    read. Six saturated gradients on one screen is decoration, not signal.
- *  - White cards on cream: highest text contrast (WCAG AA on slate-800),
- *    calmer for long sessions, and reads "premium" (Khan Kids, Duo ABC).
+ * Rationale (DESIGN_CHARTER.md):
+ *  - Color = information AND delight. Each module owns one bright hue, shown
+ *    large and saturated on its tiles — this is a children's app, the color
+ *    is the product. A strong gradient per screen (hero / CTA) is welcome.
+ *  - Contrast is met with DARK INK on the bright/soft fill, never white on a
+ *    darkened one. Warm neutrals (cream, warm ink), not cold slate.
  *  - Touch: primary actions ≥56px, list items ≥48px (NN/g child research).
- *  - One radius scale (12/16/24), two shadow levels, one spring. */
+ *  - One radius scale (12/16/24), springy press feedback. */
 
 /** Every module key is also a ramp name in globals.css — that is the point of
  *  the ramps, and the type below enforces it: adding a module without adding
@@ -38,52 +38,56 @@ const _moduleKeysAreRamps: Record<ModuleKey, Ramp> = {
 void _moduleKeysAreRamps
 
 export const MODULE: Record<ModuleKey, {
-  icon: IconName    // Lucide glyph — never an emoji, see components/icons.tsx
+  emoji: string     // the module's identity for a child (DESIGN_CHARTER.md) — shown large on tiles
+  icon: IconName    // Lucide fall-back for small utility spots + the locked/aria path
   chip: string      // icon chip: soft tint + strong icon color
   bar: string       // accent bar / active states
-  soft: string      // large soft fill (tile image area)
-  solid: string     // chunky tile fill — white text sits on this
-  edge: string      // chunky tile 3D bottom edge
+  soft: string      // large soft fill (tile image area) — dark ink sits on this
+  solid: string     // chunky tile fill (bright) — dark ink sits on this
+  edge: string      // chunky tile 3D bottom edge (deep) — white text sits on this
 }> = {
-  /* These were Tailwind palette steps (-100/-400/-50/-700/-900) until the
-   * 2026-09 token pass. They now point at the app's own 4-stop ramps, which
-   * exist precisely because picking a step by eye is how the earlier audit
-   * happened: a cheerful mid-tone fill carried white titles at ~1.9–2.5:1.
-   *
-   * Each ramp stop is SOLVED for its job (tools/design/ramps.py), so the
-   * pairings below are guaranteed rather than checked after the fact:
-   *   solid + white text  >= 5.4:1     chip/soft + ink  >= 5.4:1
-   *   edge is always visibly darker than solid, so the 3D cue survives.
-   * Regenerate the script; never hand-edit a stop. */
-  lessons: { icon: 'lessons', chip: 'bg-lessons-soft text-lessons-ink', bar: 'bg-lessons-bright', soft: 'bg-lessons-soft', solid: 'bg-lessons-bright', edge: 'border-lessons-deep' },
-  letters: { icon: 'letters', chip: 'bg-letters-soft text-letters-ink', bar: 'bg-letters-bright', soft: 'bg-letters-soft', solid: 'bg-letters-bright', edge: 'border-letters-deep' },
-  phonics: { icon: 'phonics', chip: 'bg-phonics-soft text-phonics-ink', bar: 'bg-phonics-bright', soft: 'bg-phonics-soft', solid: 'bg-phonics-bright', edge: 'border-phonics-deep' },
-  stories: { icon: 'stories', chip: 'bg-stories-soft text-stories-ink', bar: 'bg-stories-bright', soft: 'bg-stories-soft', solid: 'bg-stories-bright', edge: 'border-stories-deep' },
-  review:  { icon: 'review',  chip: 'bg-review-soft text-review-ink',   bar: 'bg-review-bright',  soft: 'bg-review-soft',  solid: 'bg-review-bright',  edge: 'border-review-deep' },
-  speak:   { icon: 'speak',   chip: 'bg-speak-soft text-speak-ink',     bar: 'bg-speak-bright',   soft: 'bg-speak-soft',   solid: 'bg-speak-bright',   edge: 'border-speak-deep' },
-  write:   { icon: 'write',   chip: 'bg-write-soft text-write-ink',     bar: 'bg-write-bright',   soft: 'bg-write-soft',   solid: 'bg-write-bright',   edge: 'border-write-deep' },
-  math:    { icon: 'math',    chip: 'bg-math-soft text-math-ink',       bar: 'bg-math-bright',    soft: 'bg-math-soft',    solid: 'bg-math-bright',    edge: 'border-math-deep' },
-  games:   { icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
-  rewards: { icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
+  /* Colour points at the app's own 4-stop ramps (tools/design/ramps.py), which
+   * keep each module's shipped Tailwind hue (-400 fill, -50 tint) and solve
+   * the two dark support stops around it. DESIGN_CHARTER.md pairing:
+   *   solid (bright) + ink text  >= 5.0:1     soft + ink text  >= 5.0:1
+   *   deep carries white text and is the 3D edge — visibly darker than solid.
+   * Dark ink on a joyful fill, never white on a darkened one.
+   * `emoji` is the section identity a pre-reader actually navigates by; `icon`
+   * is the monochrome fall-back for the locked state and small utility spots. */
+  lessons: { emoji: '📚', icon: 'lessons', chip: 'bg-lessons-soft text-lessons-ink', bar: 'bg-lessons-bright', soft: 'bg-lessons-soft', solid: 'bg-lessons-bright', edge: 'border-lessons-deep' },
+  letters: { emoji: '✏️', icon: 'letters', chip: 'bg-letters-soft text-letters-ink', bar: 'bg-letters-bright', soft: 'bg-letters-soft', solid: 'bg-letters-bright', edge: 'border-letters-deep' },
+  phonics: { emoji: '🎵', icon: 'phonics', chip: 'bg-phonics-soft text-phonics-ink', bar: 'bg-phonics-bright', soft: 'bg-phonics-soft', solid: 'bg-phonics-bright', edge: 'border-phonics-deep' },
+  stories: { emoji: '📖', icon: 'stories', chip: 'bg-stories-soft text-stories-ink', bar: 'bg-stories-bright', soft: 'bg-stories-soft', solid: 'bg-stories-bright', edge: 'border-stories-deep' },
+  review:  { emoji: '🔄', icon: 'review',  chip: 'bg-review-soft text-review-ink',   bar: 'bg-review-bright',  soft: 'bg-review-soft',  solid: 'bg-review-bright',  edge: 'border-review-deep' },
+  speak:   { emoji: '🎤', icon: 'speak',   chip: 'bg-speak-soft text-speak-ink',     bar: 'bg-speak-bright',   soft: 'bg-speak-soft',   solid: 'bg-speak-bright',   edge: 'border-speak-deep' },
+  write:   { emoji: '✍️', icon: 'write',   chip: 'bg-write-soft text-write-ink',     bar: 'bg-write-bright',   soft: 'bg-write-soft',   solid: 'bg-write-bright',   edge: 'border-write-deep' },
+  math:    { emoji: '🔢', icon: 'math',    chip: 'bg-math-soft text-math-ink',       bar: 'bg-math-bright',    soft: 'bg-math-soft',    solid: 'bg-math-bright',    edge: 'border-math-deep' },
+  games:   { emoji: '🃏', icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
+  rewards: { emoji: '🏆', icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
 }
 
-/** Rounded-square icon chip — the module's color identity, everywhere.
- *  The glyph inherits the chip's text color, so one hue drives tint AND icon. */
+/** Rounded-square identity chip — the module's colour + its emoji, the pairing
+ *  a child recognises a section by (DESIGN_CHARTER.md). Pass `icon` to force a
+ *  Lucide glyph instead for the small utility cases. */
 export function IconChip({ module: m, icon, size = 'md' }: {
   module: ModuleKey; icon?: IconName; size?: 'md' | 'lg' | 'xl'
 }) {
-  return <ClayIconChip ramp={m} icon={icon ?? MODULE[m].icon} size={size} />
+  return icon
+    ? <ClayIconChip ramp={m} icon={icon} size={size} />
+    : <ClayIconChip ramp={m} glyph={MODULE[m].emoji} size={size} />
 }
 
 /** Chunky activity tile — the tactile "press me" language of great kids'
  *  apps. Still exactly one hue per module, so color keeps carrying meaning. */
-export function ModuleCard({ module: m, title, sub, href, icon, glyph, big, locked, lockedHint }: {
-  module: ModuleKey; title: string; sub?: string; href: string
+export function ModuleCard({ module: m, tone, title, sub, href, icon, glyph, big, locked, lockedHint }: {
+  module: ModuleKey; tone?: Tone; title: string; sub?: string; href: string
   icon?: IconName; glyph?: string; big?: boolean; locked?: boolean; lockedHint?: string
 }) {
   return (
     <ClayTile
-      ramp={m} icon={icon ?? MODULE[m].icon} glyph={glyph} title={title} sub={sub}
+      ramp={m} tone={tone} icon={icon ?? MODULE[m].icon}
+      glyph={glyph ?? (icon ? undefined : MODULE[m].emoji)}
+      title={title} sub={sub}
       href={href} big={big} locked={locked} lockedHint={lockedHint}
     />
   )
@@ -98,7 +102,9 @@ export function ChunkyButton({ children, className = '' }: {
   return (
     <span
       style={clayVars('brand')}
-      className={`clay inline-flex items-center justify-center gap-1.5 text-white font-bold ${className}`}
+      /* No text colour: `.clay` sets dark `--clay-ink` on the saffron fill
+         (DESIGN_CHARTER.md — dark ink on bright, never white). */
+      className={`clay inline-flex items-center justify-center gap-1.5 font-bold ${className}`}
     >
       {children}
     </span>
@@ -112,7 +118,7 @@ export function SectionTitle({ module: m, id, children }: { module?: ModuleKey; 
       {m && <span className={`w-1.5 h-5 rounded-full ${MODULE[m].bar}`} aria-hidden="true" />}
       {/* `id` so a <section> can point its aria-labelledby at the heading it
           already has, instead of repeating the label in an aria-label. */}
-      <h2 id={id} className="font-bold text-slate-800 text-base">{children}</h2>
+      <h2 id={id} className="font-display font-bold text-text-primary text-card-title">{children}</h2>
     </div>
   )
 }

@@ -3,7 +3,6 @@ import { useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { COLS, LADDERS, ROWS, SIZE, SNAKES, boardRows, toPersianDigits } from '@koodakbook/shared'
 import Link from 'next/link'
-import { Icon } from '@/components/icons'
 import { ClayButton } from '@/components/child/clay'
 import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 
@@ -14,13 +13,21 @@ import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
  * emoji that animate between cells with a spring. Same board data
  * (packages/shared/marpele.ts) as mobile, so a game plays out identically. */
 
-/* The board used to deal six pastels out by `n % 6`, so a tile's colour was a
- * function of its number and nothing else — six accents that looked like signal
- * and carried none, on top of a green/red pair that meant something. Colour on
- * this board now marks the four kinds of square a child needs to spot from
- * across the table: start, finish, ladder, snake. Everything else is the quiet
- * checker that makes the grid readable. */
-function tileStyle(kind: 'start' | 'finish' | 'ladder' | 'snake' | 'plain', dark: boolean): React.CSSProperties {
+/* A مارپله board is a wall of colour — that IS the toy (DESIGN_CHARTER.md). The
+ * six pastels are dealt to the plain squares by `n % 6` so the grid reads as a
+ * playful patchwork; start / finish / ladder / snake then override with the four
+ * meanings a child spots from across the table. Tile numbers sit in dark warm
+ * ink so they stay readable on every pastel. */
+const TILE_PASTELS: readonly [string, string][] = [
+  ['#FFE4E6', '#FDA4AF'], // rose
+  ['#FEF3C7', '#FCD34D'], // amber
+  ['#DCFCE7', '#86EFAC'], // green
+  ['#E0F2FE', '#7DD3FC'], // sky
+  ['#EDE9FE', '#C4B5FD'], // violet
+  ['#FCE7F3', '#F9A8D4'], // pink
+]
+
+function tileStyle(kind: 'start' | 'finish' | 'ladder' | 'snake' | 'plain', n: number): React.CSSProperties {
   switch (kind) {
     case 'start':  return { background: 'var(--ramp-games-soft)', borderColor: 'var(--ramp-games-bright)' }
     case 'finish': return { background: 'var(--ramp-rewards-soft)', borderColor: 'var(--ramp-rewards-bright)' }
@@ -28,7 +35,10 @@ function tileStyle(kind: 'start' | 'finish' | 'ladder' | 'snake' | 'plain', dark
        "climb" and "careful" here before they read "this is the game tab". */
     case 'ladder': return { background: '#D1FAE5', borderColor: '#6EE7B7' }
     case 'snake':  return { background: '#FFE4E6', borderColor: '#FDA4AF' }
-    default:       return { background: dark ? '#FDF6EC' : '#FFFFFF', borderColor: 'rgb(255 255 255 / 0.7)' }
+    default: {
+      const [bg, border] = TILE_PASTELS[n % TILE_PASTELS.length]
+      return { background: bg, borderColor: border }
+    }
   }
 }
 
@@ -68,13 +78,13 @@ export default function MarpeleBoard({ positions, emojis }: { positions: number[
               <div
                 key={n}
                 className="relative aspect-square rounded-xl border-2 shadow-sm flex items-center justify-center"
-                style={{ gridRow: r + 1, gridColumn: c + 1, ...tileStyle(kind, (r + c) % 2 === 1) }}
+                style={{ gridRow: r + 1, gridColumn: c + 1, ...tileStyle(kind, n) }}
               >
                 {/* Was black/35 — about 2.3:1 on the tile. These numbers are how
                     a child checks whose token is ahead, so they have to read. */}
-                <span className="absolute top-0.5 right-1 text-[10px] font-bold text-slate-700">{toPersianDigits(n)}</span>
-                {start && <Icon name="home" size="md" />}
-                {finish && <Icon name="rewards" size="md" />}
+                <span className="absolute top-0.5 right-1 text-[10px] font-bold text-text-primary">{toPersianDigits(n)}</span>
+                {start && <span className="text-xl" aria-hidden="true">🏠</span>}
+                {finish && <span className="text-xl" aria-hidden="true">🏆</span>}
                 {/* EMOJI-CONTENT: the ladder and the snake are the board's two
                     game mechanics, drawn as pieces — not affordances. They want
                     real board art, and an outline glyph would read as a control. */}
@@ -124,7 +134,7 @@ export function Dice({ value, rolling }: { value: number | null; rolling: boolea
   const face = value ?? 1
   return (
     <motion.div
-      className="w-16 h-16 rounded-2xl bg-white shadow-md border border-slate-200 p-2 grid grid-rows-3 gap-1 shrink-0"
+      className="w-16 h-16 rounded-2xl bg-white shadow-md border border-border p-2 grid grid-rows-3 gap-1 shrink-0"
       animate={rolling ? { rotate: [0, 360] } : { rotate: 0, scale: [1.2, 1] }}
       transition={rolling ? { duration: 0.24, repeat: Infinity, ease: 'linear' } : { duration: 0.3 }}
     >
@@ -202,9 +212,9 @@ export function TurnChip({ emoji, name, square, active }: {
         : { background: '#FFFFFF' }}
     >
       <span className="text-lg" aria-hidden="true">{emoji}</span>
-      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-slate-800'}`}>{name}</span>
+      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-text-primary'}`}>{name}</span>
       <span
-        className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-700'}`}
+        className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-surface-subtle text-text-primary'}`}
         aria-label={`خانه ${toPersianDigits(square)}`}
       >
         {toPersianDigits(square)}
@@ -249,7 +259,7 @@ export function ChallengeModal({ prompt, question, onResolve }: {
         className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col gap-3"
         initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
       >
-        <p className="text-center font-bold text-slate-800 persian-text">{prompt}</p>
+        <p className="text-center font-bold text-text-primary persian-text">{prompt}</p>
         <QuizCard
           question={question}
           onCorrect={() => onResolve(true)}
@@ -274,17 +284,15 @@ export function GameOverScreen({ won, title, note, token, children }: {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 child-bg p-6 text-center">
       {won && <Confetti />}
-      {won
-        ? <span style={{ color: 'var(--ramp-rewards-bright)' }}><Icon name="rewards" size={96} strokeWidth={1.5} /></span>
-        : token
-          ? <span className="text-8xl leading-none" aria-hidden="true">{token}</span>
-          : <span className="text-slate-500"><Icon name="random" size={96} strokeWidth={1.5} /></span>}
-      <h1 className="text-3xl font-bold text-slate-800">{title}</h1>
-      {note && <p className="text-slate-700 persian-text">{note}</p>}
+      <span className="text-8xl leading-none" aria-hidden="true">
+        {won ? '🏆' : (token ?? '🎲')}
+      </span>
+      <h1 className="text-3xl font-bold text-text-primary">{title}</h1>
+      {note && <p className="text-text-primary persian-text">{note}</p>}
       <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
         {children}
         {/* Was slate-400: 2.56:1, and the only way out of this screen. */}
-        <Link href="/child/home" className="text-sm text-slate-600 hover:text-slate-800 mt-1">برگشت به خانه</Link>
+        <Link href="/child/home" className="text-sm text-text-secondary hover:text-text-primary mt-1">برگشت به خانه 🏠</Link>
       </div>
     </div>
   )

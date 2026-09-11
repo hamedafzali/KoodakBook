@@ -63,9 +63,9 @@ export default function RecordingsPage() {
 
   return (
     <div className={`min-h-screen bg-parent-bg ${containerWidths.app}`}>
-      <div className="bg-parent-surface border-b border-slate-200 px-5 py-4 flex items-center gap-3">
+      <div className="bg-parent-surface border-b border-border px-5 py-4 flex items-center gap-3">
         <Link href="/parent/settings" aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-slate-100 transition-colors">
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-surface-subtle transition-colors">
           <Icon name="back" size="md" />
         </Link>
         <div>
@@ -192,12 +192,12 @@ function RecordingRow({ rec, onHeard, onKeep, onDelete }: {
           <button onClick={onKeep}
             aria-pressed={rec.kept}
             aria-label={rec.kept ? 'دیگر نگه ندار' : 'نگه دار'}
-            className="min-w-[40px] min-h-[40px] grid place-items-center rounded-lg text-parent-muted hover:bg-slate-100 transition-colors">
+            className="min-w-[40px] min-h-[40px] grid place-items-center rounded-lg text-parent-muted hover:bg-surface-subtle transition-colors">
             <Icon name={rec.kept ? 'protect' : 'save'} size="sm" />
           </button>
           <button onClick={() => setConfirmDelete(true)}
             aria-label="حذف"
-            className="min-w-[40px] min-h-[40px] grid place-items-center rounded-lg text-parent-muted hover:bg-slate-100 hover:text-rose-600 transition-colors">
+            className="min-w-[40px] min-h-[40px] grid place-items-center rounded-lg text-parent-muted hover:bg-surface-subtle hover:text-rose-600 transition-colors">
             <Icon name="delete" size="sm" />
           </button>
         </div>
@@ -206,7 +206,7 @@ function RecordingRow({ rec, onHeard, onKeep, onDelete }: {
       {/* Deleting a recording of a child's voice is irreversible and the
           button sits next to «نگه دار», so it asks first. */}
       {confirmDelete && (
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+        <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-3">
           <p className="text-sm text-parent-text">این صدا برای همیشه پاک شود؟</p>
           <div className="flex gap-2 shrink-0">
             <button onClick={onDelete}
@@ -214,7 +214,7 @@ function RecordingRow({ rec, onHeard, onKeep, onDelete }: {
               پاک کن
             </button>
             <button onClick={() => setConfirmDelete(false)}
-              className="min-h-[40px] px-3 rounded-lg bg-slate-100 text-parent-text text-sm font-bold">
+              className="min-h-[40px] px-3 rounded-lg bg-surface-subtle text-parent-text text-sm font-bold">
               بی‌خیال
             </button>
           </div>

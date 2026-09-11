@@ -49,11 +49,11 @@ export default function ConversationsPage() {
       <div className="max-w-lg mx-auto p-4 space-y-4">
         <div className="flex gap-2">
           <select value={childId} onChange={e => setChildId(e.target.value)} aria-label="کودک"
-            className="flex-1 min-h-[44px] border border-slate-200 rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text">
+            className="flex-1 min-h-[44px] border border-border rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text">
             {children.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select value={slug} onChange={e => setSlug(e.target.value)} aria-label="شخصیت"
-            className="flex-1 min-h-[44px] border border-slate-200 rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text">
+            className="flex-1 min-h-[44px] border border-border rounded-xl px-3 py-2 text-sm bg-parent-surface text-parent-text">
             {characters.map(c => <option key={c.slug} value={c.slug}>{c.name_persian}</option>)}
           </select>
         </div>

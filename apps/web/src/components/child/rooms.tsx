@@ -102,7 +102,7 @@ export function RoomSections({ friends = [], band = 2 }: { friends?: AppCharacte
                   className={`bg-white rounded-2xl shadow-card flex flex-col items-center gap-1 py-3 justify-center ${big ? 'min-h-[136px]' : 'min-h-[112px]'}`}
                 >
                   <CharacterAvatar slug={f.slug} size={big ? 88 : 64} mood="idle" />
-                  <p className={`font-bold text-slate-800 text-center px-1 ${big ? 'text-sm' : 'text-xs'}`}>{f.name_persian}</p>
+                  <p className={`font-bold text-text-primary text-center px-1 ${big ? 'text-sm' : 'text-xs'}`}>{f.name_persian}</p>
                 </motion.div>
               </Link>
             ))}

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import ParentDoorNav from './ParentDoorNav'
-import { Icon, type IconName } from '@/components/icons'
+import Emoji, { type EmojiName } from '../shared/Emoji'
 
 /* Four tabs plus the parent door = five items, which is the ceiling for a
  * bottom bar (and the practical limit at 64px per item on a 360px phone).
@@ -12,12 +12,17 @@ import { Icon, type IconName } from '@/components/icons'
  * a tab because home had been reduced to a single path and it was the only way
  * to reach seven rooms; home carries every room itself now, so a tab pointing
  * at a second copy of home is a wasted slot. Rewards is the one destination a
- * child asks for by name and that home does not put in front of them. */
-const NAV_ITEMS: { href: string; icon: IconName; label: string; ariaLabel: string }[] = [
-  { href: '/child/home',    icon: 'home',    label: 'خانه',   ariaLabel: 'صفحه اصلی' },
-  { href: '/child/lesson',  icon: 'lessons', label: 'درس‌ها', ariaLabel: 'لیست درس‌ها' },
-  { href: '/child/story',   icon: 'stories', label: 'داستان', ariaLabel: 'داستان‌ها' },
-  { href: '/child/rewards', icon: 'rewards', label: 'جوایز',  ariaLabel: 'جایزه‌های من' },
+ * child asks for by name and that home does not put in front of them.
+ *
+ * The tab marks are the app's colourful emoji, not monochrome strokes
+ * (DESIGN_CHARTER.md): a pre-reader picks the tab by its picture. The label
+ * under it keeps the readable `text-text-secondary` when inactive — a
+ * deliberate contrast fix over the old gray-400 (2.56:1). */
+const NAV_ITEMS: { href: string; emoji: EmojiName; label: string; ariaLabel: string }[] = [
+  { href: '/child/home',    emoji: 'house',     label: 'خانه',   ariaLabel: 'صفحه اصلی' },
+  { href: '/child/lesson',  emoji: 'books',      label: 'درس‌ها', ariaLabel: 'لیست درس‌ها' },
+  { href: '/child/story',   emoji: 'open-book',  label: 'داستان', ariaLabel: 'داستان‌ها' },
+  { href: '/child/rewards', emoji: 'trophy',     label: 'جوایز',  ariaLabel: 'جایزه‌های من' },
 ]
 
 export default function BottomNav() {
@@ -37,7 +42,7 @@ export default function BottomNav() {
             href={nav.href}
             aria-label={nav.ariaLabel}
             aria-current={active ? 'page' : undefined}
-            className="relative flex flex-col items-center gap-0.5 min-w-[64px] min-h-[52px] justify-center rounded-2xl transition-colors"
+            className="relative flex flex-col items-center gap-0.5 min-w-[64px] min-h-[56px] justify-center rounded-2xl transition-colors"
           >
             {active && (
               <motion.div
@@ -48,16 +53,15 @@ export default function BottomNav() {
               />
             )}
             <motion.span
-              /* Inactive tabs were gray-400: 2.56:1, under the 3:1 floor for a
-                 non-text control — three of the four tabs, on every child
-                 screen. slate-600 is 7.6:1 and still reads as "not here". */
-              className={`relative leading-none ${active ? 'text-amber-800' : 'text-slate-600'}`}
+              className={`relative leading-none ${active ? '' : 'opacity-75'}`}
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
+              aria-hidden="true"
+              tabIndex={-1}
             >
-              <Icon name={nav.icon} size="lg" strokeWidth={active ? 2.4 : 2} />
+              <Emoji name={nav.emoji} size={28} />
             </motion.span>
-            <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-slate-600'}`}>
+            <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-text-secondary'}`}>
               {nav.label}
             </span>
           </Link>

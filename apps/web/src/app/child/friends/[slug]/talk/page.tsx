@@ -109,7 +109,7 @@ export default function TalkPage() {
             mood={busy === 'think' ? 'thinking' : mood} className="-mb-1 drop-shadow-lg" />
         </div>
         <Link href={`/child/friends/${slug}`} aria-label="برگشت"
-          className="absolute top-3 right-3 w-11 h-11 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-slate-500">
+          className="absolute top-3 right-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
         </Link>
       </div>
@@ -117,7 +117,7 @@ export default function TalkPage() {
       {/* Transcript */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 max-w-md w-full mx-auto">
         {turns.length === 0 && (
-          <p className="text-center text-sm text-slate-400 persian-text pt-4">
+          <p className="text-center text-sm text-text-secondary persian-text pt-4">
             سلام کن یا یکی از جمله‌های پایین را بزن!
           </p>
         )}
@@ -128,7 +128,7 @@ export default function TalkPage() {
               <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm persian-text leading-relaxed ${
                 t.role === 'child'
                   ? 'bg-amber-700 text-white rounded-tr-sm'
-                  : 'bg-white shadow-card text-slate-700 rounded-tl-sm'}`}>
+                  : 'bg-white shadow-card text-text-primary rounded-tl-sm'}`}>
                 {t.text}
               </div>
             </motion.div>
@@ -168,13 +168,13 @@ export default function TalkPage() {
               animate={busy === 'listen' ? { scale: [1, 1.12, 1] } : {}}
               transition={busy === 'listen' ? { duration: 0.9, repeat: Infinity } : {}}
               aria-label={busy === 'listen' ? 'دارم گوش می‌کنم…' : 'ضربه بزن و حرف بزن'}
-              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-raised text-4xl ${
-                busy === 'listen' ? 'bg-rose-500' : 'bg-brand-gradient-br'} text-white disabled:opacity-60`}>
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-raised text-4xl disabled:opacity-60 ${
+                busy === 'listen' ? 'bg-rose-500 text-white' : 'bg-brand-gradient-br text-on-brand'}`}>
               <Icon name="record" size="xl" />
             </motion.button>
           </div>
         )}
-        <p className="text-center text-[11px] text-slate-400 persian-text">
+        <p className="text-center text-[11px] text-text-secondary persian-text">
           {canListen ? (busy === 'listen' ? 'دارم گوش می‌کنم… بگو!' : 'دکمه را بزن و فارسی حرف بزن') : 'از جمله‌های بالا انتخاب کن'}
         </p>
       </div>

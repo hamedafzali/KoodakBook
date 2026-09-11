@@ -114,7 +114,7 @@ export default function PlanPage() {
                 )}
               </div>
 
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-border">
                 {PLAN_FEATURES.map(def => (
                   <li key={def.key} className="flex items-center justify-between px-5 py-3 gap-3">
                     <span className="text-sm text-parent-text">{def.label}</span>
@@ -125,7 +125,7 @@ export default function PlanPage() {
 
               <div className="px-5 py-4">
                 {isCurrent ? (
-                  <button disabled className="w-full py-3 rounded-xl bg-slate-100 text-parent-muted font-bold cursor-default min-h-[48px]">
+                  <button disabled className="w-full py-3 rounded-xl bg-surface-subtle text-parent-muted font-bold cursor-default min-h-[48px]">
                     پلن فعلی شما
                   </button>
                 ) : isPremium ? (

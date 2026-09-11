@@ -8,21 +8,19 @@ import type { Ramp } from '@/components/child/clay'
 
 /* ── Flat: the PARENT app's material ────────────────────────────────────────
  *
- * The counterpart to components/child/clay.tsx, and deliberately its opposite.
- * Clay is thick, coloured and pressable because a five-year-old navigates by
- * poking things. The parent is scanning — often one-handed, often at 11pm,
- * often only to answer "is this working?" — so this register is flat surfaces,
- * hairline borders, tight density and calm motion. Toy-like depth on the
- * screen the buyer looks at reads as unserious.
- *
- * What the two registers SHARE is the system: the same icon set, the same type
- * scale, and the same 4-stop ramps. A `soft` ground with `ink` on top is
- * contrast-solved once and used by both. Only the material differs.
+ * The counterpart to components/child/clay.tsx. Clay is thick, coloured and
+ * pressable because a five-year-old navigates by poking things. The parent is
+ * scanning — often one-handed, often at 11pm, often only to answer "is this
+ * working?" — so this register is calmer: soft rounded cards on a warm cream
+ * ground, one gentle shadow, saffron accents, unhurried motion. Calmer than
+ * the child side, but the SAME family — warm neutrals, the shared ramps, the
+ * same icon set and type scale. Not the cold slate hairline sheet it used to
+ * be (Phase 5).
  */
 
-/** A flat surface. This is the parent app's only container — there is no
- *  raised variant, because "one raised element per screen" is a child-app
- *  rule for directing a pre-reader's attention, and the parent is reading. */
+/** A soft card. The parent app's only container — still no "raised" variant,
+ *  because "one raised element per screen" is a child-app rule for steering a
+ *  pre-reader, and the parent is reading. One shadow level, warm border. */
 export function Panel({
   title, action, children, className = '', labelledById,
 }: {
@@ -35,7 +33,7 @@ export function Panel({
   return (
     <section
       aria-labelledby={title ? labelledById : undefined}
-      className={`bg-parent-surface border border-slate-200 rounded-xl p-4 ${className}`}
+      className={`bg-parent-surface border border-border rounded-2xl shadow-card p-4 ${className}`}
     >
       {title && (
         <div className="flex items-center justify-between mb-3">
@@ -48,23 +46,28 @@ export function Panel({
   )
 }
 
-/** One of the three numbers. Tinted from a shared ramp, so the value sits on
- *  `soft` in `ink` — a pairing the ramp generator already solves for AA.
- *  `tabular-nums` because these sit in a row and digits that jitter between
- *  refreshes read as noise. */
+/** One of the numbers. A pastel card in the module's own hue with its emoji —
+ *  the illustrated stat card the flatten pass replaced with a bare tinted box
+ *  (Phase 5). Value sits in `ink` on `soft`, a pairing the ramp generator
+ *  already solves for AA. `tabular-nums` so digits don't jitter between
+ *  refreshes. */
 export function Stat({
-  ramp, icon, value, label,
+  ramp, icon, emoji, value, label,
 }: {
-  ramp: Ramp; icon: IconName; value: number | string; label: string
+  ramp: Ramp; icon: IconName; emoji?: string; value: number | string; label: string
 }) {
   return (
     <div
-      className="flex-1 min-w-[92px] rounded-xl p-3"
-      style={{ background: `var(--ramp-${ramp}-soft)` }}
+      className="flex-1 min-w-[92px] rounded-2xl p-3 border"
+      style={{ background: `var(--ramp-${ramp}-soft)`, borderColor: `var(--ramp-${ramp}-bright)` }}
     >
-      <span style={{ color: `var(--ramp-${ramp}-ink)` }}>
-        <Icon name={icon} size="sm" />
-      </span>
+      {emoji
+        ? <span className="text-2xl leading-none" aria-hidden="true">{emoji}</span>
+        : (
+          <span style={{ color: `var(--ramp-${ramp}-ink)` }}>
+            <Icon name={icon} size="sm" />
+          </span>
+        )}
       <p
         className="text-2xl font-bold tabular-nums mt-1 leading-none"
         style={{ color: `var(--ramp-${ramp}-ink)` }}
@@ -76,9 +79,9 @@ export function Stat({
   )
 }
 
-/** Progress, parent register: thinner than the child's, no bounce, and the
- *  fill eases rather than springs. Same accessibility contract as ClayBar —
- *  `label` is required, because a bare bar says nothing to a screen reader. */
+/** Progress, parent register: thinner than the child's, no bounce, the fill
+ *  eases rather than springs. Same accessibility contract as ClayBar — `label`
+ *  is required, because a bare bar says nothing to a screen reader. */
 export function FlatBar({
   value, label, ramp = 'brand', className = '',
 }: {
@@ -89,7 +92,7 @@ export function FlatBar({
     <div
       role="progressbar"
       aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label}
-      className={`h-2 rounded-full overflow-hidden bg-slate-200 ${className}`}
+      className={`h-2 rounded-full overflow-hidden bg-surface-subtle ${className}`}
     >
       <motion.div
         className="h-full rounded-full"
@@ -102,13 +105,9 @@ export function FlatBar({
   )
 }
 
-/** The bar every parent screen opens with. It existed already — six times,
- *  copy-pasted, four of them drawing the back chevron as a hand-rolled inline
- *  <svg> rather than using the icon set, and each one picking its own muted
- *  grey (`slate-400`, 2.34:1 on the parent ground, under AA). One component
- *  means the back affordance is in the same place at the same size on every
- *  screen, which is what makes a back button feel reliable rather than
- *  decorative. */
+/** The bar every parent screen opens with. One component so the back
+ *  affordance is in the same place at the same size on every screen — what
+ *  makes a back button feel reliable rather than decorative. */
 export function PageHeader({
   title, subtitle, back, backLabel = 'برگشت', action,
 }: {
@@ -120,12 +119,12 @@ export function PageHeader({
   action?: ReactNode
 }) {
   return (
-    <header className="bg-parent-surface border-b border-slate-200 px-5 py-4 flex items-center gap-3">
+    <header className="bg-parent-surface border-b border-border px-5 py-4 flex items-center gap-3">
       {back && (
         <Link
           href={back}
           aria-label={backLabel}
-          className="min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-slate-100 transition-colors"
+          className="min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center rounded-xl text-parent-muted hover:text-parent-text hover:bg-surface-subtle transition-colors"
         >
           <Icon name="back" size="md" />
         </Link>
@@ -139,9 +138,10 @@ export function PageHeader({
   )
 }
 
-/** A labelled group of rows — the settings idiom. The label is a real <h2>
- *  tied to the list with aria-labelledby, not a styled <p>: a parent using a
- *  screen reader navigates a settings screen by heading. */
+/** A labelled group of rows — the settings idiom. A soft rounded card on the
+ *  cream ground now (Phase 5), warm dividers instead of the cold slate sheet.
+ *  The label is a real <h2> tied to the list with aria-labelledby: a parent
+ *  using a screen reader navigates a settings screen by heading. */
 export function Group({
   title, id, children, className = '',
 }: {
@@ -152,23 +152,22 @@ export function Group({
       <h2 id={id} className="text-xs font-bold text-parent-muted uppercase tracking-wide mb-2 px-1">
         {title}
       </h2>
-      <div className={`bg-parent-surface border border-slate-200 rounded-xl overflow-hidden ${className}`}>
+      <div className={`bg-parent-surface border border-border rounded-2xl shadow-card overflow-hidden ${className}`}>
         {children}
       </div>
     </section>
   )
 }
 
-/** One row inside a Group that goes somewhere. `href` renders a link, `onClick`
- *  a button — the distinction matters for keyboard and for middle-click, and
- *  this screen previously used a <button> for one navigation and a <Link> for
- *  the next with no difference in behaviour intended.
+/** One row inside a Group that goes somewhere. `href` renders a link,
+ *  `onClick` a button — the distinction matters for keyboard and middle-click.
  *
- *  The chevron points LEFT: in an RTL layout, forward is left. It is the icon
- *  set's `forward`, not a hand-drawn path, so it can never disagree with the
+ *  `icon` shows in a soft saffron chip on the leading side — a warm marker,
+ *  not a bare grey stroke (Phase 5). The chevron points LEFT: in RTL, forward
+ *  is left. It is the icon set's `forward`, so it can never disagree with the
  *  back chevron in PageHeader. */
 export function NavRow({
-  label, href, onClick, tone = 'default', value,
+  label, href, onClick, tone = 'default', value, icon,
 }: {
   label: string
   href?: string
@@ -176,16 +175,32 @@ export function NavRow({
   /** `danger` for a destructive row; `brand` for the one additive action. */
   tone?: 'default' | 'brand' | 'danger'
   value?: ReactNode
+  icon?: IconName
 }) {
   const tint =
     tone === 'danger' ? 'text-rose-700 hover:bg-rose-50'
-    : tone === 'brand' ? 'hover:bg-slate-50'
-    : 'text-parent-text hover:bg-slate-50'
+    : 'text-parent-text hover:bg-surface-subtle'
+
+  const chipStyle =
+    tone === 'danger'
+      ? { background: '#FEE2E2', color: '#B91C1C' }
+      : { background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }
 
   const inner = (
     <>
-      <span className="font-medium text-sm" style={tone === 'brand' ? { color: 'var(--ramp-brand-ink)' } : undefined}>
-        {label}
+      <span className="flex items-center gap-3 min-w-0">
+        {icon && (
+          <span
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+            style={chipStyle}
+            aria-hidden="true"
+          >
+            <Icon name={icon} size="sm" />
+          </span>
+        )}
+        <span className="font-medium text-sm truncate" style={tone === 'brand' ? { color: 'var(--ramp-brand-ink)' } : undefined}>
+          {label}
+        </span>
       </span>
       <span className="flex items-center gap-2 text-parent-muted shrink-0">
         {value}

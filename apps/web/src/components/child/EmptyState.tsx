@@ -24,7 +24,7 @@ export default function EmptyState({ message, subMessage, action }: Props) {
       </motion.div>
       <div>
         <p className="font-bold text-gray-700 text-lg persian-text">{message}</p>
-        {subMessage && <p className="text-gray-400 text-sm mt-1 persian-text">{subMessage}</p>}
+        {subMessage && <p className="text-text-secondary text-sm mt-1 persian-text">{subMessage}</p>}
       </div>
       {action && <div className="mt-2">{action}</div>}
     </motion.div>

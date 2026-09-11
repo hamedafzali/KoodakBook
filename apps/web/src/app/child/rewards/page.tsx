@@ -10,7 +10,6 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { pickChild } from '@/lib/activeChild'
-import { Icon } from '@/components/icons'
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } }
 const item = {
@@ -54,7 +53,7 @@ export default function RewardsPage() {
         role="banner"
       >
         <div>
-          <h1 className="text-2xl font-bold">جوایز من</h1>
+          <h1 className="text-2xl font-bold">جوایز من <span aria-hidden="true">🏆</span></h1>
           <p className="text-white/85 text-sm mt-1">{earned.length} از {total} جایزه</p>
           {/* Progress dots */}
           <div className="flex gap-2 mt-3" role="progressbar" aria-valuenow={earned.length} aria-valuemin={0} aria-valuemax={total} aria-label={`${earned.length} از ${total} جایزه گرفته شده`}>
@@ -76,7 +75,7 @@ export default function RewardsPage() {
 
         {/* Outcome badges */}
         <section aria-labelledby="outcome-badges-title">
-          <h2 id="outcome-badges-title" className="font-bold text-slate-700 mb-3 text-sm">دستاوردها</h2>
+          <h2 id="outcome-badges-title" className="font-bold text-text-primary mb-3 text-sm">دستاوردها</h2>
           <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {outcomeBadges.map(([key, def]) => {
               const isEarned = earnedKeys.has(key as BadgeKey)
@@ -94,7 +93,7 @@ export default function RewardsPage() {
 
         {/* Effort badges */}
         <section aria-labelledby="effort-badges-title">
-          <h2 id="effort-badges-title" className="font-bold text-slate-700 mb-3 text-sm">تلاش و پشتکار</h2>
+          <h2 id="effort-badges-title" className="font-bold text-text-primary mb-3 text-sm">تلاش و پشتکار <span aria-hidden="true">💪</span></h2>
           <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {effortBadges.map(([key, def]) => {
               const isEarned = earnedKeys.has(key as BadgeKey)
@@ -145,12 +144,11 @@ function BadgeCard({
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           {/* EMOJI-CONTENT: an earned badge is a collectible the child keeps —
-              its face is artwork. The *locked* state is chrome, so it gets the
-              same lock icon as every other locked thing in the app. */}
-          {isEarned ? BADGE_EMOJI[badgeKey] ?? '🏆' : <Icon name="locked" size="xl" className="text-slate-400" />}
+              its face is artwork. The *locked* state shows a padlock emoji. */}
+          {isEarned ? BADGE_EMOJI[badgeKey] ?? '🏆' : <span aria-hidden="true">🔒</span>}
         </motion.span>
-        <p className={`font-bold text-sm ${isEarned ? 'text-slate-800' : 'text-slate-600'}`}>{def.title}</p>
-        <p className={`text-xs ${isEarned ? 'text-slate-600' : 'text-slate-600'}`}>
+        <p className={`font-bold text-sm ${isEarned ? 'text-text-primary' : 'text-text-secondary'}`}>{def.title}</p>
+        <p className={`text-xs ${isEarned ? 'text-text-secondary' : 'text-text-secondary'}`}>
           {isEarned ? def.description : def.hint}
         </p>
         {isEarned && (
@@ -159,7 +157,7 @@ function BadgeCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <Icon name="done" size="xs" /> دریافت شد
+            <span aria-hidden="true">✓</span> دریافت شد
           </motion.span>
         )}
       </motion.div>

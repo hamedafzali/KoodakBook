@@ -15,8 +15,15 @@ interface Props {
   gradientClass?: string
   /** The screen's module. Preferred over `gradientClass`: it puts the accent on
    *  the same ramp the rest of the screen uses, so the header can't drift to a
-   *  hue that means a different module. */
+   *  hue that means a different module. Also supplies the section's identity
+   *  emoji (DESIGN_CHARTER.md) unless `emoji` overrides or `noEmoji` suppresses. */
   module?: ModuleKey
+  /** Section identity emoji shown before the title. Defaults to the module's
+   *  emoji when `module` is set. */
+  emoji?: string
+  /** Opt a `module` screen out of the identity emoji (e.g. the title already
+   *  carries its own content glyph). */
+  noEmoji?: boolean
 }
 
 export default function PageHeader({
@@ -29,6 +36,8 @@ export default function PageHeader({
   variant = 'gradient',
   gradientClass = 'from-amber-400 to-orange-500',
   module: m,
+  emoji,
+  noEmoji = false,
 }: Props) {
   const router = useRouter()
 
@@ -51,17 +60,18 @@ export default function PageHeader({
   }
   const hue = gradientClass.match(/from-([a-z]+)-/)?.[1] ?? 'amber'
   const bar = m ? MODULE[m].bar : (ACCENT[hue] ?? 'bg-amber-400')
+  const badge = noEmoji ? undefined : (emoji ?? (m ? MODULE[m].emoji : undefined))
 
   return (
-    <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 pt-3 pb-3 ${className}`}>
+    <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border px-4 pt-3 pb-3 ${className}`}>
       <div className="flex items-center gap-2">
         <motion.button
           onClick={handleBack}
           aria-label="برگشت"
           whileTap={{ scale: 0.85 }}
-          /* Was text-slate-400: 2.56:1 on white, under the 3:1 floor for a
+          /* Was text-text-secondary: 2.56:1 on white, under the 3:1 floor for a
              non-text control. slate-600 is 7.6:1 and still reads as quiet. */
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-2xl text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+          className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
         >
           {/* RTL: right-pointing chevron = "back". The icon set owns that
               decision (`back`), so this no longer hand-rolls the path. */}
@@ -69,10 +79,13 @@ export default function PageHeader({
         </motion.button>
 
         <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-xl text-slate-800 truncate leading-tight">{title}</h1>
+          <h1 className="font-display font-bold text-card-title text-text-primary truncate">
+            {badge && <span className="mr-1.5" aria-hidden="true">{badge}</span>}
+            {title}
+          </h1>
           <div className="flex items-center gap-2 mt-1">
             <span className={`w-8 h-1 rounded-full ${bar}`} aria-hidden="true" />
-            {subtitle && <p className="text-xs text-slate-600 truncate">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-text-secondary truncate">{subtitle}</p>}
           </div>
         </div>
 

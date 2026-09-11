@@ -76,17 +76,17 @@ export default function CharacterHomePage() {
             mouth={speaking ? actMouth : undefined} className="-mb-2 drop-shadow-lg" />
         </button>
         <Link href="/child/home" aria-label="برگشت به خانه"
-          className="absolute top-3 right-3 w-11 h-11 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-slate-500">
+          className="absolute top-3 right-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
         </Link>
       </div>
 
       <div className="px-4 pt-4 max-w-md mx-auto space-y-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-800">{character.name_persian}</h1>
-          <p className="text-sm text-slate-500 persian-text mt-1">{character.personality}</p>
+          <h1 className="text-2xl font-bold text-text-primary">{character.name_persian}</h1>
+          <p className="text-sm text-text-secondary persian-text mt-1">{character.personality}</p>
           {greeting && (
-            <p className="mt-3 bg-white rounded-2xl shadow-card px-4 py-3 text-slate-700 persian-text text-sm leading-relaxed">
+            <p className="mt-3 bg-white rounded-2xl shadow-card px-4 py-3 text-text-primary persian-text text-sm leading-relaxed">
               «{greeting.text_persian}»
             </p>
           )}
@@ -94,19 +94,16 @@ export default function CharacterHomePage() {
 
         {/* Three doors — chunky, in the friend's module colors */}
         <div className="grid grid-cols-1 gap-3 pt-1">
-          {/* The 🃏 that used to sit on the first door was a structural icon,
-              not content — it named a control, so it followed the same rule as
-              every other affordance and became the games glyph. */}
           <ModuleCard
-            module="games" href={`/child/games/memory?host=${character.slug}`}
+            module="games" glyph="🃏" href={`/child/games/memory?host=${character.slug}`}
             title="با هم بازی کنیم!" sub={`بازی حافظه با ${character.name_persian}`}
           />
           <ModuleCard
-            module="stories" href="/child/story"
+            module="stories" glyph="📖" href="/child/story"
             title="قصه بگو!" sub="برو سراغ قصه‌ها"
           />
           <ModuleCard
-            module="speak" icon="message" href={`/child/friends/${character.slug}/talk`}
+            module="speak" glyph="💬" href={`/child/friends/${character.slug}/talk`}
             title="حرف بزنیم!" sub={`${character.name_persian} گوش می‌کنه و جواب می‌ده`}
           />
         </div>
