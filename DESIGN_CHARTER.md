@@ -15,6 +15,7 @@ Children in the Persian diaspora learning Persian, plus their parents. The child
 ## Illustration and emoji
 - Story covers, scene backdrops, and illustrations are core content, not decoration. Show them large on home and story screens.
 - Colorful emoji (or colored illustrated icons) carry section identity, feedback, and celebration. Monochrome line icons are only for small utility controls and the parent area.
+- For section identity, BottomNav, feedback, and celebration specifically, render the emoji through `<Emoji name="...">` (`apps/web/src/components/shared/Emoji.tsx`, Fluent Emoji "Color" style, `apps/web/public/emoji/`), not a raw emoji character in JSX — it gets a native-glyph fallback if the SVG fails to load. Content emoji (counted objects, board tokens, badge faces, decorative flourishes inside a sentence) and apps/mobile stay native for now.
 
 ## Shape and feel
 - Chunky, rounded, tactile shapes with 3D bottom edges and springy press feedback.

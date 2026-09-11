@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import ParentDoorNav from './ParentDoorNav'
+import Emoji, { type EmojiName } from '../shared/Emoji'
 
 /* Four tabs plus the parent door = five items, which is the ceiling for a
  * bottom bar (and the practical limit at 64px per item on a 360px phone).
@@ -17,11 +18,11 @@ import ParentDoorNav from './ParentDoorNav'
  * (DESIGN_CHARTER.md): a pre-reader picks the tab by its picture. The label
  * under it keeps the readable `text-text-secondary` when inactive — a
  * deliberate contrast fix over the old gray-400 (2.56:1). */
-const NAV_ITEMS = [
-  { href: '/child/home',    emoji: '🏠', label: 'خانه',   ariaLabel: 'صفحه اصلی' },
-  { href: '/child/lesson',  emoji: '📚', label: 'درس‌ها', ariaLabel: 'لیست درس‌ها' },
-  { href: '/child/story',   emoji: '📖', label: 'داستان', ariaLabel: 'داستان‌ها' },
-  { href: '/child/rewards', emoji: '🏆', label: 'جوایز',  ariaLabel: 'جایزه‌های من' },
+const NAV_ITEMS: { href: string; emoji: EmojiName; label: string; ariaLabel: string }[] = [
+  { href: '/child/home',    emoji: 'house',     label: 'خانه',   ariaLabel: 'صفحه اصلی' },
+  { href: '/child/lesson',  emoji: 'books',      label: 'درس‌ها', ariaLabel: 'لیست درس‌ها' },
+  { href: '/child/story',   emoji: 'open-book',  label: 'داستان', ariaLabel: 'داستان‌ها' },
+  { href: '/child/rewards', emoji: 'trophy',     label: 'جوایز',  ariaLabel: 'جایزه‌های من' },
 ]
 
 export default function BottomNav() {
@@ -52,13 +53,13 @@ export default function BottomNav() {
               />
             )}
             <motion.span
-              className={`relative text-2xl leading-none ${active ? '' : 'opacity-75'}`}
+              className={`relative leading-none ${active ? '' : 'opacity-75'}`}
               whileTap={{ scale: 0.78 }}
               transition={{ type: 'spring', stiffness: 500, damping: 18 }}
               aria-hidden="true"
               tabIndex={-1}
             >
-              {nav.emoji}
+              <Emoji name={nav.emoji} size={28} />
             </motion.span>
             <span className={`relative text-xs leading-none ${active ? 'font-bold text-amber-800' : 'font-medium text-text-secondary'}`}>
               {nav.label}

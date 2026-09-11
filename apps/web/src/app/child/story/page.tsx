@@ -11,6 +11,7 @@ import BottomNav from '@/components/child/BottomNav'
 import PageHeader from '@/components/child/PageHeader'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import EmptyState from '@/components/child/EmptyState'
+import Emoji from '@/components/shared/Emoji'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import { pickChild } from '@/lib/activeChild'
 import { SCENE_SLUGS, type SceneSlug } from '@koodakbook/shared'
@@ -151,7 +152,7 @@ export default function StoryListPage() {
                       disabled={busy}
                       className="w-full mt-2 mb-2.5 text-xs font-medium text-purple-700 hover:text-purple-900 disabled:opacity-60"
                     >
-                      {busy ? '...در حال ساخت صدا' : <><span aria-hidden="true">🔊</span> ساخت صدا</>}
+                      {busy ? '...در حال ساخت صدا' : <><Emoji name="speaker-high-volume" size={14} /> ساخت صدا</>}
                     </button>
                   </div>
                 )

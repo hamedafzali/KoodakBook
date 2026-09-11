@@ -11,6 +11,7 @@ import BottomNav from '@/components/child/BottomNav'
 import { clayVars } from '@/components/child/clay'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import Mascot from '@/components/child/Mascot'
+import Emoji from '@/components/shared/Emoji'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import { recognitionSupported, listenOnce } from '@/lib/recognition'
@@ -107,7 +108,7 @@ export default function SpeakPage() {
           ) : null}
           <span className="text-5xl font-bold text-text-primary">{word.persian}</span>
           <span className="text-base text-text-secondary ltr">{word.english}</span>
-          <span className="flex items-center gap-1 text-xs text-amber-700"><span aria-hidden="true">🔊</span> اول گوش کن</span>
+          <span className="flex items-center gap-1 text-xs text-amber-700"><Emoji name="speaker-high-volume" size={16} /> اول گوش کن</span>
         </button>
 
         {/* Mascot feedback */}

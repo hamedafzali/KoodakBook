@@ -54,6 +54,17 @@ SectionTitle) + PageHeader/BottomNav. Parent material in
    of a utility affordance, and never appears in the parent app's chrome.
    *Content* emoji (apples a child counts, board tokens, badge faces) are
    subject matter for `pixel-wizards-charachters`.
+9. **Identity/BottomNav/feedback/celebration emoji render through `<Emoji>`,
+   not a raw character.** `apps/web/src/components/shared/Emoji.tsx` serves
+   Fluent Emoji ("Color" style, one glyph fell back to "Flat" over the 15KB
+   budget) as static SVG from `apps/web/public/emoji/<name>.svg` — an `<img>`
+   with explicit width/height, decorative by default (`alt=""` +
+   `aria-hidden`) unless a Persian `alt` is passed for a glyph that is the
+   only content, and a native-character fallback if the SVG fails to load.
+   Content emoji and confetti/reaction bursts (`MarpeleBoard`'s particle set,
+   `marpele-online`'s reaction picker) stay native — swapping a many-particle
+   effect to `<img>` per particle would be the wrong trade. apps/mobile stays
+   native for now too. License: `public/emoji/LICENSE` (MIT).
 
 ## 2. Type ladder
 

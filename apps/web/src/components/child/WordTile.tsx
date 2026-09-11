@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { Word } from '@koodakbook/shared'
 import { wordEmoji } from '@koodakbook/shared'
+import Emoji from '@/components/shared/Emoji'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakPersian } from '@/lib/speech'
@@ -80,7 +81,7 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
       </motion.span>
       <span lang="en" className="text-text-secondary text-base ltr">{word.english}</span>
       <span className="text-xs text-amber-500 flex items-center gap-1 mt-0.5" aria-hidden="true">
-        🔊 بشنو
+        <Emoji name="speaker-high-volume" size={14} /> بشنو
       </span>
       {recorded && <audio ref={audioRef} src={recorded} preload="none" />}
     </motion.button>

@@ -17,6 +17,7 @@ import {
 import { Icon } from '@/components/icons'
 import { SectionTitle, ClayButton } from '@/components/child/kit'
 import { ClayBar, clayVars, toneVars, type Tone } from '@/components/child/clay'
+import Emoji from '@/components/shared/Emoji'
 
 const DEMO = 'ب' // base consonant used to demonstrate each vowel mark
 
@@ -301,7 +302,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
           style={{ ...clayVars('phonics'), '--clay-radius': '9999px' } as React.CSSProperties}
           className="clay w-28 h-28 flex items-center justify-center touch-target-child"
           aria-label="دوباره گوش کن">
-          <span className="text-5xl" aria-hidden="true">🔊</span>
+          <Emoji name="speaker-high-volume" size={56} />
         </motion.button>
         <p className="text-text-primary persian-text">کدام را شنیدی؟</p>
 

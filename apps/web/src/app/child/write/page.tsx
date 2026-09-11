@@ -8,6 +8,7 @@ import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
 import { ClayButton } from '@/components/child/clay'
+import Emoji from '@/components/shared/Emoji'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import type { Letter } from '@koodakbook/shared'
@@ -57,7 +58,7 @@ export default function WritePage() {
           >
             <span className="text-2xl font-bold text-text-primary">{letter.character}</span>
             <span className="text-text-secondary">{letter.name_persian}</span>
-            <span className="text-amber-500 text-lg" aria-hidden="true">🔊</span>
+            <Emoji name="speaker-high-volume" size={20} />
           </button>
         </div>
 

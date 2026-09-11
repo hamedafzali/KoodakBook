@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import type { Badge } from '@koodakbook/shared'
 import Mascot from './Mascot'
+import Emoji from '../shared/Emoji'
 import { playComplete } from '@/lib/sounds'
 
 interface Props {
@@ -96,10 +97,10 @@ export default function RewardPopup({ badge, onClose }: Props) {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.3 }}
-            className="text-6xl mb-3"
+            className="mb-3"
             aria-hidden="true"
           >
-            🏆
+            <Emoji name="trophy" size={64} />
           </motion.div>
 
           <motion.h2
@@ -132,7 +133,7 @@ export default function RewardPopup({ badge, onClose }: Props) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            ممنون! 🎉
+            ممنون! <Emoji name="party-popper" size={20} />
           </motion.button>
         </motion.div>
       </motion.div>
