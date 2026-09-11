@@ -11,7 +11,7 @@ import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { speakOrPlay, speakOrPlayFirst, initSpeech } from '@/lib/speech'
 import { audioCandidates } from '@/lib/premium'
 import {
-  SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl,
+  SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl, toPersianDigits,
   type Syllable,
 } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
@@ -285,8 +285,8 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
             <h1 className="font-bold text-text-primary text-sm">گوش کن و انتخاب کن</h1>
-            <span className="text-sm font-bold tabular-nums" style={{ color: 'var(--ramp-phonics-ink)' }}>
-              {idx + 1}/{questions.length}
+            <span className="text-sm font-bold tabular-nums persian-text" style={{ color: 'var(--ramp-phonics-ink)' }}>
+              {toPersianDigits(idx + 1)} از {toPersianDigits(questions.length)}
             </span>
           </div>
           <ClayBar ramp="phonics" value={(idx / questions.length) * 100} label="پیشرفت تمرین" />

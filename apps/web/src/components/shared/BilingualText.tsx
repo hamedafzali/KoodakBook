@@ -19,7 +19,7 @@ export default function BilingualText({ persian, english, persianClassName, engl
         <p
           lang="en"
           dir="ltr"
-          className={`text-left text-gray-500 ${englishClassName ?? 'text-base'}`}
+          className={`text-left text-text-secondary ${englishClassName ?? 'text-base'}`}
         >
           {english}
         </p>

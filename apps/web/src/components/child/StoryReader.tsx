@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { parseSceneRef, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
+import { parseSceneRef, toPersianDigits, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
 import BilingualText from '../shared/BilingualText'
 import SceneBackdrop from './SceneBackdrop'
 import { mediaUrl } from '@/lib/media'
@@ -107,7 +107,11 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
             </motion.button>
           )}
           <h1 className="flex-1 font-bold text-gray-800 truncate persian-text">{story.title_persian}</h1>
-          <span className="text-sm text-gray-400 shrink-0">{currentPage + 1} / {story.pages.length}</span>
+          {/* Persian ordinal reads correctly in RTL on its own — an LTR
+              "N / total" string flips under bidi (e.g. "12 / 1"). */}
+          <span className="text-sm text-text-secondary shrink-0 persian-text">
+            {toPersianDigits(currentPage + 1)} از {toPersianDigits(story.pages.length)}
+          </span>
         </div>
 
         {/* Progress path — a trail of stepping stones, one per page; the

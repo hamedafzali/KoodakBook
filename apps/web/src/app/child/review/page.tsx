@@ -13,7 +13,7 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import type { Child, Word, ReviewItem } from '@koodakbook/shared'
-import { buildReviewQuestions, buildPaddingQuestions } from '@koodakbook/shared'
+import { buildReviewQuestions, buildPaddingQuestions, toPersianDigits } from '@koodakbook/shared'
 
 // Frustration loop (mig-051): the backend attaches `easing`/`needsReteach` to
 // each due word — thresholds live server-side (frustration.ts) so this file
@@ -140,7 +140,9 @@ export default function ReviewPage() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
             <h1 className="font-bold text-text-primary text-sm">مرور کلمه‌ها 🔄</h1>
-            <span className="text-sm font-bold text-amber-600">{idx + 1}/{allQuestions.length}</span>
+            <span className="text-sm font-bold text-amber-600 persian-text">
+              {toPersianDigits(idx + 1)} از {toPersianDigits(allQuestions.length)}
+            </span>
           </div>
           <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-surface-subtle rounded-full overflow-hidden">
             <motion.div className="h-full bg-brand-gradient rounded-full" animate={{ width: `${progress}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />

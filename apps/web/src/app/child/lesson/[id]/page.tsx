@@ -14,6 +14,7 @@ import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import { pickChild } from '@/lib/activeChild'
 import type { Lesson, LessonItem, Badge, Child, Promotion } from '@koodakbook/shared'
+import { toPersianDigits } from '@koodakbook/shared'
 
 type LessonWithItems = Lesson & { items: LessonItem[] }
 
@@ -224,7 +225,9 @@ export default function LessonPage() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1.5">
             <h1 className="font-bold text-text-primary text-sm truncate">{lesson.title}</h1>
-            <span className="text-sm font-bold text-amber-600 shrink-0 mr-2">{currentIdx + 1}/{questions.length}</span>
+            <span className="text-sm font-bold text-amber-600 shrink-0 mr-2 persian-text">
+              {toPersianDigits(currentIdx + 1)} از {toPersianDigits(questions.length)}
+            </span>
           </div>
           <div
             role="progressbar"
