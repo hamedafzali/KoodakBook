@@ -13,11 +13,15 @@ const vazirmatn = Vazirmatn({
 // the full Persian set (پ چ ژ گ ک ی ۀ ZWNJ, Persian digits) with proper
 // init/medi/fina shaping. Letters being taught and all body text stay in
 // Vazirmatn: standard letterforms matter for learning. See DESIGN_CHARTER.md.
+//
+// Every `font-display` heading in the app pairs it with `font-bold` (700) —
+// nothing uses 500 or 800 — so only 700 is loaded. Re-audit
+// (`grep -rn font-display apps/web/src`) before adding another weight here.
 const baloo = Baloo_Bhaijaan_2({
   subsets: ['arabic'],
   variable: '--font-baloo',
   display: 'swap',
-  weight: ['500', '700', '800'],
+  weight: ['700'],
 })
 
 // Needed to resolve absolute URLs for OG/Twitter images and the file-based
