@@ -125,14 +125,14 @@ function Setup({ childName, characters, onStart, onBack }: {
             <button
               onClick={() => setExtraHumans(n => Math.max(0, n - 1))}
               aria-label="یک بازیکن کمتر"
-              className="w-11 h-11 rounded-xl bg-games-soft text-games-ink text-xl font-bold flex items-center justify-center"
+              className="w-14 h-14 rounded-xl bg-games-soft text-games-ink text-xl font-bold flex items-center justify-center"
             >−</button>
             <span className="text-xl font-bold text-text-primary min-w-[1.5rem] text-center">{toPersianDigits(extraHumans)}</span>
             <button
               disabled={full}
               onClick={() => setExtraHumans(n => Math.min(MAX_PLAYERS - 1 - chosen.length, n + 1))}
               aria-label="یک بازیکن بیشتر"
-              className="w-11 h-11 rounded-xl bg-games-soft text-games-ink text-xl font-bold flex items-center justify-center disabled:opacity-40"
+              className="w-14 h-14 rounded-xl bg-games-soft text-games-ink text-xl font-bold flex items-center justify-center disabled:opacity-40"
             >+</button>
           </div>
         </section>

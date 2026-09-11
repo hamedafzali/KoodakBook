@@ -97,7 +97,7 @@ export default function SpeakPage() {
         {/* Word card */}
         <button
           onClick={() => { playTap(); speakOrPlay(word.audio_url, word.persian) }}
-          className="w-full max-w-sm bg-white rounded-2xl shadow-card p-6 flex flex-col items-center gap-2 touch-target"
+          className="w-full max-w-sm bg-white rounded-2xl shadow-card p-6 flex flex-col items-center gap-2 touch-target-child"
           aria-label={`بشنو: ${word.persian}`}
         >
           {image ? (
@@ -135,7 +135,7 @@ export default function SpeakPage() {
             whileTap={{ scale: 0.9 }}
             animate={phase === 'listening' ? { scale: [1, 1.12, 1] } : { scale: 1 }}
             transition={phase === 'listening' ? { duration: 1, repeat: Infinity } : {}}
-            className="w-24 h-24 rounded-full flex items-center justify-center shadow-raised touch-target text-white"
+            className="w-24 h-24 rounded-full flex items-center justify-center shadow-raised touch-target-child text-white"
             /* Recording is a state, not a module, so the live mic keeps a red —
                but rose-600 rather than red-500: it has to read as "different
                from resting" against the speak ramp beside it, and at 500 it

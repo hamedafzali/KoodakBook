@@ -96,7 +96,7 @@ export default function ReadAloud({
                 </ClayButton>
               )}
               <button onClick={onDone}
-                className="min-h-[48px] px-5 text-text-secondary font-bold persian-text">
+                className="min-h-[56px] px-5 text-text-secondary font-bold persian-text">
                 الان نه
               </button>
             </div>
@@ -135,12 +135,12 @@ export default function ReadAloud({
               <ClayButton ramp="speak" size="lg" icon="send" onClick={send} disabled={sending}>
                 {sending ? 'در حال ذخیره…' : 'نگهش دار'}
               </ClayButton>
-              <ClayButton ramp="review" size="md" icon="retry"
+              <ClayButton ramp="review" size="lg" icon="retry"
                 onClick={() => { reset(); setError(null); start() }}>
                 دوباره بخوان
               </ClayButton>
               <button onClick={onDone}
-                className="min-h-[48px] text-text-secondary font-bold persian-text">
+                className="min-h-[56px] text-text-secondary font-bold persian-text">
                 بی‌خیال
               </button>
             </div>

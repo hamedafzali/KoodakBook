@@ -346,9 +346,18 @@ body {
 }
 
 /* ── Touch Targets ─────────────────────────────────────────────────────────── */
+/* Adult standard (WCAG 2.2 AA): used by parent/admin screens. */
 .touch-target {
   min-height: 44px;
   min-width: 44px;
+}
+
+/* Children's standard (DESIGN_CHARTER.md): every tappable element on a
+   /child screen — nav tabs, chips, answer buttons, game cards, the dice
+   button. Visuals can stay smaller; padding extends the hit area. */
+.touch-target-child {
+  min-height: 56px;
+  min-width: 56px;
 }
 
 /* ── Child App Background ──────────────────────────────────────────────────── */

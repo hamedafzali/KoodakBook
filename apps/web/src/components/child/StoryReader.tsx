@@ -99,7 +99,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
               onClick={onBack}
               whileTap={{ scale: 0.85 }}
               aria-label="برگشت به لیست داستان‌ها"
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 18l6-6-6-6" />
@@ -190,7 +190,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 onClick={() => { playTap(); readPage() }}
                 whileTap={{ scale: 0.9 }}
                 aria-label="پخش دوباره‌ی صدای این صفحه"
-                className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px]"
+                className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[56px]"
               >
                 <span className="text-xl" aria-hidden="true">🔊</span>
                 <span>دوباره بشنو</span>
@@ -210,7 +210,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           disabled={currentPage === 0}
           whileTap={{ scale: 0.93 }}
           aria-label="صفحه قبلی"
-          className="flex-1 py-4 rounded-md border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px] touch-target"
+          className="flex-1 py-4 rounded-md border-2 border-gray-200 text-gray-500 font-bold disabled:opacity-30 min-h-[56px] touch-target-child"
         >
           صفحه قبل
         </motion.button>
@@ -219,7 +219,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.96 }}
           aria-label={isLast ? 'پایان داستان' : 'صفحه بعدی'}
-          className="flex-[2] py-4 rounded-md bg-brand-gradient text-on-brand font-bold text-lg shadow-md min-h-[56px] touch-target"
+          className="flex-[2] py-4 rounded-md bg-brand-gradient text-on-brand font-bold text-lg shadow-md min-h-[56px] touch-target-child"
         >
           {isLast ? <><span aria-hidden="true">✅</span> تمام شد!</> : 'بعدی ←'}
         </motion.button>

@@ -173,7 +173,7 @@ export default function KidLoginPage() {
                     disabled={loading}
                     whileTap={{ scale: 0.9 }}
                     aria-label={c.name_persian}
-                    className="bg-white rounded-2xl p-2 shadow-sm hover:shadow-md transition-shadow disabled:opacity-50 touch-target"
+                    className="bg-white rounded-2xl p-2 shadow-sm hover:shadow-md transition-shadow disabled:opacity-50 touch-target-child"
                   >
                     <CharacterAvatar slug={c.slug} size={72} />
                   </motion.button>

@@ -277,7 +277,7 @@ export default function MarpeleOnlinePage() {
                 <span className="text-5xl">{invite.fromEmoji || '🧒'}</span>
                 <p className="text-center font-bold text-text-primary persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
                 <div className="flex gap-2.5">
-                  <button onClick={acceptInvite} style={clayVars('games')} className="clay font-bold px-6 py-3 min-h-[48px]">بریم! 🎲</button>
+                  <button onClick={acceptInvite} style={clayVars('games')} className="clay font-bold px-6 py-3 min-h-[56px]">بریم! 🎲</button>
                   <button onClick={declineInvite} className="bg-surface-subtle text-text-primary font-bold rounded-xl px-6 py-3">نه</button>
                 </div>
               </motion.div>

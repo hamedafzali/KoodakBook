@@ -125,7 +125,7 @@ export default function RewardPopup({ badge, onClose }: Props) {
           <motion.button
             ref={closeButtonRef}
             onClick={handleClose}
-            className="bg-brand-gradient text-on-brand font-bold py-3 px-8 rounded-md text-lg shadow-md w-full min-h-[52px] touch-target"
+            className="bg-brand-gradient text-on-brand font-bold py-3 px-8 rounded-md text-lg shadow-md w-full min-h-[56px] touch-target-child"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.96 }}
             initial={{ opacity: 0, y: 10 }}

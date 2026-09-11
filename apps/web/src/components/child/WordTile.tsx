@@ -42,7 +42,7 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
   return (
     <motion.button
       onClick={handleClick}
-      className={`flex flex-col items-center gap-2 bg-white shadow-md w-full min-h-[64px] touch-target ${containerClasses[size]}`}
+      className={`flex flex-col items-center gap-2 bg-white shadow-md w-full min-h-[64px] touch-target-child ${containerClasses[size]}`}
       whileTap={tap.animated ? { scale: tap.scale } : undefined}
       whileHover={{ scale: 1.03 }}
       transition={tap.transition}

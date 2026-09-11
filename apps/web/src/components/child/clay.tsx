@@ -77,7 +77,11 @@ type ButtonSize = 'sm' | 'md' | 'lg'
 /* Sizes are floors, not paddings: 56px for a primary action, 48px for anything
  * in a list. Both come from NN/g's child touch-target research, and both are
  * above the 44px WCAG 2.5.8 minimum rather than exactly at it — a five-year-old
- * is not aiming, they are stabbing. */
+ * is not aiming, they are stabbing.
+ *
+ * DESIGN_CHARTER.md's floor for children is 56px, though — sm/md stay for
+ * dense in-list rows where the row itself (not just the button) is the hit
+ * target, but any button that IS the whole tap target uses `lg`. */
 const BTN: Record<ButtonSize, string> = {
   sm: 'min-h-[40px] px-4 text-sm gap-1.5',
   md: 'min-h-[48px] px-5 text-base gap-2',

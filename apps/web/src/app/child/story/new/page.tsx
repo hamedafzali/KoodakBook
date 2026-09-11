@@ -121,7 +121,7 @@ export default function NewStoryPage() {
           disabled={!child}
           whileTap={{ scale: 0.97 }}
           style={clayVars('stories')}
-          className="clay w-full mt-6 font-bold py-4 text-lg disabled:opacity-50 touch-target min-h-[56px]"
+          className="clay w-full mt-6 font-bold py-4 text-lg disabled:opacity-50 touch-target-child min-h-[56px]"
         >
           بساز! ✨
         </motion.button>

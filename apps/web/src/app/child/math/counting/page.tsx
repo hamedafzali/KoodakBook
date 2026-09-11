@@ -123,7 +123,7 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
                 whileTap={{ scale: 0.85 }}
                 animate={tapped.has(i) ? { scale: [1, 1.35, 1.1], rotate: [0, 10, 0] } : {}}
                 aria-label={tapped.has(i) ? `شمرده شد` : `بشمار`}
-                className={`text-5xl w-16 h-16 rounded-2xl flex items-center justify-center touch-target transition ${
+                className={`text-5xl w-16 h-16 rounded-2xl flex items-center justify-center touch-target-child transition ${
                   tapped.has(i) ? 'bg-emerald-100' : 'bg-emerald-50 hover:bg-emerald-100'}`}>
                 {r.emoji}
               </motion.button>
@@ -148,7 +148,7 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
               : 'bg-white border-border text-text-primary'
             return (
               <motion.button key={n} onClick={() => answer(n)} whileTap={{ scale: 0.94 }}
-                className={`rounded-2xl border-2 py-5 shadow-card font-bold touch-target ${cls}`}
+                className={`rounded-2xl border-2 py-5 shadow-card font-bold touch-target-child ${cls}`}
                 aria-label={numberToPersianWord(n)}>
                 <span className="text-3xl block">{toPersianDigits(n)}</span>
                 <span className="text-xs block mt-1 opacity-70 persian-text">{numberToPersianWord(n)}</span>

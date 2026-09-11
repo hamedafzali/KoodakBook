@@ -153,7 +153,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
               : 'bg-white border-border text-text-primary'
             return (
               <motion.button key={n} onClick={() => pick(n)} whileTap={{ scale: 0.94 }}
-                className={`rounded-2xl border-2 py-4 shadow-card font-bold touch-target ${cls}`}
+                className={`rounded-2xl border-2 py-4 shadow-card font-bold touch-target-child ${cls}`}
                 aria-label={`${numberToPersianWord(n)} تومان`}>
                 <span className="text-2xl block">{toPersianDigits(n)}</span>
                 <span className="text-[10px] block opacity-70 persian-text">تومان</span>

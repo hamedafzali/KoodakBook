@@ -109,7 +109,7 @@ export default function TalkPage() {
             mood={busy === 'think' ? 'thinking' : mood} className="-mb-1 drop-shadow-lg" />
         </div>
         <Link href={`/child/friends/${slug}`} aria-label="برگشت"
-          className="absolute top-3 right-3 w-11 h-11 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
+          className="absolute top-3 right-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
         </Link>
       </div>

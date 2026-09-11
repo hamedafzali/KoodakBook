@@ -124,7 +124,7 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
               : 'bg-white border-border text-text-primary'
             return (
               <motion.button key={n} onClick={() => pick(n)} whileTap={{ scale: 0.94 }}
-                className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target ${cls}`} dir="ltr"
+                className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target-child ${cls}`} dir="ltr"
                 aria-label={numberToPersianWord(n)}>
                 {optionLabel(n)}
               </motion.button>

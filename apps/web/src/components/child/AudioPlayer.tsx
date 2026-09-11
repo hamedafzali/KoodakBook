@@ -49,7 +49,7 @@ export default function AudioPlayer({ src, autoPlay = false, className, label }:
     <motion.button
       onClick={handleClick}
       whileTap={{ scale: 0.9 }}
-      className={`flex items-center gap-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-full px-4 py-2.5 text-sm font-medium transition-colors min-h-[44px] touch-target ${className ?? ''}`}
+      className={`flex items-center gap-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-full px-4 py-2.5 text-sm font-medium transition-colors touch-target-child ${className ?? ''}`}
       aria-label={ariaLabel}
       aria-pressed={playing}
     >

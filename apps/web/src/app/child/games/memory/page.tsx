@@ -158,7 +158,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
                 onClick={() => flip(card)}
                 whileTap={{ scale: isOpen ? 1 : 0.93 }}
                 aria-label={isOpen ? card.persian : 'کارت بسته'}
-                className="relative h-24 [perspective:600px] touch-target"
+                className="relative h-24 [perspective:600px] touch-target-child"
               >
                 <motion.div
                   className="absolute inset-0 [transform-style:preserve-3d]"

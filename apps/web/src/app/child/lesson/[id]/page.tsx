@@ -183,7 +183,7 @@ export default function LessonPage() {
         <motion.button
           onClick={() => router.push('/child/home')}
           style={clayVars('lessons')}
-          className="clay w-full max-w-xs font-bold py-4 text-lg touch-target min-h-[56px]"
+          className="clay w-full max-w-xs font-bold py-4 text-lg touch-target-child min-h-[56px]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
@@ -214,7 +214,7 @@ export default function LessonPage() {
           onClick={() => router.back()}
           whileTap={{ scale: 0.85 }}
           aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
+          className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18l6-6-6-6" />

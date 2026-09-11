@@ -41,7 +41,7 @@ export default function BottomNav() {
             href={nav.href}
             aria-label={nav.ariaLabel}
             aria-current={active ? 'page' : undefined}
-            className="relative flex flex-col items-center gap-0.5 min-w-[64px] min-h-[52px] justify-center rounded-2xl transition-colors"
+            className="relative flex flex-col items-center gap-0.5 min-w-[64px] min-h-[56px] justify-center rounded-2xl transition-colors"
           >
             {active && (
               <motion.div

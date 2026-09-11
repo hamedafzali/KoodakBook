@@ -71,7 +71,7 @@ export default function PageHeader({
           whileTap={{ scale: 0.85 }}
           /* Was text-text-secondary: 2.56:1 on white, under the 3:1 floor for a
              non-text control. slate-600 is 7.6:1 and still reads as quiet. */
-          className="min-w-[48px] min-h-[48px] flex items-center justify-center rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
+          className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-2xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
         >
           {/* RTL: right-pointing chevron = "back". The icon set owns that
               decision (`back`), so this no longer hand-rolls the path. */}

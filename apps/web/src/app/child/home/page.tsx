@@ -198,7 +198,7 @@ export default function ChildHomePage() {
           ))}
         </div>
         <button onClick={() => router.push('/parent/dashboard')}
-          className="text-sm text-text-secondary hover:text-text-primary transition-colors persian-text mt-2 inline-flex items-center gap-1.5 min-h-[44px]">
+          className="text-sm text-text-secondary hover:text-text-primary transition-colors persian-text mt-2 inline-flex items-center gap-1.5 min-h-[56px]">
           <Icon name="back" size="sm" />
           بازگشت به پنل والدین
         </button>
@@ -459,11 +459,11 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
             more content, so it can't point the wrong way. */}
         {!ends.end && (
           <button onClick={() => nudge(true)} aria-label="بعدی"
-            className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-surface-subtle shadow-lg ring-1 ring-border items-center justify-center text-2xl text-text-secondary hover:text-brand-text hover:scale-110 active:scale-95 transition">‹</button>
+            className="hidden sm:flex absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-b from-white to-surface-subtle shadow-lg ring-1 ring-border items-center justify-center text-2xl text-text-secondary hover:text-brand-text hover:scale-110 active:scale-95 transition">‹</button>
         )}
         {!ends.start && (
           <button onClick={() => nudge(false)} aria-label="قبلی"
-            className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-gradient-to-b from-white to-surface-subtle shadow-lg ring-1 ring-border items-center justify-center text-2xl text-text-secondary hover:text-brand-text hover:scale-110 active:scale-95 transition">›</button>
+            className="hidden sm:flex absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-14 h-14 rounded-full bg-gradient-to-b from-white to-surface-subtle shadow-lg ring-1 ring-border items-center justify-center text-2xl text-text-secondary hover:text-brand-text hover:scale-110 active:scale-95 transition">›</button>
         )}
       </div>
     </section>

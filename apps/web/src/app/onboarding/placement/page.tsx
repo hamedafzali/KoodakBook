@@ -151,7 +151,7 @@ function PlacementInner() {
         </p>
         <motion.button whileTap={{ scale: 0.94, y: 4 }}
           onClick={() => { playTap(); stopSpeaking(); setPhase('question') }}
-          className="mt-8 bg-amber-500 text-white font-bold text-xl rounded-2xl px-12 py-4 shadow-lg border-b-[6px] border-amber-600 touch-target">
+          className="mt-8 bg-amber-500 text-white font-bold text-xl rounded-2xl px-12 py-4 shadow-lg border-b-[6px] border-amber-600 touch-target-child">
           بزن بریم!
         </motion.button>
       </div>
@@ -195,7 +195,7 @@ function PlacementInner() {
         {q.mode === 'listen' ? (
           <button
             onClick={() => { playTap(); const correct = q.choices.find(c => c.id === q.correct_id); speakOrPlay(q.audio_url, correct?.persian ?? '') }}
-            className="w-28 h-28 rounded-full bg-white shadow-lg flex items-center justify-center text-5xl touch-target active:scale-95 transition-transform"
+            className="w-28 h-28 rounded-full bg-white shadow-lg flex items-center justify-center text-5xl touch-target-child active:scale-95 transition-transform"
             aria-label="دوباره گوش کن"
           >
             <Icon name="listen" size="lg" />
@@ -214,7 +214,7 @@ function PlacementInner() {
               onClick={() => answer(c)}
               disabled={phase !== 'question'}
               whileTap={{ scale: 0.92 }}
-              className="aspect-square bg-white rounded-[1.5rem] shadow-md flex flex-col items-center justify-center gap-1 disabled:opacity-60 touch-target"
+              className="aspect-square bg-white rounded-[1.5rem] shadow-md flex flex-col items-center justify-center gap-1 disabled:opacity-60 touch-target-child"
               aria-label={c.persian}
             >
               <span className={c.kind === 'letter' ? 'text-3xl sm:text-5xl font-bold text-gray-800' : 'text-3xl sm:text-5xl'}>{choiceFace(c)}</span>

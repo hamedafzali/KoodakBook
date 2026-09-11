@@ -52,7 +52,7 @@ export default function WritePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => { playTap(); speakOrPlay(letter.audio_url, letter.name_persian) }}
-            className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[44px]"
+            className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[56px]"
             aria-label={`بشنو: ${letter.name_persian}`}
           >
             <span className="text-2xl font-bold text-text-primary">{letter.character}</span>
@@ -181,7 +181,7 @@ function TracingCanvas({ letter }: { letter: string }) {
       <motion.button
         onClick={clear}
         whileTap={{ scale: 0.94 }}
-        className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[44px] ${
+        className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[56px] ${
           hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-surface-subtle text-text-secondary'
         }`}
       >

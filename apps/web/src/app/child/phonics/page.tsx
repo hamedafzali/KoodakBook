@@ -150,7 +150,7 @@ export default function PhonicsPage() {
             یک بار دیگه
           </ClayButton>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
-            className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold min-h-[52px]">
+            className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold min-h-[56px]">
             برگشت به خانه 🏠
           </motion.button>
         </div>
@@ -188,7 +188,7 @@ export default function PhonicsPage() {
                 <motion.button key={v.key} onClick={() => demoMerge(DEMO, v.mark, v.namePersian, syll, 'b' + v.latin)}
                   whileTap={{ y: 4 }} transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                   style={toneVars(VOWEL_TONES[i % VOWEL_TONES.length])}
-                  className="clay p-4 flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target"
+                  className="clay p-4 flex flex-col items-center gap-1 min-h-[110px] justify-center touch-target-child"
                   aria-label={`${v.namePersian}: ${syll}`}>
                   <span className="text-5xl font-bold leading-none drop-shadow-sm">{syll}</span>
                   <span className="text-sm font-medium mt-1">{v.namePersian}</span>
@@ -211,7 +211,7 @@ export default function PhonicsPage() {
                 const slug = c.latin + v.latin
                 return (
                   <motion.button key={slug} onClick={() => demoMerge(c.ch, v.mark, v.namePersian, text, slug)} whileTap={{ scale: 0.92 }}
-                    className="bg-white rounded-2xl py-3 shadow-card flex flex-col items-center gap-0.5 touch-target"
+                    className="bg-white rounded-2xl py-3 shadow-card flex flex-col items-center gap-0.5 touch-target-child"
                     aria-label={`بخوان: ${text}`}>
                     <span className="text-3xl font-bold text-text-primary">{text}</span>
                     <span className="text-[11px] text-text-secondary ltr">{slug}</span>
@@ -279,7 +279,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
     <div className="min-h-screen child-bg flex flex-col">
       <div className="bg-white/90 backdrop-blur-md border-b border-border px-5 py-3 flex items-center gap-3">
         <motion.button onClick={onExit} whileTap={{ scale: 0.85 }} aria-label="برگشت"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle">
+          className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle">
           <Icon name="back" size="md" strokeWidth={2.5} />
         </motion.button>
         <div className="flex-1">
@@ -299,7 +299,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
           /* The material owns its radius — a `rounded-full` class would lose to
              the unlayered `.clay` rule, so the circle comes through the var. */
           style={{ ...clayVars('phonics'), '--clay-radius': '9999px' } as React.CSSProperties}
-          className="clay w-28 h-28 flex items-center justify-center touch-target"
+          className="clay w-28 h-28 flex items-center justify-center touch-target-child"
           aria-label="دوباره گوش کن">
           <span className="text-5xl" aria-hidden="true">🔊</span>
         </motion.button>
@@ -321,7 +321,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
                 : 'bg-white border-border text-text-primary'
               return (
                 <motion.button key={opt.slug} onClick={() => choose(opt.slug)} whileTap={{ scale: 0.95 }}
-                  className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target ${cls}`}
+                  className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target-child ${cls}`}
                   aria-label={`انتخاب ${opt.text}`}>
                   {opt.text}
                 </motion.button>
