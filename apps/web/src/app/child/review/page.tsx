@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import confetti from 'canvas-confetti'
+import { celebrate } from '@/lib/confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
@@ -80,7 +80,7 @@ export default function ReviewPage() {
   useEffect(() => {
     if (!done || firedRef.current) return
     firedRef.current = true
-    confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 }, colors: ['#f97316', '#22c55e', '#3b82f6'] })
+    celebrate({ particleCount: 90, spread: 80, origin: { y: 0.5 }, colors: ['#f97316', '#22c55e', '#3b82f6'] })
     playComplete()
   }, [done])
 

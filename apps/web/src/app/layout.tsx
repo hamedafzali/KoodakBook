@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Vazirmatn, Baloo_Bhaijaan_2 } from 'next/font/google'
+import MotionProvider from '@/components/shared/MotionProvider'
 import './globals.css'
 
 const vazirmatn = Vazirmatn({
@@ -96,7 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           رفتن به محتوای اصلی
         </a>
         <main id="main-content">
-          {children}
+          <MotionProvider>{children}</MotionProvider>
         </main>
       </body>
     </html>

@@ -4,7 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { motion, AnimatePresence } from 'framer-motion'
-import confetti from 'canvas-confetti'
+import { celebrate } from '@/lib/confetti'
 import Mascot from '@/components/child/Mascot'
 import { clayVars } from '@/components/child/clay'
 import QuizCard, { type QuizQuestion, type QuizMode } from '@/components/child/QuizCard'
@@ -85,7 +85,7 @@ export default function LessonPage() {
   useEffect(() => {
     if (!completed || completedFiredRef.current) return
     completedFiredRef.current = true
-    confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 }, colors: ['#f97316','#eab308','#22c55e','#3b82f6'] })
+    celebrate({ particleCount: 100, spread: 80, origin: { y: 0.5 }, colors: ['#f97316','#eab308','#22c55e','#3b82f6'] })
     playComplete()
   }, [completed])
 

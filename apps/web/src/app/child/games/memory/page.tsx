@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import confetti from 'canvas-confetti'
+import { celebrate } from '@/lib/confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
@@ -93,7 +93,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
   useEffect(() => {
     if (done) {
       playComplete()
-      confetti({ particleCount: 120, spread: 90, origin: { y: 0.4 }, colors: ['#a78bfa', '#f472b6', '#fbbf24'] })
+      celebrate({ particleCount: 120, spread: 90, origin: { y: 0.4 }, colors: ['#a78bfa', '#f472b6', '#fbbf24'] })
       const praise = pickLine(host, 'praise')
       if (praise) setTimeout(() => speakOrPlay(praise.audio_url, praise.text_persian), 500)
     }

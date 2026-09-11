@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import confetti from 'canvas-confetti'
+import { celebrate } from '@/lib/confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
@@ -74,7 +74,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
   const done = idx >= ROUNDS
 
   useEffect(() => {
-    if (done) { playComplete(); confetti({ particleCount: 110, spread: 85, origin: { y: 0.45 }, colors: ['#fbbf24', '#fb923c', '#4ade80'] }) }
+    if (done) { playComplete(); celebrate({ particleCount: 110, spread: 85, origin: { y: 0.45 }, colors: ['#fbbf24', '#fb923c', '#4ade80'] }) }
   }, [done])
 
   useEffect(() => {

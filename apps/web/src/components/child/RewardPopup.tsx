@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import confetti from 'canvas-confetti'
+import { celebrate } from '@/lib/confetti'
 import type { Badge } from '@koodakbook/shared'
 import Mascot from './Mascot'
 import Emoji from '../shared/Emoji'
@@ -21,8 +21,8 @@ export default function RewardPopup({ badge, onClose }: Props) {
     playComplete()
 
     const burst = () => {
-      confetti({ particleCount: 80, spread: 70, origin: { y: 0.55 }, colors: ['#f97316','#eab308','#22c55e','#3b82f6','#ec4899'] })
-      confetti({ particleCount: 40, spread: 120, origin: { y: 0.55 }, startVelocity: 20, colors: ['#fbbf24','#fb923c','#f43f5e'] })
+      celebrate({ particleCount: 80, spread: 70, origin: { y: 0.55 }, colors: ['#f97316','#eab308','#22c55e','#3b82f6','#ec4899'] })
+      celebrate({ particleCount: 40, spread: 120, origin: { y: 0.55 }, startVelocity: 20, colors: ['#fbbf24','#fb923c','#f43f5e'] })
     }
     burst()
     const t2 = setTimeout(burst, 600)
