@@ -52,7 +52,7 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={() => router.push('/parent/dashboard')}
-          className="flex items-center gap-1 text-sm text-gray-400 hover:text-amber-600 transition-colors mb-3"
+          className="flex items-center gap-1 text-sm text-text-secondary hover:text-amber-600 transition-colors mb-3"
         >
           <span aria-hidden="true">→</span> بازگشت به پنل والدین
         </button>
@@ -67,7 +67,7 @@ export default function OnboardingPage() {
             <Mascot size={80} mood="happy" />
           </motion.div>
           <h1 className="text-xl font-bold text-gray-800">معرفی کودک</h1>
-          <p className="text-sm text-gray-500 mt-1 persian-text">بیایید با هم شروع کنیم</p>
+          <p className="text-sm text-text-secondary mt-1 persian-text">بیایید با هم شروع کنیم</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
@@ -89,7 +89,7 @@ export default function OnboardingPage() {
 
           <div>
             <label htmlFor="birth-year" className="block text-sm font-medium text-gray-700 mb-1.5">
-              سال تولد <span className="text-gray-400 font-normal">(اختیاری)</span>
+              سال تولد <span className="text-text-secondary font-normal">(اختیاری)</span>
             </label>
             <input
               id="birth-year"

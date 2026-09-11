@@ -35,7 +35,7 @@ export default function ChildRail() {
             aria-label={nav.ariaLabel}
             aria-current={active ? 'page' : undefined}
             className={`flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-colors ${
-              active ? 'bg-amber-100 text-amber-700' : 'text-gray-400 hover:bg-amber-50 hover:text-gray-600'
+              active ? 'bg-amber-100 text-amber-700' : 'text-text-secondary hover:bg-amber-50 hover:text-gray-600'
             }`}
           >
             <motion.span className="leading-none" whileHover={{ scale: 1.12 }} whileTap={{ scale: 0.85 }}>

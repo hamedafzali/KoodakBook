@@ -16,7 +16,7 @@ export default function LoadingScreen({ message = 'در حال بارگذاری.
         <Mascot size={100} mood="idle" />
       </motion.div>
       <motion.p
-        className="text-gray-500 font-medium persian-text text-base"
+        className="text-text-secondary font-medium persian-text text-base"
         initial={{ opacity: 0 }}
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}

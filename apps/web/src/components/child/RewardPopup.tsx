@@ -114,7 +114,7 @@ export default function RewardPopup({ badge, onClose }: Props) {
 
           <motion.p
             id="reward-desc"
-            className="text-gray-500 text-sm mb-6 persian-text"
+            className="text-text-secondary text-sm mb-6 persian-text"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}

@@ -172,7 +172,7 @@ function PlacementInner() {
         <p className="text-gray-600 mt-2 persian-text">
           {isReprobe ? 'خیلی خوب بود!' : <>از اینجا شروع می‌کنیم: <b>{labels[finalLevel]}</b></>}
         </p>
-        <p className="text-sm text-gray-400 mt-4 persian-text">در حال رفتن به خانه...</p>
+        <p className="text-sm text-text-secondary mt-4 persian-text">در حال رفتن به خانه...</p>
       </div>
     )
   }

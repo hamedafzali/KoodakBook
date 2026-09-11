@@ -88,7 +88,7 @@ export default function Tutorial({ childName, onClose }: Props) {
             <h2 className="text-xl font-bold text-gray-800 mb-1">
               {step === 0 && childName ? `سلام ${childName}!` : current.title}
             </h2>
-            <p className="text-gray-500 persian-text mb-5">{current.body}</p>
+            <p className="text-text-secondary persian-text mb-5">{current.body}</p>
           </motion.div>
         </AnimatePresence>
 
@@ -102,7 +102,7 @@ export default function Tutorial({ childName, onClose }: Props) {
         <div className="flex gap-2">
           <motion.button
             onClick={finish}
-            className="flex-1 py-3 rounded-md text-gray-400 font-medium text-sm min-h-[56px]"
+            className="flex-1 py-3 rounded-md text-text-secondary font-medium text-sm min-h-[56px]"
             whileTap={{ scale: 0.96 }}
           >
             رد کردن

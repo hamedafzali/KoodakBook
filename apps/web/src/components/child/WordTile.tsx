@@ -78,7 +78,7 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
       >
         {word.persian}
       </motion.span>
-      <span lang="en" className="text-gray-400 text-base ltr">{word.english}</span>
+      <span lang="en" className="text-text-secondary text-base ltr">{word.english}</span>
       <span className="text-xs text-amber-500 flex items-center gap-1 mt-0.5" aria-hidden="true">
         🔊 بشنو
       </span>
