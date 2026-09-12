@@ -288,18 +288,53 @@ export default async function Landing() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features — three named clusters instead of one flat 10-card wall.
+          Fixes two things at once: the old sub-line said "هشت ابزار" (eight)
+          while listing ten, and a single 4-col grid of 10 orphaned a lone
+          pair in the last row at every breakpoint. Grouping by 4/3/3 gives
+          every row a full breakpoint-appropriate grid with nothing left
+          dangling, and gives a reader three digestible ideas instead of one
+          long scroll of identical cards. */}
       <section id="features" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
         <SectionTitle kicker="ویژگی‌ها" title="یک مسیر کامل، از اولین صدا تا اولین کتاب"
-          sub="هشت ابزار که با هم یک برنامه‌ی درسی می‌سازند — نه مجموعه‌ای از بازی‌های پراکنده." />
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {FEATURES.map(f => (
-            <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
-              <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
-              <h3 className="font-bold text-slate-800 mb-1.5">{f.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+          sub="ده ابزار که با هم یک برنامه‌ی درسی می‌سازند — نه مجموعه‌ای از بازی‌های پراکنده." />
+        <div className="space-y-10">
+          <div>
+            <h3 className="text-sm font-bold text-amber-700 mb-4">بنیاد خواندن</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {FEATURES.slice(0, 4).map(f => (
+                <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
+                  <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
+                  <h4 className="font-bold text-slate-800 mb-1.5">{f.title}</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-amber-700 mb-4">همراهی و انگیزه</h3>
+            <div className="grid sm:grid-cols-3 gap-5">
+              {FEATURES.slice(4, 7).map(f => (
+                <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
+                  <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
+                  <h4 className="font-bold text-slate-800 mb-1.5">{f.title}</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-amber-700 mb-4">شخصی‌سازی و دنیای بیشتر</h3>
+            <div className="grid sm:grid-cols-3 gap-5">
+              {FEATURES.slice(7, 10).map(f => (
+                <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
+                  <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
+                  <h4 className="font-bold text-slate-800 mb-1.5">{f.title}</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -308,15 +343,25 @@ export default async function Landing() {
         <div className="max-w-6xl mx-auto px-4 py-16">
           <SectionTitle kicker="روش آموزش" title="چرا این روش جواب می‌دهد؟"
             sub="کودک‌بوک روی سه ستونِ اثبات‌شده‌ی یادگیری زبان ساخته شده — نه روی سرگرمی خالی." />
-          <div className="grid sm:grid-cols-2 gap-5">
-            {METHOD.map(m => (
-              <div key={m.title} className="rounded-2xl bg-white border border-amber-100 p-6">
-                <p className="mb-3 text-amber-600"><Icon name={m.icon} size="xl" strokeWidth={1.8} /></p>
-                <h3 className="font-bold text-slate-800 mb-2">{m.title}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{m.text}</p>
-              </div>
+          {/* Numbered stepper, not another card grid — Features already owns
+              that shape. Reads as a chain of reasoning (1→2→3→4) rather than
+              four interchangeable facts. */}
+          <ol className="relative border-s-2 border-amber-200 ps-8 space-y-10 max-w-2xl mx-auto sm:mx-0">
+            {METHOD.map((m, i) => (
+              <li key={m.title} className="relative">
+                <span className="absolute -start-[41px] top-0 w-8 h-8 rounded-full bg-amber-600 text-white text-sm font-bold flex items-center justify-center">
+                  {i + 1}
+                </span>
+                <div className="flex items-start gap-3">
+                  <span className="text-amber-600 shrink-0 mt-0.5"><Icon name={m.icon} size="lg" strokeWidth={1.8} /></span>
+                  <div>
+                    <h3 className="font-bold text-slate-800 mb-1.5">{m.title}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed">{m.text}</p>
+                  </div>
+                </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
@@ -324,11 +369,15 @@ export default async function Landing() {
       <section id="parents" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
         <SectionTitle kicker="برای والدین" title="خیال شما راحت، کنترل دست شما"
           sub="یک نرم‌افزار کودک اول باید امن باشد، بعد آموزشی. این ترتیب را جدی گرفته‌ایم." />
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* One shared band instead of a third instance of the bordered-card
+            grid (Features and, before this pass, Method both already used
+            that shape) — items flow inside one container rather than sitting
+            in four separate boxes. */}
+        <div className="flex flex-wrap sm:flex-nowrap gap-6 sm:gap-8 rounded-3xl border border-slate-100 p-6 sm:p-8">
           {PARENT_POINTS.map(p => (
-            <div key={p.title} className="rounded-2xl border border-slate-100 p-5 text-center">
-              <p className="mb-3 flex justify-center text-amber-600"><Icon name={p.icon} size="xl" strokeWidth={1.8} /></p>
-              <h3 className="font-bold text-slate-800 mb-1.5 text-sm">{p.title}</h3>
+            <div key={p.title} className="flex-1 min-w-[140px] flex flex-col items-start gap-2">
+              <span className="text-amber-600"><Icon name={p.icon} size="xl" strokeWidth={1.8} /></span>
+              <h3 className="font-bold text-slate-800 text-sm">{p.title}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">{p.text}</p>
             </div>
           ))}
