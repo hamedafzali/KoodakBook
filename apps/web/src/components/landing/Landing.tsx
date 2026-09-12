@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Icon, type IconName } from '@/components/icons'
 import dynamic from 'next/dynamic'
+import Mascot from '@/components/child/Mascot'
 
 // These four are all well below the hero fold, so their client JS shouldn't
 // compete with it for bandwidth on first paint. next/dynamic still
@@ -114,9 +115,9 @@ const FAQ = [
 function SectionTitle({ kicker, title, sub }: { kicker: string; title: string; sub?: string }) {
   return (
     <div className="text-center max-w-2xl mx-auto mb-10">
-      <p className="text-amber-700 font-bold text-sm mb-2">{kicker}</p>
-      <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 leading-snug">{title}</h2>
-      {sub && <p className="text-slate-500 mt-3 leading-relaxed">{sub}</p>}
+      <p className="text-brand-text font-bold text-sm mb-2">{kicker}</p>
+      <h2 className="font-display text-2xl sm:text-3xl font-bold text-text-primary leading-snug">{title}</h2>
+      {sub && <p className="text-text-secondary mt-3 leading-relaxed">{sub}</p>}
     </div>
   )
 }
@@ -223,23 +224,23 @@ function StoreBadge({ store }: { store: 'android' | 'ios' }) {
 export default async function Landing() {
   const voiceDemoReady = await getVoiceDemoReady()
   return (
-    <div className="bg-white text-slate-800">
+    <div className="bg-white text-text-primary">
 
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          <p className="font-bold text-xl text-amber-700 inline-flex items-center gap-2"><Icon name="book" size="md" />کودک‌بوک</p>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-600" aria-label="منوی اصلی">
-            <a href="#features" className="hover:text-amber-700">ویژگی‌ها</a>
-            <a href="#method" className="hover:text-amber-700">روش آموزش</a>
-            <a href="#parents" className="hover:text-amber-700">والدین</a>
-            <a href="#pricing" className="hover:text-amber-700">قیمت</a>
-            <a href="#tablet" className="hover:text-amber-700">تبلت</a>
-            <a href="#faq" className="hover:text-amber-700">سؤالات</a>
+          <p className="font-bold text-xl text-brand-text inline-flex items-center gap-2"><Icon name="book" size="md" />کودک‌بوک</p>
+          <nav className="hidden md:flex items-center gap-6 text-sm text-text-secondary" aria-label="منوی اصلی">
+            <a href="#features" className="hover:text-brand-text">ویژگی‌ها</a>
+            <a href="#method" className="hover:text-brand-text">روش آموزش</a>
+            <a href="#parents" className="hover:text-brand-text">والدین</a>
+            <a href="#pricing" className="hover:text-brand-text">قیمت</a>
+            <a href="#tablet" className="hover:text-brand-text">تبلت</a>
+            <a href="#faq" className="hover:text-brand-text">سؤالات</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-amber-700 px-3 py-2">ورود</Link>
-            <Link href="/signup" className="bg-amber-700 hover:bg-amber-800 text-white text-sm font-bold px-4 py-2 rounded-xl transition">
+            <Link href="/login" className="text-sm font-bold text-text-secondary hover:text-brand-text px-3 py-2">ورود</Link>
+            <Link href="/signup" className="btn-brand text-sm font-bold px-4 py-2 rounded-xl transition">
               شروع رایگان
             </Link>
           </div>
@@ -247,26 +248,33 @@ export default async function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="bg-gradient-to-b from-amber-50 to-white">
+      <section className="bg-gradient-to-b from-brand-pale to-white">
         <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <h1 className="text-3xl sm:text-5xl font-bold leading-tight sm:leading-tight text-slate-900">
+            {/* Simorgh, the app's actual mascot, introducing itself — the one
+                thing this hero was missing: the page sold an illustrated
+                picture-book product and showed none of it above the fold. */}
+            <div className="inline-flex items-center gap-2 mb-4">
+              <Mascot size={44} mood="happy" />
+              <p className="text-sm font-bold text-brand-text">سیمرغِ قصه‌گو همراه کودک شماست</p>
+            </div>
+            <h1 className="font-display text-3xl sm:text-5xl font-bold leading-tight sm:leading-tight text-text-primary">
               کودک شما فارسی را<br />
-              <span className="text-amber-700">با قصه و بازی</span> یاد می‌گیرد
+              <span className="text-brand-text">با قصه و بازی</span> یاد می‌گیرد
             </h1>
-            <p className="mt-5 text-slate-600 leading-relaxed text-lg">
+            <p className="mt-5 text-text-secondary leading-relaxed text-lg">
               برای خانواده‌های ایرانی خارج از کشور — از الفبا و صداکشی تا داستان‌هایی که
               قهرمانش کودک خودتان است. روزی ۱۰ دقیقه، برای ۳ تا ۱۰ سال.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/signup" className="bg-amber-700 hover:bg-amber-800 text-white font-bold px-7 py-3.5 rounded-2xl text-lg transition shadow-lg shadow-amber-200">
+              <Link href="/signup" className="btn-brand font-bold px-7 py-3.5 rounded-2xl text-lg transition shadow-lg">
                 شروع رایگان
               </Link>
-              <a href="#features" className="border-2 border-amber-200 hover:border-amber-400 text-amber-700 font-bold px-7 py-3.5 rounded-2xl text-lg transition">
+              <a href="#features" className="border-2 border-brand-light hover:border-brand text-brand-text font-bold px-7 py-3.5 rounded-2xl text-lg transition">
                 ببینید چطور کار می‌کند
               </a>
             </div>
-            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-500">
+            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-secondary">
               <li className="inline-flex items-center gap-1.5"><Icon name="noAds" size="sm" />بدون تبلیغات</li>
               <li className="inline-flex items-center gap-1.5"><Icon name="locked" size="sm" />حالت کودک با پین والدین</li>
               <li>🇮🇷 تمام محتوا با صدای فارسی</li>
@@ -277,12 +285,12 @@ export default async function Landing() {
       </section>
 
       {/* Stats */}
-      <section className="border-y border-slate-100 bg-white">
+      <section className="border-y border-border bg-white">
         <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           {STATS.map(s => (
             <div key={s.l}>
-              <p className="text-3xl font-bold text-amber-700">{s.n}</p>
-              <p className="text-sm text-slate-500 mt-1 leading-snug">{s.l}</p>
+              <p className="text-3xl font-bold text-brand-text">{s.n}</p>
+              <p className="text-sm text-text-secondary mt-1 leading-snug">{s.l}</p>
             </div>
           ))}
         </div>
@@ -300,37 +308,37 @@ export default async function Landing() {
           sub="ده ابزار که با هم یک برنامه‌ی درسی می‌سازند — نه مجموعه‌ای از بازی‌های پراکنده." />
         <div className="space-y-10">
           <div>
-            <h3 className="text-sm font-bold text-amber-700 mb-4">بنیاد خواندن</h3>
+            <h3 className="text-sm font-bold text-brand-text mb-4">بنیاد خواندن</h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {FEATURES.slice(0, 4).map(f => (
-                <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
-                  <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
-                  <h4 className="font-bold text-slate-800 mb-1.5">{f.title}</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+                <div key={f.title} className="rounded-2xl border border-border bg-white p-5 shadow-sm hover:shadow-md hover:border-brand-light transition">
+                  <p className="mb-3 text-brand-text"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
+                  <h4 className="font-bold text-text-primary mb-1.5">{f.title}</h4>
+                  <p className="text-sm text-text-secondary leading-relaxed">{f.text}</p>
                 </div>
               ))}
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-amber-700 mb-4">همراهی و انگیزه</h3>
+            <h3 className="text-sm font-bold text-brand-text mb-4">همراهی و انگیزه</h3>
             <div className="grid sm:grid-cols-3 gap-5">
               {FEATURES.slice(4, 7).map(f => (
-                <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
-                  <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
-                  <h4 className="font-bold text-slate-800 mb-1.5">{f.title}</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+                <div key={f.title} className="rounded-2xl border border-border bg-white p-5 shadow-sm hover:shadow-md hover:border-brand-light transition">
+                  <p className="mb-3 text-brand-text"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
+                  <h4 className="font-bold text-text-primary mb-1.5">{f.title}</h4>
+                  <p className="text-sm text-text-secondary leading-relaxed">{f.text}</p>
                 </div>
               ))}
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-amber-700 mb-4">شخصی‌سازی و دنیای بیشتر</h3>
+            <h3 className="text-sm font-bold text-brand-text mb-4">شخصی‌سازی و دنیای بیشتر</h3>
             <div className="grid sm:grid-cols-3 gap-5">
               {FEATURES.slice(7, 10).map(f => (
-                <div key={f.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-amber-200 transition">
-                  <p className="mb-3 text-amber-600"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
-                  <h4 className="font-bold text-slate-800 mb-1.5">{f.title}</h4>
-                  <p className="text-sm text-slate-500 leading-relaxed">{f.text}</p>
+                <div key={f.title} className="rounded-2xl border border-border bg-white p-5 shadow-sm hover:shadow-md hover:border-brand-light transition">
+                  <p className="mb-3 text-brand-text"><Icon name={f.icon} size="xl" strokeWidth={1.8} /></p>
+                  <h4 className="font-bold text-text-primary mb-1.5">{f.title}</h4>
+                  <p className="text-sm text-text-secondary leading-relaxed">{f.text}</p>
                 </div>
               ))}
             </div>
@@ -339,24 +347,24 @@ export default async function Landing() {
       </section>
 
       {/* Method / pedagogy */}
-      <section id="method" className="bg-amber-50/60 scroll-mt-20">
+      <section id="method" className="bg-brand-pale scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4 py-16">
           <SectionTitle kicker="روش آموزش" title="چرا این روش جواب می‌دهد؟"
             sub="کودک‌بوک روی سه ستونِ اثبات‌شده‌ی یادگیری زبان ساخته شده — نه روی سرگرمی خالی." />
           {/* Numbered stepper, not another card grid — Features already owns
               that shape. Reads as a chain of reasoning (1→2→3→4) rather than
               four interchangeable facts. */}
-          <ol className="relative border-s-2 border-amber-200 ps-8 space-y-10 max-w-2xl mx-auto sm:mx-0">
+          <ol className="relative border-s-2 border-brand-light ps-8 space-y-10 max-w-2xl mx-auto sm:mx-0">
             {METHOD.map((m, i) => (
               <li key={m.title} className="relative">
-                <span className="absolute -start-[41px] top-0 w-8 h-8 rounded-full bg-amber-600 text-white text-sm font-bold flex items-center justify-center">
+                <span className="absolute -start-[41px] top-0 w-8 h-8 rounded-full bg-brand-deep text-white text-sm font-bold flex items-center justify-center">
                   {i + 1}
                 </span>
                 <div className="flex items-start gap-3">
-                  <span className="text-amber-600 shrink-0 mt-0.5"><Icon name={m.icon} size="lg" strokeWidth={1.8} /></span>
+                  <span className="text-brand-text shrink-0 mt-0.5"><Icon name={m.icon} size="lg" strokeWidth={1.8} /></span>
                   <div>
-                    <h3 className="font-bold text-slate-800 mb-1.5">{m.title}</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{m.text}</p>
+                    <h3 className="font-bold text-text-primary mb-1.5">{m.title}</h3>
+                    <p className="text-sm text-text-secondary leading-relaxed">{m.text}</p>
                   </div>
                 </div>
               </li>
@@ -373,19 +381,19 @@ export default async function Landing() {
             grid (Features and, before this pass, Method both already used
             that shape) — items flow inside one container rather than sitting
             in four separate boxes. */}
-        <div className="flex flex-wrap sm:flex-nowrap gap-6 sm:gap-8 rounded-3xl border border-slate-100 p-6 sm:p-8">
+        <div className="flex flex-wrap sm:flex-nowrap gap-6 sm:gap-8 rounded-3xl border border-border p-6 sm:p-8">
           {PARENT_POINTS.map(p => (
             <div key={p.title} className="flex-1 min-w-[140px] flex flex-col items-start gap-2">
-              <span className="text-amber-600"><Icon name={p.icon} size="xl" strokeWidth={1.8} /></span>
-              <h3 className="font-bold text-slate-800 text-sm">{p.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{p.text}</p>
+              <span className="text-brand-text"><Icon name={p.icon} size="xl" strokeWidth={1.8} /></span>
+              <h3 className="font-bold text-text-primary text-sm">{p.title}</h3>
+              <p className="text-xs text-text-secondary leading-relaxed">{p.text}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Pricing — synced from the admin plans panel via /api/plans */}
-      <section id="pricing" className="bg-slate-50 scroll-mt-20">
+      <section id="pricing" className="bg-surface-subtle scroll-mt-20">
         <div className="max-w-5xl mx-auto px-4 py-16">
           <SectionTitle kicker="قیمت" title="ساده و شفاف — لغو در هر لحظه"
             sub="امروز همه‌چیز با حساب رایگان شروع می‌شود؛ پلن‌های پرمیوم به‌زودی فعال می‌شوند." />
@@ -398,13 +406,13 @@ export default async function Landing() {
       {/* Tablet offer (coming soon — collect interest, no prices yet) */}
       <section id="tablet" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <p className="text-amber-700 font-bold text-sm mb-2">
-            تبلت کودک‌بوک <span className="bg-amber-100 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full mr-1">به‌زودی</span>
+          <p className="text-brand-text font-bold text-sm mb-2">
+            تبلت کودک‌بوک <span className="bg-brand-light text-brand-text text-xs font-bold px-2.5 py-1 rounded-full mr-1">به‌زودی</span>
           </p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 leading-snug">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-text-primary leading-snug">
             یک تبلت، آماده و امن — روشن کنید و بدهید دست کودک
           </h2>
-          <p className="text-slate-500 mt-3 leading-relaxed">
+          <p className="text-text-secondary mt-3 leading-relaxed">
             برای خانواده‌هایی که نمی‌خواهند موبایل خودشان را بدهند: تبلتی با کودک‌بوک
             نصب‌شده، حالت کودک قفل‌شده و بدون دسترسی باز به اینترنت. بهترین هدیه‌ی تولد
             و نوروز برای نوه و خواهرزاده و برادرزاده.
@@ -418,22 +426,22 @@ export default async function Landing() {
             { icon: 'protect' as IconName, title: 'بسته‌ی محافظ', items: ['تبلت ۱۰ اینچ', 'قاب ضدضربه‌ی مخصوص کودک', 'پایه‌ی رومیزی + محافظ صفحه'] },
             { icon: 'gift' as IconName, title: 'بسته‌ی هدیه', items: ['بسته‌ی محافظ کامل', 'جعبه‌ی هدیه و کارت تبریک', 'ارسال مستقیم به گیرنده در اروپا'] },
           ].map(p => (
-            <div key={p.title} className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-              <p className="mb-3 flex justify-center text-amber-600"><Icon name={p.icon} size="hero" strokeWidth={1.6} /></p>
-              <h3 className="font-bold text-slate-800 mb-3">{p.title}</h3>
-              <ul className="space-y-1.5 text-sm text-slate-500">
+            <div key={p.title} className="rounded-2xl border border-border bg-white p-6 text-center">
+              <p className="mb-3 flex justify-center text-brand-text"><Icon name={p.icon} size="hero" strokeWidth={1.6} /></p>
+              <h3 className="font-bold text-text-primary mb-3">{p.title}</h3>
+              <ul className="space-y-1.5 text-sm text-text-secondary">
                 {p.items.map(i => <li key={i}>{i}</li>)}
               </ul>
-              <p className="mt-4 text-xs font-bold text-amber-700 bg-amber-50 rounded-full py-1.5">قیمت به‌زودی اعلام می‌شود</p>
+              <p className="mt-4 text-xs font-bold text-brand-text bg-brand-pale rounded-full py-1.5">قیمت به‌زودی اعلام می‌شود</p>
             </div>
           ))}
         </div>
 
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <TabletProduct />
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-1">فرم علاقه‌مندی — بدون پرداخت</h3>
-            <p className="text-xs text-slate-500 mb-4">ثبت‌نام کنید تا با اعلام قیمت، اول به شما خبر بدهیم و در اولویت ارسال باشید.</p>
+          <div className="rounded-3xl border border-border bg-white p-6 shadow-sm">
+            <h3 className="font-bold text-text-primary mb-1">فرم علاقه‌مندی — بدون پرداخت</h3>
+            <p className="text-xs text-text-secondary mb-4">ثبت‌نام کنید تا با اعلام قیمت، اول به شما خبر بدهیم و در اولویت ارسال باشید.</p>
             <TabletForm />
           </div>
         </div>
@@ -464,37 +472,37 @@ export default async function Landing() {
         <SectionTitle kicker="سؤالات پرتکرار" title="هر چیزی که والدین از ما می‌پرسند" />
         <div className="space-y-3">
           {FAQ.map(f => (
-            <details key={f.q} className="group rounded-2xl border border-slate-200 bg-white px-5 py-4">
-              <summary className="cursor-pointer list-none flex items-center justify-between gap-4 font-bold text-slate-800">
+            <details key={f.q} className="group rounded-2xl border border-border bg-white px-5 py-4">
+              <summary className="cursor-pointer list-none flex items-center justify-between gap-4 font-bold text-text-primary">
                 {f.q}
-                <span className="text-amber-500 transition group-open:rotate-45 text-xl leading-none" aria-hidden="true">+</span>
+                <span className="text-brand transition group-open:rotate-45 text-xl leading-none" aria-hidden="true">+</span>
               </summary>
-              <p className="text-sm text-slate-600 leading-relaxed mt-3">{f.a}</p>
+              <p className="text-sm text-text-secondary leading-relaxed mt-3">{f.a}</p>
             </details>
           ))}
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="bg-gradient-to-b from-amber-50 to-white">
+      <section className="bg-gradient-to-b from-brand-pale to-white">
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">فارسی، بهترین هدیه‌ای است که به کودکتان می‌دهید</h2>
-          <p className="text-slate-500 mt-3">شروع رایگان است — نه کارت بانکی می‌خواهد، نه تعهدی.</p>
-          <Link href="/signup" className="inline-block mt-7 bg-amber-700 hover:bg-amber-800 text-white font-bold px-10 py-4 rounded-2xl text-lg transition shadow-lg shadow-amber-200">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-text-primary">فارسی، بهترین هدیه‌ای است که به کودکتان می‌دهید</h2>
+          <p className="text-text-secondary mt-3">شروع رایگان است — نه کارت بانکی می‌خواهد، نه تعهدی.</p>
+          <Link href="/signup" className="inline-block mt-7 btn-brand font-bold px-10 py-4 rounded-2xl text-lg transition shadow-lg">
             ساخت حساب رایگان
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-100">
-        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <p className="font-bold text-slate-700 inline-flex items-center gap-2"><Icon name="book" size="sm" />کودک‌بوک — فارسی برای کودکان</p>
+      <footer className="border-t border-border">
+        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-text-secondary">
+          <p className="font-bold text-text-primary inline-flex items-center gap-2"><Icon name="book" size="sm" />کودک‌بوک — فارسی برای کودکان</p>
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="پیوندهای پایانی">
-            <Link href="/privacy" className="hover:text-amber-700">حریم خصوصی</Link>
-            <Link href="/terms" className="hover:text-amber-700">شرایط استفاده</Link>
-            <Link href="/login" className="hover:text-amber-700">ورود به نرم‌افزار</Link>
-            <Link href="/signup" className="hover:text-amber-700">ثبت‌نام</Link>
+            <Link href="/privacy" className="hover:text-brand-text">حریم خصوصی</Link>
+            <Link href="/terms" className="hover:text-brand-text">شرایط استفاده</Link>
+            <Link href="/login" className="hover:text-brand-text">ورود به نرم‌افزار</Link>
+            <Link href="/signup" className="hover:text-brand-text">ثبت‌نام</Link>
           </nav>
         </div>
       </footer>

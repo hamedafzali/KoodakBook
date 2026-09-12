@@ -31,13 +31,13 @@ export default function SignupPage() {
     <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-6">
           <p className="mb-2 flex justify-center text-emerald-500"><Icon name="celebrate" size={40} strokeWidth={1.6} /></p>
-          <h1 className="text-2xl font-bold text-slate-800 mb-1">شروع ماجراجویی فارسی</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-1">شروع ماجراجویی فارسی</h1>
           <p className="text-text-secondary text-sm">رایگان است — نه کارت بانکی، نه تعهدی</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-1.5">
               ایمیل
             </label>
             <input
@@ -49,11 +49,11 @@ export default function SignupPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="email@example.com"
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 min-h-[48px]"
+              className="ltr w-full border border-border rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 min-h-[48px]"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-1.5">
               رمز عبور
             </label>
             <input
@@ -65,7 +65,7 @@ export default function SignupPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="حداقل ۶ کاراکتر"
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 min-h-[48px]"
+              className="ltr w-full border border-border rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 min-h-[48px]"
             />
           </div>
 
@@ -76,7 +76,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[52px] text-base"
+            className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[52px] text-base"
           >
             {loading ? 'در حال ثبت‌نام...' : 'ثبت‌نام رایگان'}
           </button>

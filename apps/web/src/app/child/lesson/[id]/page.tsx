@@ -246,8 +246,12 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {/* Quiz area */}
-      <div className="flex-1 flex items-start justify-center p-5 pt-8 overflow-y-auto">
+      {/* Quiz area — vertically centered rather than pinned to the top.
+          At common phone heights the card + button only filled the top
+          ~55% of this area, leaving the rest empty cream below; nothing in
+          QuizCard needs the top-alignment, so centering it here is the
+          direct fix rather than growing the card artificially. */}
+      <div className="flex-1 flex items-center justify-center p-5 overflow-y-auto">
         <div className="w-full max-w-sm">
           <AnimatePresence mode="wait">
             <motion.div

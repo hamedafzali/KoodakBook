@@ -36,20 +36,20 @@ export default function LoginPage() {
   return (
     <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-6">
-          <p className="mb-2 flex justify-center text-amber-500"><Icon name="wave" size={40} strokeWidth={1.6} /></p>
-          <h1 className="text-2xl font-bold text-slate-800 mb-1">خوش برگشتید!</h1>
+          <p className="mb-2 flex justify-center text-brand-text"><Icon name="wave" size={40} strokeWidth={1.6} /></p>
+          <h1 className="text-2xl font-bold text-text-primary mb-1">خوش برگشتید!</h1>
           <p className="text-text-secondary text-sm">قصه‌ها منتظرند — وارد شوید</p>
         </div>
 
         {expired && (
-          <p role="status" className="mb-4 text-center text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-[0.875rem] px-3 py-2 persian-text">
+          <p role="status" className="mb-4 text-center text-sm text-brand-text bg-brand-pale border border-brand-light rounded-[0.875rem] px-3 py-2 persian-text">
             نشست شما پایان یافت. لطفاً دوباره وارد شوید.
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-1.5">
               ایمیل
             </label>
             <input
@@ -60,11 +60,11 @@ export default function LoginPage() {
               inputMode="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 min-h-[48px]"
+              className="ltr w-full border border-border rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-text focus:border-brand-text min-h-[48px]"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-1.5">
               رمز عبور
             </label>
             <input
@@ -74,7 +74,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 min-h-[48px]"
+              className="ltr w-full border border-border rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-text focus:border-brand-text min-h-[48px]"
             />
           </div>
 
@@ -85,7 +85,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[52px] text-base"
+            className="w-full btn-brand font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 min-h-[52px] text-base"
           >
             {loading ? 'در حال ورود...' : 'ورود'}
           </button>
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-text-secondary mt-6 persian-text">
           حساب ندارید؟{' '}
-          <Link href="/signup" className="text-amber-700 font-medium hover:underline">
+          <Link href="/signup" className="text-brand-text font-medium hover:underline">
             ثبت‌نام رایگان
           </Link>
         </p>
