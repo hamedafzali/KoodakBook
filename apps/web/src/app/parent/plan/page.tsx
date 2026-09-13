@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { containerWidths } from '@/components/shared/layout'
@@ -16,6 +16,7 @@ interface PlanRow {
   price_cents: number
   currency: string
   interval: string
+  purchasable: boolean
   features: Record<string, string>
 }
 
@@ -42,10 +43,31 @@ function FeatureValue({ featureKey, type, value }: { featureKey: string; type: s
 }
 
 export default function PlanPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-parent-bg">
+        <p className="text-parent-muted persian-text">در حال بارگذاری...</p>
+      </div>
+    }>
+      <PlanPageInner />
+    </Suspense>
+  )
+}
+
+function PlanPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [plans, setPlans] = useState<PlanRow[]>([])
   const [currentPlan, setCurrentPlan] = useState<string>('free')
   const [loading, setLoading] = useState(true)
+  const [redirecting, setRedirecting] = useState<'checkout' | 'portal' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  // ?checkout=success|cancel — set by Stripe's redirect back from a Checkout
+  // Session (see success_url/cancel_url in routes/billing.ts). Read once on
+  // mount; the webhook (not this page) is what actually updates the plan, so
+  // "success" here just means "you made it back", not "you're upgraded yet" —
+  // hence the softer wording below.
+  const [checkoutNotice] = useState(searchParams.get('checkout'))
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -61,11 +83,37 @@ export default function PlanPage() {
     load()
   }, [router])
 
+  async function startCheckout() {
+    setError(null)
+    setRedirecting('checkout')
+    const res = await api.post<{ url: string }>('/api/billing/checkout', {})
+    if (res.data?.url) {
+      window.location.href = res.data.url
+      return
+    }
+    setError(res.error ?? 'خطایی پیش آمد. دوباره تلاش کنید')
+    setRedirecting(null)
+  }
+
+  async function openBillingPortal() {
+    setError(null)
+    setRedirecting('portal')
+    const res = await api.post<{ url: string }>('/api/billing/portal', {})
+    if (res.data?.url) {
+      window.location.href = res.data.url
+      return
+    }
+    setError(res.error ?? 'خطایی پیش آمد. دوباره تلاش کنید')
+    setRedirecting(null)
+  }
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-parent-bg">
       <p className="text-parent-muted persian-text">در حال بارگذاری...</p>
     </div>
   )
+
+  const currentIsPaid = plans.some(p => p.key === currentPlan && p.price_cents > 0)
 
   return (
     <div className={`min-h-screen bg-parent-bg pb-16 ${containerWidths.app}`}>
@@ -75,6 +123,24 @@ export default function PlanPage() {
         back="/parent/dashboard"
         backLabel="بازگشت به داشبورد"
       />
+
+      {checkoutNotice === 'success' && (
+        <div role="status" className="mx-4 mt-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+          <p className="text-sm text-emerald-800 persian-text">
+            پرداخت شما ثبت شد. فعال‌سازی پلن معمولاً چند ثانیه طول می‌کشد — اگر این صفحه را رفرش کنید باید به‌روز شده باشد.
+          </p>
+        </div>
+      )}
+      {checkoutNotice === 'cancel' && (
+        <div role="status" className="mx-4 mt-4 rounded-xl bg-surface-subtle border border-border px-4 py-3">
+          <p className="text-sm text-parent-muted persian-text">پرداخت لغو شد. هر وقت خواستید می‌توانید دوباره تلاش کنید.</p>
+        </div>
+      )}
+      {error && (
+        <div className="mx-4 mt-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+          <p role="alert" className="text-sm text-red-600 persian-text">{error}</p>
+        </div>
+      )}
 
       <div className="px-4 pt-5 grid gap-4 md:grid-cols-2">
         {plans.map(plan => {
@@ -125,15 +191,36 @@ export default function PlanPage() {
 
               <div className="px-5 py-4">
                 {isCurrent ? (
-                  <button disabled className="w-full py-3 rounded-xl bg-surface-subtle text-parent-muted font-bold cursor-default min-h-[48px]">
-                    پلن فعلی شما
-                  </button>
+                  isPremium ? (
+                    <button
+                      onClick={openBillingPortal}
+                      disabled={redirecting !== null}
+                      className="w-full py-3 rounded-xl bg-surface-subtle text-parent-text font-bold min-h-[48px] disabled:opacity-50 touch-target"
+                    >
+                      {redirecting === 'portal' ? 'در حال انتقال...' : 'مدیریت اشتراک'}
+                    </button>
+                  ) : (
+                    <button disabled className="w-full py-3 rounded-xl bg-surface-subtle text-parent-muted font-bold cursor-default min-h-[48px]">
+                      پلن فعلی شما
+                    </button>
+                  )
                 ) : isPremium ? (
-                  <button disabled
-                    className="w-full py-3 rounded-xl font-bold cursor-default min-h-[48px]"
-                    style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}>
-                    به‌زودی
-                  </button>
+                  plan.purchasable ? (
+                    <button
+                      onClick={startCheckout}
+                      disabled={redirecting !== null}
+                      className="w-full py-3 rounded-xl font-bold min-h-[48px] disabled:opacity-50 touch-target"
+                      style={{ background: 'var(--ramp-brand-bright)', color: '#fff' }}
+                    >
+                      {redirecting === 'checkout' ? 'در حال انتقال...' : 'شروع اشتراک'}
+                    </button>
+                  ) : (
+                    <button disabled
+                      className="w-full py-3 rounded-xl font-bold cursor-default min-h-[48px]"
+                      style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}>
+                      به‌زودی
+                    </button>
+                  )
                 ) : null}
               </div>
             </section>
@@ -141,9 +228,11 @@ export default function PlanPage() {
         })}
       </div>
 
-      <p className="text-center text-xs text-parent-muted mt-6 px-6 persian-text">
-        امکان ارتقای آنلاین به‌زودی اضافه می‌شود. فعلاً برای ارتقای پلن با پشتیبانی در تماس باشید.
-      </p>
+      {!currentIsPaid && (
+        <p className="text-center text-xs text-parent-muted mt-6 px-6 persian-text">
+          پرداخت با کارت بین‌المللی از طریق Stripe انجام می‌شود. هر زمان می‌توانید اشتراک را از همین صفحه لغو کنید.
+        </p>
+      )}
     </div>
   )
 }

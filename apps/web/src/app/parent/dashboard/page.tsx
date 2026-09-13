@@ -81,6 +81,10 @@ export default function ParentDashboardPage() {
   const [children, setChildren] = useState<Child[]>([])
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  // Free/paid gate for the first-story upsell banner below — not part of
+  // DashboardSummary, so it's its own small fetch (see /api/auth/me).
+  const [plan, setPlan] = useState<string>('free')
+  const [upsellDismissed, setUpsellDismissed] = useState(true)
 
   async function loadSummary(childId: string) {
     const dashRes = await api.get<DashboardSummary>(`/api/dashboard/${childId}`)
@@ -89,8 +93,13 @@ export default function ParentDashboardPage() {
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
+    setUpsellDismissed(localStorage.getItem('koodakbook_plan_upsell_dismissed') === '1')
     async function load() {
-      const childRes = await api.get<Child[]>('/api/children')
+      const [childRes, meRes] = await Promise.all([
+        api.get<Child[]>('/api/children'),
+        api.get<{ plan: string }>('/api/auth/me'),
+      ])
+      if (meRes.data?.plan) setPlan(meRes.data.plan)
       const list = childRes.data ?? []
       setChildren(list)
       const child = pickChild(list)
@@ -100,6 +109,11 @@ export default function ParentDashboardPage() {
     }
     load()
   }, [router])
+
+  function dismissUpsell() {
+    setUpsellDismissed(true)
+    localStorage.setItem('koodakbook_plan_upsell_dismissed', '1')
+  }
 
   function switchChild(id: string) {
     setActiveChildId(id)
@@ -290,6 +304,43 @@ export default function ParentDashboardPage() {
             )}
           </div>
         </motion.section>
+
+        {/* First-story upsell — demoted below the ONE action above, never
+            competing with it. Gated on plan === 'free' so a subscriber never
+            sees it, and on stories_completed >= 1 so it only appears once
+            there's a real story behind the pitch (same rule the hero itself
+            follows: no CTA without something real behind it). Dismissible
+            per-device via localStorage — a parent who closes it isn't asked
+            again this browser, but it comes back on their next dismiss-free
+            session if they haven't upgraded. */}
+        {plan === 'free' && stories_completed >= 1 && !upsellDismissed && (
+          <div className="relative mt-4 rounded-xl border border-border bg-parent-surface px-4 py-3.5 flex items-center gap-3">
+            <span
+              className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}
+              aria-hidden="true"
+            >
+              <Icon name="rewards" size="sm" />
+            </span>
+            <p className="text-sm text-parent-text persian-text flex-1">
+              اولین قصه تمام شد! با پلن حرفه‌ای، صدای پدربزرگ و مادربزرگ را هم به قصه‌ها اضافه کنید.
+            </p>
+            <Link
+              href="/parent/plan"
+              className="shrink-0 text-sm font-bold whitespace-nowrap"
+              style={{ color: 'var(--ramp-brand-ink)' }}
+            >
+              مشاهده پلن‌ها
+            </Link>
+            <button
+              onClick={dismissUpsell}
+              aria-label="بستن"
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-parent-muted hover:bg-surface-subtle hover:text-parent-text transition-colors"
+            >
+              <Icon name="close" size="xs" />
+            </button>
+          </div>
+        )}
 
         {/* ── The detail ──────────────────────────────────────────────────────
             Below the fold on a phone, and labelled as detail. A parent who

@@ -36,6 +36,10 @@ const INTERVAL: Record<Plan['interval'], string> = { month: '/ ماه', year: '/
 function featureLines(f: Record<string, string>): string[] {
   const lines: string[] = []
   if (f.max_children) lines.push(`${fa(Number(f.max_children))} پروفایل کودک`)
+  // Grandparent voice moved up front — path-and-plans deck calls it out as
+  // the headline differentiator for the paid plan, so it shouldn't sit buried
+  // after the library/AI bullets where a skimming parent won't reach it.
+  if (f.record_voice === 'true') lines.push('صدای پدربزرگ و مادربزرگ روی واژه‌ها')
   lines.push('الفبا، صداکشی و درس‌های پایه')
   lines.push(f.full_story_library === 'true' ? 'تمام کتابخانه‌ی داستان' : 'چند داستان اول کتابخانه')
   if (f.ai_stories === 'true') {
@@ -44,7 +48,6 @@ function featureLines(f: Record<string, string>): string[] {
       : 'داستان‌های شخصی نامحدود با هوش مصنوعی')
   }
   if (f.co_read === 'true') lines.push('هم‌خوانی والد و کودک')
-  if (f.record_voice === 'true') lines.push('ضبط صدای والدین روی واژه‌ها')
   lines.push('داشبورد پیشرفت والدین')
   return lines
 }

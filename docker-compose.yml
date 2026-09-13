@@ -46,6 +46,11 @@ services:
       # Set AI_API_KEY in ACM to that provider's key (Anthropic / OpenAI /
       # DeepSeek / Kimi / Qwen / …).
       AI_API_KEY:         ${AI_API_KEY:-}
+      # Stripe billing — blank-safe (see .env.example for the full writeup).
+      # Leave all three unset to keep /api/billing/* dry-running its 503.
+      STRIPE_SECRET_KEY:      ${STRIPE_SECRET_KEY:-}
+      STRIPE_PRICE_ID_PREMIUM: ${STRIPE_PRICE_ID_PREMIUM:-}
+      STRIPE_WEBHOOK_SECRET:  ${STRIPE_WEBHOOK_SECRET:-}
       # Cloud TTS keys — per-engine names win, TTS_API_KEY is the shared
       # fallback. Values come from the .env file next to this compose file.
       TTS_API_KEY:        ${TTS_API_KEY:-}

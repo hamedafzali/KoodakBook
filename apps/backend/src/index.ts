@@ -33,6 +33,8 @@ import friendsRouter  from './routes/friends'
 import leadsRouter    from './routes/leads'
 import aiRouter       from './routes/ai'
 import readAloudRouter, { sweepExpiredReadAloud } from './routes/readAloud'
+import billingRouter from './routes/billing'
+import billingWebhookRouter from './routes/billingWebhook'
 import { errorHandler } from './middleware/errorHandler'
 
 const app = express()
@@ -74,6 +76,10 @@ app.use(cors({
   origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
   credentials: true,
 }))
+// Stripe webhook MUST be mounted before express.json() — it verifies the
+// request signature against the exact raw body (see routes/billingWebhook.ts).
+app.use('/api/billing/webhook', billingWebhookRouter)
+
 app.use(express.json())
 
 // Serve uploaded files. Every upload path in this codebase embeds a
@@ -113,6 +119,7 @@ app.use('/api/friends',   friendsRouter)
 app.use('/api/leads',     leadsRouter)
 app.use('/api/ai',        aiRouter)
 app.use('/api/read-aloud', readAloudRouter)
+app.use('/api/billing',   billingRouter)
 
 // Must be registered after every route — see errorHandler.ts.
 app.use(errorHandler)
