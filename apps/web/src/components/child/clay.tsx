@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
 import { Icon, type IconName } from '@/components/icons'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 
 /* ── Clay: the CHILD app's material ─────────────────────────────────────────
  *
@@ -150,6 +151,10 @@ type TileProps = {
    *  room). `icon` stays required as the fall-back the locked state and the
    *  aria path use — a tile is never left without a glyph of some kind. */
   glyph?: string
+  /** Cast member fronting this tile (pixel-wizards-charachters slug) — takes
+   *  over from `glyph`/`icon` when set, so a module's room can be run by a
+   *  face instead of an emoji. */
+  character?: string
   title: string
   sub?: string
   href: string
@@ -163,7 +168,7 @@ type TileProps = {
  *  and only the top face moves. Mismatch those two numbers and it reads as
  *  sliding rather than being pushed. */
 export function ClayTile({
-  ramp, tone, icon, glyph, title, sub, href, big, locked, lockedHint,
+  ramp, tone, icon, glyph, character, title, sub, href, big, locked, lockedHint,
 }: TileProps) {
   const pad = big ? 'p-5 min-h-[92px]' : 'p-4 min-h-[76px]'
   const vars = tone ? toneVars(tone) : clayVars(ramp)
@@ -199,7 +204,13 @@ export function ClayTile({
         {/* Toy-like sheen. Decorative: it reinforces the light direction the
             inset highlight already establishes, so the two agree. */}
         <span className="absolute -top-6 -left-6 w-20 h-20 bg-white/25 rounded-full" aria-hidden="true" />
-        {glyph
+        {character
+          ? (
+            <span className="relative shrink-0 -my-2" aria-hidden="true">
+              <CharacterAvatar slug={character} size={big ? 68 : 52} mood="idle" />
+            </span>
+          )
+          : glyph
           ? (
             <span
               className={`font-bold leading-none shrink-0 text-center ${big ? 'text-5xl w-12' : 'text-4xl w-9'}`}

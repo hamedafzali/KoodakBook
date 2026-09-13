@@ -321,7 +321,7 @@ export default function ChildHomePage() {
         )}
 
         {/* ── Stories row (all bands — stories are the heart) ── */}
-        <TileRow label="قصه‌ها 📖" bigTiles={band === 1}>
+        <TileRow label="قصه‌ها 📖" character={MODULE.stories.character} bigTiles={band === 1}>
           {storyRow.window.map(s => (
             <CardTile key={s.id} href={`/child/story/${s.id}`} title={s.title_persian}
               image={mediaUrl(s.cover_url)} emoji="📖" tint={MODULE.stories.soft} scene={sceneFor(s.id)}
@@ -342,7 +342,7 @@ export default function ChildHomePage() {
 
         {/* ── Alphabet row: tap a letter, HEAR it (all bands) ── */}
         {letters.length > 0 && (
-          <TileRow label="الفبا — ضربه بزن و بشنو 🔤" bigTiles={band === 1}>
+          <TileRow label="الفبا — ضربه بزن و بشنو 🔤" character={MODULE.letters.character} bigTiles={band === 1}>
             {letters.map(l => (
               <button key={l.id} role="listitem"
                 onClick={() => { playTap(); speakOrPlay(l.audio_url, l.name_persian) }}
@@ -364,7 +364,7 @@ export default function ChildHomePage() {
 
         {/* ── Lessons row (bands 2–3) ── */}
         {band >= 2 && (
-          <TileRow label="درس‌ها 📚">
+          <TileRow label="درس‌ها 📚" character={MODULE.lessons.character}>
             {lessonRow.window.map((l, idx) => (
               <CardTile key={l.id} href={`/child/lesson/${l.id}`} title={l.title}
                 emoji={LESSON_TYPE_EMOJI[l.type] ?? '📖'} tint={MODULE.lessons.soft}
@@ -383,7 +383,7 @@ export default function ChildHomePage() {
         {band >= 2 && reviewWords.length >= 3 && nextUp.href !== '/child/review' && (
           <Link href="/child/review" aria-label={`مرور ${reviewWords.length} کلمه`}>
             <motion.div className="bg-white rounded-2xl p-4 shadow-card flex items-center gap-3" whileTap={{ scale: 0.98 }}>
-              <span className="text-2xl" aria-hidden="true">🔄</span>
+              <CharacterAvatar slug="laki" size={44} mood="encouraging" className="shrink-0 -my-1" />
               <div className="flex-1">
                 <p className="font-bold text-text-primary text-sm">مرور امروز</p>
                 <p className="text-xs text-text-secondary">{reviewWords.length} کلمه منتظر توست</p>
@@ -407,7 +407,7 @@ export default function ChildHomePage() {
 
 /* ── Building blocks ─────────────────────────────────────── */
 
-function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: boolean; children: React.ReactNode }) {
+function TileRow({ label, bigTiles, character, children }: { label: string; bigTiles?: boolean; character?: string; children: React.ReactNode }) {
   const scroller = useRef<HTMLDivElement>(null)
   const [ends, setEnds] = useState({ start: true, end: true })   // hidden until measured
 
@@ -445,7 +445,10 @@ function TileRow({ label, bigTiles, children }: { label: string; bigTiles?: bool
 
   return (
     <section>
-      <h2 className={`font-bold text-text-primary mb-3 ${bigTiles ? 'text-lg' : 'text-base'}`}>{label}</h2>
+      <h2 className={`font-bold text-text-primary mb-3 flex items-center gap-1.5 ${bigTiles ? 'text-lg' : 'text-base'}`}>
+        {character && <CharacterAvatar slug={character} size={bigTiles ? 34 : 28} mood="idle" className="-my-1" />}
+        {label}
+      </h2>
       <div className="relative">
         {/* Full-bleed on mobile (-mx-4) so tiles swipe edge-to-edge instead of
             clipping at the page padding; pt-1/px-1 give the glow ring room. */}
