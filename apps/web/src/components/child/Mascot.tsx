@@ -1,27 +1,25 @@
 'use client'
-// Simorgh — the app mascot — now renders from the standalone
+// Simorgh — the app mascot — renders from the standalone
 // `pixel-wizards-charachters` library, the same npm package that powers every
 // character. One source of truth for the art; this keeps the exact
 // {size, mood, className} API every call site already uses. Idle float /
 // excited bounce come from the library rig itself.
 import { CharacterActor } from 'pixel-wizards-charachters/react'
-import type { EmotionName } from 'pixel-wizards-charachters'
 import { useCharacterEmotions } from '@/lib/characterEmotions'
+import { MOOD_TO_EMOTION, MOOD_INTENSITY, type CharacterMood } from './mood'
 
 interface Props {
   size?: number
-  mood?: 'happy' | 'excited' | 'idle'
+  /** Any mood in `mood.ts` — the rig's full twelve, not the three this
+   *  component used to expose. `idle` remains the alias for `neutral`, so
+   *  every existing call site is unchanged. */
+  mood?: CharacterMood
   className?: string
 }
 
-const MOOD: Record<NonNullable<Props['mood']>, [EmotionName, number]> = {
-  idle: ['neutral', 0.6],
-  happy: ['happy', 0.85],
-  excited: ['excited', 1],
-}
-
 export default function Mascot({ size = 120, mood = 'idle', className }: Props) {
-  const [emotion, intensity] = MOOD[mood] ?? MOOD.idle
+  const emotion = MOOD_TO_EMOTION[mood] ?? MOOD_TO_EMOTION.idle
+  const intensity = MOOD_INTENSITY[mood] ?? MOOD_INTENSITY.idle
   const emotions = useCharacterEmotions('simorgh')
   return (
     <CharacterActor

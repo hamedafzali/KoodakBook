@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import CharacterAvatar from '@/components/child/CharacterAvatar'
-import { ModuleCard, SectionTitle } from '@/components/child/kit'
+import { MODULE, ModuleCard, SectionTitle } from '@/components/child/kit'
 import type { ModuleKey } from '@/components/child/kit'
 import type { AppCharacter } from '@koodakbook/shared'
 
@@ -32,6 +32,11 @@ export interface Room {
   module: ModuleKey
   title: string
   sub: string
+  /** This room borrows `module`'s COLOUR for variety (e.g. the math
+   *  sub-games), not its identity — so it keeps that module's plain emoji
+   *  rather than picking up its host character's face, which would wrongly
+   *  claim that character runs this room. */
+  noHost?: boolean
 }
 
 /* Grouped by what the child WANTS, not by how the code is organised. A
@@ -47,9 +52,9 @@ export const LEARN: Room[] = [
 
 export const PLAY: Room[] = [
   { href: '/child/math', module: 'math', title: 'دنیای اعداد', sub: 'ریاضی به فارسی' },
-  { href: '/child/math/counting', module: 'lessons', title: 'بشمار!', sub: 'شمردن با تصویر' },
-  { href: '/child/math/digits', module: 'letters', title: 'رقم‌ها', sub: 'یک، دو، سه…' },
-  { href: '/child/math/bazaar', module: 'rewards', title: 'بازار', sub: 'خرید و فروش' },
+  { href: '/child/math/counting', module: 'lessons', title: 'بشمار!', sub: 'شمردن با تصویر', noHost: true },
+  { href: '/child/math/digits', module: 'letters', title: 'رقم‌ها', sub: 'یک، دو، سه…', noHost: true },
+  { href: '/child/math/bazaar', module: 'rewards', title: 'بازار', sub: 'خرید و فروش', noHost: true },
   { href: '/child/games/memory', module: 'games', title: 'بازی حافظه', sub: 'جفت‌ها را پیدا کن' },
   { href: '/child/games/marpele', module: 'games', title: 'مارپله', sub: 'نردبان و مار' },
 ]
@@ -64,7 +69,8 @@ function RoomGrid({ rooms, big }: { rooms: Room[]; big?: boolean }) {
   return (
     <div className={`grid gap-3 ${big ? 'grid-cols-1' : 'grid-cols-2'}`}>
       {rooms.map(r => (
-        <ModuleCard key={r.href} module={r.module} href={r.href} title={r.title} sub={r.sub} big={big} />
+        <ModuleCard key={r.href} module={r.module} href={r.href} title={r.title} sub={r.sub} big={big}
+          glyph={r.noHost ? MODULE[r.module].emoji : undefined} />
       ))}
     </div>
   )

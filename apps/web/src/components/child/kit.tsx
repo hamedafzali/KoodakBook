@@ -45,6 +45,11 @@ export const MODULE: Record<ModuleKey, {
   soft: string      // large soft fill (tile image area) — dark ink sits on this
   solid: string     // chunky tile fill (bright) — dark ink sits on this
   edge: string      // chunky tile 3D bottom edge (deep) — white text sits on this
+  /** The cast member who "runs" this room — rendered on ModuleCard instead of
+   *  the emoji when set (pixel-wizards-charachters slug). Not every module
+   *  gets one: a host only where a character genuinely fits the room, never
+   *  forced onto all ten just for coverage. */
+  character?: string
 }> = {
   /* Colour points at the app's own 4-stop ramps (tools/design/ramps.py), which
    * keep each module's shipped Tailwind hue (-400 fill, -50 tint) and solve
@@ -54,16 +59,16 @@ export const MODULE: Record<ModuleKey, {
    * Dark ink on a joyful fill, never white on a darkened one.
    * `emoji` is the section identity a pre-reader actually navigates by; `icon`
    * is the monochrome fall-back for the locked state and small utility spots. */
-  lessons: { emoji: '📚', icon: 'lessons', chip: 'bg-lessons-soft text-lessons-ink', bar: 'bg-lessons-bright', soft: 'bg-lessons-soft', solid: 'bg-lessons-bright', edge: 'border-lessons-deep' },
-  letters: { emoji: '✏️', icon: 'letters', chip: 'bg-letters-soft text-letters-ink', bar: 'bg-letters-bright', soft: 'bg-letters-soft', solid: 'bg-letters-bright', edge: 'border-letters-deep' },
+  lessons: { character: 'roozi', emoji: '📚', icon: 'lessons', chip: 'bg-lessons-soft text-lessons-ink', bar: 'bg-lessons-bright', soft: 'bg-lessons-soft', solid: 'bg-lessons-bright', edge: 'border-lessons-deep' },
+  letters: { character: 'boomi', emoji: '✏️', icon: 'letters', chip: 'bg-letters-soft text-letters-ink', bar: 'bg-letters-bright', soft: 'bg-letters-soft', solid: 'bg-letters-bright', edge: 'border-letters-deep' },
   phonics: { emoji: '🎵', icon: 'phonics', chip: 'bg-phonics-soft text-phonics-ink', bar: 'bg-phonics-bright', soft: 'bg-phonics-soft', solid: 'bg-phonics-bright', edge: 'border-phonics-deep' },
-  stories: { emoji: '📖', icon: 'stories', chip: 'bg-stories-soft text-stories-ink', bar: 'bg-stories-bright', soft: 'bg-stories-soft', solid: 'bg-stories-bright', edge: 'border-stories-deep' },
-  review:  { emoji: '🔄', icon: 'review',  chip: 'bg-review-soft text-review-ink',   bar: 'bg-review-bright',  soft: 'bg-review-soft',  solid: 'bg-review-bright',  edge: 'border-review-deep' },
-  speak:   { emoji: '🎤', icon: 'speak',   chip: 'bg-speak-soft text-speak-ink',     bar: 'bg-speak-bright',   soft: 'bg-speak-soft',   solid: 'bg-speak-bright',   edge: 'border-speak-deep' },
+  stories: { character: 'pashmak', emoji: '📖', icon: 'stories', chip: 'bg-stories-soft text-stories-ink', bar: 'bg-stories-bright', soft: 'bg-stories-soft', solid: 'bg-stories-bright', edge: 'border-stories-deep' },
+  review:  { character: 'laki', emoji: '🔄', icon: 'review',  chip: 'bg-review-soft text-review-ink',   bar: 'bg-review-bright',  soft: 'bg-review-soft',  solid: 'bg-review-bright',  edge: 'border-review-deep' },
+  speak:   { character: 'ava', emoji: '🎤', icon: 'speak',   chip: 'bg-speak-soft text-speak-ink',     bar: 'bg-speak-bright',   soft: 'bg-speak-soft',   solid: 'bg-speak-bright',   edge: 'border-speak-deep' },
   write:   { emoji: '✍️', icon: 'write',   chip: 'bg-write-soft text-write-ink',     bar: 'bg-write-bright',   soft: 'bg-write-soft',   solid: 'bg-write-bright',   edge: 'border-write-deep' },
-  math:    { emoji: '🔢', icon: 'math',    chip: 'bg-math-soft text-math-ink',       bar: 'bg-math-bright',    soft: 'bg-math-soft',    solid: 'bg-math-bright',    edge: 'border-math-deep' },
-  games:   { emoji: '🃏', icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
-  rewards: { emoji: '🏆', icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
+  math:    { character: 'khersi', emoji: '🔢', icon: 'math',    chip: 'bg-math-soft text-math-ink',       bar: 'bg-math-bright',    soft: 'bg-math-soft',    solid: 'bg-math-bright',    edge: 'border-math-deep' },
+  games:   { character: 'tondpa', emoji: '🃏', icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
+  rewards: { character: 'simorgh', emoji: '🏆', icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
 }
 
 /** Rounded-square identity chip — the module's colour + its emoji, the pairing
@@ -87,6 +92,10 @@ export function ModuleCard({ module: m, tone, title, sub, href, icon, glyph, big
     <ClayTile
       ramp={m} tone={tone} icon={icon ?? MODULE[m].icon}
       glyph={glyph ?? (icon ? undefined : MODULE[m].emoji)}
+      /* Passing an explicit glyph/icon (numerals room, locked state, etc.)
+       * means the caller wants that exact mark instead — the host only
+       * stands in for the module's own default emoji. */
+      character={(!glyph && !icon) ? MODULE[m].character : undefined}
       title={title} sub={sub}
       href={href} big={big} locked={locked} lockedHint={lockedHint}
     />

@@ -68,7 +68,7 @@ export default function RewardsPage() {
             ))}
           </div>
         </div>
-        <Mascot size={90} mood={earned.length > 0 ? 'happy' : 'idle'} className="-mb-4" />
+        <Mascot size={90} mood={earned.length > 0 ? 'proud' : 'idle'} className="-mb-4" />
       </div>
 
       <div className="px-4 lg:px-8 pt-5 space-y-6">

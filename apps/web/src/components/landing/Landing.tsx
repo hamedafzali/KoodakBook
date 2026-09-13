@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Icon, type IconName } from '@/components/icons'
 import dynamic from 'next/dynamic'
 import Mascot from '@/components/child/Mascot'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 
 // These four are all well below the hero fold, so their client JS shouldn't
 // compete with it for bandwidth on first paint. next/dynamic still
@@ -74,6 +75,18 @@ const METHOD = [
     icon: 'language' as IconName, title: 'چندزبانی یک هدیه است',
     text: 'چندزبانی با تمرکز، انعطاف ذهنی و مهارت حل مسئله همراه است — و مهم‌تر: پیوند کودک با مادربزرگ، پدربزرگ و هویتش. روزی ۱۰ دقیقه کافی است.',
   },
+]
+
+/* The real curriculum stages (packages/shared/src/constants.ts
+ * CURRICULUM_STAGES) — an actual sequence a child moves through, unlike
+ * METHOD above (four simultaneous pillars, not steps). One cast host per
+ * stage, reusing the same assignments the app itself uses (kit.tsx MODULE),
+ * so a parent who later opens the app recognises the same faces. */
+const STAGES = [
+  { character: 'ava', age: '۳ تا ۵ سال', title: 'گوش و زبان', text: 'شنیدن صداها و تکرارشان — بدون خواندن، فقط صدا و تصویر و بازی.' },
+  { character: 'boomi', age: '۵ تا ۷ سال', title: 'حرف‌ها', text: 'آشنایی با الفبا و شکل حرف‌ها؛ هر حرف با صدای درستش.' },
+  { character: 'pashmak', age: '۶ تا ۹ سال', title: 'قصه‌های کوتاه', text: 'داستان‌های کوتاه دوزبانه با صدای گوینده — واژه‌ها در دل قصه.' },
+  { character: 'roozi', age: '۸ تا ۱۲ سال', title: 'خواندن با درک', text: 'قصه‌های بلندتر با واژگان غنی‌تر — خواندن برای فهمیدن، نه فقط هجی‌کردن.' },
 ]
 
 const PARENT_POINTS = [
@@ -303,6 +316,35 @@ export default async function Landing() {
           every row a full breakpoint-appropriate grid with nothing left
           dangling, and gives a reader three digestible ideas instead of one
           long scroll of identical cards. */}
+      {/* Learning path — the real curriculum stages, walked as a journey.
+          Desktop: a straight horizontal line behind four evenly-spaced
+          nodes (flex guarantees the spacing, so the line only needs a fixed
+          vertical offset matching the avatar's own centre — no hand-tuned
+          coordinates to drift out of sync). Mobile: the same vertical
+          timeline idiom the Method section already uses below. */}
+      <section className="bg-white border-y border-border">
+        <div className="max-w-5xl mx-auto px-4 py-16">
+          <SectionTitle kicker="مسیر یادگیری" title="از اولین صدا تا اولین کتاب"
+            sub="هر کودک از همان‌جایی شروع می‌کند که هست — آزمون تعیین سطح این را مشخص می‌کند — اما مسیر همیشه همین چهار ایستگاه را طی می‌کند." />
+          <ol className="relative flex flex-col sm:flex-row gap-8 sm:gap-4">
+            <div aria-hidden="true"
+              className="hidden sm:block absolute top-8 inset-x-[12.5%] h-0.5 bg-brand-light" />
+            {STAGES.map((st, i) => (
+              <li key={st.title} className="relative flex sm:flex-1 sm:flex-col items-center sm:text-center gap-4">
+                <span className="relative z-10 shrink-0 w-16 h-16 rounded-full bg-white ring-4 ring-brand-pale flex items-center justify-center">
+                  <CharacterAvatar slug={st.character} size={52} mood="idle" />
+                </span>
+                <div className="sm:flex sm:flex-col sm:items-center">
+                  <span className="inline-block text-[11px] font-bold text-brand-text bg-brand-light rounded-full px-2.5 py-0.5 mb-1.5">{i + 1}. {st.age}</span>
+                  <h3 className="font-bold text-text-primary text-sm">{st.title}</h3>
+                  <p className="text-xs text-text-secondary leading-relaxed mt-1 max-w-[180px]">{st.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
       <section id="features" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
         <SectionTitle kicker="ویژگی‌ها" title="یک مسیر کامل، از اولین صدا تا اولین کتاب"
           sub="ده ابزار که با هم یک برنامه‌ی درسی می‌سازند — نه مجموعه‌ای از بازی‌های پراکنده." />

@@ -185,7 +185,7 @@ function PlacementInner() {
           child's staircase branch is never revealed (§6). Simorgh's own
           animation beats are enough progress feedback for this age group. */}
       <div className="flex justify-center pt-8">
-        <CharacterAvatar slug="simorgh" size={64} mood={phase === 'feedback' ? (lastCorrect ? 'excited' : 'idle') : 'happy'} />
+        <CharacterAvatar slug="simorgh" size={64} mood={phase === 'feedback' ? (lastCorrect ? 'excited' : 'encouraging') : 'happy'} />
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-5 gap-6">
@@ -231,7 +231,7 @@ function PlacementInner() {
             className="fixed inset-0 flex items-center justify-center pointer-events-none"
           >
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-2">
-              <Mascot size={100} mood={lastCorrect ? 'excited' : 'idle'} />
+              <Mascot size={100} mood={lastCorrect ? 'excited' : 'encouraging'} />
               <p className={`font-bold text-xl ${lastCorrect ? 'text-green-600' : 'text-amber-600'}`}>
                 {lastCorrect ? 'آفرین!' : 'اشکالی نداره'}
               </p>
