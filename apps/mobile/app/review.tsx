@@ -77,7 +77,7 @@ export default function Review() {
   if (!items) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -185,5 +185,5 @@ const styles = StyleSheet.create({
     marginTop: 12, backgroundColor: colors.primary, borderRadius: 16,
     paddingVertical: 14, paddingHorizontal: 40,
   },
-  homeButtonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  homeButtonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
 })

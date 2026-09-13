@@ -128,7 +128,7 @@ export default function StoryReader() {
   if (!story) {
     return (
       <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.primary} />}
+        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
       </View>
     )
   }
@@ -188,11 +188,11 @@ export default function StoryReader() {
         </Pressable>
         {isLast ? (
           <Pressable style={[styles.navButton, styles.finishButton]} onPress={finish}>
-            <Text style={[styles.navText, { color: '#fff' }]}>تمام شد 🎉</Text>
+            <Text style={[styles.navText, { color: colors.onPrimary }]}>تمام شد 🎉</Text>
           </Pressable>
         ) : (
           <Pressable style={[styles.navButton, styles.nextButton]} onPress={() => goTo(pageIdx + 1)}>
-            <Text style={[styles.navText, { color: '#fff' }]}>بعدی</Text>
+            <Text style={[styles.navText, { color: colors.onPrimary }]}>بعدی</Text>
           </Pressable>
         )}
       </View>
@@ -229,15 +229,15 @@ function AudioBar({ player, status }: { player: AudioPlayer; status: AudioStatus
     <View style={styles.audioBar}>
       <Pressable style={styles.playButton} onPress={toggle} hitSlop={6}>
         {loading ? (
-          <ActivityIndicator color="#fff" size="small" />
+          <ActivityIndicator color={colors.onPrimary} size="small" />
         ) : status.playing ? (
           <Svg width={22} height={22} viewBox="0 0 24 24">
-            <Rect x="6" y="5" width="4" height="14" rx="1.5" fill="#fff" />
-            <Rect x="14" y="5" width="4" height="14" rx="1.5" fill="#fff" />
+            <Rect x="6" y="5" width="4" height="14" rx="1.5" fill={colors.onPrimary} />
+            <Rect x="14" y="5" width="4" height="14" rx="1.5" fill={colors.onPrimary} />
           </Svg>
         ) : (
           <Svg width={22} height={22} viewBox="0 0 24 24">
-            <Path d="M8 5v14l11-7z" fill="#fff" />
+            <Path d="M8 5v14l11-7z" fill={colors.onPrimary} />
           </Svg>
         )}
       </Pressable>

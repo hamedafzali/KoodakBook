@@ -30,7 +30,7 @@ export default function ManageChildren() {
   if (!children) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -152,7 +152,7 @@ function AddChildCard({ onAdded }: { onAdded: (c: Child) => void }) {
             style={[styles.levelChip, level === l && styles.levelChipActive]}
             onPress={() => setLevel(l)}
           >
-            <Text style={[styles.levelText, level === l && { color: '#fff' }]}>{toPersianDigits(l)}</Text>
+            <Text style={[styles.levelText, level === l && { color: colors.onPrimary }]}>{toPersianDigits(l)}</Text>
           </Pressable>
         ))}
       </View>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: 12,
     paddingVertical: 10, paddingHorizontal: 18, justifyContent: 'center',
   },
-  saveText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
+  saveText: { color: colors.onPrimary, fontSize: 14, fontFamily: fonts.bold },
   msg: { fontSize: 12, fontFamily: fonts.regular },
   levelChip: {
     width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bg,
@@ -195,5 +195,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft, borderRadius: 16,
     paddingVertical: 14, alignItems: 'center',
   },
-  addButtonText: { fontSize: 15, fontFamily: fonts.bold, color: colors.primary },
+  addButtonText: { fontSize: 15, fontFamily: fonts.bold, color: colors.onPrimary },
 })

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Polyline, Stop } from 'react-native-svg'
 import { COLS, LADDERS, ROWS, SIZE, SNAKES, toPersianDigits } from '@koodakbook/shared'
-import { fonts } from '@/lib/theme'
+import { colors, fonts } from '@/lib/theme'
 
 /**
  * The مارپله board — a big winding path of vibrant tiles with a soft 2.5D tilt,
@@ -298,5 +298,5 @@ const styles = StyleSheet.create({
   pipGrid: { flex: 1, justifyContent: 'space-between' },
   pipRow: { flexDirection: 'row', justifyContent: 'space-between' },
   pipSlot: { width: '30%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
-  pip: { width: '78%', height: '78%', borderRadius: 999, backgroundColor: '#7c3aed' },
+  pip: { width: '78%', height: '78%', borderRadius: 999, backgroundColor: colors.primary },
 })

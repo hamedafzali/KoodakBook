@@ -60,7 +60,7 @@ export default function ParentHub() {
   if (!me) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -98,13 +98,13 @@ export default function ParentHub() {
             style={[styles.chip, selected === c.id && styles.chipActive]}
             onPress={() => setSelected(c.id)}
           >
-            <Text style={[styles.chipText, selected === c.id && { color: '#fff' }]}>{c.name}</Text>
+            <Text style={[styles.chipText, selected === c.id && { color: colors.onPrimary }]}>{c.name}</Text>
           </Pressable>
         ))}
       </ScrollView>
 
       {!summary ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 30 }} />
+        <ActivityIndicator color={colors.onPrimary} style={{ marginTop: 30 }} />
       ) : (
         <>
           <View style={styles.statsGrid}>

@@ -70,7 +70,7 @@ export default function Talk() {
   if (!messages || !character) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -101,7 +101,7 @@ export default function Talk() {
         }
         renderItem={({ item }) => (
           <View style={[styles.bubble, item.role === 'child' ? styles.mine : styles.theirs]}>
-            <Text style={[styles.bubbleText, item.role === 'child' && { color: '#fff' }]}>{item.text}</Text>
+            <Text style={[styles.bubbleText, item.role === 'child' && { color: colors.onPrimary }]}>{item.text}</Text>
           </View>
         )}
       />
@@ -119,7 +119,7 @@ export default function Talk() {
           returnKeyType="send"
         />
         <Pressable style={[styles.send, (!text.trim() || sending) && { opacity: 0.5 }]} onPress={send} disabled={!text.trim() || sending}>
-          <Text style={{ fontSize: 18, color: '#fff' }}>↑</Text>
+          <Text style={{ fontSize: 18, color: colors.onPrimary }}>↑</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

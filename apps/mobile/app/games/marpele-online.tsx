@@ -211,7 +211,7 @@ export default function MarpeleOnline() {
 
   // ── render ─────────────────────────────────────────────────────────────
   if (phase === 'loading') {
-    return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
+    return <View style={styles.center}><ActivityIndicator color={colors.onPrimary} /></View>
   }
 
   if (phase === 'ended') {
@@ -287,7 +287,7 @@ export default function MarpeleOnline() {
         <Pressable onPress={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); router.back() }} hitSlop={10}>
           <Text style={styles.back}>✕</Text>
         </Pressable>
-        <Text style={[styles.turn, { color: myTurn ? colors.primary : colors.muted }]}>
+        <Text style={[styles.turn, { color: myTurn ? colors.onPrimary : colors.muted }]}>
           {myTurn ? 'نوبت توست! 🎲' : `نوبت ${cur?.name}…`}
         </Text>
       </View>
@@ -296,7 +296,7 @@ export default function MarpeleOnline() {
         {room?.players.map((p, i) => (
           <View key={p.childId} style={[styles.pcard, i === current && styles.pcardActive]}>
             <Text style={{ fontSize: 18 }}>{TOKEN_EMOJI[i]}</Text>
-            <Text style={[styles.pcardName, i === current && { color: '#fff' }]} numberOfLines={1}>
+            <Text style={[styles.pcardName, i === current && { color: colors.onPrimary }]} numberOfLines={1}>
               {p.childId === me.id ? 'تو' : p.name}
             </Text>
             <View style={styles.pcardBadge}><Text style={styles.pcardBadgeText}>{toPersianDigits(positions[i] ?? 0)}</Text></View>
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   friendStatus: { fontSize: 12, fontFamily: fonts.medium },
   strip: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   pcard: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10, borderWidth: 2, borderColor: 'transparent' },
-  pcardActive: { backgroundColor: colors.primary, borderColor: '#fde047' },
+  pcardActive: { backgroundColor: colors.primary, borderColor: colors.primaryDeep },
   pcardName: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, maxWidth: 90 },
   pcardBadge: { backgroundColor: colors.bg, borderRadius: 999, paddingHorizontal: 7, minWidth: 22, alignItems: 'center' },
   pcardBadgeText: { fontSize: 12, fontFamily: fonts.bold, color: colors.text },
@@ -371,21 +371,21 @@ const styles = StyleSheet.create({
   reactionFloat: { position: 'absolute', alignSelf: 'center', bottom: 160, fontSize: 64 },
   reactionsRow: { flexDirection: 'row', justifyContent: 'center', gap: 18 },
   controls: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  rollButton: { flex: 1, backgroundColor: colors.primary, borderRadius: 20, paddingVertical: 16, alignItems: 'center', borderBottomWidth: 4, borderBottomColor: '#5b21b6' },
+  rollButton: { flex: 1, backgroundColor: colors.primary, borderRadius: 20, paddingVertical: 16, alignItems: 'center', borderBottomWidth: 4, borderBottomColor: colors.primaryDeep },
   rollDisabled: { backgroundColor: '#cbd5e1', borderBottomColor: '#94a3b8' },
-  rollText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  rollText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   modalCard: { backgroundColor: colors.bg, borderRadius: 24, padding: 20, width: '100%', maxWidth: 380, gap: 12 },
   inviteCard: { backgroundColor: colors.card, borderRadius: 24, padding: 24, width: '100%', maxWidth: 320, alignItems: 'center', gap: 12 },
   inviteText: { fontSize: 15, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   challengePrompt: { fontSize: 15, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   acceptBtn: { backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 24 },
-  acceptText: { color: '#fff', fontSize: 15, fontFamily: fonts.bold },
+  acceptText: { color: colors.onPrimary, fontSize: 15, fontFamily: fonts.bold },
   declineBtn: { backgroundColor: '#e2e8f0', borderRadius: 14, paddingVertical: 11, paddingHorizontal: 20 },
   declineText: { color: colors.text, fontSize: 15, fontFamily: fonts.bold },
   bigTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   primaryButton: { marginTop: 8, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 48 },
-  primaryText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  primaryText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   secondaryButton: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 40 },
   secondaryText: { color: colors.muted, fontSize: 15, fontFamily: fonts.bold },
 })

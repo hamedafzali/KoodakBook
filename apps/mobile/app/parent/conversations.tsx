@@ -57,21 +57,21 @@ export default function Conversations() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pickerRow}>
           {children.map((c) => (
             <Pressable key={c.id} style={[styles.pick, childId === c.id && styles.pickActive]} onPress={() => setChildId(c.id)}>
-              <Text style={[styles.pickText, childId === c.id && { color: '#fff' }]}>{c.name}</Text>
+              <Text style={[styles.pickText, childId === c.id && { color: colors.onPrimary }]}>{c.name}</Text>
             </Pressable>
           ))}
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pickerRow}>
           {characters.map((c) => (
             <Pressable key={c.slug} style={[styles.pick, slug === c.slug && styles.pickActive]} onPress={() => setSlug(c.slug)}>
-              <Text style={[styles.pickText, slug === c.slug && { color: '#fff' }]}>{c.name_persian}</Text>
+              <Text style={[styles.pickText, slug === c.slug && { color: colors.onPrimary }]}>{c.name_persian}</Text>
             </Pressable>
           ))}
         </ScrollView>
       </View>
 
       {turns === null ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 30 }} />
+        <ActivityIndicator color={colors.onPrimary} style={{ marginTop: 30 }} />
       ) : turns.length === 0 ? (
         <Text style={styles.empty}>
           هنوز گفت‌وگویی بین {child?.name ?? 'کودک'} و {character?.name_persian ?? 'این شخصیت'} انجام نشده.

@@ -47,7 +47,7 @@ export default function NewStory() {
         <Text style={{ fontSize: 56 }}>✨</Text>
         <Text style={styles.waitTitle}>در حال نوشتن داستان تو... ✨</Text>
         <Text style={styles.waitSub}>یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</Text>
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 10 }} />
+        <ActivityIndicator color={colors.onPrimary} style={{ marginTop: 10 }} />
       </View>
     )
   }
@@ -75,7 +75,7 @@ export default function NewStory() {
             onPress={() => setTheme(t.key)}
           >
             <Text style={{ fontSize: 30 }}>{t.emoji}</Text>
-            <Text style={[styles.optionLabel, theme === t.key && { color: colors.primary }]}>{t.label}</Text>
+            <Text style={[styles.optionLabel, theme === t.key && { color: colors.onPrimary }]}>{t.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   optionLabel: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
   error: { color: colors.danger, fontFamily: fonts.regular, textAlign: 'center' },
   button: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
+  buttonText: { color: colors.onPrimary, fontSize: 18, fontFamily: fonts.bold },
   waitTitle: { fontSize: 20, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   waitSub: { fontSize: 14, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
 })

@@ -86,7 +86,7 @@ export default function PhonicsPage() {
           return (
             <Pressable
               key={v.key}
-              style={[styles.vowelTile, { backgroundColor: VOWEL_TINTS[v.key] ?? colors.primary }]}
+              style={[styles.vowelTile, { backgroundColor: VOWEL_TINTS[v.key] ?? colors.onPrimary }]}
               onPress={() => demo(syll, v.namePersian, 'b' + v.latin)}
             >
               <Text style={styles.vowelSyll}>{syll}</Text>
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15,
     alignItems: 'center', paddingHorizontal: 40,
   },
-  primaryText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  primaryText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   secondaryButton: {
     borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16,
     paddingVertical: 12, paddingHorizontal: 40,

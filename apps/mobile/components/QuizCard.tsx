@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     width: '100%', backgroundColor: colors.primary, borderRadius: 16,
     paddingVertical: 14, alignItems: 'center',
   },
-  nextText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  nextText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   promptCard: {
     width: '100%', minHeight: 170, backgroundColor: colors.card, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center', padding: 16, gap: 4,

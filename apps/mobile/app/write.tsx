@@ -33,7 +33,7 @@ export default function Write() {
   if (!letters) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }

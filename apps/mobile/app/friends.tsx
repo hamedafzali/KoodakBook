@@ -23,7 +23,7 @@ export default function Friends() {
   if (!chars) {
     return (
       <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.primary} />}
+        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
       </View>
     )
   }

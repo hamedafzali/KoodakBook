@@ -95,7 +95,7 @@ export default function Friends() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.primary} /></View>
+    return <View style={styles.center}><ActivityIndicator color={colors.onPrimary} /></View>
   }
 
   const activeChild = children.find((c) => c.id === selected)
@@ -116,7 +116,7 @@ export default function Friends() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {children.map((c) => (
             <Pressable key={c.id} style={[styles.chip, selected === c.id && styles.chipActive]} onPress={() => pickChild(c.id)}>
-              <Text style={[styles.chipText, selected === c.id && { color: '#fff' }]}>{c.name}</Text>
+              <Text style={[styles.chipText, selected === c.id && { color: colors.onPrimary }]}>{c.name}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -202,19 +202,19 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 14, fontFamily: fonts.medium, color: colors.text },
   card: { backgroundColor: colors.card, borderRadius: 18, padding: 16, gap: 10 },
   cardLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.text },
-  code: { fontSize: 30, fontFamily: fonts.bold, color: colors.primary, letterSpacing: 3, textAlign: 'center', writingDirection: 'ltr' },
+  code: { fontSize: 30, fontFamily: fonts.bold, color: colors.onPrimary, letterSpacing: 3, textAlign: 'center', writingDirection: 'ltr' },
   shareButton: { backgroundColor: colors.primarySoft, borderRadius: 14, paddingVertical: 11, alignItems: 'center' },
-  shareText: { color: colors.primary, fontSize: 14, fontFamily: fonts.bold },
+  shareText: { color: colors.onPrimary, fontSize: 14, fontFamily: fonts.bold },
   hint: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   input: { flex: 1, backgroundColor: colors.bg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 16, fontFamily: fonts.bold, color: colors.text, textAlign: 'center', letterSpacing: 2, writingDirection: 'ltr' },
   addButton: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 20, justifyContent: 'center' },
-  addText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
+  addText: { color: colors.onPrimary, fontSize: 14, fontFamily: fonts.bold },
   msg: { fontSize: 13, fontFamily: fonts.regular },
   sectionLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.muted, marginTop: 8, marginBottom: -2 },
   reqRow: { gap: 8, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   reqText: { fontSize: 13, fontFamily: fonts.regular, color: colors.text },
   acceptBtn: { backgroundColor: colors.success, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 16 },
-  acceptText: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
+  acceptText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.bold },
   declineBtn: { backgroundColor: '#e2e8f0', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 16 },
   declineText: { color: colors.text, fontSize: 13, fontFamily: fonts.bold },
   empty: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', lineHeight: 22 },

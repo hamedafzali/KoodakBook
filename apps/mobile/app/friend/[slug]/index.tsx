@@ -40,7 +40,7 @@ export default function FriendHome() {
   if (!chars) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', width: '100%',
   },
   bubbleText: { fontSize: 15, fontFamily: fonts.regular, color: colors.text, textAlign: 'center', lineHeight: 26 },
-  listen: { fontSize: 13, fontFamily: fonts.medium, color: colors.primary },
+  listen: { fontSize: 13, fontFamily: fonts.medium, color: colors.onPrimary },
   door: {
     width: '100%', flexDirection: 'row', alignItems: 'center', gap: 14,
     borderRadius: 20, padding: 18, marginTop: 6,

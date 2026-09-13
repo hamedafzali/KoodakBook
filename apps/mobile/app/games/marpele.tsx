@@ -62,7 +62,7 @@ export default function Marpele() {
   if (!pool) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -160,7 +160,7 @@ function Setup({ insets, childName, characters, onStart }: {
               onPress={() => toggleChar(ch.slug)}
             >
               <Text style={{ fontSize: 30 }}>{characterEmoji(ch)}</Text>
-              <Text style={[styles.charName, on && { color: '#fff' }]} numberOfLines={1}>{ch.name_persian}</Text>
+              <Text style={[styles.charName, on && { color: colors.onPrimary }]} numberOfLines={1}>{ch.name_persian}</Text>
             </Pressable>
           )
         })}
@@ -192,9 +192,9 @@ function PlayerCard({ player, square, active }: { player: Player; square: number
   return (
     <Animated.View style={[styles.pcard, active && styles.pcardActive, { transform: [{ scale: active ? pulse : 1 }] }]}>
       <Text style={styles.pcardEmoji}>{player.emoji}</Text>
-      <Text style={[styles.pcardName, active && { color: '#fff' }]} numberOfLines={1}>{player.name}</Text>
-      <View style={[styles.pcardBadge, active && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-        <Text style={[styles.pcardBadgeText, active && { color: '#fff' }]}>{square > 0 ? toPersianDigits(square) : '۰'}</Text>
+      <Text style={[styles.pcardName, active && { color: colors.onPrimary }]} numberOfLines={1}>{player.name}</Text>
+      <View style={[styles.pcardBadge, active && { backgroundColor: colors.primarySoft }]}>
+        <Text style={[styles.pcardBadgeText, active && { color: colors.onPrimary }]}>{square > 0 ? toPersianDigits(square) : '۰'}</Text>
       </View>
     </Animated.View>
   )
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card,
     borderRadius: 999, paddingVertical: 5, paddingHorizontal: 8, borderWidth: 2, borderColor: 'transparent',
   },
-  pcardActive: { backgroundColor: colors.primary, borderColor: '#fde047' },
+  pcardActive: { backgroundColor: colors.primary, borderColor: colors.primaryDeep },
   pcardEmoji: { fontSize: 20 },
   pcardName: { fontSize: 12, fontFamily: fonts.bold, color: colors.text, maxWidth: 70 },
   pcardBadge: { backgroundColor: colors.bg, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1, minWidth: 22, alignItems: 'center' },
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, marginTop: 6 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 18, alignSelf: 'flex-start', backgroundColor: colors.card, borderRadius: 16, padding: 10 },
   stepBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
-  stepBtnText: { fontSize: 22, fontFamily: fonts.bold, color: colors.primary },
+  stepBtnText: { fontSize: 22, fontFamily: fonts.bold, color: colors.onPrimary },
   stepValue: { fontSize: 20, fontFamily: fonts.bold, color: colors.text, minWidth: 24, textAlign: 'center' },
   charGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   charChip: {
@@ -427,23 +427,23 @@ const styles = StyleSheet.create({
   charName: { fontSize: 12, fontFamily: fonts.medium, color: colors.text },
   lineup: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', marginTop: 4 },
   startButton: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
-  startText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
+  startText: { color: colors.onPrimary, fontSize: 18, fontFamily: fonts.bold },
   boardArea: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   controls: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   rollButton: {
     flex: 1, backgroundColor: colors.primary, borderRadius: 20, paddingVertical: 18, alignItems: 'center',
-    borderBottomWidth: 4, borderBottomColor: '#5b21b6',
+    borderBottomWidth: 4, borderBottomColor: colors.primaryDeep,
     shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
   rollDisabled: { backgroundColor: '#cbd5e1', borderBottomColor: '#94a3b8', shadowOpacity: 0 },
-  rollText: { color: '#fff', fontSize: 18, fontFamily: fonts.bold },
+  rollText: { color: colors.onPrimary, fontSize: 18, fontFamily: fonts.bold },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   modalCard: { backgroundColor: colors.bg, borderRadius: 24, padding: 20, width: '100%', maxWidth: 380, gap: 12 },
   challengePrompt: { fontSize: 15, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   primaryButton: { marginTop: 10, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 48 },
-  primaryText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  primaryText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   secondaryButton: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 40 },
   secondaryText: { color: colors.muted, fontSize: 15, fontFamily: fonts.bold },
 })

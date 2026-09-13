@@ -92,7 +92,7 @@ export default function ParentProgress() {
   if (!data) {
     return (
       <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.primary} />}
+        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
       </View>
     )
   }
@@ -133,7 +133,7 @@ export default function ParentProgress() {
       <View style={styles.tabs}>
         {TABS.map((t) => (
           <Pressable key={t.key} style={[styles.tab, tab === t.key && styles.tabActive]} onPress={() => setTab(t.key)}>
-            <Text style={[styles.tabText, tab === t.key && { color: colors.primary }]}>
+            <Text style={[styles.tabText, tab === t.key && { color: colors.onPrimary }]}>
               {t.label} ({toPersianDigits(t.count)})
             </Text>
           </Pressable>

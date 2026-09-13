@@ -128,7 +128,7 @@ export default function Placement() {
   if (phase === 'loading') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -171,7 +171,7 @@ export default function Placement() {
   if (!q) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     marginTop: 16, backgroundColor: colors.primary, borderRadius: 20,
     paddingVertical: 16, paddingHorizontal: 48,
   },
-  bigButtonText: { color: '#fff', fontSize: 20, fontFamily: fonts.bold },
+  bigButtonText: { color: colors.onPrimary, fontSize: 20, fontFamily: fonts.bold },
   mascotRow: { flexDirection: 'row', justifyContent: 'center' },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 24 },
   prompt: { fontSize: 18, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },

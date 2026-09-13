@@ -80,7 +80,7 @@ export default function Onboarding() {
       )}
 
       <Pressable style={[styles.button, (busy || !name.trim()) && { opacity: 0.5 }]} disabled={busy || !name.trim()} onPress={submit}>
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>بریم بازی کنیم! 🚀</Text>}
+        {busy ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.buttonText}>بریم بازی کنیم! 🚀</Text>}
       </Pressable>
       </KeyboardAvoidingView>
     </ScreenBackground>
@@ -109,5 +109,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14,
     width: '100%', maxWidth: 360, alignItems: 'center', marginTop: 4,
   },
-  buttonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  buttonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
 })

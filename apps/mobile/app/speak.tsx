@@ -51,7 +51,7 @@ export default function Speak() {
   if (!words) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -160,5 +160,5 @@ const styles = StyleSheet.create({
     width: '100%', maxWidth: 360, backgroundColor: colors.primary, borderRadius: 16,
     paddingVertical: 15, alignItems: 'center', marginTop: 'auto',
   },
-  nextButtonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  nextButtonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
 })

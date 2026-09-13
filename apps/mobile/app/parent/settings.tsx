@@ -75,7 +75,7 @@ export default function Settings() {
               style={[styles.chip, goal === g.value && styles.chipActive]}
               onPress={() => chooseGoal(g.value)}
             >
-              <Text style={[styles.chipText, goal === g.value && { color: '#fff' }]}>{g.label}</Text>
+              <Text style={[styles.chipText, goal === g.value && { color: colors.onPrimary }]}>{g.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -89,7 +89,7 @@ export default function Settings() {
             style={[styles.chip, lang === 'none' && styles.chipActive]}
             onPress={() => chooseLang('none')}
           >
-            <Text style={[styles.chipText, lang === 'none' && { color: '#fff' }]}>خاموش</Text>
+            <Text style={[styles.chipText, lang === 'none' && { color: colors.onPrimary }]}>خاموش</Text>
           </Pressable>
           {TRANSLATION_LANGS.map((l) => (
             <Pressable
@@ -97,7 +97,7 @@ export default function Settings() {
               style={[styles.chip, lang === l.code && styles.chipActive]}
               onPress={() => chooseLang(l.code)}
             >
-              <Text style={[styles.chipText, lang === l.code && { color: '#fff' }]}>{l.flag} {l.label}</Text>
+              <Text style={[styles.chipText, lang === l.code && { color: colors.onPrimary }]}>{l.flag} {l.label}</Text>
             </Pressable>
           ))}
         </View>
@@ -184,6 +184,6 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 18, color: colors.muted },
   confirmText: { fontSize: 14, fontFamily: fonts.regular, color: colors.text },
   confirmButton: { flex: 1, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
-  confirmButtonText: { color: '#fff', fontSize: 14, fontFamily: fonts.bold },
+  confirmButtonText: { color: colors.onPrimary, fontSize: 14, fontFamily: fonts.bold },
   version: { textAlign: 'center', fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 8 },
 })

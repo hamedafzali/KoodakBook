@@ -40,7 +40,7 @@ export default function ShareProgress() {
   if (!summary) {
     return (
       <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.primary} />}
+        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
       </View>
     )
   }
@@ -94,14 +94,14 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: 6, marginTop: 10,
   },
   cardEmoji: { fontSize: 44 },
-  cardName: { fontSize: 26, fontFamily: fonts.bold, color: '#fff' },
-  cardLine: { fontSize: 14, fontFamily: fonts.regular, color: 'rgba(255,255,255,0.9)' },
+  cardName: { fontSize: 26, fontFamily: fonts.bold, color: colors.onPrimary },
+  cardLine: { fontSize: 14, fontFamily: fonts.regular, color: colors.onPrimary },
   cardStats: { flexDirection: 'row', gap: 24, marginTop: 14 },
   cardStat: { alignItems: 'center' },
-  cardStatValue: { fontSize: 26, fontFamily: fonts.bold, color: '#fff' },
-  cardStatLabel: { fontSize: 12, fontFamily: fonts.regular, color: 'rgba(255,255,255,0.85)' },
+  cardStatValue: { fontSize: 26, fontFamily: fonts.bold, color: colors.onPrimary },
+  cardStatLabel: { fontSize: 12, fontFamily: fonts.regular, color: colors.onPrimary },
   shareButton: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center' },
-  shareButtonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  shareButtonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   hint: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   error: { color: colors.danger, fontFamily: fonts.regular },
 })

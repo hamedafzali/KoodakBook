@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#e5e7eb' },
   dotActive: { backgroundColor: colors.primary, width: 20 },
   button: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 40, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 16, fontFamily: fonts.bold },
+  buttonText: { color: colors.onPrimary, fontSize: 16, fontFamily: fonts.bold },
   skip: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 4 },
 })

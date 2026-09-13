@@ -1,12 +1,20 @@
-// Tiny shared palette for the first screens — matches web's warm child-bg
-// tones. Grows into a real theme when the design lands.
+// Matches web's brand tokens (apps/web/src/app/globals.css: --ramp-brand-*)
+// so the mobile app is the same saffron identity, not a placeholder. `primary`
+// is the bright fill (buttons, active chips) -- text/icons drawn ON that fill
+// use `onPrimary` (dark ink), never white: bg-amber-500/white measures ~2:1,
+// well under the 4.5:1 floor (see design-review-2026-09-11.md). `onPrimary`
+// doubles as the brand-colored TEXT color on light backgrounds (tab labels,
+// links) for the same reason -- the bright tone is illegible as text on cream.
+// `primaryDeep` is the pressed/bevel shade (web's --ramp-brand-deep).
 export const colors = {
   bg: '#fdf6ec',
   card: '#ffffff',
   text: '#3b2f2f',
   muted: '#7a6a58',
-  primary: '#7c3aed',
-  primarySoft: '#ede9fe',
+  primary: '#FBBF24',
+  onPrimary: '#654900',
+  primaryDeep: '#745300',
+  primarySoft: '#FEF3C7',
   success: '#22c55e',
   danger: '#dc2626',
 }

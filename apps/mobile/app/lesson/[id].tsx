@@ -101,7 +101,7 @@ export default function LessonPlayer() {
   if (!lesson) {
     return (
       <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.primary} />}
+        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
       </View>
     )
   }
@@ -178,6 +178,6 @@ const styles = StyleSheet.create({
     marginTop: 12, backgroundColor: colors.primary, borderRadius: 16,
     paddingVertical: 14, paddingHorizontal: 48,
   },
-  homeButtonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  homeButtonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   error: { color: colors.danger, fontFamily: fonts.regular },
 })

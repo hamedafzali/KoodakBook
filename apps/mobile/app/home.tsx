@@ -135,7 +135,7 @@ export default function Home() {
   if (!child) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.onPrimary} />
       </View>
     )
   }
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   nextUpLabel: { fontSize: 13, fontFamily: fonts.bold, color: '#d97706' },
   nextUpTitle: { fontSize: 19, fontFamily: fonts.bold, color: colors.text, marginTop: 2 },
   nextUpCta: { backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
-  nextUpCtaText: { color: '#fff', fontSize: 13, fontFamily: fonts.bold },
+  nextUpCtaText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.bold },
   rowLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
   lettersRow: { gap: 10, paddingRight: 4 },
   letterTile: {

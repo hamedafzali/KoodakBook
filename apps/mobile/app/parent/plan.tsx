@@ -49,7 +49,7 @@ export default function PlanPage() {
   if (!plans) {
     return (
       <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.primary} />}
+        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
       </View>
     )
   }
@@ -76,14 +76,14 @@ export default function PlanPage() {
           <View key={plan.id} style={[styles.planCard, isCurrent && styles.planCurrent]}>
             <View style={[styles.planHead, isPremium ? styles.planHeadPremium : styles.planHeadFree]}>
               <View style={styles.planTitleRow}>
-                <Text style={[styles.planName, isPremium && { color: '#fff' }]}>{plan.name}</Text>
+                <Text style={[styles.planName, isPremium && { color: colors.onPrimary }]}>{plan.name}</Text>
                 {isCurrent && (
                   <View style={styles.currentPill}><Text style={styles.currentPillText}>پلن فعلی</Text></View>
                 )}
               </View>
-              <Text style={[styles.planPrice, isPremium && { color: '#fff' }]}>{priceLabel(plan)}</Text>
+              <Text style={[styles.planPrice, isPremium && { color: colors.onPrimary }]}>{priceLabel(plan)}</Text>
               {plan.description && (
-                <Text style={[styles.planDesc, isPremium && { color: 'rgba(255,255,255,0.85)' }]}>{plan.description}</Text>
+                <Text style={[styles.planDesc, isPremium && { color: colors.onPrimary }]}>{plan.description}</Text>
               )}
             </View>
 
