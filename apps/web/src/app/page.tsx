@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Landing from "@/components/landing/Landing";
-import SessionRedirect from "@/components/landing/SessionRedirect";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -37,15 +36,14 @@ export const metadata: Metadata = {
 };
 
 /**
- * Public marketing landing. Logged-in sessions are redirected into the app by
- * <SessionRedirect/> (child mode → child home, else parent dashboard), so kids
- * relaunching never see the sales page; anonymous visitors read the landing.
+ * Public marketing landing — the root of the site. Always renders the
+ * landing page, regardless of session state: koodakbook.eu.cc must stay a
+ * normal marketing page you can land on and share, not bounce straight into
+ * the app just because a browser has a stored session. (Previously a
+ * <SessionRedirect/> component sent logged-in visitors straight to
+ * /parent/dashboard or /child/home — removed on request; app users still
+ * reach the app via /login or their own bookmarked app URL.)
  */
 export default function RootPage() {
-  return (
-    <>
-      <SessionRedirect />
-      <Landing />
-    </>
-  );
+  return <Landing />;
 }
