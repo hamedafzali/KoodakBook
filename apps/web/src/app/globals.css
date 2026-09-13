@@ -54,6 +54,16 @@
      fails — never the gradient. Generates the `text-on-brand` utility. */
   --color-on-brand:      #451A03;
 
+  /* Ink for text/icons on the AuthShell signup panel gradient (emerald-400
+     via emerald-500 to teal-600 — see AuthShell.tsx). Measured against all
+     three stops:
+       on #34d399 (emerald-400) 8.94:1
+       on #10b981 (emerald-500) 6.78:1
+       on #0d9488 (teal-600)    4.59:1
+     All clear WCAG AA for normal text. Kept separate from --color-on-brand,
+     which is tuned for the saffron brand gradient, not this one. */
+  --color-on-signup:     #00201A;
+
   /* Child Activity Colors — legacy single-stop hues.
      Superseded by the 4-stop ramps below; kept until the last call site moves. */
   --color-lesson:        #E63946;   /* Pomegranate  — lessons     */

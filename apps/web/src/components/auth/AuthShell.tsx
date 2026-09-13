@@ -11,6 +11,10 @@ type Variant = 'login' | 'signup'
 const THEME: Record<Variant, {
   page: string
   panel: string
+  /** Ink for all text/icons on `panel` — never white-on-gradient (unreadable;
+   *  see globals.css --color-on-brand / --color-on-signup for the measured
+   *  contrast ratios behind each). */
+  ink: string
   logoHover: string
   headline: string
   points: { icon: IconName; text: string }[]
@@ -20,6 +24,7 @@ const THEME: Record<Variant, {
   login: {
     page: 'bg-amber-50',
     panel: 'bg-gradient-to-br from-amber-400 via-amber-500 to-orange-500',
+    ink: 'text-on-brand',
     logoHover: 'hover:opacity-90',
     headline: 'هر شب یک قصه‌ی فارسی،\nهر روز چند واژه‌ی تازه',
     points: [
@@ -37,6 +42,7 @@ const THEME: Record<Variant, {
   signup: {
     page: 'bg-emerald-50',
     panel: 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600',
+    ink: 'text-on-signup',
     logoHover: 'hover:opacity-90',
     headline: 'ماجراجویی فارسی\nاز همین‌جا شروع می‌شود',
     points: [
@@ -117,23 +123,23 @@ export default function AuthShell({ variant, children }: { variant: Variant; chi
     <div className={`min-h-screen grid lg:grid-cols-2 ${t.page}`}>
 
       {/* Branding / story panel (desktop) */}
-      <aside className={`hidden lg:flex flex-col justify-center ${t.panel} text-white p-12 relative overflow-hidden`}>
+      <aside className={`hidden lg:flex flex-col justify-center ${t.panel} ${t.ink} p-12 relative overflow-hidden`}>
         <div className="max-w-md mx-auto w-full">
           <div className="flex items-center justify-between mb-10">
             <Link href="/" className={`inline-flex items-center gap-2 font-bold text-2xl ${t.logoHover}`}><Icon name="book" size="lg" />کودک‌بوک</Link>
-            <span className="bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full">{t.badge}</span>
+            <span className="bg-white/20 text-xs font-bold px-3 py-1.5 rounded-full">{t.badge}</span>
           </div>
           {variant === 'login' ? <StoryScene /> : <BalloonScene />}
           <h2 className="text-2xl font-bold mt-8 leading-snug whitespace-pre-line">{t.headline}</h2>
           <ul className="mt-6 space-y-3">
             {t.points.map(p => (
-              <li key={p.text} className="flex items-center gap-3 text-white/90">
+              <li key={p.text} className="flex items-center gap-3">
                 <span className="bg-white/15 rounded-xl w-10 h-10 flex items-center justify-center shrink-0"><Icon name={p.icon} size="md" /></span>
                 <span className="text-sm">{p.text}</span>
               </li>
             ))}
           </ul>
-          <ul className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/70">
+          <ul className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-xs">
             {t.chips.map(c => (
               <li key={c.text} className="inline-flex items-center gap-1.5"><Icon name={c.icon} size="xs" />{c.text}</li>
             ))}
