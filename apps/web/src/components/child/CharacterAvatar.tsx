@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react'
 import { CharacterActor } from 'pixel-wizards-charachters/react'
 import { CHARACTERS } from 'pixel-wizards-charachters'
-import type { ActorRig, EmotionOverrides } from 'pixel-wizards-charachters'
+import type { ActorRig, EmotionOverrides, VisemeName } from 'pixel-wizards-charachters'
 import { useCharacterEmotions } from '@/lib/characterEmotions'
 import { MOOD_TO_EMOTION, MOOD_INTENSITY, type CharacterMood } from './mood'
 
@@ -17,7 +17,9 @@ import { MOOD_TO_EMOTION, MOOD_INTENSITY, type CharacterMood } from './mood'
  *  - mood   : any name in `mood.ts` — all twelve rig emotions (→ library emotion)
  *  - talking: generic mouth flap while audio plays
  *  - mouth  : 0..1 viseme openness from a Performance track (useActing) — beats
- *             the generic `talking` loop when set. */
+ *             the generic `talking` loop when set.
+ *  - viseme : the actual mouth SHAPE for that beat (useActing again) — pairs
+ *             with `mouth`; omitted, the shape stays 'rest' (today's flap). */
 
 /* The vocabulary lives in mood.ts so Mascot and CharacterAvatar can't drift.
  * Re-exported because call sites already import the type from here. */
@@ -30,12 +32,15 @@ interface Props {
   talking?: boolean
   /** Driven viseme openness 0..1 from a performance track (useActing). */
   mouth?: number
+  /** The rig's real mouth shape for this beat (useActing) — pairs with
+   *  `mouth`. Omitted, the shape stays 'rest' regardless of `mouth`. */
+  viseme?: VisemeName
   /** per-emotion tuning saved in the DB (animation.emotions) */
   emotions?: EmotionOverrides
   className?: string
 }
 
-export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, emotions, className }: Props) {
+export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, viseme, emotions, className }: Props) {
   // Every real character is in the library; unknown slugs fall back to سیمرغ so
   // the avatar still renders from the npm package rather than app-local art.
   const character = slug in CHARACTERS ? slug : 'simorgh'
@@ -57,7 +62,7 @@ export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talki
     const r = rig.current
     if (!r) return
     if (mouth != null) {
-      r.apply({ viseme: 'rest', mouthOpen: Math.max(0, Math.min(1, mouth)) })
+      r.apply({ viseme: viseme ?? 'rest', mouthOpen: Math.max(0, Math.min(1, mouth)) })
       return
     }
     if (!talking) {
@@ -70,7 +75,7 @@ export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talki
       r.apply({ viseme: 'rest', mouthOpen: 0.3 + 0.35 * (0.5 - 0.5 * Math.cos(p * 2 * Math.PI)) })
     }, 55)
     return () => clearInterval(id)
-  }, [character, mouth, talking])
+  }, [character, mouth, viseme, talking])
 
   return (
     <CharacterActor

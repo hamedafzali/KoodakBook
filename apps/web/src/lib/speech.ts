@@ -5,6 +5,17 @@
 
 import { mediaUrl } from './media'
 import { buildPerformance, type ActingMood } from '@koodakbook/shared'
+// The rig's OWN Persian viseme classification — real mouth shapes (closed
+// lips for م/ب/پ, rounded for او, tongue for ل/ن/ت…), not a shape-blind
+// openness guess. This is the one place that duplication would otherwise
+// creep back into: buildPerformance takes it as a plug-in precisely so the
+// classification itself stays owned by pixel-wizards-charachters.
+import { PMAP, VISEMES } from 'pixel-wizards-charachters'
+
+function classifyViseme(ch: string): { mouth: number; viseme: string } | null {
+  const v = PMAP[ch]
+  return v ? { mouth: VISEMES[v].o, viseme: v } : null
+}
 
 let voicesLoaded = false
 let cachedFaVoice: SpeechSynthesisVoice | null = null
@@ -106,26 +117,28 @@ export function onSpeaking(fn: SpeakingListener): () => void {
 // words being spoken (@koodakbook/shared buildPerformance), scaled to the clip's
 // real duration so the mouth tracks the voice. Any surface that plays a line via
 // speakOrPlay gets it for free — it only has to pass `mouth` to CharacterAvatar.
-type ActingListener = (mouth: number, mood: ActingMood) => void
+type ActingListener = (mouth: number, mood: ActingMood, viseme: string) => void
 const actingListeners = new Set<ActingListener>()
 let actMouth = 0
 let actMood: ActingMood = 'idle'
+let actViseme = 'rest'
 let actRaf: number | null = null
 
 function emitActing() {
-  for (const fn of actingListeners) { try { fn(actMouth, actMood) } catch { /* listener's problem */ } }
+  for (const fn of actingListeners) { try { fn(actMouth, actMood, actViseme) } catch { /* listener's problem */ } }
 }
 
-/** Subscribe to the acting track (mouth openness + body mood). Returns unsubscribe. */
+/** Subscribe to the acting track (mouth openness + body mood + viseme shape).
+ *  Returns unsubscribe. */
 export function onActing(fn: ActingListener): () => void {
   actingListeners.add(fn)
-  fn(actMouth, actMood)
+  fn(actMouth, actMood, actViseme)
   return () => { actingListeners.delete(fn) }
 }
 
 function stopPerformance() {
   if (actRaf != null) { cancelAnimationFrame(actRaf); actRaf = null }
-  if (actMouth !== 0) { actMouth = 0; emitActing() }
+  if (actMouth !== 0 || actViseme !== 'rest') { actMouth = 0; actViseme = 'rest'; emitActing() }
 }
 
 /** Run a viseme performance for `text` over a rAF clock, broadcasting each frame.
@@ -133,7 +146,7 @@ function stopPerformance() {
 function startPerformance(text: string, totalMs?: number) {
   stopPerformance()
   if (typeof window === 'undefined' || !text.trim()) return
-  const perf = buildPerformance(text, null, totalMs ? { totalMs } : {})
+  const perf = buildPerformance(text, null, { ...(totalMs ? { totalMs } : {}), classify: classifyViseme })
   actMood = perf.emotion
   const start = performance.now()
   let i = 0, target = 0, cur = 0
@@ -143,12 +156,16 @@ function startPerformance(text: string, totalMs?: number) {
       const f = perf.frames[i]
       if (f.mouth != null) target = f.mouth
       if (f.mood) actMood = f.mood
+      // The SHAPE switches the moment its beat arrives (a real mouth doesn't
+      // ease between "closed" and "rounded"); only the aperture (`cur`, below)
+      // eases, so the flap still reads as smooth motion rather than a snap.
+      if (f.viseme) actViseme = f.viseme
       i++
     }
     cur += (target - cur) * 0.4            // smooth the flap between visemes
     actMouth = cur
     emitActing()
-    if (el >= perf.duration) { actMouth = 0; emitActing(); actRaf = null; return }
+    if (el >= perf.duration) { actMouth = 0; actViseme = 'rest'; emitActing(); actRaf = null; return }
     actRaf = requestAnimationFrame(tick)
   }
   actRaf = requestAnimationFrame(tick)

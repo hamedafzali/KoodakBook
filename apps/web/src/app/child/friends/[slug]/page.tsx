@@ -30,7 +30,7 @@ export default function CharacterHomePage() {
   const { slug } = useParams<{ slug: string }>()
   const [chars, setChars] = useState<AppCharacter[] | null>(null)
   const [mood, setMood] = useState<CharacterMood>('happy')
-  const { mouth: actMouth, speaking } = useActing()
+  const { mouth: actMouth, speaking, viseme: actViseme } = useActing()
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
@@ -73,7 +73,8 @@ export default function CharacterHomePage() {
           className="absolute inset-x-0 bottom-0 flex justify-center"
         >
           <CharacterAvatar slug={character.slug} size={150} mood={mood} talking={speaking}
-            mouth={speaking ? actMouth : undefined} className="-mb-2 drop-shadow-lg" />
+            mouth={speaking ? actMouth : undefined} viseme={speaking ? actViseme : undefined}
+            className="-mb-2 drop-shadow-lg" />
         </button>
         <Link href="/child/home" aria-label="برگشت به خانه"
           className="absolute top-3 right-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
