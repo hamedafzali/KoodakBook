@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react'
 import { CharacterActor } from 'pixel-wizards-charachters/react'
 import { CHARACTERS } from 'pixel-wizards-charachters'
-import type { ActorRig, EmotionOverrides, VisemeName } from 'pixel-wizards-charachters'
+import type { ActorRig, EmotionOverrides, VisemeName, Locomotion } from 'pixel-wizards-charachters'
 import { useCharacterEmotions } from '@/lib/characterEmotions'
 import { MOOD_TO_EMOTION, MOOD_INTENSITY, type CharacterMood } from './mood'
 
@@ -37,10 +37,13 @@ interface Props {
   viseme?: VisemeName
   /** per-emotion tuning saved in the DB (animation.emotions) */
   emotions?: EmotionOverrides
+  /** Body locomotion (idle/walk/fly/roll). Omitted, the rig stays idle —
+   *  most call sites never move the body, only the face. */
+  locomotion?: Locomotion
   className?: string
 }
 
-export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, viseme, emotions, className }: Props) {
+export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, viseme, emotions, locomotion, className }: Props) {
   // Every real character is in the library; unknown slugs fall back to سیمرغ so
   // the avatar still renders from the npm package rather than app-local art.
   const character = slug in CHARACTERS ? slug : 'simorgh'
@@ -55,6 +58,13 @@ export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talki
   useEffect(() => {
     rig.current?.apply({ emotion, intensity })
   }, [character, emotion, intensity])
+
+  // Locomotion. Left untouched (rig default: idle) when the call site never
+  // passes one, so every existing avatar keeps behaving exactly as before.
+  useEffect(() => {
+    if (locomotion == null) return
+    rig.current?.apply({ locomotion })
+  }, [character, locomotion])
 
   // Mouth: an explicit viseme track (mouth) wins; else a generic talking flap;
   // else the resting mouth for the emotion.
