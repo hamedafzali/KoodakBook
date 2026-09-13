@@ -90,7 +90,7 @@ export default function RewardPopup({ badge, onClose }: Props) {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex justify-center mb-2"
           >
-            <Mascot size={100} mood="excited" />
+            <Mascot size={100} mood="proud" />
           </motion.div>
 
           <motion.div

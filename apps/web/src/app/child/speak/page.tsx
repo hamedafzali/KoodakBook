@@ -121,7 +121,7 @@ export default function SpeakPage() {
           )}
           {phase === 'tryagain' && (
             <motion.div key="tryagain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
-              <Mascot size={90} mood="idle" />
+              <Mascot size={90} mood="encouraging" />
               <p className="font-medium text-text-secondary persian-text">دوباره امتحان کن، می‌تونی!</p>
               {heard && <p className="text-xs text-text-secondary">شنیدم: «{heard}»</p>}
             </motion.div>

@@ -13,7 +13,7 @@ export default function LoadingScreen({ message = 'در حال بارگذاری.
         animate={{ y: [0, -12, 0] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <Mascot size={100} mood="idle" />
+        <Mascot size={100} mood="thinking" />
       </motion.div>
       <motion.p
         className="text-text-secondary font-medium persian-text text-base"

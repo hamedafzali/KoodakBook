@@ -2,8 +2,9 @@
 import { useEffect, useRef } from 'react'
 import { CharacterActor } from 'pixel-wizards-charachters/react'
 import { CHARACTERS } from 'pixel-wizards-charachters'
-import type { ActorRig, EmotionName, EmotionOverrides } from 'pixel-wizards-charachters'
+import type { ActorRig, EmotionOverrides } from 'pixel-wizards-charachters'
 import { useCharacterEmotions } from '@/lib/characterEmotions'
+import { MOOD_TO_EMOTION, MOOD_INTENSITY, type CharacterMood } from './mood'
 
 /* Character visuals + ACTING.
  *
@@ -13,12 +14,14 @@ import { useCharacterEmotions } from '@/lib/characterEmotions'
  * — including سیمرغ (the mascot) — renders from the library, so nothing comes
  * from app-local art. Unknown slugs fall back to سیمرغ. This component keeps the
  * exact call-site API the app already uses, so nothing else changes:
- *  - mood   : idle | happy | excited | encouraging | thinking  (→ library emotion)
+ *  - mood   : any name in `mood.ts` — all twelve rig emotions (→ library emotion)
  *  - talking: generic mouth flap while audio plays
  *  - mouth  : 0..1 viseme openness from a Performance track (useActing) — beats
  *             the generic `talking` loop when set. */
 
-export type CharacterMood = 'idle' | 'happy' | 'excited' | 'encouraging' | 'thinking'
+/* The vocabulary lives in mood.ts so Mascot and CharacterAvatar can't drift.
+ * Re-exported because call sites already import the type from here. */
+export type { CharacterMood }
 
 interface Props {
   slug: string
@@ -30,18 +33,6 @@ interface Props {
   /** per-emotion tuning saved in the DB (animation.emotions) */
   emotions?: EmotionOverrides
   className?: string
-}
-
-const MOOD_TO_EMOTION: Record<CharacterMood, EmotionName> = {
-  idle: 'neutral',
-  happy: 'happy',
-  excited: 'excited',
-  encouraging: 'encouraging',
-  thinking: 'thinking',
-}
-
-const MOOD_INTENSITY: Record<CharacterMood, number> = {
-  idle: 0.6, happy: 0.85, excited: 1, encouraging: 0.85, thinking: 0.7,
 }
 
 export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, emotions, className }: Props) {
