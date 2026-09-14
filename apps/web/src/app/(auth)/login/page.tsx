@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -12,14 +12,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [expired, setExpired] = useState(false)
-
-  // Set by the api client when a session was revoked (deleted/suspended/expired).
-  useEffect(() => {
-    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('expired')) {
-      setExpired(true)
-    }
-  }, [])
+  // Set by the api client when a session was revoked (deleted/suspended/
+  // expired) — read once via a lazy initializer rather than an effect that
+  // calls setState synchronously on mount (react-hooks/set-state-in-effect):
+  // this is deriving initial state from the URL, not subscribing to an
+  // external system, so it belongs in useState, not useEffect.
+  const [expired] = useState(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('expired')
+  )
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()

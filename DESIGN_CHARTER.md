@@ -5,6 +5,12 @@ This charter overrides generic "clean / professional / minimal" design rules, in
 ## Audience
 Children in the Persian diaspora learning Persian, plus their parents. The child experience must feel like a toy and a picture book, never like office software.
 
+Out of scope: `apps/admin`, the internal staff/content-moderation tool. It
+serves neither audience above, so it deliberately stays plain Tailwind
+grayscale with no brand tokens or charter vocabulary — confirmed during the
+Phase 7 cross-surface audit, noted here so a future contributor doesn't take
+its divergence for an oversight.
+
 ## Color
 - Bright, happy, warm palette. Each section/module has its own recognizable color.
 - Saffron gold (#FBBF24 → #F97316) is the brand identity.
