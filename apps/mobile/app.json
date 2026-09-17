@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
     "extra": {
-      "supportsRTL": true
+      "supportsRTL": true,
+      "router": {},
+      "eas": {
+        "projectId": "6157380f-e9eb-448a-9995-2a4722f87947"
+      }
     },
     "ios": {
       "supportsTablet": true,
@@ -27,7 +31,15 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      ["expo-splash-screen", { "backgroundColor": "#FFF3DE", "resizeMode": "contain" }]
-    ]
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF3DE",
+          "resizeMode": "contain",
+          "image": "./assets/icon.png"
+        }
+      ]
+    ],
+    "owner": "hamed.afzali"
   }
 }
