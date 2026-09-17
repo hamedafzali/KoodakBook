@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#FFF3DE",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
     "extra": {
       "supportsRTL": true
     },
@@ -17,7 +18,11 @@
     },
     "android": {
       "package": "com.koodakbook.app",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFF3DE"
+      }
     },
     "plugins": [
       "expo-router",

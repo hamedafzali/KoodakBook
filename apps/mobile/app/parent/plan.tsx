@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PLAN_FEATURES, toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
+import { API_BASE } from '@/lib/config'
 import { colors, fonts } from '@/lib/theme'
+
+/* Checkout is web-only (product decision, 2026-09-17): mobile has no Stripe/
+ * Play Billing integration and isn't getting one — "we will open website for
+ * it." API_BASE and the web app are the same origin (see lib/config.ts's own
+ * comment), so this is just a same-domain deep link, not a second configured
+ * URL to keep in sync. Opens the system browser (Linking.openURL), not an
+ * in-app webview, so the parent lands in a real, already-familiar browser
+ * tab for anything payment-related — never inside the app's own chrome. */
+function openWebCheckout() {
+  Linking.openURL(`${API_BASE}/parent/plan`)
+}
 
 interface PlanRow {
   id: string
@@ -26,7 +38,8 @@ function priceLabel(p: PlanRow): string {
   return `${amount} ${p.currency}${per}`
 }
 
-/** Plan comparison (web: /parent/plan). Upgrade is «به‌زودی» like web. */
+/** Plan comparison (web: /parent/plan). Upgrade opens the web app's own
+ *  checkout in the system browser — see openWebCheckout() above. */
 export default function PlanPage() {
   const insets = useSafeAreaInsets()
   const [plans, setPlans] = useState<PlanRow[] | null>(null)
@@ -109,7 +122,9 @@ export default function PlanPage() {
               {isCurrent ? (
                 <View style={styles.planButtonDisabled}><Text style={styles.planButtonDisabledText}>پلن فعلی شما</Text></View>
               ) : isPremium ? (
-                <View style={styles.planButtonSoon}><Text style={styles.planButtonSoonText}>به‌زودی 🚀</Text></View>
+                <Pressable onPress={openWebCheckout} style={styles.planButtonUpgrade}>
+                  <Text style={styles.planButtonUpgradeText}>ارتقا در سایت 🌐</Text>
+                </Pressable>
               ) : null}
             </View>
           </View>
@@ -117,7 +132,7 @@ export default function PlanPage() {
       })}
 
       <Text style={styles.footNote}>
-        امکان ارتقای آنلاین به‌زودی اضافه می‌شود. فعلاً برای ارتقای پلن با پشتیبانی در تماس باشید.
+        پرداخت از داخل اپ انجام نمی‌شود — دکمه بالا سایت کودک‌بوک را در مرورگر باز می‌کند تا ارتقا را آنجا کامل کنید.
       </Text>
     </ScrollView>
   )
@@ -152,8 +167,8 @@ const styles = StyleSheet.create({
   featureNo: { fontSize: 16, color: '#cbd5e1' },
   planButtonDisabled: { backgroundColor: '#f1f5f9', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
   planButtonDisabledText: { fontSize: 14, fontFamily: fonts.bold, color: colors.muted },
-  planButtonSoon: { backgroundColor: '#fef3c7', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  planButtonSoonText: { fontSize: 14, fontFamily: fonts.bold, color: '#b45309' },
+  planButtonUpgrade: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
+  planButtonUpgradeText: { fontSize: 14, fontFamily: fonts.bold, color: colors.onPrimary },
   footNote: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', paddingHorizontal: 10 },
   error: { color: colors.danger, fontFamily: fonts.regular },
 })

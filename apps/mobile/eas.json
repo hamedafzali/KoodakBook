@@ -19,7 +19,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.koodakbook.com"
+        "EXPO_PUBLIC_API_URL": "https://koodakbook.eu.cc"
       }
     }
   },

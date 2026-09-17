@@ -43,8 +43,13 @@ Notes:
 ## Builds (EAS)
 
 Expo Go is dev-only. For real devices use EAS builds (profiles in
-[eas.json](eas.json) — note each profile pins `EXPO_PUBLIC_API_URL`; adjust the
-production URL when the public domain is final):
+[eas.json](eas.json) — note each profile pins `EXPO_PUBLIC_API_URL`).
+`production` points at the real public API (`https://koodakbook.eu.cc`,
+fixed 2026-09-17 — it previously pointed at `api.koodakbook.com`, a domain
+that has never resolved, which would have shipped a build unable to reach
+the backend at all). `development`/`preview` still point at a home-server
+LAN IP, which is correct for local device testing but means those two
+profiles won't work for a tester who isn't on that LAN.
 
 ```bash
 npm i -g eas-cli
@@ -53,9 +58,26 @@ eas build --profile preview --platform ios      # installable internal build
 eas build --profile preview --platform android  # .apk for sideloading
 ```
 
-Before a store release: add real icon/splash assets in app.json, set
-`production.env.EXPO_PUBLIC_API_URL` to the public HTTPS API, then
-`eas build --profile production` + `eas submit`.
+Before a store release, in order:
+
+1. **Link the project to EAS** — `eas init` (this repo has never been run
+   through it; `app.json` has no `extra.eas.projectId` yet, and
+   `eas.json`'s `cli.appVersionSource: "remote"` needs a linked project to
+   track a `versionCode` against).
+2. **Real icon/adaptive-icon art.** `app.json` now points at
+   `assets/icon.png` / `assets/adaptive-icon.png` — the app's existing web
+   icon, reused so the app isn't shipping Expo's default placeholder icon
+   any more. It is NOT proper adaptive-icon art: Android's adaptive-icon
+   mask crops to a safe zone of roughly the center 66% of the foreground
+   image, and this icon's circle fills most of the 512×512 canvas with
+   little margin, so it will likely look cropped on a real launcher.
+   Replace `assets/adaptive-icon.png` with a version that has real padding
+   before submitting (1024×1024 recommended).
+3. **Store listing.** No screenshots, feature graphic, or store
+   description exist anywhere in this repo yet — all still need to be
+   produced before Play Console will accept a submission.
+4. Then `eas build --profile production --platform android` + `eas
+   submit`.
 
 ## What lives where
 
