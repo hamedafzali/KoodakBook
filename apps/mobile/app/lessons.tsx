@@ -7,6 +7,7 @@ import { LESSON_TYPE_EMOJI, toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { colors, fonts } from '@/lib/theme'
+import BottomNav from '@/components/BottomNav'
 
 export default function Lessons() {
   const insets = useSafeAreaInsets()
@@ -59,7 +60,7 @@ export default function Lessons() {
       <FlatList
         data={lessons}
         keyExtractor={(l) => l.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: 92 }]}
         ListEmptyComponent={<Text style={styles.empty}>هنوز درسی نیست</Text>}
         renderItem={({ item }) => {
           const done = completed.has(item.id)
@@ -75,6 +76,7 @@ export default function Lessons() {
           )
         }}
       />
+      <BottomNav current="lessons" />
     </View>
   )
 }
@@ -84,7 +86,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 14 },
   back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
+  title: { fontSize: 22, fontFamily: fonts.display, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   list: { paddingHorizontal: 16, paddingBottom: 32, gap: 10 },
   empty: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', marginTop: 60 },

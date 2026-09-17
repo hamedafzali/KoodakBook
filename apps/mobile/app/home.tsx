@@ -21,19 +21,23 @@ import { mediaUrl } from '@/lib/media'
 import { ensurePrefs, hasSeenTutorial } from '@/lib/prefs'
 import { playClip } from '@/lib/sound'
 import { useChildSession } from '@/lib/useChildSession'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
+import BottomNav from '@/components/BottomNav'
 
+// Tinted with the same per-subject ramps web uses (lib/theme.ts `ramps`,
+// ported from apps/web/src/app/globals.css --ramp-*) instead of ad hoc
+// pastels, so a room's card color means the same thing on both platforms.
 const TILES = [
-  { key: 'stories', emoji: '📖', title: 'قصه‌ها', href: '/stories' as const, tint: '#dcfce7' },
-  { key: 'lessons', emoji: '📚', title: 'درس‌ها', href: '/lessons' as const, tint: '#dbeafe' },
-  { key: 'review', emoji: '🔄', title: 'مرور', href: '/review' as const, tint: '#fef3c7' },
-  { key: 'rewards', emoji: '🏆', title: 'جایزه‌ها', href: '/rewards' as const, tint: '#fce7f3' },
-  { key: 'friends', emoji: '🦊', title: 'دوست‌ها', href: '/friends' as const, tint: '#ffedd5' },
-  { key: 'math', emoji: '🔢', title: 'ریاضی', href: '/math' as const, tint: '#ede9fe' },
-  { key: 'games', emoji: '🃏', title: 'بازی‌ها', href: '/games' as const, tint: '#e0e7ff' },
-  { key: 'phonics', emoji: '🎵', title: 'صداها', href: '/phonics' as const, tint: '#ffe4e6' },
-  { key: 'speak', emoji: '🎤', title: 'بگو ببینم!', href: '/speak' as const, tint: '#fce7f3' },
-  { key: 'write', emoji: '✍️', title: 'بنویس', href: '/write' as const, tint: '#e0f2fe' },
+  { key: 'stories', emoji: '📖', title: 'قصه‌ها', href: '/stories' as const, tint: ramps.stories.soft },
+  { key: 'lessons', emoji: '📚', title: 'درس‌ها', href: '/lessons' as const, tint: ramps.lessons.soft },
+  { key: 'review', emoji: '🔄', title: 'مرور', href: '/review' as const, tint: ramps.review.soft },
+  { key: 'rewards', emoji: '🏆', title: 'جایزه‌ها', href: '/rewards' as const, tint: ramps.rewards.soft },
+  { key: 'friends', emoji: '🦊', title: 'دوست‌ها', href: '/friends' as const, tint: ramps.phonics.soft },
+  { key: 'math', emoji: '🔢', title: 'ریاضی', href: '/math' as const, tint: ramps.math.soft },
+  { key: 'games', emoji: '🃏', title: 'بازی‌ها', href: '/games' as const, tint: ramps.games.soft },
+  { key: 'phonics', emoji: '🎵', title: 'صداها', href: '/phonics' as const, tint: ramps.phonics.soft },
+  { key: 'speak', emoji: '🎤', title: 'بگو ببینم!', href: '/speak' as const, tint: ramps.speak.soft },
+  { key: 'write', emoji: '✍️', title: 'بنویس', href: '/write' as const, tint: ramps.write.soft },
 ]
 
 function greeting() {
@@ -149,7 +153,7 @@ export default function Home() {
       {showTutorial && <Tutorial childName={child.name} onClose={() => setShowTutorial(false)} />}
 
       {/* Hero */}
-      <LinearGradient colors={['#FBBF24', '#F59E0B', '#F97316']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.hero, { paddingTop: insets.top + 20 }]}>
+      <LinearGradient colors={[colors.brandFrom, colors.brandTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.hero, { paddingTop: insets.top + 20 }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.greeting}>{greeting()} 👋</Text>
           <Text style={styles.heroName}>{child.name}</Text>
@@ -227,6 +231,7 @@ export default function Home() {
         </View>
       </View>
     </ScrollView>
+    <BottomNav current="home" />
     </ScreenBackground>
   )
 }
@@ -248,7 +253,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 32, borderBottomRightRadius: 32,
   },
   greeting: { fontSize: 14, fontFamily: fonts.regular, color: colors.text },
-  heroName: { fontSize: 30, fontFamily: fonts.bold, color: colors.text, marginTop: 2 },
+  heroName: { fontSize: 30, fontFamily: fonts.display, color: colors.text, marginTop: 2 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   chip: { backgroundColor: 'rgba(255,255,255,0.35)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   chipText: { fontSize: 12, fontFamily: fonts.medium, color: colors.text },
@@ -262,12 +267,12 @@ const styles = StyleSheet.create({
   nextUp: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: colors.card, borderRadius: 24, padding: 18,
-    borderWidth: 3, borderColor: '#fde047',
+    borderWidth: 3, borderColor: colors.primary,
     shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4,
   },
   nextUpEmoji: { fontSize: 46 },
-  nextUpLabel: { fontSize: 13, fontFamily: fonts.bold, color: '#d97706' },
-  nextUpTitle: { fontSize: 19, fontFamily: fonts.bold, color: colors.text, marginTop: 2 },
+  nextUpLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.primaryDeep },
+  nextUpTitle: { fontSize: 19, fontFamily: fonts.display, color: colors.text, marginTop: 2 },
   nextUpCta: { backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
   nextUpCtaText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.bold },
   rowLabel: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
@@ -276,7 +281,7 @@ const styles = StyleSheet.create({
     width: 76, height: 92, borderRadius: 18, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center', gap: 4,
   },
-  letterChar: { fontSize: 40, fontFamily: fonts.bold, color: '#0284c7', lineHeight: 48 },
+  letterChar: { fontSize: 40, fontFamily: fonts.bold, color: ramps.letters.ink, lineHeight: 48 },
   letterName: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
@@ -284,5 +289,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', gap: 6,
   },
   tileEmoji: { fontSize: 40 },
-  tileTitle: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
+  tileTitle: { fontSize: 16, fontFamily: fonts.display, color: colors.text },
 })

@@ -8,6 +8,9 @@ import {
   Vazirmatn_500Medium,
   Vazirmatn_700Bold,
 } from '@expo-google-fonts/vazirmatn'
+// Rounded display face for child headings only (matches web's --font-baloo,
+// DESIGN_CHARTER.md) -- never used for body text or the letter glyph.
+import { BalooBhaijaan2_700Bold } from '@expo-google-fonts/baloo-bhaijaan-2'
 import { setAudioModeAsync } from 'expo-audio'
 import LaunchScreen from '@/components/LaunchScreen'
 import { ensurePrefs } from '@/lib/prefs'
@@ -30,6 +33,7 @@ export default function RootLayout() {
     Vazirmatn_400Regular,
     Vazirmatn_500Medium,
     Vazirmatn_700Bold,
+    BalooBhaijaan2_700Bold,
   })
   // Hold the branded launch screen for a beat so it registers as a real moment
   // (fonts often load in <100ms, which would flash it past).

@@ -9,6 +9,7 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import { colors, fonts } from '@/lib/theme'
+import BottomNav from '@/components/BottomNav'
 
 /** جایزه‌ها — the badges the child has earned (web: /child/rewards). */
 export default function Rewards() {
@@ -57,7 +58,7 @@ export default function Rewards() {
         keyExtractor={(b) => b.id}
         numColumns={2}
         columnWrapperStyle={{ gap: 12 }}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={[styles.grid, { paddingBottom: 92 }]}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', marginTop: 60, gap: 8 }}>
             <Text style={{ fontSize: 44 }}>🌱</Text>
@@ -78,6 +79,7 @@ export default function Rewards() {
           </View>
         )}
       />
+      <BottomNav current="rewards" />
     </View>
   )
 }
@@ -87,7 +89,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 14 },
   back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
+  title: { fontSize: 22, fontFamily: fonts.display, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   grid: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
   empty: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', paddingHorizontal: 30, lineHeight: 22 },

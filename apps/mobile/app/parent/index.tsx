@@ -153,10 +153,15 @@ export default function ParentHub() {
   )
 }
 
+// Web's parent NavRow (apps/web/src/components/parent/flat.tsx) puts the
+// icon in a rounded, ramp-brand-soft-tinted chip rather than floating it bare
+// -- ported that here instead of a plain emoji + text arrow.
 function MenuRow({ emoji, label, sub, onPress }: { emoji: string; label: string; sub?: string; onPress: () => void }) {
   return (
     <Pressable style={styles.menuRow} onPress={onPress}>
-      <Text style={{ fontSize: 22 }}>{emoji}</Text>
+      <View style={styles.menuIconChip}>
+        <Text style={{ fontSize: 18 }}>{emoji}</Text>
+      </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.menuLabel}>{label}</Text>
         {sub && <Text style={styles.menuSub}>{sub}</Text>}
@@ -215,8 +220,12 @@ const styles = StyleSheet.create({
   badgeRow: { fontSize: 13, fontFamily: fonts.regular, color: colors.text },
   menu: { backgroundColor: colors.card, borderRadius: 18, paddingHorizontal: 16 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  menuIconChip: {
+    width: 36, height: 36, borderRadius: 12, backgroundColor: colors.primarySoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
   menuLabel: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
   menuSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  menuChevron: { fontSize: 18, color: colors.muted },
+  menuChevron: { fontSize: 18, color: colors.primaryDeep },
   menuDivider: { height: 1, backgroundColor: '#f1f5f9' },
 })

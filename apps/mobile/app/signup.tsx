@@ -7,7 +7,7 @@ import { api } from '@/lib/api'
 import { setToken } from '@/lib/auth'
 import ScreenBackground from '@/components/ScreenBackground'
 import { BalloonScene } from '@/components/AuthScene'
-import { colors, fonts } from '@/lib/theme'
+import { auth, colors, fonts } from '@/lib/theme'
 
 /** New-account signup (web: /(auth)/signup). Lands in onboarding to create
  *  the first child; the PIN is set later on first entry to parent mode. */
@@ -82,9 +82,9 @@ const styles = StyleSheet.create({
   },
   error: { color: colors.danger, fontFamily: fonts.regular, fontSize: 14, textAlign: 'center' },
   button: {
-    backgroundColor: '#10b981', borderRadius: 16, paddingVertical: 14,
+    backgroundColor: auth.signup.accent, borderRadius: 16, paddingVertical: 14,
     width: '100%', maxWidth: 360, alignItems: 'center',
   },
   buttonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
-  link: { color: '#059669', fontFamily: fonts.medium, fontSize: 14, marginTop: 4 },
+  link: { color: auth.signup.accentDeep, fontFamily: fonts.medium, fontSize: 14, marginTop: 4 },
 })

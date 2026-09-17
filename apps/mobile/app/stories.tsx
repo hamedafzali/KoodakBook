@@ -10,6 +10,7 @@ import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import SceneBackdrop from '@/components/SceneBackdrop'
 import { colors, fonts } from '@/lib/theme'
+import BottomNav from '@/components/BottomNav'
 
 /** Deterministic illustrated cover per story id (web parity for coverless stories). */
 function sceneFor(id: string): SceneSlug {
@@ -102,7 +103,7 @@ export default function Stories() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 24 }]}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 92 }]}>
         <Pressable style={styles.createButton} onPress={() => router.push('/story/new')}>
           <Text style={{ fontSize: 26 }}>✨</Text>
           <View style={{ flex: 1 }}>
@@ -128,6 +129,7 @@ export default function Stories() {
           <View style={styles.grid}>{stories.map((s) => card(s, false))}</View>
         )}
       </ScrollView>
+      <BottomNav current="stories" />
     </View>
   )
 }
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 14 },
   back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
+  title: { fontSize: 22, fontFamily: fonts.display, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   body: { paddingHorizontal: 16, gap: 12 },
   createButton: {
