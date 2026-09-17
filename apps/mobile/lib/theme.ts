@@ -16,7 +16,14 @@ export const colors = {
   primaryDeep: '#745300',
   primarySoft: '#FEF3C7',
   success: '#22c55e',
+  successSoft: '#dcfce7',
   danger: '#dc2626',
+  dangerSoft: '#fee2e2',
+  // Neutral chrome (borders, dividers, tracks) -- not content, so it's
+  // outside the ramps. Centralizes the #e5e7eb/#e2e8f0 repeated ad hoc
+  // across ~15 screens (2026-09-17 second parity pass).
+  border: '#e5e7eb',
+  borderSoft: '#f1f5f9',
   // Brand gradient (web's --color-brand-from/to) -- the single source-of-truth
   // 2-stop gradient for the hero/primary-action identity. Was drifting to a
   // 3-stop amber->orange gradient in places; kept to exactly these two stops

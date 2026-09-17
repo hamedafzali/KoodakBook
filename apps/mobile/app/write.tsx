@@ -8,6 +8,8 @@ import { toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { playClip } from '@/lib/sound'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 const CANVAS = 300
 
@@ -47,14 +49,8 @@ export default function Write() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>تمرین نوشتن ✏️</Text>
-          <Text style={styles.subtitle}>حرف {toPersianDigits(idx + 1)} از {toPersianDigits(letters.length)}</Text>
-        </View>
+      <View style={{ alignSelf: 'stretch' }}>
+        <ScreenHeader title="تمرین نوشتن ✏️" subtitle={`حرف ${toPersianDigits(idx + 1)} از ${toPersianDigits(letters.length)}`} />
       </View>
 
       <Pressable style={styles.letterChip} onPress={() => playClip(letter.audio_url)}>
@@ -81,6 +77,7 @@ export default function Write() {
           <Text style={[styles.navText, { color: '#fff' }]}>بعدی ←</Text>
         </Pressable>
       </View>
+      <BottomNav />
     </View>
   )
 }
@@ -142,7 +139,7 @@ function TracingCanvas({ letter }: { letter: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, gap: 16, alignItems: 'center' },
+  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, paddingBottom: 92, gap: 16, alignItems: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   empty: { color: colors.muted, fontFamily: fonts.regular },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch' },

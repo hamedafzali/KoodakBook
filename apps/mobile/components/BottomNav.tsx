@@ -26,7 +26,11 @@ const TABS = [
 
 export type BottomNavKey = (typeof TABS)[number]['key']
 
-export default function BottomNav({ current }: { current: BottomNavKey }) {
+// `current` is undefined for a screen that's a real nav destination on web
+// (so it still gets the bar) but isn't one of the four tabs itself -- e.g.
+// phonics, speak, write, math, games, friends. Same as web: the bar shows,
+// nothing lights up active.
+export default function BottomNav({ current }: { current?: BottomNavKey }) {
   const insets = useSafeAreaInsets()
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>

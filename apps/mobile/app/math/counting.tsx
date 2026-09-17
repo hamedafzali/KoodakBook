@@ -8,6 +8,8 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { childAge, distractors, sayNumber, sayPhrase, shuffle } from '@/lib/math'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /* شمارش (ages 3–5) — tap-to-count, ported from web /child/math/counting.
  * The child taps every fruit; each tap speaks the next number («یک… دو…»).
@@ -95,20 +97,16 @@ function Game({ maxN, onReplay }: { maxN: number; onReplay: () => void }) {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>شمارش 🍎</Text>
-          <Text style={styles.subtitle}>ضربه بزن و بشمار</Text>
-        </View>
-        <Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>
-      </View>
+      <ScreenHeader
+        title="شمارش 🍎"
+        subtitle="ضربه بزن و بشمار"
+        right={<Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>}
+      />
 
       <Text style={styles.progressLabel}>
         مرحله {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}
@@ -152,6 +150,8 @@ function Game({ maxN, onReplay }: { maxN: number; onReplay: () => void }) {
         })}
       </View>
     </ScrollView>
+    <BottomNav />
+    </View>
   )
 }
 
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   optionWrong: { backgroundColor: '#fee2e2', borderColor: colors.danger },
   optionNumber: { fontSize: 28, fontFamily: fonts.bold, color: colors.text },
   optionWord: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
-  doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
+  doneTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
   primaryButton: {
     marginTop: 10, backgroundColor: colors.primary, borderRadius: 16,

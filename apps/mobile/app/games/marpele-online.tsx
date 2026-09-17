@@ -10,6 +10,8 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /* Online مارپله — invite an accepted friend and race turn-by-turn. State is
  * relayed over the socket after each turn; only emoji reactions travel between
@@ -233,14 +235,9 @@ export default function MarpeleOnline() {
 
   if (phase === 'lobby' || phase === 'waiting') {
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={10}><Text style={styles.back}>→</Text></Pressable>
-          <View>
-            <Text style={styles.title}>بازی آنلاین 🌐</Text>
-            <Text style={styles.subtitle}>یک دوست آنلاین را برای بازی دعوت کن</Text>
-          </View>
-        </View>
+      <View style={{ flex: 1 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}>
+        <ScreenHeader title="بازی آنلاین 🌐" subtitle="یک دوست آنلاین را برای بازی دعوت کن" />
 
         {notice && <Text style={styles.notice}>{notice}</Text>}
 
@@ -276,6 +273,8 @@ export default function MarpeleOnline() {
           </View>
         </Modal>
       </ScrollView>
+      <BottomNav />
+      </View>
     )
   }
 
@@ -383,7 +382,7 @@ const styles = StyleSheet.create({
   acceptText: { color: colors.onPrimary, fontSize: 15, fontFamily: fonts.bold },
   declineBtn: { backgroundColor: '#e2e8f0', borderRadius: 14, paddingVertical: 11, paddingHorizontal: 20 },
   declineText: { color: colors.text, fontSize: 15, fontFamily: fonts.bold },
-  bigTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
+  bigTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text, textAlign: 'center' },
   primaryButton: { marginTop: 8, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 48 },
   primaryText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
   secondaryButton: { borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 40 },

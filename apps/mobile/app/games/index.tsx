@@ -2,25 +2,22 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ScreenBackground from '@/components/ScreenBackground'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 const GAMES = [
-  { key: 'memory', emoji: '🃏', title: 'بازی حافظه', sub: 'جفت هر کلمه را پیدا کن', href: '/games/memory' as const, tint: '#e0e7ff' },
-  { key: 'marpele', emoji: '🎲', title: 'مارپله', sub: 'تنها، با خواهر و برادر، یا با دوستان بازی کن', href: '/games/marpele' as const, tint: '#dcfce7' },
-  { key: 'marpele-online', emoji: '🌐', title: 'مارپله آنلاین', sub: 'با دوستانت از راه دور بازی کن', href: '/games/marpele-online' as const, tint: '#dbeafe' },
+  { key: 'memory', emoji: '🃏', title: 'بازی حافظه', sub: 'جفت هر کلمه را پیدا کن', href: '/games/memory' as const, tint: ramps.games.soft },
+  { key: 'marpele', emoji: '🎲', title: 'مارپله', sub: 'تنها، با خواهر و برادر، یا با دوستان بازی کن', href: '/games/marpele' as const, tint: ramps.games.soft },
+  { key: 'marpele-online', emoji: '🌐', title: 'مارپله آنلاین', sub: 'با دوستانت از راه دور بازی کن', href: '/games/marpele-online' as const, tint: ramps.games.soft },
 ]
 
 export default function GamesHub() {
   const insets = useSafeAreaInsets()
   return (
     <ScreenBackground variant="warm">
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={10}>
-            <Text style={styles.back}>→</Text>
-          </Pressable>
-          <Text style={styles.title}>بازی‌ها 🃏</Text>
-        </View>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}>
+        <ScreenHeader title="بازی‌ها 🃏" />
 
         {GAMES.map((g) => (
           <Pressable key={g.key} style={[styles.card, { backgroundColor: g.tint }]} onPress={() => router.push(g.href)}>
@@ -33,6 +30,7 @@ export default function GamesHub() {
           </Pressable>
         ))}
       </ScrollView>
+      <BottomNav />
     </ScreenBackground>
   )
 }
@@ -43,6 +41,6 @@ const styles = StyleSheet.create({
   back: { fontSize: 24, color: colors.muted },
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
   card: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: 22, padding: 18 },
-  gameTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.text },
+  gameTitle: { fontSize: 18, fontFamily: fonts.display, color: colors.text },
   gameSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
 })

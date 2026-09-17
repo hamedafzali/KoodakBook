@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   track: { height: 8, backgroundColor: '#e5e7eb', borderRadius: 999, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: colors.primary, borderRadius: 999 },
   body: { padding: 20, paddingBottom: 40 },
-  doneTitle: { fontSize: 24, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
+  doneTitle: { fontSize: 24, fontFamily: fonts.display, color: colors.text, textAlign: 'center' },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   homeButton: {
     marginTop: 12, backgroundColor: colors.primary, borderRadius: 16,

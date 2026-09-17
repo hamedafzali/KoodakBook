@@ -10,6 +10,8 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { characterEmoji } from '@/lib/characterEmoji'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /* مارپله برای یادگیری فارسی — one game, three ways: solo, pass-and-play with
  * other kids, or race the app's characters. Humans use Persian to climb ladders
@@ -122,16 +124,9 @@ function Setup({ insets, childName, characters, onStart }: {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.setup, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>مارپله 🎲</Text>
-          <Text style={styles.subtitle}>با کی بازی می‌کنی؟</Text>
-        </View>
-      </View>
+    <View style={{ flex: 1 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.setup, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}>
+      <ScreenHeader title="مارپله 🎲" subtitle="با کی بازی می‌کنی؟" />
 
       <Text style={styles.sectionLabel}>بازیکن‌های دیگر (خواهر و برادر)</Text>
       <View style={styles.stepper}>
@@ -174,6 +169,8 @@ function Setup({ insets, childName, characters, onStart }: {
         <Text style={styles.startText}>شروع بازی 🎲</Text>
       </Pressable>
     </ScrollView>
+    <BottomNav />
+    </View>
   )
 }
 
@@ -333,13 +330,7 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <Text style={styles.title}>مارپله 🎲</Text>
-        {stars > 0 && <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text>}
-      </View>
+      <ScreenHeader title="مارپله 🎲" right={stars > 0 ? <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text> : undefined} />
 
       {/* Players leaderboard — avatars + square; current player glows */}
       <View style={styles.strip}>
@@ -440,7 +431,7 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', padding: 20 },
   modalCard: { backgroundColor: colors.bg, borderRadius: 24, padding: 20, width: '100%', maxWidth: 380, gap: 12 },
   challengePrompt: { fontSize: 15, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
-  doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
+  doneTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   primaryButton: { marginTop: 10, backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 48 },
   primaryText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },

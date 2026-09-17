@@ -6,7 +6,8 @@ import type { AppCharacter, CharacterLine } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { playClip } from '@/lib/sound'
 import { characterEmoji } from '@/lib/characterEmoji'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
+import BottomNav from '@/components/BottomNav'
 
 /**
  * A friend's home (web: /child/friends/[slug]) — greeting plays on arrival,
@@ -47,9 +48,10 @@ export default function FriendHome() {
   if (!character) { router.back(); return null }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
     >
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={10}>
@@ -79,35 +81,37 @@ export default function FriendHome() {
       )}
 
       <Pressable
-        style={[styles.door, { backgroundColor: '#8b5cf6' }]}
+        style={[styles.door, { backgroundColor: ramps.games.bright }]}
         onPress={() => router.push(`/games/memory?host=${character.slug}`)}
       >
         <Text style={styles.doorEmoji}>🃏</Text>
         <View>
-          <Text style={styles.doorTitle}>با هم بازی کنیم!</Text>
-          <Text style={styles.doorSub}>بازی حافظه با {character.name_persian}</Text>
+          <Text style={[styles.doorTitle, { color: ramps.games.ink }]}>با هم بازی کنیم!</Text>
+          <Text style={[styles.doorSub, { color: ramps.games.ink, opacity: 0.75 }]}>بازی حافظه با {character.name_persian}</Text>
         </View>
       </Pressable>
 
-      <Pressable style={[styles.door, { backgroundColor: '#22c55e' }]} onPress={() => router.push('/stories')}>
+      <Pressable style={[styles.door, { backgroundColor: ramps.stories.bright }]} onPress={() => router.push('/stories')}>
         <Text style={styles.doorEmoji}>📖</Text>
         <View>
-          <Text style={styles.doorTitle}>قصه بگو!</Text>
-          <Text style={styles.doorSub}>برو سراغ قصه‌ها</Text>
+          <Text style={[styles.doorTitle, { color: ramps.stories.ink }]}>قصه بگو!</Text>
+          <Text style={[styles.doorSub, { color: ramps.stories.ink, opacity: 0.75 }]}>برو سراغ قصه‌ها</Text>
         </View>
       </Pressable>
 
       <Pressable
-        style={[styles.door, { backgroundColor: '#0ea5e9' }]}
+        style={[styles.door, { backgroundColor: ramps.speak.bright }]}
         onPress={() => router.push(`/friend/${character.slug}/talk`)}
       >
         <Text style={styles.doorEmoji}>💬</Text>
         <View>
-          <Text style={styles.doorTitle}>حرف بزنیم!</Text>
-          <Text style={styles.doorSub}>{character.name_persian} گوش می‌کنه و جواب می‌ده</Text>
+          <Text style={[styles.doorTitle, { color: ramps.speak.ink }]}>حرف بزنیم!</Text>
+          <Text style={[styles.doorSub, { color: ramps.speak.ink, opacity: 0.75 }]}>{character.name_persian} گوش می‌کنه و جواب می‌ده</Text>
         </View>
       </Pressable>
     </ScrollView>
+    <BottomNav />
+    </View>
   )
 }
 
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
     width: 160, height: 160, borderRadius: 80, backgroundColor: colors.primarySoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  name: { fontSize: 26, fontFamily: fonts.bold, color: colors.text, marginTop: 6 },
+  name: { fontSize: 26, fontFamily: fonts.display, color: colors.text, marginTop: 6 },
   personality: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   bubble: {
     backgroundColor: colors.card, borderRadius: 18, padding: 14, gap: 8,

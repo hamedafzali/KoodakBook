@@ -8,6 +8,8 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { childAge, distractors, sayNumber, sayPhrase, shuffle } from '@/lib/math'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /* بازار (ages 8–10) — ported from web /child/math/bazaar: reading price tags
  * in Persian digits and paying in تومان. Age 8 → read a price; 9–10 → add two
@@ -95,20 +97,16 @@ function Game({ mode, onReplay }: { mode: 'read' | 'sum'; onReplay: () => void }
   const names = q.targets.map((t) => q.items[t].name)
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>بازار 🛒</Text>
-          <Text style={styles.subtitle}>با تومان خرید کن</Text>
-        </View>
-        <Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>
-      </View>
+      <ScreenHeader
+        title="بازار 🛒"
+        subtitle="با تومان خرید کن"
+        right={<Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>}
+      />
 
       <Text style={styles.progressLabel}>
         خرید {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}
@@ -148,6 +146,8 @@ function Game({ mode, onReplay }: { mode: 'read' | 'sum'; onReplay: () => void }
         })}
       </View>
     </ScrollView>
+    <BottomNav />
+    </View>
   )
 }
 
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   optionWrong: { backgroundColor: '#fee2e2', borderColor: colors.danger },
   optionNumber: { fontSize: 24, fontFamily: fonts.bold, color: colors.text },
   optionUnit: { fontSize: 10, fontFamily: fonts.regular, color: colors.muted },
-  doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
+  doneTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
   primaryButton: {
     marginTop: 10, backgroundColor: colors.primary, borderRadius: 16,

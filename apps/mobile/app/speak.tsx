@@ -10,6 +10,8 @@ import { getActiveChildId } from '@/lib/activeChild'
 import { playClip } from '@/lib/sound'
 import { mediaUrl } from '@/lib/media'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /**
  * تمرین گفتن (web: /child/speak) — listen and repeat. Web grades pronunciation
@@ -85,14 +87,8 @@ export default function Speak() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>تمرین گفتن 🎤</Text>
-          <Text style={styles.subtitle}>کلمه {toPersianDigits(idx + 1)} از {toPersianDigits(words.length)}</Text>
-        </View>
+      <View style={{ alignSelf: 'stretch' }}>
+        <ScreenHeader title="تمرین گفتن 🎤" subtitle={`کلمه ${toPersianDigits(idx + 1)} از ${toPersianDigits(words.length)}`} />
       </View>
 
       <View style={styles.hint}>
@@ -125,12 +121,13 @@ export default function Speak() {
       <Pressable style={styles.nextButton} onPress={nextWord}>
         <Text style={styles.nextButtonText}>کلمه بعدی ←</Text>
       </Pressable>
+      <BottomNav />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, gap: 16, alignItems: 'center' },
+  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, paddingBottom: 92, gap: 16, alignItems: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   empty: { color: colors.muted, fontFamily: fonts.regular },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch' },
@@ -146,7 +143,7 @@ const styles = StyleSheet.create({
   },
   cardEmoji: { fontSize: 72, lineHeight: 84 },
   cardImage: { width: 112, height: 112 },
-  cardWord: { fontSize: 44, fontFamily: fonts.bold, color: colors.text },
+  cardWord: { fontSize: 44, fontFamily: fonts.display, color: colors.text },
   cardLatin: { fontSize: 16, fontFamily: fonts.regular, color: colors.muted },
   cardListen: { fontSize: 12, fontFamily: fonts.regular, color: '#b45309', marginTop: 4 },
   feedback: { alignItems: 'center', gap: 4 },

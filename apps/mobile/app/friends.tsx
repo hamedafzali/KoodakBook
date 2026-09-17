@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 import { characterEmoji } from '@/lib/characterEmoji'
 
 /** دوست‌ها — the interactive characters roster (web: home's friends row). */
@@ -30,19 +32,14 @@ export default function Friends() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <Text style={styles.title}>دوست‌های من 🦊</Text>
-      </View>
+      <ScreenHeader title="دوست‌های من 🦊" />
 
       <FlatList
         data={chars}
         keyExtractor={(c) => c.id}
         numColumns={2}
         columnWrapperStyle={{ gap: 12 }}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={[styles.grid, { paddingBottom: 92 }]}
         ListEmptyComponent={<Text style={styles.empty}>هنوز دوستی اینجا نیست</Text>}
         renderItem={({ item }) => (
           <Pressable style={styles.card} onPress={() => router.push(`/friend/${item.slug}`)}>
@@ -52,6 +49,7 @@ export default function Friends() {
           </Pressable>
         )}
       />
+      <BottomNav />
     </View>
   )
 }
@@ -68,7 +66,7 @@ const styles = StyleSheet.create({
     width: '48%', flexGrow: 1, backgroundColor: colors.card, borderRadius: 20,
     padding: 18, alignItems: 'center', gap: 6,
   },
-  name: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
+  name: { fontSize: 17, fontFamily: fonts.display, color: colors.text },
   personality: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   error: { color: colors.danger, fontFamily: fonts.regular },
 })

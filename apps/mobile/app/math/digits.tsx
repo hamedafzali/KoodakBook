@@ -8,6 +8,8 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { childAge, distractors, sayNumber, sayPhrase, shuffle } from '@/lib/math'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /* رقم‌های فارسی (ages 6–7) — ported from web /child/math/digits: reading ۴۵۶
  * as 456, both directions. Age 6 → single digits; 7+ → two-digit numbers. */
@@ -91,20 +93,16 @@ function Game({ max, onReplay }: { max: number; onReplay: () => void }) {
   const optionLabel = (n: number) => (q.dir === 'toPersian' ? toPersianDigits(n) : String(n))
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>رقم‌های فارسی ۱۲۳</Text>
-          <Text style={styles.subtitle}>۷ همان 7 است!</Text>
-        </View>
-        <Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>
-      </View>
+      <ScreenHeader
+        title="رقم‌های فارسی ۱۲۳"
+        subtitle="۷ همان 7 است!"
+        right={<Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>}
+      />
 
       <Text style={styles.progressLabel}>
         سؤال {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}
@@ -132,6 +130,8 @@ function Game({ max, onReplay }: { max: number; onReplay: () => void }) {
         })}
       </View>
     </ScrollView>
+    <BottomNav />
+    </View>
   )
 }
 
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   optionRight: { backgroundColor: '#dcfce7', borderColor: colors.success },
   optionWrong: { backgroundColor: '#fee2e2', borderColor: colors.danger },
   optionNumber: { fontSize: 32, fontFamily: fonts.bold, color: colors.text, writingDirection: 'ltr' },
-  doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
+  doneTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
   primaryButton: {
     marginTop: 10, backgroundColor: colors.primary, borderRadius: 16,

@@ -12,6 +12,8 @@ import { mediaUrl } from '@/lib/media'
 import { playClip } from '@/lib/sound'
 import { shuffle } from '@/lib/math'
 import { colors, fonts } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /* بازی حافظه — ported from web /child/games/memory. Data-driven off the word
  * catalog; each flip speaks the word so pre-readers play by sound. Optional
@@ -132,20 +134,16 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>بازی حافظه 🃏</Text>
-          <Text style={styles.subtitle}>جفت هر کلمه را پیدا کن</Text>
-        </View>
-        {host && <Text style={{ fontSize: 28 }}>{characterEmoji(host)}</Text>}
-      </View>
+      <ScreenHeader
+        title="بازی حافظه 🃏"
+        subtitle="جفت هر کلمه را پیدا کن"
+        right={host ? <Text style={{ fontSize: 28 }}>{characterEmoji(host)}</Text> : undefined}
+      />
 
       <View style={styles.statusRow}>
         <Text style={styles.statusText}>جفت‌ها: {toPersianDigits(matched.size)} از {toPersianDigits(PAIRS)}</Text>
@@ -176,6 +174,8 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
 
       <Text style={styles.hint}>روی کارت‌ها بزن، کلمه را بشنو و جفتش را پیدا کن</Text>
     </ScrollView>
+    <BottomNav />
+    </View>
   )
 }
 
@@ -198,10 +198,10 @@ const styles = StyleSheet.create({
   cardOpen: { backgroundColor: colors.card, borderWidth: 2, borderColor: '#ddd6fe' },
   cardMatched: { backgroundColor: '#dcfce7', borderWidth: 2, borderColor: '#86efac' },
   cardImage: { width: '100%', height: 40 },
-  cardWord: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
+  cardWord: { fontSize: 17, fontFamily: fonts.display, color: colors.text },
   cardLatin: { fontSize: 9, fontFamily: fonts.regular, color: colors.muted },
   hint: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', marginTop: 4 },
-  doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
+  doneTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
   primaryButton: {
     marginTop: 10, backgroundColor: colors.primary, borderRadius: 16,

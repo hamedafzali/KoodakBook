@@ -8,7 +8,9 @@ import {
 } from '@koodakbook/shared'
 import { playClip } from '@/lib/sound'
 import { shuffle } from '@/lib/math'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
+import BottomNav from '@/components/BottomNav'
 
 /* صداها (zebar/zir/pish) — ported from web /child/phonics. Learn: tap any
  * syllable, see it big on the stage and hear its blend. Quiz: hear one, pick
@@ -16,7 +18,8 @@ import { colors, fonts } from '@/lib/theme'
  * reveal; the audio timing (the actual lesson) is identical. */
 
 const DEMO = 'ب'
-const VOWEL_TINTS: Record<string, string> = { zebar: '#f97316', zir: '#0ea5e9', pish: '#8b5cf6' }
+// zebar/zir/pish tints -- web's VOWEL_TONES (clay.tsx): rose/sky/violet.
+const VOWEL_TINTS: Record<string, string> = { zebar: '#FB7185', zir: '#0ea5e9', pish: '#8b5cf6' }
 
 export default function PhonicsPage() {
   const insets = useSafeAreaInsets()
@@ -50,20 +53,13 @@ export default function PhonicsPage() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
       stickyHeaderIndices={[1]}
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>صداها 🎵</Text>
-          <Text style={styles.subtitle}>زبر، زیر، پیش — ضربه بزن، ببین و گوش کن!</Text>
-        </View>
-      </View>
+      <ScreenHeader title="صداها 🎵" subtitle="زبر، زیر، پیش — ضربه بزن، ببین و گوش کن!" />
 
       {/* The stage — sticky so every tap below plays here in view */}
       <View style={{ backgroundColor: colors.bg, paddingVertical: 6 }}>
@@ -121,6 +117,8 @@ export default function PhonicsPage() {
         <Text style={styles.primaryText}>بریم تمرین 🎧</Text>
       </Pressable>
     </ScrollView>
+    <BottomNav />
+    </View>
   )
 }
 
@@ -166,17 +164,15 @@ function PhonicsQuiz({ all, onDone, onExit }: {
 
   return (
     <View style={[styles.quiz, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={onExit} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>گوش کن و انتخاب کن 🎧</Text>
-        </View>
-        <Text style={styles.counter}>
-          {toPersianDigits(idx + 1)}/{toPersianDigits(questions.length)}
-        </Text>
-      </View>
+      <ScreenHeader
+        title="گوش کن و انتخاب کن 🎧"
+        onBack={onExit}
+        right={
+          <Text style={styles.counter}>
+            {toPersianDigits(idx + 1)}/{toPersianDigits(questions.length)}
+          </Text>
+        }
+      />
 
       <View style={styles.quizBody}>
         <Pressable style={styles.speaker} onPress={() => playClip(phonicsAudioUrl(q.correct.slug))}>
@@ -213,7 +209,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderRadius: 20, minHeight: 104,
     alignItems: 'center', justifyContent: 'center', padding: 12, gap: 2,
   },
-  stageText: { fontSize: 56, fontFamily: fonts.bold, color: '#d97706', lineHeight: 76 },
+  stageText: { fontSize: 56, fontFamily: fonts.bold, color: ramps.phonics.ink, lineHeight: 76 },
   stageMark: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted },
   stageHint: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   section: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
@@ -231,7 +227,7 @@ const styles = StyleSheet.create({
   syllText: { fontSize: 26, fontFamily: fonts.bold, color: colors.text, lineHeight: 38 },
   syllLatin: { fontSize: 10, fontFamily: fonts.regular, color: colors.muted },
   quiz: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, gap: 10 },
-  counter: { fontSize: 13, fontFamily: fonts.medium, color: '#d97706' },
+  counter: { fontSize: 13, fontFamily: fonts.medium, color: ramps.phonics.ink },
   quizBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20 },
   speaker: {
     width: 104, height: 104, borderRadius: 52, backgroundColor: colors.primary,
@@ -246,7 +242,7 @@ const styles = StyleSheet.create({
   optRight: { backgroundColor: '#dcfce7', borderColor: colors.success },
   optWrong: { backgroundColor: '#fee2e2', borderColor: colors.danger },
   optText: { fontSize: 34, fontFamily: fonts.bold, color: colors.text, lineHeight: 48 },
-  doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
+  doneTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
   primaryButton: {
     backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15,
