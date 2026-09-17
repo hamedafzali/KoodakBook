@@ -3,12 +3,11 @@ import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { parseSceneRef, toPersianDigits, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
-import BilingualText from '../shared/BilingualText'
 import Emoji from '../shared/Emoji'
 import SceneBackdrop from './SceneBackdrop'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
-import { speakOrPlay, stopSpeaking } from '@/lib/speech'
+import { speakOrPlay, speakPersian, stopSpeaking } from '@/lib/speech'
 
 interface Props {
   story: Story & { pages: StoryPage[] }
@@ -16,6 +15,17 @@ interface Props {
   onBack?: () => void
   onPageChange?: (page: number) => void
   onComplete?: () => void
+}
+
+/** Split Persian page text into whitespace-vs-word chunks, preserving every
+ *  character (spacing included) so re-joining the tokens reproduces the
+ *  original string exactly — only the word chunks become tap targets. A
+ *  "word" here just means "non-whitespace run", trailing punctuation and
+ *  all; browser TTS handles a stray «،» or «.» fine, and stripping it would
+ *  mean re-deriving the original text to keep layout identical, for no
+ *  real benefit. */
+function tokenizeWords(text: string): { text: string; tappable: boolean }[] {
+  return text.split(/(\s+)/).filter(t => t.length > 0).map(t => ({ text: t, tappable: !/^\s+$/.test(t) }))
 }
 
 export default function StoryReader({ story, showBilingual, onBack, onPageChange, onComplete }: Props) {
@@ -54,12 +64,18 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
   // previous page's scene (stories rarely change location every page), and the
   // whole story falls back to a friendly default.
   const scenes = useMemo<{ scene: SceneSlug; time: SceneTime }[]>(() => {
-    let last: { scene: SceneSlug; time: SceneTime } = { scene: 'park', time: 'day' }
-    return story.pages.map(p => {
-      const ref = parseSceneRef(p.scene_plan?.scene, p.scene_plan?.time)
-      if (ref) last = ref
-      return last
-    })
+    // Folded into reduce's own accumulator instead of a `let` reassigned from
+    // inside .map (react-hooks/immutability — pre-existing finding, fixed
+    // while already in this file for the tap-word change above): same
+    // "inherit the previous page's scene" logic, without mutating a variable
+    // captured across render.
+    const out: { scene: SceneSlug; time: SceneTime }[] = []
+    story.pages.reduce((last, p) => {
+      const ref = parseSceneRef(p.scene_plan?.scene, p.scene_plan?.time) ?? last
+      out.push(ref)
+      return ref
+    }, { scene: 'park', time: 'day' } as { scene: SceneSlug; time: SceneTime })
+    return out
   }, [story.pages])
   const sceneRef = scenes[currentPage]
 
@@ -183,14 +199,32 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 className="w-full h-52 shadow-md lg:w-1/2 lg:h-[64vh]" />
             )}
 
-            {/* Story text */}
+            {/* Story text — Persian words are individually tappable (each one
+                calls speakPersian on its own), so a child can hear a single
+                word they didn't catch without replaying the whole page. */}
             <div className="bg-white rounded-lg p-5 shadow-sm lg:w-1/2 lg:p-8 lg:self-stretch lg:flex lg:flex-col lg:justify-center">
-              <BilingualText
-                persian={page.text_persian}
-                english={showBilingual ? (page.translation ?? page.text_english) : null}
-                persianClassName="persian-body-lg font-bold"
-                englishClassName="text-base mt-2"
-              />
+              <div className="space-y-1">
+                <p lang="fa" dir="rtl" className="persian-text text-right persian-body-lg font-bold">
+                  {tokenizeWords(page.text_persian).map((tok, i) => tok.tappable ? (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => { playTap(); speakPersian(tok.text) }}
+                      aria-label={`شنیدن «${tok.text}»`}
+                      className="inline bg-transparent border-0 p-0 m-0 font-inherit text-inherit rounded px-0.5 -mx-0.5 hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-pointer"
+                    >
+                      {tok.text}
+                    </button>
+                  ) : (
+                    <span key={i}>{tok.text}</span>
+                  ))}
+                </p>
+                {showBilingual && (page.translation ?? page.text_english) && (
+                  <p lang="en" dir="ltr" className="text-left text-text-secondary text-base mt-2">
+                    {page.translation ?? page.text_english}
+                  </p>
+                )}
+              </div>
               <motion.button
                 onClick={() => { playTap(); readPage() }}
                 whileTap={{ scale: 0.9 }}

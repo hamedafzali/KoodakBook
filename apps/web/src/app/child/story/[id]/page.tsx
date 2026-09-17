@@ -10,10 +10,11 @@ import LoadingScreen from '@/components/child/LoadingScreen'
 import Mascot from '@/components/child/Mascot'
 import { pickChild } from '@/lib/activeChild'
 import { getTranslationLang } from '@/lib/translation'
-import type { Story, StoryPage, Badge, Child, Promotion } from '@koodakbook/shared'
+import type { Story, StoryPage, StoryQuestion, Badge, Child, Promotion } from '@koodakbook/shared'
 import ReadAloud from '@/components/child/ReadAloud'
+import StoryQuiz from '@/components/child/StoryQuiz'
 
-type FullStory = Story & { pages: StoryPage[] }
+type FullStory = Story & { pages: StoryPage[]; questions?: StoryQuestion[] }
 
 export default function StoryPage() {
   const router = useRouter()
@@ -28,6 +29,10 @@ export default function StoryPage() {
    * never waits on a round-trip at the emotional peak of the story. */
   const [canRecord, setCanRecord] = useState(false)
   const [askRecord, setAskRecord] = useState(false)
+  // Comprehension quiz (migration 064) — shown first, before the read-aloud
+  // prompt, when the story actually has questions (most curriculum stories
+  // and any AI story from before this shipped won't).
+  const [showQuiz, setShowQuiz] = useState(false)
   /* What handleComplete decided to do next, deferred until the read-aloud is
    * finished or skipped. The prompt goes FIRST: a badge popup is a reward for
    * what they just did, but reading it aloud is the thing the product exists
@@ -90,6 +95,19 @@ export default function StoryPage() {
     await api.post('/api/progress/story', { child_id: childId, story_id: story.id, last_page: page })
   }
 
+  /** StoryReader's onComplete fires the moment the last page is tapped through
+   *  — the quiz (if this story has one) goes first, THEN the real completion
+   *  flow (read-aloud prompt / badge / promotion) runs exactly as before. */
+  function onReaderComplete() {
+    if (story?.questions?.length) { setShowQuiz(true); return }
+    handleComplete()
+  }
+
+  function finishQuiz() {
+    setShowQuiz(false)
+    handleComplete()
+  }
+
   async function handleComplete() {
     if (!childId || !story) return
     try {
@@ -123,6 +141,10 @@ export default function StoryPage() {
 
   if (!story) return <LoadingScreen message="در حال بارگذاری داستان..." />
 
+  if (showQuiz && story.questions?.length) {
+    return <StoryQuiz questions={story.questions} onDone={finishQuiz} />
+  }
+
   if (askRecord) {
     return <ReadAloud childId={childId} storyId={story.id} onDone={finishRecording} />
   }
@@ -149,7 +171,7 @@ export default function StoryPage() {
         showBilingual={lang !== 'none'}
         onBack={() => router.push('/child/story')}
         onPageChange={handlePageChange}
-        onComplete={handleComplete}
+        onComplete={onReaderComplete}
       />
     </>
   )

@@ -35,6 +35,27 @@ const STORY_JSON_SCHEMA = {
         required: ['text_persian', 'text_english', 'scene', 'time'],
       },
     },
+    // Comprehension check (migration 064) — 2-3 simple multiple-choice
+    // questions about what actually happened in THIS story, grounded in the
+    // same generation call rather than a second call re-reading the finished
+    // text. Kept out of `required` below and optional in StorySchema/StoryJSON
+    // on purpose: this is a nice-to-have on top of the story, not a reason to
+    // fail the whole generation if a provider drops the field or returns a
+    // shape Zod rejects — same fail-open philosophy as page-audio synthesis
+    // a bit further down this file.
+    questions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          question_persian: { type: 'string' },
+          choices: { type: 'array', items: { type: 'string' } },
+          correct_index: { type: 'integer' },
+        },
+        required: ['question_persian', 'choices', 'correct_index'],
+      },
+    },
   },
   required: ['title_persian', 'title_english', 'pages'],
 } as const
@@ -43,7 +64,9 @@ const STORY_JSON_SCHEMA = {
 // the JSON schema above). Passed only on the story surface — see openaiCompat.ts.
 const STORY_JSON_INSTRUCTION =
   'Respond ONLY with a JSON object of this shape (no markdown, no commentary): ' +
-  '{ "title_persian": string, "title_english": string, "pages": [ { "text_persian": string, "text_english": string, "scene": string, "time": "day"|"night" } ] }'
+  '{ "title_persian": string, "title_english": string, ' +
+  '"pages": [ { "text_persian": string, "text_english": string, "scene": string, "time": "day"|"night" } ], ' +
+  '"questions": [ { "question_persian": string, "choices": [string, string, string], "correct_index": 0|1|2 } ] }'
 
 const StorySchema = z.object({
   title_persian: z.string().min(1),
@@ -52,6 +75,14 @@ const StorySchema = z.object({
     text_persian: z.string().min(1), text_english: z.string().min(1),
     scene: z.string().optional(), time: z.string().optional(),
   })).min(1),
+  // Optional + independently validated (exactly 3 choices, a valid index) so
+  // a malformed questions block never fails the whole story — the route just
+  // saves the story without a quiz. See the schema comment above for why.
+  questions: z.array(z.object({
+    question_persian: z.string().min(1),
+    choices: z.array(z.string().min(1)).length(3),
+    correct_index: z.number().int().min(0).max(2),
+  })).min(1).max(3).optional(),
 })
 
 export async function getAiSettings(): Promise<AiSettings | null> {
@@ -84,7 +115,13 @@ export async function generateStory(settings: AiSettings, vars: StoryVars): Prom
   const prompt = render(settings.user_prompt_template, vars) +
     `\n\nFor each page also pick where it happens: "scene" must be exactly one of ` +
     `[${SCENE_SLUGS.join(', ')}] and "time" must be "day" or "night". ` +
-    `Keep the scene stable across pages unless the story really moves location.`
+    `Keep the scene stable across pages unless the story really moves location.` +
+    `\n\nAlso write 2 or 3 short comprehension questions about what actually ` +
+    `happens in THIS story (not general knowledge) — simple enough for a child ` +
+    `at this level to answer just from listening. Each question needs exactly ` +
+    `3 short answer choices in Persian, with correct_index pointing at the ` +
+    `right one (0, 1, or 2). Keep the wrong choices plausible but clearly wrong ` +
+    `to a child who followed the story, never silly or a trick.`
 
   let raw: string
   if (settings.provider === 'anthropic') {

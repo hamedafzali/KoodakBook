@@ -84,7 +84,17 @@ router.get('/stories/:id', asyncHandler(async (req, res) => {
     }
     return o
   }
-  res.json({ data: { ...story.obj, pages: pages.map(r => withTx(r.obj)) }, error: null })
+
+  // Comprehension quiz (migration 064) — empty for a curriculum story or an
+  // older AI story generated before this shipped; the reader just skips the
+  // quiz step when this comes back empty.
+  const questions = await query(
+    `select question_persian, choices, correct_index
+       from story_questions where story_id = $1 order by question_number`,
+    [req.params.id],
+  )
+
+  res.json({ data: { ...story.obj, pages: pages.map(r => withTx(r.obj)), questions }, error: null })
 }))
 
 router.get('/words', asyncHandler(async (req, res) => {

@@ -24,4 +24,7 @@ export interface StoryJSON {
   title_persian: string
   title_english: string
   pages: { text_persian: string; text_english: string; scene?: string; time?: string }[]
+  /** Best-effort — see STORY_JSON_SCHEMA's comment in ./index.ts for why this
+   *  is optional even though the prompt always asks for it. */
+  questions?: { question_persian: string; choices: string[]; correct_index: number }[]
 }

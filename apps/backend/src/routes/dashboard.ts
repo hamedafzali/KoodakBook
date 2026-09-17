@@ -9,7 +9,7 @@ const router = Router()
 router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
   const { child_id } = req.params
 
-  const [child, sessions, wordProgress, storyProgress, lessonProgress, badges] = await Promise.all([
+  const [child, sessions, wordProgress, storyProgress, lessonProgress, badges, practiceWords] = await Promise.all([
     queryOne('select * from children where id = $1', [child_id]),
     query(
       'select started_at, duration_sec from child_sessions where child_id = $1 order by started_at desc limit 30',
@@ -22,6 +22,24 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
       `select cb.*, row_to_json(b.*) as badge
        from child_badges cb join badges b on b.id = cb.badge_id
        where cb.child_id = $1 order by cb.earned_at desc limit 5`,
+      [child_id]
+    ),
+    // Parent-facing practice suggestions (path-and-plans review, "parent →
+    // child learning loop"): words this child hasn't consolidated yet,
+    // ordered by the Leitner engine's OWN due-date priority (mig-016) — the
+    // same signal that already drives the review queue, just surfaced to the
+    // parent instead of only the child. `spoken` (box_productive set and past
+    // its first box) is the "recognises it but hasn't really said it yet"
+    // flag ChatGPT's review specifically called out — a light truthy hint,
+    // not a new metric invented for this.
+    query(
+      `select w.persian, w.english, w.image_url,
+              (cwp.box_productive is not null and cwp.box_productive > 1) as spoken
+         from child_word_progress cwp
+         join words w on w.id = cwp.word_id
+        where cwp.child_id = $1 and cwp.mastery in ('introduced', 'practicing')
+        order by coalesce(cwp.due_receptive, cwp.due_productive, cwp.introduced_at) asc
+        limit 5`,
       [child_id]
     ),
   ])
@@ -85,6 +103,7 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
       mastery_breakdown,
       recent_sessions: sessions.slice(0, 5),
       recent_badges: badges,
+      practice_words: practiceWords,
     },
     error: null,
   })

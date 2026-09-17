@@ -84,7 +84,14 @@ export default function ParentDashboardPage() {
   // Free/paid gate for the first-story upsell banner below — not part of
   // DashboardSummary, so it's its own small fetch (see /api/auth/me).
   const [plan, setPlan] = useState<string>('free')
-  const [upsellDismissed, setUpsellDismissed] = useState(true)
+  // Lazy initializer, not an effect: this reads a stored flag once to derive
+  // initial state, it never subscribes to anything external, so it belongs
+  // in useState (react-hooks/set-state-in-effect — same fix as login/page.tsx).
+  // Defaults to true (hidden) during SSR, where localStorage doesn't exist;
+  // the real value lands on the client's first render either way.
+  const [upsellDismissed, setUpsellDismissed] = useState(() =>
+    typeof window === 'undefined' || localStorage.getItem('koodakbook_plan_upsell_dismissed') === '1'
+  )
 
   async function loadSummary(childId: string) {
     const dashRes = await api.get<DashboardSummary>(`/api/dashboard/${childId}`)
@@ -93,7 +100,6 @@ export default function ParentDashboardPage() {
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
-    setUpsellDismissed(localStorage.getItem('koodakbook_plan_upsell_dismissed') === '1')
     async function load() {
       const [childRes, meRes] = await Promise.all([
         api.get<Child[]>('/api/children'),
@@ -147,7 +153,7 @@ export default function ParentDashboardPage() {
 
   const {
     child, streak_days, words_learned, stories_completed, lessons_completed,
-    recent_badges, recent_sessions, xp, mastery_breakdown,
+    recent_badges, recent_sessions, xp, mastery_breakdown, practice_words,
   } = summary
 
   const heatmap = buildWeekHeatmap(recent_sessions)
@@ -428,6 +434,32 @@ export default function ParentDashboardPage() {
               </Panel>
             )
           })()}
+
+          {/* Practice suggestions (path-and-plans review, "parent → child
+              learning loop"): concrete words to work on together, not just a
+              count. Ordered server-side by the same spaced-repetition due
+              date that already drives the child's own review queue — this
+              panel surfaces that existing signal to the parent, it doesn't
+              invent a new one. Absent once everything met is consolidated. */}
+          {practice_words.length > 0 && (
+            <Panel title="این هفته این کلمه‌ها را تمرین کنید" labelledById="practice-words-title">
+              <ul className="divide-y divide-border">
+                {practice_words.map(w => (
+                  <li key={w.persian} className="flex items-center justify-between py-2.5 gap-3">
+                    <div>
+                      <span className="text-parent-text font-bold persian-text">{w.persian}</span>
+                      <span className="text-parent-muted text-xs mr-2">{w.english}</span>
+                    </div>
+                    {!w.spoken && (
+                      <span className="text-xs text-parent-muted shrink-0 persian-text">
+                        هنوز به زبان نیاورده — بگو بگوید
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
 
           {/* Totals that didn't make the top three. They're real, they're just
               not the answer to "is this working?". */}

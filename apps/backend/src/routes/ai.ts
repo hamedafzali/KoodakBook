@@ -169,6 +169,24 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
     console.error('TTS step failed:', (err as Error).message)
   }
 
+  // Best-effort comprehension quiz (migration 064) — same fail-open rule as
+  // the audio step above: a missing or Zod-rejected `questions` block just
+  // means this story has no quiz, never a failed story.
+  if (story.questions?.length) {
+    try {
+      for (let i = 0; i < story.questions.length; i++) {
+        const q = story.questions[i]
+        await query(
+          `insert into story_questions (story_id, question_number, question_persian, choices, correct_index)
+           values ($1, $2, $3, $4, $5)`,
+          [row.id, i + 1, q.question_persian, JSON.stringify(q.choices), q.correct_index],
+        )
+      }
+    } catch (err) {
+      console.error('Story questions save failed:', (err as Error).message)
+    }
+  }
+
   res.status(201).json({
     data: {
       id: row.id,

@@ -224,6 +224,16 @@ export interface StoryPage {
   animation_model?: string | null
 }
 
+/** A short comprehension-check question attached to a story (migration 064).
+ *  `choices` is always exactly 3 Persian answer options; `correct_index`
+ *  points at the right one (0-2). Best-effort — most curriculum stories and
+ *  any AI story generated before this shipped will simply have none. */
+export interface StoryQuestion {
+  question_persian: string
+  choices: string[]
+  correct_index: number
+}
+
 export interface StoryPageWord {
   id: string
   page_id: string
@@ -344,6 +354,19 @@ export interface ChildBadge {
 }
 
 // ── Dashboard ─────────────────────────────────────────────
+/** A word suggested for the parent to practice with their child — not yet
+ *  consolidated, ordered by the same Leitner due-date priority that drives
+ *  the child's own review queue (mig-016). `spoken` is a light hint that the
+ *  child recognises it but hasn't really produced it yet (a real but partial
+ *  signal — box_productive past its first box — not a hard receptive/
+ *  productive percentage). */
+export interface PracticeWord {
+  persian: string
+  english: string
+  image_url: string | null
+  spoken: boolean
+}
+
 export interface DashboardSummary {
   child: Child
   streak_days: number
@@ -355,6 +378,9 @@ export interface DashboardSummary {
   mastery_breakdown: MasteryBreakdown
   recent_sessions: ChildSession[]
   recent_badges: ChildBadge[]
+  /** Up to 5 words to practice this week (see PracticeWord). Empty once
+   *  everything the child has met is consolidated. */
+  practice_words: PracticeWord[]
 }
 
 // ── Read-aloud recordings (mig-061) ───────────────────────
