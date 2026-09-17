@@ -32,9 +32,12 @@ tales alongside AI-personalized stories; and up to 5 child profiles per
 family account.
 
 The core curriculum (alphabet, phonics, and foundational lessons) is free
-permanently, with no card required to start. A paid tier adding the full
-story library and expanded AI-story generation is planned; at the time of
-writing it is not yet purchasable and pricing has not been announced.
+permanently, with no card required to start — and so is the full story
+library; it is not a paid unlock. Paid tiers (from single-child to a
+5-child family plan) raise the daily quota of new AI-generated personal
+stories and the number of child profiles on one account. Prices are shown
+on the site; at the time of writing checkout is not yet live, so paid
+tiers display as coming soon.
 
 This file describes the public site only. It does not describe, and
 should not be used to infer, the content of the logged-in application,
