@@ -60,19 +60,21 @@ eas build --profile preview --platform android  # .apk for sideloading
 
 Before a store release, in order:
 
-1. **Link the project to EAS** — `eas init` (this repo has never been run
-   through it; `app.json` has no `extra.eas.projectId` yet, and
-   `eas.json`'s `cli.appVersionSource: "remote"` needs a linked project to
-   track a `versionCode` against).
-2. **Real icon/adaptive-icon art.** `app.json` now points at
-   `assets/icon.png` / `assets/adaptive-icon.png` — the app's existing web
-   icon, reused so the app isn't shipping Expo's default placeholder icon
-   any more. It is NOT proper adaptive-icon art: Android's adaptive-icon
-   mask crops to a safe zone of roughly the center 66% of the foreground
-   image, and this icon's circle fills most of the 512×512 canvas with
-   little margin, so it will likely look cropped on a real launcher.
-   Replace `assets/adaptive-icon.png` with a version that has real padding
-   before submitting (1024×1024 recommended).
+1. **Link the project to EAS** — done, 2026-09-17 (`extra.eas.projectId`
+   in `app.json`, project `@hamed.afzali/koodakbook`).
+2. **Icon/adaptive-icon art.** `app.json` points at `assets/icon.png` /
+   `assets/adaptive-icon.png` — سیمرغ (Simorgh), rendered as static SVG
+   straight from the `pixel-wizards-charachters` rig
+   (`renderActorSVG(CHARACTERS.simorgh, {...defaultFrame('simorgh'),
+   emotion:'happy'}, 1024)`, apps/mobile/assets/simorgh-source.svg is the
+   source) and rasterized with `sharp` -- not app-local art, not a design
+   placeholder, the same character the app already uses for the placement
+   mini-game. `icon.png` is the character on the brand cream background
+   (#FFF3DE); `adaptive-icon.png` shrinks it to ~62% of the canvas,
+   transparent-padded, so Android's adaptive-icon mask (crops to roughly
+   the center 66%) doesn't clip the wingtips or crest. Regenerate either
+   at a different size/emotion by re-running the node snippet against
+   `pixel-wizards-charachters` and re-rasterizing with `sharp`.
 3. **Store listing.** No screenshots, feature graphic, or store
    description exist anywhere in this repo yet — all still need to be
    produced before Play Console will accept a submission.
