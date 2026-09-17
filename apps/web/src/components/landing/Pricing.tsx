@@ -32,22 +32,28 @@ function price(p: Plan): string {
 
 const INTERVAL: Record<Plan['interval'], string> = { month: '/ ماه', year: '/ سال', none: '— همیشه' }
 
-/** Translate raw feature keys into parent-readable bullet lines. */
+/* Translate raw feature keys into parent-readable bullet lines.
+ *
+ * 2026-09-17: dropped three bullets that promised features the app doesn't
+ * have — grandparent/parent voice-over (record_voice: the only voice
+ * feature that exists is the child's own read-aloud recording, and it's
+ * available on every plan today, not premium-gated), co-reading mode
+ * (co_read: no such mode exists anywhere in the code), and "full story
+ * library" as a premium unlock (full_story_library: never enforced —
+ * every plan already gets every non-AI story). The curriculum bullet below
+ * is now unconditional for the same reason: it's true for every plan, not
+ * a premium differentiator. What's left (child count, AI story quota) is
+ * verified real and server-enforced — see routes/ai.ts and routes/children.ts. */
 function featureLines(f: Record<string, string>): string[] {
   const lines: string[] = []
   if (f.max_children) lines.push(`${fa(Number(f.max_children))} پروفایل کودک`)
-  // Grandparent voice moved up front — path-and-plans deck calls it out as
-  // the headline differentiator for the paid plan, so it shouldn't sit buried
-  // after the library/AI bullets where a skimming parent won't reach it.
-  if (f.record_voice === 'true') lines.push('صدای پدربزرگ و مادربزرگ روی واژه‌ها')
   lines.push('الفبا، صداکشی و درس‌های پایه')
-  lines.push(f.full_story_library === 'true' ? 'تمام کتابخانه‌ی داستان' : 'چند داستان اول کتابخانه')
+  lines.push('کتابخانه‌ی کامل داستان‌ها')
   if (f.ai_stories === 'true') {
     lines.push(f.ai_stories_per_day
       ? `داستان شخصی با هوش مصنوعی — روزی ${fa(Number(f.ai_stories_per_day))} داستان`
       : 'داستان‌های شخصی نامحدود با هوش مصنوعی')
   }
-  if (f.co_read === 'true') lines.push('هم‌خوانی والد و کودک')
   lines.push('داشبورد پیشرفت والدین')
   return lines
 }

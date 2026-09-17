@@ -96,6 +96,11 @@ export default function ParentDashboardPage() {
   async function loadSummary(childId: string) {
     const dashRes = await api.get<DashboardSummary>(`/api/dashboard/${childId}`)
     if (dashRes.data) setSummary(dashRes.data)
+    // A just-unlocked engagement reward changes the account's plan server-side
+    // (engagementReward.ts) — reflect that immediately rather than waiting for
+    // a future /api/auth/me refetch, so the free-plan upsell banner below
+    // doesn't render in the same pass as the "you got premium" toast above it.
+    if (dashRes.data?.reward_unlocked_days) setPlan('premium_solo')
   }
 
   useEffect(() => {
@@ -154,6 +159,7 @@ export default function ParentDashboardPage() {
   const {
     child, streak_days, words_learned, stories_completed, lessons_completed,
     recent_badges, recent_sessions, xp, mastery_breakdown, practice_words,
+    reward_unlocked_days,
   } = summary
 
   const heatmap = buildWeekHeatmap(recent_sessions)
@@ -224,6 +230,32 @@ export default function ParentDashboardPage() {
       </div>
 
       <div className="px-4 lg:px-6 pt-5">
+
+        {/* Engagement-reward toast — a one-shot celebration when
+            reward_unlocked_days arrives on the response (engagementReward.ts,
+            triggered server-side by a real streak). Sits above the ONE-action
+            panel on purpose: this is a surprise worth seeing before anything
+            else, and it also means the upsell banner further down (gated on
+            plan === 'free') naturally won't show the same visit, since the
+            plan just changed server-side. */}
+        {reward_unlocked_days && (
+          <div
+            role="status"
+            className="mb-4 rounded-xl px-4 py-3.5 flex items-center gap-3"
+            style={{ background: 'var(--ramp-brand-soft)', border: '1px solid var(--ramp-brand-bright)' }}
+          >
+            <span
+              className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
+              style={{ background: 'var(--ramp-brand-bright)', color: '#fff' }}
+              aria-hidden="true"
+            >
+              <Icon name="rewards" size="sm" />
+            </span>
+            <p className="text-sm font-bold persian-text flex-1" style={{ color: 'var(--ramp-brand-ink)' }}>
+              🎉 چون این هفته پشت‌سرهم تمرین کردید، {fa(reward_unlocked_days)} روز پلن حرفه‌ای هدیه گرفتید!
+            </p>
+          </div>
+        )}
 
         {/* ── The answer ──────────────────────────────────────────────────────
             One panel, full width, carrying the sentence, the three numbers and
@@ -328,8 +360,13 @@ export default function ParentDashboardPage() {
             >
               <Icon name="rewards" size="sm" />
             </span>
+            {/* 2026-09-17: was a "grandparent voice" claim — that feature
+                doesn't exist (see Pricing.tsx's same fix). Replaced with the
+                one upsell that's actually true: a higher daily AI-story quota
+                on the paid plan (routes/ai.ts enforces ai_stories_per_day
+                per plan for real). */}
             <p className="text-sm text-parent-text persian-text flex-1">
-              اولین قصه تمام شد! با پلن حرفه‌ای، صدای پدربزرگ و مادربزرگ را هم به قصه‌ها اضافه کنید.
+              اولین قصه تمام شد! با پلن حرفه‌ای، هر روز داستان‌های شخصی بیشتری با هوش مصنوعی بسازید.
             </p>
             <Link
               href="/parent/plan"

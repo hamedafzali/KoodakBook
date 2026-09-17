@@ -210,6 +210,29 @@ router.get('/stories/:child_id', requireAuth, requireChildOwner, async (req, res
   res.json({ data: rows, error: null })
 })
 
+// Flat per-user daily caps for the two AI-calling routes below — found by a
+// direct code read (2026-09-17) to have NO cap at all, unlike story
+// generation above. synthesizeStoryPages() re-synthesizes every page on
+// every call (no skip-if-exists check), so audio regen is real TTS cost each
+// time; translate calls the LLM for whatever's missing, and this route has
+// no plan check either, so it's reachable by free and premium accounts
+// alike. Flat (not plan-tiered) on purpose: these aren't a premium feature
+// being metered by tier, they're an abuse/runaway-cost floor — the same role
+// the free-tier's own DAILY_STORY_HARD_CAP already plays for unlimited plans
+// above. Counted in "pages" (proportional to actual LLM/TTS cost), not
+// "calls", via ai_usage_events (migration 065).
+const DAILY_TRANSLATE_PAGE_CAP = 100
+const DAILY_AUDIO_REGEN_PAGE_CAP = 60
+
+async function todayUsage(userId: string, kind: 'translate_pages' | 'audio_regen'): Promise<number> {
+  const row = await queryOne<{ total: string | null }>(
+    `select sum(amount) as total from ai_usage_events
+      where user_id = $1 and kind = $2 and created_at >= date_trunc('day', now())`,
+    [userId, kind],
+  )
+  return Number(row?.total ?? 0)
+}
+
 // POST /api/ai/stories/:id/audio — (re)generate audio for an existing AI story,
 // so stories made before audio existed (or before TTS was configured) get a voice.
 router.post('/stories/:id/audio', requireAuth, asyncHandler(async (req, res) => {
@@ -226,9 +249,21 @@ router.post('/stories/:id/audio', requireAuth, asyncHandler(async (req, res) => 
   const pages = await query<{ id: string; text_persian: string }>(
     'select id, text_persian from story_pages where story_id = $1 order by page_number', [storyId])
 
+  const usedToday = await todayUsage(res.locals.userId, 'audio_regen')
+  if (usedToday + pages.length > DAILY_AUDIO_REGEN_PAGE_CAP) {
+    res.status(429).json({ data: null, error: 'سهم امروزِ بازسازی صدا تمام شد — فردا دوباره امتحان کنید' })
+    return
+  }
+
   const audioMap = await synthesizeStoryPages(storyId, pages)
   for (const [pageId, url] of Object.entries(audioMap)) {
     await query('update story_pages set audio_url = $1 where id = $2', [url, pageId])
+  }
+  if (pages.length > 0) {
+    await query(
+      `insert into ai_usage_events (user_id, kind, amount) values ($1, 'audio_regen', $2)`,
+      [res.locals.userId, pages.length],
+    )
   }
   res.json({ data: { ok: true, count: Object.keys(audioMap).length }, error: null })
 }))
@@ -251,6 +286,12 @@ router.post('/stories/:id/translate', requireAuth, asyncHandler(async (req, res)
   const missing = pages.filter(p => !p.translations?.[lang])
   if (missing.length === 0) { res.json({ data: { ok: true, translated: 0 }, error: null }); return }
 
+  const usedToday = await todayUsage(res.locals.userId, 'translate_pages')
+  if (usedToday + missing.length > DAILY_TRANSLATE_PAGE_CAP) {
+    res.status(429).json({ data: null, error: 'سهم امروزِ ترجمه تمام شد — فردا دوباره امتحان کنید' })
+    return
+  }
+
   try {
     const out = await translateLines(settings, missing.map(p => p.text_persian), langEnglishName(lang))
     for (let i = 0; i < missing.length; i++) {
@@ -258,6 +299,10 @@ router.post('/stories/:id/translate', requireAuth, asyncHandler(async (req, res)
         `update story_pages set translations = translations || jsonb_build_object($1::text, $2::text) where id = $3`,
         [lang, out[i], missing[i].id])
     }
+    await query(
+      `insert into ai_usage_events (user_id, kind, amount) values ($1, 'translate_pages', $2)`,
+      [res.locals.userId, missing.length],
+    )
     res.json({ data: { ok: true, translated: missing.length }, error: null })
   } catch (err) {
     if (err instanceof AiNotConfiguredError) { res.status(503).json({ data: null, error: 'کلید هوش مصنوعی تنظیم نشده' }); return }

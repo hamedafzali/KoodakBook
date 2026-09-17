@@ -13,12 +13,22 @@ export interface FeatureDef {
   type: 'boolean' | 'number'
   default: string
 }
+/* Trimmed 2026-09-17: co_read and record_voice removed, full_story_library
+ * dropped as a plan differentiator. All three were listed on the pricing
+ * page and/or this comparison table as premium-only, but none of them are
+ * actually implemented that way — co_read doesn't exist in the app at all;
+ * record_voice (the read-aloud recording feature) is available on every
+ * plan today, gated only by parent consent, never by plan; and
+ * full_story_library was never enforced — GET /api/curriculum/stories
+ * already returns every non-AI story to any caller, free or paid. Rather
+ * than leave paying customers reading claims that don't hold up, they were
+ * removed here (which also removes their Pricing.tsx bullets and their rows
+ * from the parent-facing plan comparison table) until/unless they're built
+ * for real. ai_stories / ai_stories_per_day is verified server-enforced
+ * (routes/ai.ts) and stays as the plan's real, working differentiator. */
 export const PLAN_FEATURES: FeatureDef[] = [
-  { key: 'max_children',       label: 'حداکثر تعداد کودک',            description: 'چند پروفایل کودک می‌توان در این پلن ساخت', type: 'number',  default: '1' },
-  { key: 'full_story_library', label: 'کتابخانه‌ی کامل داستان‌ها',    description: 'دسترسی به همه‌ی داستان‌ها (نه فقط چند داستان رایگان اول)', type: 'boolean', default: 'false' },
-  { key: 'ai_stories',         label: 'داستان‌های شخصی‌سازی‌شده (AI)', description: 'ساخت داستان با نام و علایق خود کودک', type: 'boolean', default: 'false' },
-  { key: 'co_read',            label: 'هم‌خوانی والد و کودک',          description: 'حالت خواندن مشترک با متن بزرگ‌تر', type: 'boolean', default: 'false' },
-  { key: 'record_voice',       label: 'ضبط صدای والد',                description: 'والد می‌تواند صدای خودش را روی داستان ضبط کند', type: 'boolean', default: 'false' },
+  { key: 'max_children', label: 'حداکثر تعداد کودک',            description: 'چند پروفایل کودک می‌توان در این پلن ساخت', type: 'number',  default: '1' },
+  { key: 'ai_stories',   label: 'داستان‌های شخصی‌سازی‌شده (AI)', description: 'ساخت داستان با نام و علایق خود کودک', type: 'boolean', default: 'false' },
 ]
 export const featureLabel = (key: string) => PLAN_FEATURES.find(f => f.key === key)?.label ?? key
 

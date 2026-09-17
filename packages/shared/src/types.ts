@@ -381,6 +381,11 @@ export interface DashboardSummary {
   /** Up to 5 words to practice this week (see PracticeWord). Empty once
    *  everything the child has met is consolidated. */
   practice_words: PracticeWord[]
+  /** Set only on the response that just granted it (engagementReward.ts's
+   *  streak-based free→premium marketing unlock) — a one-shot signal for the
+   *  client to show a "you unlocked N days of premium!" moment, not a
+   *  standing field to poll. */
+  reward_unlocked_days?: number
 }
 
 // ── Read-aloud recordings (mig-061) ───────────────────────

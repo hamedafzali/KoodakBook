@@ -3,13 +3,14 @@ import { query, queryOne } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
 import { requireChildOwner } from '../middleware/childOwner'
 import { computeStreak } from '../lib/streak'
+import { isRewardEligible, rewardExpiresAt, REWARD_PLAN_KEY, REWARD_DURATION_DAYS } from '../lib/engagementReward'
 
 const router = Router()
 
 router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
   const { child_id } = req.params
 
-  const [child, sessions, wordProgress, storyProgress, lessonProgress, badges, practiceWords] = await Promise.all([
+  const [child, sessions, wordProgress, storyProgress, lessonProgress, badges, practiceWords, account] = await Promise.all([
     queryOne('select * from children where id = $1', [child_id]),
     query(
       'select started_at, duration_sec from child_sessions where child_id = $1 order by started_at desc limit 30',
@@ -42,6 +43,11 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
         limit 5`,
       [child_id]
     ),
+    // Own plan/last-grant lookup for the engagement-reward check below —
+    // deliberately its own tiny query rather than joining onto one of the
+    // child-scoped queries above, since this is account-level, not
+    // child-level, data.
+    queryOne<{ plan: string }>('select plan from users where id = $1', [res.locals.userId]),
   ])
 
   if (!child) { res.status(404).json({ data: null, error: 'Child not found' }); return }
@@ -67,6 +73,35 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
 
   const today = new Date().toISOString().slice(0, 10)
   const streak_days = computeStreak(sessionDays, today)
+
+  // Engagement reward (lib/engagementReward.ts): a free account with a real
+  // streak on THIS child gets a short, occasional premium window — a carrot,
+  // not a response to hitting a limit (that's the separate trial in
+  // lib/tempPremiumTrial.ts / routes/ai.ts). Only checked for free accounts;
+  // already-premium or already-in-a-temp-window accounts have plan !== 'free'
+  // so this is a natural no-op for them without extra bookkeeping — the next
+  // check after the reward plan lapses is what re-arms it, same pattern the
+  // existing trial relies on for its own re-grants.
+  let reward_unlocked_days: number | undefined
+  if (account?.plan === 'free') {
+    const nowIso = new Date().toISOString()
+    const lastGrant = await queryOne<{ granted_at: string }>(
+      `select granted_at::text as granted_at from temp_premium_grants
+        where user_id = $1 order by granted_at desc limit 1`,
+      [res.locals.userId],
+    )
+    if (isRewardEligible(streak_days, lastGrant?.granted_at ?? null, nowIso)) {
+      const expiresAt = rewardExpiresAt(nowIso)
+      await query('update users set plan = $2, plan_expires_at = $3 where id = $1',
+        [res.locals.userId, REWARD_PLAN_KEY, expiresAt])
+      await query(
+        `insert into temp_premium_grants (user_id, plan_key, reason, expires_at)
+         values ($1, $2, 'engagement_streak', $3)`,
+        [res.locals.userId, REWARD_PLAN_KEY, expiresAt],
+      )
+      reward_unlocked_days = REWARD_DURATION_DAYS
+    }
+  }
 
   // Bucket words by the mastery state machine (mig-016). 'mastered' counts both
   // mastered and consolidated; 'words_learned' is everything past 'introduced'.
@@ -104,6 +139,11 @@ router.get('/:child_id', requireAuth, requireChildOwner, async (req, res) => {
       recent_sessions: sessions.slice(0, 5),
       recent_badges: badges,
       practice_words: practiceWords,
+      // Present only on the request that just granted it, same one-shot
+      // pattern routes/ai.ts uses for the frustration-trial unlock — lets
+      // the client pop a "you unlocked N days of premium!" moment right
+      // when it happens instead of the plan just quietly changing.
+      reward_unlocked_days,
     },
     error: null,
   })
