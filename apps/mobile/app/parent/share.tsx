@@ -4,6 +4,8 @@ import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { DashboardSummary } from '@koodakbook/shared'
 import { toPersianDigits, buildShareText } from '@koodakbook/shared'
+import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '@/components/ScreenHeader'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { colors, fonts } from '@/lib/theme'
@@ -46,13 +48,9 @@ export default function ShareProgress() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <Text style={styles.title}>اشتراک‌گذاری پیشرفت 📤</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader title="اشتراک‌گذاری پیشرفت" variant="parent" />
+      <View style={[styles.container, { paddingBottom: insets.bottom + 24 }]}>
 
       {/* Preview card */}
       <View style={styles.card}>
@@ -67,9 +65,13 @@ export default function ShareProgress() {
       </View>
 
       <Pressable style={styles.shareButton} onPress={share}>
-        <Text style={styles.shareButtonText}>اشتراک‌گذاری 📤</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name="share-social" size={18} color={colors.onPrimary} />
+          <Text style={styles.shareButtonText}>اشتراک‌گذاری</Text>
+        </View>
       </Pressable>
       <Text style={styles.hint}>پیام برای واتساپ، تلگرام یا هر اپ دیگری آماده می‌شود</Text>
+      </View>
     </View>
   )
 }

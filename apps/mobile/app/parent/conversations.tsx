@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter, Child } from '@koodakbook/shared'
+import ScreenHeader from '@/components/ScreenHeader'
 import { api } from '@/lib/api'
 import { colors, fonts } from '@/lib/theme'
 
@@ -42,15 +43,7 @@ export default function Conversations() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>گفت‌وگوها 💬</Text>
-          <Text style={styles.subtitle}>هرچه شخصیت‌ها با کودک گفته‌اند — قابل بازبینی</Text>
-        </View>
-      </View>
+      <ScreenHeader title="گفت‌وگوها" subtitle="هرچه شخصیت‌ها با کودک گفته‌اند — قابل بازبینی" variant="parent" />
 
       {/* Child + character pickers (horizontal chip rows) */}
       <View style={styles.pickers}>

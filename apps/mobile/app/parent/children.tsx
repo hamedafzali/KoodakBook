@@ -6,6 +6,7 @@ import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
+import ScreenHeader from '@/components/ScreenHeader'
 import { api } from '@/lib/api'
 import { isParentUnlocked } from '@/lib/parentGate'
 import { colors, fonts } from '@/lib/theme'
@@ -36,16 +37,11 @@ export default function ManageChildren() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-    >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <Text style={styles.title}>کودکان 🧒</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader title="کودکان" variant="parent" />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+      >
 
       {children.map((c) => (
         <ChildCard key={c.id} child={c} onChanged={(updated) =>
@@ -60,7 +56,8 @@ export default function ManageChildren() {
           <Text style={styles.addButtonText}>+ افزودن کودک</Text>
         </Pressable>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 

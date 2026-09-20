@@ -4,7 +4,10 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, DashboardSummary } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
+import { Ionicons } from '@expo/vector-icons'
 import PinGate from '@/components/PinGate'
+import ScreenHeader from '@/components/ScreenHeader'
+import IconChip from '@/components/IconChip'
 import { api } from '@/lib/api'
 import { isParentUnlocked, setParentUnlocked } from '@/lib/parentGate'
 import { colors, fonts } from '@/lib/theme'
@@ -101,19 +104,15 @@ export default function ParentHub() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-    >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>حالت والدین 👨‍👩‍👧</Text>
-          <Text style={styles.subtitle}>{me.email} · پلن {me.plan}</Text>
-        </View>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader
+        title="حالت والدین"
+        subtitle={`${me.email} · پلن ${me.plan}`}
+        variant="parent"
+      />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+      >
 
       {/* Child selector */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
@@ -133,10 +132,10 @@ export default function ParentHub() {
       ) : (
         <>
           <View style={styles.statsGrid}>
-            <Stat emoji="🔥" label="روزهای پیاپی" value={summary.streak_days} />
-            <Stat emoji="📝" label="کلمه‌های یادگرفته" value={summary.words_learned} />
-            <Stat emoji="📖" label="قصه‌های تمام‌شده" value={summary.stories_completed} />
-            <Stat emoji="📚" label="درس‌های تمام‌شده" value={summary.lessons_completed} />
+            <Stat icon="flame" label="روزهای پیاپی" value={summary.streak_days} />
+            <Stat icon="pencil" label="کلمه‌های یادگرفته" value={summary.words_learned} />
+            <Stat icon="book" label="قصه‌های تمام‌شده" value={summary.stories_completed} />
+            <Stat icon="school" label="درس‌های تمام‌شده" value={summary.lessons_completed} />
           </View>
 
           <View style={styles.card}>
@@ -151,7 +150,10 @@ export default function ParentHub() {
             <View style={styles.card}>
               <Text style={styles.cardTitle}>نشان‌های اخیر</Text>
               {summary.recent_badges.map((b) => (
-                <Text key={b.id} style={styles.badgeRow}>🏅 {b.badge?.title ?? ''}</Text>
+                <View key={b.id} style={styles.badgeRow}>
+                  <Ionicons name="medal" size={15} color={colors.primaryDeep} />
+                  <Text style={styles.badgeRowText}>{b.badge?.title ?? ''}</Text>
+                </View>
               ))}
             </View>
           )}
@@ -160,33 +162,32 @@ export default function ParentHub() {
 
       {/* Menu — the rest of the parent area */}
       <View style={styles.menu}>
-        <MenuRow emoji="📈" label="پیشرفت کامل" sub="کلمات، درس‌ها، داستان‌ها، جلسات" onPress={() => router.push('/parent/progress')} />
+        <MenuRow icon="trending-up" label="پیشرفت کامل" sub="کلمات، درس‌ها، داستان‌ها، جلسات" onPress={() => router.push('/parent/progress')} />
         <View style={styles.menuDivider} />
-        <MenuRow emoji="🧒" label="کودکان" sub="افزودن کودک، نام کاربری ورود بچه‌ها" onPress={() => router.push('/parent/children')} />
+        <MenuRow icon="person" label="کودکان" sub="افزودن کودک، نام کاربری ورود بچه‌ها" onPress={() => router.push('/parent/children')} />
         <View style={styles.menuDivider} />
-        <MenuRow emoji="🤝" label="دوستان" sub="کد دوستی و تأیید — برای بازی آنلاین" onPress={() => router.push('/parent/friends')} />
+        <MenuRow icon="people" label="دوستان" sub="کد دوستی و تأیید — برای بازی آنلاین" onPress={() => router.push('/parent/friends')} />
         <View style={styles.menuDivider} />
-        <MenuRow emoji="💬" label="گفت‌وگوها" sub="بازبینی چت کودک با شخصیت‌ها" onPress={() => router.push('/parent/conversations')} />
+        <MenuRow icon="chatbubbles" label="گفت‌وگوها" sub="بازبینی چت کودک با شخصیت‌ها" onPress={() => router.push('/parent/conversations')} />
         <View style={styles.menuDivider} />
-        <MenuRow emoji="📤" label="اشتراک‌گذاری پیشرفت" onPress={() => router.push('/parent/share')} />
+        <MenuRow icon="share-social" label="اشتراک‌گذاری پیشرفت" onPress={() => router.push('/parent/share')} />
         <View style={styles.menuDivider} />
-        <MenuRow emoji="💳" label="پلن و اشتراک" onPress={() => router.push('/parent/plan')} />
+        <MenuRow icon="card" label="پلن و اشتراک" onPress={() => router.push('/parent/plan')} />
         <View style={styles.menuDivider} />
-        <MenuRow emoji="⚙️" label="تنظیمات" sub="هدف روزانه، زبان ترجمه، پین، خروج" onPress={() => router.push('/parent/settings')} />
+        <MenuRow icon="settings" label="تنظیمات" sub="هدف روزانه، زبان ترجمه، پین، خروج" onPress={() => router.push('/parent/settings')} />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
 // Web's parent NavRow (apps/web/src/components/parent/flat.tsx) puts the
 // icon in a rounded, ramp-brand-soft-tinted chip rather than floating it bare
 // -- ported that here instead of a plain emoji + text arrow.
-function MenuRow({ emoji, label, sub, onPress }: { emoji: string; label: string; sub?: string; onPress: () => void }) {
+function MenuRow({ icon, label, sub, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; sub?: string; onPress: () => void }) {
   return (
     <Pressable style={styles.menuRow} onPress={onPress}>
-      <View style={styles.menuIconChip}>
-        <Text style={{ fontSize: 18 }}>{emoji}</Text>
-      </View>
+      <IconChip name={icon} />
       <View style={{ flex: 1 }}>
         <Text style={styles.menuLabel}>{label}</Text>
         {sub && <Text style={styles.menuSub}>{sub}</Text>}
@@ -196,10 +197,10 @@ function MenuRow({ emoji, label, sub, onPress }: { emoji: string; label: string;
   )
 }
 
-function Stat({ emoji, label, value }: { emoji: string; label: string; value: number }) {
+function Stat({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: number }) {
   return (
     <View style={styles.stat}>
-      <Text style={{ fontSize: 24 }}>{emoji}</Text>
+      <Ionicons name={icon} size={22} color={colors.primaryDeep} />
       <Text style={styles.statValue}>{toPersianDigits(value)}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -249,13 +250,10 @@ const styles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5 },
   masteryLabel: { flex: 1, fontSize: 13, fontFamily: fonts.regular, color: colors.text },
   masteryValue: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
-  badgeRow: { fontSize: 13, fontFamily: fonts.regular, color: colors.text },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  badgeRowText: { fontSize: 13, fontFamily: fonts.regular, color: colors.text },
   menu: { backgroundColor: colors.card, borderRadius: 18, paddingHorizontal: 16 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
-  menuIconChip: {
-    width: 36, height: 36, borderRadius: 12, backgroundColor: colors.primarySoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
   menuLabel: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
   menuSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   menuChevron: { fontSize: 18, color: colors.primaryDeep },

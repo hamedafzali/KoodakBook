@@ -3,6 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TRANSLATION_LANGS } from '@koodakbook/shared'
+import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '@/components/ScreenHeader'
+import IconChip from '@/components/IconChip'
 import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
 import { clearActiveChildId } from '@/lib/activeChild'
@@ -53,16 +56,11 @@ export default function Settings() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-    >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <Text style={styles.title}>تنظیمات ⚙️</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader title="تنظیمات" variant="parent" />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+      >
 
       {/* Learning settings */}
       <Text style={styles.sectionLabel}>تنظیمات یادگیری</Text>
@@ -106,30 +104,30 @@ export default function Settings() {
       {/* Navigation to other parent sections */}
       <Text style={styles.sectionLabel}>کودکان و محتوا</Text>
       <View style={styles.card}>
-        <MenuRow label="کودکان" emoji="🧒" onPress={() => router.push('/parent/children')} />
+        <MenuRow label="کودکان" icon="person" onPress={() => router.push('/parent/children')} />
         <View style={styles.divider} />
-        <MenuRow label="پیشرفت کامل" emoji="📈" onPress={() => router.push('/parent/progress')} />
+        <MenuRow label="پیشرفت کامل" icon="trending-up" onPress={() => router.push('/parent/progress')} />
         <View style={styles.divider} />
-        <MenuRow label="گفت‌وگوهای کودک با شخصیت‌ها" emoji="💬" onPress={() => router.push('/parent/conversations')} />
+        <MenuRow label="گفت‌وگوهای کودک با شخصیت‌ها" icon="chatbubbles" onPress={() => router.push('/parent/conversations')} />
       </View>
 
       <Text style={styles.sectionLabel}>اشتراک</Text>
       <View style={styles.card}>
-        <MenuRow label="پلن و اشتراک" emoji="💳" onPress={() => router.push('/parent/plan')} />
+        <MenuRow label="پلن و اشتراک" icon="card" onPress={() => router.push('/parent/plan')} />
         <View style={styles.divider} />
-        <MenuRow label="اشتراک‌گذاری پیشرفت" emoji="📤" onPress={() => router.push('/parent/share')} />
+        <MenuRow label="اشتراک‌گذاری پیشرفت" icon="share-social" onPress={() => router.push('/parent/share')} />
       </View>
 
       {/* Account */}
       <Text style={styles.sectionLabel}>حساب کاربری</Text>
       <View style={styles.card}>
-        <MenuRow label="قوانین و حریم خصوصی" emoji="📄" onPress={() => router.push('/legal')} />
+        <MenuRow label="قوانین و حریم خصوصی" icon="document-text" onPress={() => router.push('/legal')} />
         <View style={styles.divider} />
-        <MenuRow label="تغییر پین والدین" emoji="🔒" onPress={changePin} />
+        <MenuRow label="تغییر پین والدین" icon="lock-closed" onPress={changePin} />
         <View style={styles.divider} />
         {!confirmLogout ? (
           <Pressable style={styles.row} onPress={() => setConfirmLogout(true)}>
-            <Text style={{ fontSize: 20 }}>🚪</Text>
+            <IconChip name="log-out" tone="danger" size={32} iconSize={16} />
             <Text style={[styles.rowLabel, { color: colors.danger }]}>خروج از حساب</Text>
           </Pressable>
         ) : (
@@ -148,14 +146,15 @@ export default function Settings() {
       </View>
 
       <Text style={styles.version}>KoodakBook v0.1.0</Text>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
-function MenuRow({ label, emoji, onPress }: { label: string; emoji: string; onPress: () => void }) {
+function MenuRow({ label, icon, onPress }: { label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }) {
   return (
     <Pressable style={styles.row} onPress={onPress}>
-      <Text style={{ fontSize: 20 }}>{emoji}</Text>
+      <IconChip name={icon} size={32} iconSize={16} />
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.chevron}>←</Text>
     </Pressable>
@@ -179,7 +178,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, fontFamily: fonts.medium, color: colors.text },
   divider: { height: 1, backgroundColor: '#f1f5f9' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, minHeight: 44 },
   rowLabel: { flex: 1, fontSize: 15, fontFamily: fonts.medium, color: colors.text },
   chevron: { fontSize: 18, color: colors.muted },
   confirmText: { fontSize: 14, fontFamily: fonts.regular, color: colors.text },

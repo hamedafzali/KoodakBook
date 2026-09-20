@@ -3,6 +3,8 @@ import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View, Pressab
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PLAN_FEATURES, toPersianDigits } from '@koodakbook/shared'
+import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '@/components/ScreenHeader'
 import { api } from '@/lib/api'
 import { API_BASE } from '@/lib/config'
 import { colors, fonts } from '@/lib/theme'
@@ -68,19 +70,11 @@ export default function PlanPage() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-    >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>پلن‌ها و اشتراک</Text>
-          <Text style={styles.subtitle}>امکانات هر پلن را مقایسه کنید</Text>
-        </View>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader title="پلن‌ها و اشتراک" subtitle="امکانات هر پلن را مقایسه کنید" variant="parent" />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+      >
 
       {plans.map((plan) => {
         const isCurrent = plan.key === current
@@ -123,7 +117,10 @@ export default function PlanPage() {
                 <View style={styles.planButtonDisabled}><Text style={styles.planButtonDisabledText}>پلن فعلی شما</Text></View>
               ) : isPremium ? (
                 <Pressable onPress={openWebCheckout} style={styles.planButtonUpgrade}>
-                  <Text style={styles.planButtonUpgradeText}>ارتقا در سایت 🌐</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={styles.planButtonUpgradeText}>ارتقا در سایت</Text>
+                    <Ionicons name="open-outline" size={15} color={colors.onPrimary} />
+                  </View>
                 </Pressable>
               ) : null}
             </View>
@@ -134,7 +131,8 @@ export default function PlanPage() {
       <Text style={styles.footNote}>
         پرداخت از داخل اپ انجام نمی‌شود — دکمه بالا سایت کودک‌بوک را در مرورگر باز می‌کند تا ارتقا را آنجا کامل کنید.
       </Text>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 

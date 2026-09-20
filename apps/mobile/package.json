@@ -12,6 +12,7 @@
   "dependencies": {
     "@expo-google-fonts/baloo-bhaijaan-2": "^0.4.2",
     "@expo-google-fonts/vazirmatn": "^0.4.1",
+    "@expo/vector-icons": "^15.1.1",
     "@koodakbook/shared": "*",
     "expo": "~57.0.23",
     "expo-audio": "~57.0.5",

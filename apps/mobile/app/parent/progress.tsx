@@ -7,6 +7,8 @@ import type {
   Lesson, Story, Word,
 } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
+import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '@/components/ScreenHeader'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { colors, fonts } from '@/lib/theme'
@@ -109,20 +111,12 @@ export default function ParentProgress() {
   ]
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-      stickyHeaderIndices={[2]}
-    >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>پیشرفت {child?.name ?? ''}</Text>
-          <Text style={styles.subtitle}>گزارش کامل یادگیری</Text>
-        </View>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader title={`پیشرفت ${child?.name ?? ''}`} subtitle="گزارش کامل یادگیری" variant="parent" />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        stickyHeaderIndices={[1]}
+      >
 
       <View style={styles.statsRow}>
         <Stat value={learnedCount} label="کلمه یاد گرفته" bg="#dcfce7" fg="#15803d" />
@@ -170,7 +164,7 @@ export default function ParentProgress() {
           {data.lessons.length === 0 && <Empty text="هنوز درسی شروع نشده" />}
           {data.lessons.map((l) => (
             <View key={l.id} style={styles.listRow}>
-              <Text style={{ fontSize: 22 }}>{l.completed ? '✅' : '⏳'}</Text>
+              <Ionicons name={l.completed ? 'checkmark-circle' : 'time-outline'} size={22} color={l.completed ? colors.success : colors.muted} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.listTitle}>{l.lesson?.title ?? '—'}</Text>
                 {l.completed && l.score != null && (
@@ -187,7 +181,7 @@ export default function ParentProgress() {
           {data.stories.length === 0 && <Empty text="هنوز داستانی خوانده نشده" />}
           {data.stories.map((s) => (
             <View key={s.id} style={styles.listRow}>
-              <Text style={{ fontSize: 22 }}>{s.completed ? '📖' : '📄'}</Text>
+              <Ionicons name={s.completed ? 'book' : 'document-outline'} size={22} color={s.completed ? colors.success : colors.muted} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.listTitle}>{s.story?.title_persian ?? '—'}</Text>
                 <Text style={styles.listMeta}>
@@ -205,7 +199,10 @@ export default function ParentProgress() {
           {data.recent_sessions.length === 0 && <Empty text="هنوز جلسه‌ای ثبت نشده" />}
           {data.recent_sessions.map((s, i) => (
             <View key={i} style={[styles.listRow, { justifyContent: 'space-between' }]}>
-              <Text style={styles.listTitle}>📅 {new Date(s.started_at).toLocaleDateString('fa-IR')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="calendar-outline" size={16} color={colors.text} />
+                <Text style={styles.listTitle}>{new Date(s.started_at).toLocaleDateString('fa-IR')}</Text>
+              </View>
               <Text style={styles.listMeta}>
                 {s.duration_sec ? `${toPersianDigits(Math.round(s.duration_sec / 60))} دقیقه` : '—'}
               </Text>
@@ -213,7 +210,8 @@ export default function ParentProgress() {
           ))}
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 

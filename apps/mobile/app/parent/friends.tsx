@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, Text
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child } from '@koodakbook/shared'
+import { Ionicons } from '@expo/vector-icons'
+import ScreenHeader from '@/components/ScreenHeader'
 import { api } from '@/lib/api'
 import { isParentUnlocked } from '@/lib/parentGate'
 import { colors, fonts } from '@/lib/theme'
@@ -101,16 +103,9 @@ export default function Friends() {
   const activeChild = children.find((c) => c.id === selected)
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>دوستان 🤝</Text>
-          <Text style={styles.subtitle}>فقط با کد و تأیید شما — بدون غریبه</Text>
-        </View>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader title="دوستان" subtitle="فقط با کد و تأیید شما — بدون غریبه" variant="parent" />
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
 
       {children.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
@@ -127,7 +122,10 @@ export default function Friends() {
         <Text style={styles.cardLabel}>کد دوستی {activeChild?.name}</Text>
         <Text style={styles.code}>{code ?? '…'}</Text>
         <Pressable style={styles.shareButton} onPress={shareCode}>
-          <Text style={styles.shareText}>اشتراک‌گذاری کد 📤</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="share-social" size={16} color={colors.onPrimary} />
+            <Text style={styles.shareText}>اشتراک‌گذاری کد</Text>
+          </View>
         </Pressable>
         <Text style={styles.hint}>این کد را به خانواده‌ی دوستِ کودک بدهید</Text>
       </View>
@@ -178,14 +176,15 @@ export default function Friends() {
         ) : (
           friends.map((f) => (
             <View key={f.id} style={styles.friendRow}>
-              <Text style={{ fontSize: 22 }}>🧒</Text>
+              <Ionicons name="person-circle" size={26} color={colors.primaryDeep} />
               <Text style={styles.friendName}>{f.name}</Text>
               <Text style={styles.soon}>بازی آنلاین به‌زودی 🎲</Text>
             </View>
           ))
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 

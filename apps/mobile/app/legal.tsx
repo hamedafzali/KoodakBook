@@ -2,22 +2,18 @@ import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LEGAL_PRIVACY, LEGAL_TERMS } from '@koodakbook/shared'
+import ScreenHeader from '@/components/ScreenHeader'
 import { colors, fonts } from '@/lib/theme'
 
 /** Privacy + terms (web: /privacy, /terms). Content shared from @koodakbook/shared. */
 export default function Legal() {
   const insets = useSafeAreaInsets()
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
-    >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <Text style={styles.title}>قوانین و حریم خصوصی</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
+      <ScreenHeader title="قوانین و حریم خصوصی" variant="parent" />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+      >
 
       <Text style={styles.intro}>
         کودک‌بوک برای کودکان ساخته شده و ما این را یک مسئولیت می‌دانیم، نه یک بند حقوقی.
@@ -45,7 +41,8 @@ export default function Legal() {
       ))}
 
       <Text style={styles.version}>KoodakBook v0.1.0</Text>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
