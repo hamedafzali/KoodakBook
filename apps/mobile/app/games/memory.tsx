@@ -11,7 +11,7 @@ import { characterEmoji } from '@/lib/characterEmoji'
 import { mediaUrl } from '@/lib/media'
 import { playClip } from '@/lib/sound'
 import { shuffle } from '@/lib/math'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     flex: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
     gap: 2, overflow: 'hidden', paddingHorizontal: 4,
   },
-  cardBack: { backgroundColor: '#8b5cf6' },
+  cardBack: { backgroundColor: ramps.games.bright, borderWidth: 3, borderColor: ramps.games.deep },
   cardOpen: { backgroundColor: colors.card, borderWidth: 2, borderColor: '#ddd6fe' },
   cardMatched: { backgroundColor: '#dcfce7', borderWidth: 2, borderColor: '#86efac' },
   cardImage: { width: '100%', height: 40 },

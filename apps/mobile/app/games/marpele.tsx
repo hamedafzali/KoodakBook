@@ -9,7 +9,7 @@ import MarpeleBoard, { Confetti, Dice } from '@/components/MarpeleBoard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { characterEmoji } from '@/lib/characterEmoji'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card,
     borderRadius: 999, paddingVertical: 5, paddingHorizontal: 8, borderWidth: 2, borderColor: 'transparent',
   },
-  pcardActive: { backgroundColor: colors.primary, borderColor: colors.primaryDeep },
+  pcardActive: { backgroundColor: ramps.games.bright, borderColor: ramps.games.deep },
   pcardEmoji: { fontSize: 20 },
   pcardName: { fontSize: 12, fontFamily: fonts.bold, color: colors.text, maxWidth: 70 },
   pcardBadge: { backgroundColor: colors.bg, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 1, minWidth: 22, alignItems: 'center' },
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     width: '30%', flexGrow: 1, backgroundColor: colors.card, borderRadius: 16, padding: 12,
     alignItems: 'center', gap: 4, borderWidth: 2, borderColor: 'transparent',
   },
-  charChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  charChipOn: { backgroundColor: ramps.games.bright, borderColor: ramps.games.bright },
   charName: { fontSize: 12, fontFamily: fonts.medium, color: colors.text },
   lineup: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', marginTop: 4 },
   startButton: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 4 },

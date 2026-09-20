@@ -9,7 +9,7 @@ import MarpeleBoard, { Confetti, Dice } from '@/components/MarpeleBoard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   friendStatus: { fontSize: 12, fontFamily: fonts.medium },
   strip: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   pcard: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10, borderWidth: 2, borderColor: 'transparent' },
-  pcardActive: { backgroundColor: colors.primary, borderColor: colors.primaryDeep },
+  pcardActive: { backgroundColor: ramps.games.bright, borderColor: ramps.games.deep },
   pcardName: { fontSize: 13, fontFamily: fonts.bold, color: colors.text, maxWidth: 90 },
   pcardBadge: { backgroundColor: colors.bg, borderRadius: 999, paddingHorizontal: 7, minWidth: 22, alignItems: 'center' },
   pcardBadgeText: { fontSize: 12, fontFamily: fonts.bold, color: colors.text },

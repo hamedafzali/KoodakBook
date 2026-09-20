@@ -10,6 +10,7 @@ import { getActiveChildId } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import { colors, fonts } from '@/lib/theme'
 import BottomNav from '@/components/BottomNav'
+import ScreenHeader from '@/components/ScreenHeader'
 
 /** جایزه‌ها — the badges the child has earned (web: /child/rewards). */
 export default function Rewards() {
@@ -43,15 +44,7 @@ export default function Rewards() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>جایزه‌ها 🏆</Text>
-          <Text style={styles.subtitle}>{toPersianDigits(badges.length)} نشان گرفتی</Text>
-        </View>
-      </View>
+      <ScreenHeader title="جایزه‌ها 🏆" subtitle={`${toPersianDigits(badges.length)} نشان گرفتی`} />
 
       <FlatList
         data={badges}
@@ -87,10 +80,6 @@ export default function Rewards() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 14 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.display, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   grid: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
   empty: { color: colors.muted, fontFamily: fonts.regular, textAlign: 'center', paddingHorizontal: 30, lineHeight: 22 },
   card: {

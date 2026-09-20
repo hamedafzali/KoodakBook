@@ -4,7 +4,8 @@ import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, tones } from '@/lib/theme'
+import ScreenHeader from '@/components/ScreenHeader'
 
 // Theme is sent to the backend as free text; the emoji/label are just the UI
 // (same list as web's /child/story/new).
@@ -57,15 +58,7 @@ export default function NewStory() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 }]}
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>یک داستان برای من بساز ✨</Text>
-          <Text style={styles.subtitle}>یک موضوع انتخاب کن</Text>
-        </View>
-      </View>
+      <ScreenHeader title="یک داستان برای من بساز ✨" subtitle="یک موضوع انتخاب کن" />
 
       <View style={styles.grid}>
         {THEMES.map((t) => (
@@ -75,7 +68,7 @@ export default function NewStory() {
             onPress={() => setTheme(t.key)}
           >
             <Text style={{ fontSize: 30 }}>{t.emoji}</Text>
-            <Text style={[styles.optionLabel, theme === t.key && { color: colors.onPrimary }]}>{t.label}</Text>
+            <Text style={[styles.optionLabel, theme === t.key && { color: tones.violet.ink }]}>{t.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -95,21 +88,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg, gap: 10, padding: 24,
   },
   content: { paddingHorizontal: 20, gap: 18 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 20, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   option: {
     width: '48%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.card, borderRadius: 16, borderWidth: 2, borderColor: '#e5e7eb',
     padding: 14, minHeight: 64,
   },
-  optionActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  optionActive: { borderColor: tones.violet.edge, backgroundColor: '#F5F3FF' },
   optionLabel: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
   error: { color: colors.danger, fontFamily: fonts.regular, textAlign: 'center' },
-  button: { backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 15, alignItems: 'center' },
-  buttonText: { color: colors.onPrimary, fontSize: 18, fontFamily: fonts.bold },
+  button: { backgroundColor: tones.violet.fill, borderBottomWidth: 4, borderBottomColor: tones.violet.edge, borderRadius: 16, paddingVertical: 15, alignItems: 'center' },
+  buttonText: { color: tones.violet.ink, fontSize: 18, fontFamily: fonts.bold },
   waitTitle: { fontSize: 20, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
   waitSub: { fontSize: 14, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
 })

@@ -11,6 +11,7 @@ import { mediaUrl } from '@/lib/media'
 import SceneBackdrop from '@/components/SceneBackdrop'
 import { colors, fonts } from '@/lib/theme'
 import BottomNav from '@/components/BottomNav'
+import ScreenHeader from '@/components/ScreenHeader'
 
 /** Deterministic illustrated cover per story id (web parity for coverless stories). */
 function sceneFor(id: string): SceneSlug {
@@ -93,15 +94,7 @@ export default function Stories() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
-        </Pressable>
-        <View>
-          <Text style={styles.title}>همه داستان‌ها 📖</Text>
-          <Text style={styles.subtitle}>{toPersianDigits(stories.length)} داستان موجود است</Text>
-        </View>
-      </View>
+      <ScreenHeader title="همه داستان‌ها 📖" subtitle={`${toPersianDigits(stories.length)} داستان موجود است`} />
 
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 92 }]}>
         <Pressable style={styles.createButton} onPress={() => router.push('/story/new')}>
@@ -137,10 +130,6 @@ export default function Stories() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 14 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.display, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   body: { paddingHorizontal: 16, gap: 12 },
   createButton: {
     flexDirection: 'row', alignItems: 'center', gap: 12,

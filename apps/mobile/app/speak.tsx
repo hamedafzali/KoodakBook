@@ -9,7 +9,7 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { playClip } from '@/lib/sound'
 import { mediaUrl } from '@/lib/media'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
@@ -149,10 +149,13 @@ const styles = StyleSheet.create({
   feedback: { alignItems: 'center', gap: 4 },
   feedbackText: { fontSize: 17, fontFamily: fonts.bold, color: colors.success },
   sayButton: {
-    width: 120, height: 120, borderRadius: 60, backgroundColor: '#ec4899',
+    width: 120, height: 120, borderRadius: 60, backgroundColor: ramps.speak.bright,
+    borderBottomWidth: 5, borderBottomColor: ramps.speak.deep,
     alignItems: 'center', justifyContent: 'center',
   },
-  sayButtonText: { color: '#fff', fontSize: 20, fontFamily: fonts.bold },
+  // Dark ink, not white -- matches the module's own ramp instead of a
+  // one-off hex, and keeps the dark-ink-on-bright rule (2026-09-20 audit).
+  sayButtonText: { color: ramps.speak.ink, fontSize: 20, fontFamily: fonts.bold },
   nextButton: {
     width: '100%', maxWidth: 360, backgroundColor: colors.primary, borderRadius: 16,
     paddingVertical: 15, alignItems: 'center', marginTop: 'auto',
