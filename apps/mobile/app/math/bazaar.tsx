@@ -7,6 +7,7 @@ import { numberToPersianWord, toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { childAge, distractors, sayNumber, sayPhrase, shuffle } from '@/lib/math'
+import CelebrationOverlay from '@/components/CelebrationOverlay'
 import { colors, fonts } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
@@ -79,6 +80,7 @@ function Game({ mode, onReplay }: { mode: 'read' | 'sum'; onReplay: () => void }
   if (done) {
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
+        <CelebrationOverlay />
         <Text style={{ fontSize: 56 }}>🛒</Text>
         <Text style={styles.doneTitle}>چه خریدار زرنگی! 🛒</Text>
         <Text style={styles.doneSub}>

@@ -174,6 +174,14 @@ const styles = StyleSheet.create({
   doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
   doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
   doneScore: { fontSize: 16, fontFamily: fonts.medium, color: colors.success },
+  scoreRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
+  scoreCorrect: { fontSize: 15, fontFamily: fonts.medium, color: colors.success },
+  scoreIncorrect: { fontSize: 15, fontFamily: fonts.medium, color: colors.danger },
+  scorePercent: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
+  unlockBanner: {
+    backgroundColor: colors.primarySoft, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 18,
+  },
+  unlockText: { fontSize: 14, fontFamily: fonts.bold, color: colors.onPrimary },
   homeButton: {
     marginTop: 12, backgroundColor: colors.primary, borderRadius: 16,
     paddingVertical: 14, paddingHorizontal: 48,

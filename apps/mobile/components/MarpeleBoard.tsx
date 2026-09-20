@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Polyline, Stop } from 'react-native-svg'
 import { COLS, LADDERS, ROWS, SIZE, SNAKES, toPersianDigits } from '@koodakbook/shared'
 import { colors, fonts } from '@/lib/theme'
+export { default as Confetti } from '@/components/Confetti'
 
 /**
  * The مارپله board — a big winding path of vibrant tiles with a soft 2.5D tilt,
@@ -234,40 +235,6 @@ export function Dice({ value, rolling }: { value: number | null; rolling: boolea
         ))}
       </View>
     </Animated.View>
-  )
-}
-
-/* ── Confetti burst for the win screen ───────────────────────────────── */
-const CONFETTI = ['🎉', '⭐', '🎈', '✨', '🏅']
-export function Confetti() {
-  const { width } = useWindowDimensions()
-  const pieces = useRef(
-    Array.from({ length: 22 }, () => ({
-      x: Math.random() * width,
-      emoji: CONFETTI[Math.floor(Math.random() * CONFETTI.length)],
-      delay: Math.random() * 600,
-      size: 18 + Math.random() * 16,
-      fall: new Animated.Value(0),
-    }))
-  ).current
-  useEffect(() => {
-    Animated.stagger(40, pieces.map((p) =>
-      Animated.timing(p.fall, { toValue: 1, duration: 2200, delay: p.delay, easing: Easing.in(Easing.quad), useNativeDriver: true })
-    )).start()
-  }, [])
-  return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {pieces.map((p, i) => {
-        const translateY = p.fall.interpolate({ inputRange: [0, 1], outputRange: [-40, 700] })
-        const rotate = p.fall.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '540deg'] })
-        const opacity = p.fall.interpolate({ inputRange: [0, 0.85, 1], outputRange: [1, 1, 0] })
-        return (
-          <Animated.Text key={i} style={{ position: 'absolute', left: p.x, fontSize: p.size, opacity, transform: [{ translateY }, { rotate }] }}>
-            {p.emoji}
-          </Animated.Text>
-        )
-      })}
-    </View>
   )
 }
 

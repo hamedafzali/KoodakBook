@@ -7,6 +7,7 @@ import { toPersianDigits, buildReviewQuestions, buildPaddingQuestions } from '@k
 import QuizCard, { type QuizQuestion } from '@/components/QuizCard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
+import CelebrationOverlay from '@/components/CelebrationOverlay'
 import { colors, fonts } from '@/lib/theme'
 
 // Frustration loop (mig-051): the backend attaches `easing`/`needsReteach` to
@@ -89,6 +90,7 @@ export default function Review() {
     const allCaughtUp = items.length === 0
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
+        {!allCaughtUp && <CelebrationOverlay />}
         <Text style={{ fontSize: 56 }}>{allCaughtUp ? '🎉' : '🌟'}</Text>
         <Text style={styles.doneTitle}>
           {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}

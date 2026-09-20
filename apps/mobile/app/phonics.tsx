@@ -7,7 +7,9 @@ import {
   toPersianDigits, type Syllable,
 } from '@koodakbook/shared'
 import { playClip } from '@/lib/sound'
+import { playSuccess, playTap } from '@/lib/uiSound'
 import { shuffle } from '@/lib/math'
+import CelebrationOverlay from '@/components/CelebrationOverlay'
 import { colors, fonts, ramps, tones } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
@@ -42,6 +44,7 @@ export default function PhonicsPage() {
   if (phase === 'done') {
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
+        <CelebrationOverlay />
         <Text style={{ fontSize: 56 }}>🌟</Text>
         <Text style={styles.doneTitle}>آفرین! 🌟</Text>
         <Text style={styles.doneSub}>حالا می‌تونی حرف‌ها رو بخونی!</Text>
@@ -160,6 +163,8 @@ function PhonicsQuiz({ all, onDone, onExit }: {
   function choose(slug: string) {
     if (picked) return
     setPicked(slug)
+    if (slug === q.correct.slug) playSuccess()
+    else playTap()
     setTimeout(() => {
       if (idx >= questions.length - 1) {
         if (!doneRef.current) { doneRef.current = true; onDone() }

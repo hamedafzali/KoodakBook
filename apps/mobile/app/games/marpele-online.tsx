@@ -9,6 +9,7 @@ import MarpeleBoard, { Confetti, Dice } from '@/components/MarpeleBoard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
+import { playComplete, playSuccess, playTap } from '@/lib/uiSound'
 import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
@@ -165,6 +166,7 @@ export default function MarpeleOnline() {
 
   async function roll() {
     if (!canRoll || !room) return
+    playTap()
     const idx = room.myIndex
     setAnimating(true)
     const r = 1 + Math.floor(Math.random() * 6)
@@ -192,6 +194,7 @@ export default function MarpeleOnline() {
       void api.post('/api/progress/word', { child_id: me.id, word_id: c.question.correctWord.id, status: 'practiced', result: correct ? 'correct' : 'incorrect' })
     }
     setChallenge(null)
+    if (correct) playSuccess(); else playTap()
     const pos = [...positions]
     if (c.kind === 'ladder' && correct) pos[idx] = c.target
     else if (c.kind === 'snake' && !correct) pos[idx] = c.target
@@ -201,6 +204,7 @@ export default function MarpeleOnline() {
   }
 
   function win(idx: number, pos: number[]) {
+    if (room?.myIndex === idx) playComplete()
     setEndReason(room?.myIndex === idx ? 'won' : 'lost')
     emitState({ positions: pos, current, die, winner: idx })
     setPhase('ended')

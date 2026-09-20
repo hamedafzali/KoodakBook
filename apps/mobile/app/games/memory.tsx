@@ -10,7 +10,9 @@ import { getActiveChildId } from '@/lib/activeChild'
 import { characterEmoji } from '@/lib/characterEmoji'
 import { mediaUrl } from '@/lib/media'
 import { playClip } from '@/lib/sound'
+import { playSuccess, playTap } from '@/lib/uiSound'
 import { shuffle } from '@/lib/math'
+import CelebrationOverlay from '@/components/CelebrationOverlay'
 import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
@@ -110,8 +112,10 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
       setMoves((m) => m + 1)
       const [a, b] = next.map((k) => cards.find((c) => c.key === k)!)
       if (a.wordId === b.wordId) {
+        playSuccess()
         setTimeout(() => { setMatched((s) => new Set(s).add(a.wordId)); setOpen([]) }, 450)
       } else {
+        playTap()
         setTimeout(() => setOpen([]), 950)
       }
     }
@@ -120,6 +124,7 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
   if (done) {
     return (
       <View style={[styles.center, { gap: 12, padding: 24 }]}>
+        <CelebrationOverlay />
         <Text style={{ fontSize: 64 }}>{host ? characterEmoji(host) : '🎉'}</Text>
         <Text style={styles.doneTitle}>همه را پیدا کردی! 🎉</Text>
         <Text style={styles.doneSub}>با {toPersianDigits(moves)} حرکت — عالی بود!</Text>

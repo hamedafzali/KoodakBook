@@ -9,6 +9,7 @@ import MarpeleBoard, { Confetti, Dice } from '@/components/MarpeleBoard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { characterEmoji } from '@/lib/characterEmoji'
+import { playComplete, playSuccess, playTap } from '@/lib/uiSound'
 import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
@@ -216,6 +217,8 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [stars, setStars] = useState(0)
   const [winner, setWinner] = useState<number | null>(null)
+
+  useEffect(() => { if (winner !== null) playComplete() }, [winner])
   const [boardArea, setBoardArea] = useState({ w: 0, h: 0 })
   const mounted = useRef(true)
   const winnerRef = useRef(false)
@@ -271,6 +274,7 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
 
   async function humanRoll() {
     if (!canRoll) return
+    playTap()
     const idx = current
     setAnimating(true)
     const r = 1 + Math.floor(Math.random() * 6)
@@ -300,6 +304,7 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
       })
     }
     setChallenge(null)
+    if (correct) playSuccess(); else playTap()
     if (correct && players[c.playerIdx].isActiveChild) setStars((s) => s + 1)
     let next = positions[c.playerIdx]
     if (c.kind === 'ladder' && correct) next = c.target
