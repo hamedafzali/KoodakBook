@@ -22,6 +22,12 @@ export default function ParentHub() {
   const [me, setMe] = useState<Me | null>(null)
   const [unlocked, setUnlocked] = useState(isParentUnlocked())
   const [children, setChildren] = useState<Child[]>([])
+  // Distinguishes "still loading the children list" from "loaded, and it's
+  // empty" -- without this, a brand-new parent with zero children never gets
+  // `selected` set, the summary fetch below never fires, and `!summary`
+  // rendered a bare spinner forever with no message and no way out
+  // (2026-09-20 audit, Critical #2).
+  const [childrenLoaded, setChildrenLoaded] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
 
@@ -40,6 +46,7 @@ export default function ParentHub() {
           setChildren(res.data)
           setSelected((cur) => cur ?? res.data![0]?.id ?? null)
         }
+        setChildrenLoaded(true)
       })
       return () => { cancelled = true }
     }, [])
@@ -72,6 +79,24 @@ export default function ParentHub() {
         initialReset={reset === '1'}
         onUnlocked={() => { setParentUnlocked(true); setUnlocked(true); setMe({ ...me, has_pin: true }) }}
       />
+    )
+  }
+
+  // Day zero: no child profile yet. Matches web's /parent/dashboard empty
+  // state (سیمرغ منتظر همراهش است) rather than leaving a parent staring at
+  // a spinner that never resolves (2026-09-20 audit, Critical #2).
+  if (childrenLoaded && children.length === 0) {
+    return (
+      <View style={[styles.center, { gap: 16, padding: 24 }]}>
+        <Text style={{ fontSize: 56 }}>🦚</Text>
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <Text style={styles.emptyTitle}>سیمرغ منتظر همراهش است</Text>
+          <Text style={styles.emptySub}>یک پروفایل برای فرزندتان بسازید تا اولین قصه شروع شود</Text>
+        </View>
+        <Pressable style={styles.emptyButton} onPress={() => router.push('/onboarding')}>
+          <Text style={styles.emptyButtonText}>ایجاد پروفایل</Text>
+        </Pressable>
+      </View>
     )
   }
 
@@ -198,6 +223,13 @@ const styles = StyleSheet.create({
   back: { fontSize: 24, color: colors.muted },
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
+  emptyTitle: { fontSize: 19, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
+  emptySub: { fontSize: 14, fontFamily: fonts.medium, color: colors.muted, textAlign: 'center', maxWidth: 280 },
+  emptyButton: {
+    backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 28,
+    minHeight: 48, alignItems: 'center', justifyContent: 'center',
+  },
+  emptyButtonText: { color: colors.onPrimary, fontSize: 16, fontFamily: fonts.bold },
   chip: {
     paddingHorizontal: 18, paddingVertical: 8, borderRadius: 999,
     backgroundColor: colors.card, borderWidth: 1, borderColor: '#e5e7eb',

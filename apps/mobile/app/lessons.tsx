@@ -2,8 +2,8 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { Lesson } from '@koodakbook/shared'
-import { LESSON_TYPE_EMOJI, toPersianDigits } from '@koodakbook/shared'
+import type { Lesson, StrandLevels } from '@koodakbook/shared'
+import { ALL_UNLOCKED, LESSON_TYPE_EMOJI, isLessonUnlocked, toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { colors, fonts } from '@/lib/theme'
@@ -13,6 +13,10 @@ export default function Lessons() {
   const insets = useSafeAreaInsets()
   const [lessons, setLessons] = useState<Lesson[] | null>(null)
   const [completed, setCompleted] = useState<Set<string>>(new Set())
+  // Which lessons are actually reachable yet, from the child's placement --
+  // web's /child/lesson gates on this (isLessonUnlocked); mobile never did,
+  // so a locked lesson was fully tappable (2026-09-20 audit, Critical #1).
+  const [strandLevels, setStrandLevels] = useState<StrandLevels>(ALL_UNLOCKED)
   const [error, setError] = useState<string | null>(null)
 
   useFocusEffect(
@@ -21,9 +25,10 @@ export default function Lessons() {
       async function load() {
         const childId = await getActiveChildId()
         if (!childId) { router.replace('/children'); return }
-        const [lessonsRes, progRes] = await Promise.all([
+        const [lessonsRes, progRes, placeRes] = await Promise.all([
           api.get<Lesson[]>('/api/lessons'),
           api.get<{ lessons: { lesson_id: string; completed: boolean }[] }>(`/api/progress/${childId}`),
+          api.get<{ strand_levels: StrandLevels }>(`/api/placement/${childId}`),
         ])
         if (cancelled) return
         if (lessonsRes.data) setLessons(lessonsRes.data)
@@ -31,6 +36,7 @@ export default function Lessons() {
         if (progRes.data) {
           setCompleted(new Set(progRes.data.lessons.filter((l) => l.completed).map((l) => l.lesson_id)))
         }
+        if (placeRes.data?.strand_levels) setStrandLevels(placeRes.data.strand_levels)
       }
       load()
       return () => { cancelled = true }
@@ -64,14 +70,29 @@ export default function Lessons() {
         ListEmptyComponent={<Text style={styles.empty}>هنوز درسی نیست</Text>}
         renderItem={({ item }) => {
           const done = completed.has(item.id)
+          const locked = !isLessonUnlocked(item, strandLevels)
+          if (locked) {
+            return (
+              <View style={[styles.card, styles.cardLocked]} accessibilityLabel={`${item.title} — قفل شده، مرحله ${item.stage} لازم است`}>
+                <View style={[styles.iconWrap, styles.iconWrapLocked]}>
+                  <Text style={styles.emoji}>🔒</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.lessonTitle, styles.lessonTitleLocked]}>{item.title}</Text>
+                  <Text style={styles.lockedReason}>مرحله {toPersianDigits(item.stage)} لازم است</Text>
+                </View>
+              </View>
+            )
+          }
           return (
             <Pressable style={styles.card} onPress={() => router.push(`/lesson/${item.id}`)}>
-              <Text style={styles.emoji}>{LESSON_TYPE_EMOJI[item.type] ?? '📚'}</Text>
+              <View style={[styles.iconWrap, done && styles.iconWrapDone]}>
+                <Text style={styles.emoji}>{done ? '✅' : LESSON_TYPE_EMOJI[item.type] ?? '📚'}</Text>
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.lessonTitle}>{item.title}</Text>
                 {item.description && <Text style={styles.description} numberOfLines={1}>{item.description}</Text>}
               </View>
-              {done && <Text style={styles.done}>✅</Text>}
             </Pressable>
           )
         }}
@@ -94,9 +115,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: colors.card, borderRadius: 18, padding: 16,
   },
-  emoji: { fontSize: 32 },
+  cardLocked: { backgroundColor: 'rgba(255,255,255,0.55)' },
+  iconWrap: {
+    width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+  },
+  iconWrapDone: { backgroundColor: colors.successSoft },
+  iconWrapLocked: { backgroundColor: colors.borderSoft },
+  emoji: { fontSize: 20 },
   lessonTitle: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
+  lessonTitleLocked: { color: colors.muted },
+  lockedReason: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   description: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  done: { fontSize: 18 },
   error: { color: colors.danger, fontFamily: fonts.regular },
 })

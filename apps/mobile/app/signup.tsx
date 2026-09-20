@@ -60,8 +60,13 @@ export default function Signup() {
       {error && <Text style={styles.error}>{error}</Text>}
 
       <Pressable style={[styles.button, busy && { opacity: 0.6 }]} disabled={busy} onPress={submit}>
-        {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ثبت‌نام رایگان</Text>}
+        {busy ? <ActivityIndicator color={auth.signup.onAccent} /> : <Text style={styles.buttonText}>ثبت‌نام رایگان</Text>}
       </Pressable>
+
+      <Text style={styles.consent}>
+        با ثبت‌نام، <Text style={styles.consentLink} onPress={() => router.push('/legal')}>شرایط استفاده</Text> و{' '}
+        <Text style={styles.consentLink} onPress={() => router.push('/legal')}>حریم خصوصی</Text> را می‌پذیرید
+      </Text>
 
       <Pressable onPress={() => router.replace('/login')} hitSlop={8}>
         <Text style={styles.link}>حساب دارید؟ ورود</Text>
@@ -85,6 +90,13 @@ const styles = StyleSheet.create({
     backgroundColor: auth.signup.accent, borderRadius: 16, paddingVertical: 14,
     width: '100%', maxWidth: 360, alignItems: 'center',
   },
-  buttonText: { color: '#fff', fontSize: 17, fontFamily: fonts.bold },
+  // Dark ink, not white -- white-on-#10B981 measures ~2.5:1, under the 4.5:1
+  // AA floor. `onAccent` clears >=6:1 (theme.ts, 2026-09-20 audit fix).
+  buttonText: { color: auth.signup.onAccent, fontSize: 17, fontFamily: fonts.bold },
+  consent: {
+    fontSize: 11.5, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center',
+    maxWidth: 320, lineHeight: 17,
+  },
+  consentLink: { color: auth.signup.accentDeep, fontFamily: fonts.medium },
   link: { color: auth.signup.accentDeep, fontFamily: fonts.medium, fontSize: 14, marginTop: 4 },
 })

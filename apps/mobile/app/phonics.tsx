@@ -8,7 +8,7 @@ import {
 } from '@koodakbook/shared'
 import { playClip } from '@/lib/sound'
 import { shuffle } from '@/lib/math'
-import { colors, fonts, ramps } from '@/lib/theme'
+import { colors, fonts, ramps, tones } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
@@ -18,8 +18,11 @@ import BottomNav from '@/components/BottomNav'
  * reveal; the audio timing (the actual lesson) is identical. */
 
 const DEMO = 'ب'
-// zebar/zir/pish tints -- web's VOWEL_TONES (clay.tsx): rose/sky/violet.
-const VOWEL_TINTS: Record<string, string> = { zebar: '#FB7185', zir: '#0ea5e9', pish: '#8b5cf6' }
+// zebar/zir/pish tones -- ported from web's VOWEL_TONES (clay.tsx):
+// rose/sky/violet. Dark `ink` text sits on the bright `fill`, never white --
+// the previous white-on-#FB7185 pairing measured ~2.3:1, under the 4.5:1 AA
+// floor (2026-09-20 audit, Critical #1).
+const VOWEL_TONES: Record<string, keyof typeof tones> = { zebar: 'rose', zir: 'sky', pish: 'violet' }
 
 export default function PhonicsPage() {
   const insets = useSafeAreaInsets()
@@ -80,15 +83,20 @@ export default function PhonicsPage() {
         {SHORT_VOWELS.map((v) => {
           const syll = DEMO + v.mark
           return (
-            <Pressable
-              key={v.key}
-              style={[styles.vowelTile, { backgroundColor: VOWEL_TINTS[v.key] ?? colors.onPrimary }]}
-              onPress={() => demo(syll, v.namePersian, 'b' + v.latin)}
-            >
-              <Text style={styles.vowelSyll}>{syll}</Text>
-              <Text style={styles.vowelName}>{v.namePersian}</Text>
-              <Text style={styles.vowelLatin}>{v.latin}</Text>
-            </Pressable>
+            (() => {
+              const tone = tones[VOWEL_TONES[v.key] ?? 'amber']
+              return (
+                <Pressable
+                  key={v.key}
+                  style={[styles.vowelTile, { backgroundColor: tone.fill, borderBottomColor: tone.edge }]}
+                  onPress={() => demo(syll, v.namePersian, 'b' + v.latin)}
+                >
+                  <Text style={[styles.vowelSyll, { color: tone.ink }]}>{syll}</Text>
+                  <Text style={[styles.vowelName, { color: tone.ink }]}>{v.namePersian}</Text>
+                  <Text style={[styles.vowelLatin, { color: tone.ink, opacity: 0.75 }]}>{v.latin}</Text>
+                </Pressable>
+              )
+            })()
           )
         })}
       </View>
@@ -215,10 +223,10 @@ const styles = StyleSheet.create({
   section: { fontSize: 16, fontFamily: fonts.bold, color: colors.text },
   sectionLatin: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted },
   vowelRow: { flexDirection: 'row', gap: 10 },
-  vowelTile: { flex: 1, borderRadius: 20, padding: 14, alignItems: 'center', gap: 2, minHeight: 108, justifyContent: 'center' },
-  vowelSyll: { fontSize: 40, fontFamily: fonts.bold, color: '#fff', lineHeight: 56 },
-  vowelName: { fontSize: 13, fontFamily: fonts.medium, color: '#fff' },
-  vowelLatin: { fontSize: 11, fontFamily: fonts.regular, color: 'rgba(255,255,255,0.8)' },
+  vowelTile: { flex: 1, borderRadius: 20, borderBottomWidth: 4, padding: 14, alignItems: 'center', gap: 2, minHeight: 108, justifyContent: 'center' },
+  vowelSyll: { fontSize: 40, fontFamily: fonts.bold, lineHeight: 56 },
+  vowelName: { fontSize: 13, fontFamily: fonts.medium },
+  vowelLatin: { fontSize: 11, fontFamily: fonts.regular },
   syllGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   syllTile: {
     width: '22.7%', flexGrow: 1, backgroundColor: colors.card, borderRadius: 14,

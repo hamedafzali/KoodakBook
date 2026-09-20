@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
@@ -7,7 +7,7 @@ import type { Letter } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { playClip } from '@/lib/sound'
-import { colors, fonts } from '@/lib/theme'
+import { colors, fonts, ramps } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
@@ -48,35 +48,43 @@ export default function Write() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-      <View style={{ alignSelf: 'stretch' }}>
-        <ScreenHeader title="تمرین نوشتن ✏️" subtitle={`حرف ${toPersianDigits(idx + 1)} از ${toPersianDigits(letters.length)}`} />
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Content scrolls; nav stays reachable even on a short device (e.g.
+       * iPhone SE) instead of being pinned off-screen below the fold via
+       * marginTop: 'auto' on a non-scrolling container -- web hit and fixed
+       * this exact reachability problem first (2026-09-20 audit, High #13). */}
+      <ScrollView
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 108 }]}
+      >
+        <View style={{ alignSelf: 'stretch' }}>
+          <ScreenHeader title="تمرین نوشتن ✏️" subtitle={`حرف ${toPersianDigits(idx + 1)} از ${toPersianDigits(letters.length)}`} />
+        </View>
 
-      <Pressable style={styles.letterChip} onPress={() => playClip(letter.audio_url)}>
-        <Text style={styles.letterChar}>{letter.character}</Text>
-        <Text style={styles.letterName}>{letter.name_persian}</Text>
-        <Text style={{ fontSize: 18 }}>🔊</Text>
-      </Pressable>
-
-      <TracingCanvas key={letter.id} letter={letter.character} />
-
-      <View style={styles.nav}>
-        <Pressable
-          style={[styles.navButton, idx === 0 && styles.navDisabled]}
-          disabled={idx === 0}
-          onPress={() => setIdx((i) => Math.max(0, i - 1))}
-        >
-          <Text style={styles.navText}>قبلی</Text>
+        <Pressable style={styles.letterChip} onPress={() => playClip(letter.audio_url)}>
+          <Text style={styles.letterChar}>{letter.character}</Text>
+          <Text style={styles.letterName}>{letter.name_persian}</Text>
+          <Text style={{ fontSize: 18 }}>🔊</Text>
         </Pressable>
-        <Pressable
-          style={[styles.navButton, styles.navNext, idx === letters.length - 1 && styles.navDisabled]}
-          disabled={idx === letters.length - 1}
-          onPress={() => setIdx((i) => Math.min(letters.length - 1, i + 1))}
-        >
-          <Text style={[styles.navText, { color: '#fff' }]}>بعدی ←</Text>
-        </Pressable>
-      </View>
+
+        <TracingCanvas key={letter.id} letter={letter.character} />
+
+        <View style={styles.nav}>
+          <Pressable
+            style={[styles.navButton, idx === 0 && styles.navDisabled]}
+            disabled={idx === 0}
+            onPress={() => setIdx((i) => Math.max(0, i - 1))}
+          >
+            <Text style={styles.navText}>قبلی</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.navButton, styles.navNext, idx === letters.length - 1 && styles.navDisabled]}
+            disabled={idx === letters.length - 1}
+            onPress={() => setIdx((i) => Math.min(letters.length - 1, i + 1))}
+          >
+            <Text style={[styles.navText, { color: ramps.write.ink }]}>بعدی ←</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
       <BottomNav />
     </View>
   )
@@ -139,7 +147,7 @@ function TracingCanvas({ letter }: { letter: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, paddingBottom: 92, gap: 16, alignItems: 'center' },
+  container: { paddingHorizontal: 20, gap: 16, alignItems: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   empty: { color: colors.muted, fontFamily: fonts.regular },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch' },
@@ -162,12 +170,12 @@ const styles = StyleSheet.create({
   clearActive: { backgroundColor: '#fef3c7' },
   clearIdle: { backgroundColor: '#f1f5f9' },
   clearText: { fontSize: 13, fontFamily: fonts.medium },
-  nav: { flexDirection: 'row', gap: 12, alignSelf: 'stretch', marginTop: 'auto' },
+  nav: { flexDirection: 'row', gap: 12, alignSelf: 'stretch', marginTop: 8 },
   navButton: {
     flex: 1, borderRadius: 16, paddingVertical: 15, alignItems: 'center',
     borderWidth: 2, borderColor: '#e2e8f0',
   },
-  navNext: { flex: 2, backgroundColor: '#0ea5e9', borderColor: '#0ea5e9' },
+  navNext: { flex: 2, backgroundColor: ramps.write.bright, borderColor: ramps.write.deep },
   navDisabled: { opacity: 0.4 },
   navText: { fontSize: 16, fontFamily: fonts.bold, color: colors.muted },
 })

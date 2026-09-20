@@ -55,17 +55,55 @@ export const ramps = {
   rewards: { deep: '#745300', bright: '#FBBF24', soft: '#FFFBEB', ink: '#654900' },
 } as const
 
+// Ad-hoc clay tones (web's apps/web/src/components/child/clay.tsx TONES) for
+// screens that deliberately want colour VARIETY within one module rather than
+// the single module hue -- e.g. phonics' three vowel-mark tiles, the AI-story
+// picker's purple identity. Every fill<->ink pair here clears WCAG AA
+// (ported from web's measured values, >=6:1). Not a replacement for `ramps`
+// -- reach for this only when a screen's own spec asks for more than one
+// colour (2026-09-20, Phase 1/2 of the mobile UX/UI audit).
+export const tones = {
+  emerald: { fill: '#34D399', edge: '#047857', ink: '#022C22' },
+  sky:     { fill: '#38BDF8', edge: '#0369A1', ink: '#082F49' },
+  amber:   { fill: '#FBBF24', edge: '#B45309', ink: '#451A03' },
+  rose:    { fill: '#FB7185', edge: '#BE123C', ink: '#4C0519' },
+  violet:  { fill: '#A78BFA', edge: '#6D28D9', ink: '#2E1065' },
+  orange:  { fill: '#FB923C', edge: '#C2410C', ink: '#431407' },
+  teal:    { fill: '#2DD4BF', edge: '#0F766E', ink: '#042F2E' },
+  fuchsia: { fill: '#E879F9', edge: '#A21CAF', ink: '#4A044E' },
+  lime:    { fill: '#A3E635', edge: '#4D7C0F', ink: '#1A2E05' },
+} as const
+
 // Login = warm amber ("welcome back"), signup = fresh green ("start the
 // adventure") -- same differentiation web's AuthShell.tsx uses so the two
-// pages don't get mixed up.
+// pages don't get mixed up. `onAccent` is the dark-ink pair for each button
+// fill (web's --color-on-brand / --color-on-signup) -- white-on-#10B981
+// measures ~2.5:1, well under AA; these clear >=6:1 (2026-09-20 audit fix).
 export const auth = {
-  login: { accent: '#F59E0B', accentDeep: '#B45309', bg: '#FFFBEB' },
-  signup: { accent: '#10B981', accentDeep: '#047857', bg: '#ECFDF5' },
+  login: { accent: '#F59E0B', accentDeep: '#B45309', bg: '#FFFBEB', onAccent: '#451A03' },
+  signup: { accent: '#10B981', accentDeep: '#047857', bg: '#ECFDF5', onAccent: '#00201A' },
 }
 
 // web's --radius-* scale (globals.css), for anything that should read as the
 // same "roundness" as a web card/button/chip rather than an arbitrary number.
 export const radii = { sm: 12, md: 20, lg: 28, xl: 40, pill: 999 }
+
+// 4px rhythm, matching web's implicit Tailwind spacing scale -- didn't exist
+// as an explicit token on either platform until the 2026-09-20 audit; added
+// here so new screens have one to reach for instead of ad hoc padding/gap
+// numbers.
+export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 }
+
+// Soft elevation scale mirroring web's --shadow-1..4 (globals.css), for
+// anything that should read as the same "depth" as a web card/modal/hero.
+// React Native has no CSS box-shadow, so each step is the RN shadow prop set
+// (iOS shadowColor/Opacity/Radius/Offset) plus a matching Android `elevation`.
+export const shadows = {
+  1: { shadowColor: '#000', shadowOpacity: 0.07, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  2: { shadowColor: '#000', shadowOpacity: 0.10, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  3: { shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
+  4: { shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
+} as const
 
 // web's --text-* type ladder, in px (web's rem values * 16). Not every screen
 // needs every step -- pull what's relevant.
