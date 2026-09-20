@@ -3,11 +3,13 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter, CharacterLine } from '@koodakbook/shared'
+import { isSceneSlug } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { playClip } from '@/lib/sound'
 import { characterEmoji } from '@/lib/characterEmoji'
 import { colors, fonts, ramps } from '@/lib/theme'
 import BottomNav from '@/components/BottomNav'
+import SceneBackdrop from '@/components/SceneBackdrop'
 
 /**
  * A friend's home (web: /child/friends/[slug]) — greeting plays on arrival,
@@ -53,18 +55,28 @@ export default function FriendHome() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Text style={styles.back}>→</Text>
+      {/* The character's own habitat, not a flat emoji-in-a-circle -- the
+          single largest visual-richness gap the audit found (UX High #14).
+          home_scene is a real per-character column in this scene-library
+          slug space; isSceneSlug guards an unexpected/legacy value. */}
+      <View style={styles.hero}>
+        <SceneBackdrop
+          scene={isSceneSlug(character.home_scene) ? character.home_scene : 'garden'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} hitSlop={10}>
+            <Text style={styles.back}>→</Text>
+          </Pressable>
+        </View>
+
+        <Pressable
+          style={styles.avatarCard}
+          onPress={() => greeting?.audio_url && playClip(greeting.audio_url)}
+        >
+          <Text style={{ fontSize: 96, lineHeight: 110 }}>{characterEmoji(character)}</Text>
         </Pressable>
       </View>
-
-      <Pressable
-        style={styles.avatarCard}
-        onPress={() => greeting?.audio_url && playClip(greeting.audio_url)}
-      >
-        <Text style={{ fontSize: 96, lineHeight: 110 }}>{characterEmoji(character)}</Text>
-      </Pressable>
 
       <Text style={styles.name}>{character.name_persian}</Text>
       <Text style={styles.personality}>{character.personality}</Text>
@@ -118,10 +130,18 @@ export default function FriendHome() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   content: { paddingHorizontal: 24, alignItems: 'center', gap: 10 },
-  header: { width: '100%', flexDirection: 'row' },
-  back: { fontSize: 24, color: colors.muted },
+  hero: {
+    width: '100%', minHeight: 260, borderRadius: 28, overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 20, paddingTop: 4,
+  },
+  header: { position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', zIndex: 2 },
+  back: {
+    fontSize: 20, color: colors.text, width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.85)', textAlign: 'center', textAlignVertical: 'center',
+    overflow: 'hidden',
+  },
   avatarCard: {
-    width: 160, height: 160, borderRadius: 80, backgroundColor: colors.primarySoft,
+    width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center', justifyContent: 'center',
   },
   name: { fontSize: 26, fontFamily: fonts.display, color: colors.text, marginTop: 6 },
