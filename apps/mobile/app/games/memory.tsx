@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -22,6 +22,42 @@ import BottomNav from '@/components/BottomNav'
  * ?host=<slug> lets a friend present the game (game_open / praise lines). */
 
 const PAIRS = 6
+
+// 3D flip (rotateY), replacing the old instant swap between back/front --
+// mirrors web's card-flip transition (2026-09-20 audit, UI High #7). Two
+// absolutely-stacked faces rotate in lockstep, each hidden past 90deg via
+// backfaceVisibility so only one is ever legible at a time.
+function MemoryCard({ card, isOpen, isMatched, onPress }: {
+  card: Card; isOpen: boolean; isMatched: boolean; onPress: () => void
+}) {
+  const flip = useRef(new Animated.Value(isOpen ? 1 : 0)).current
+  useEffect(() => {
+    Animated.timing(flip, {
+      toValue: isOpen ? 1 : 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+    }).start()
+  }, [isOpen])
+  const backRotate = flip.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] })
+  const frontRotate = flip.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] })
+  return (
+    <Pressable style={styles.cardSlot} onPress={onPress}>
+      <Animated.View
+        style={[styles.cardFace, styles.cardBack, StyleSheet.absoluteFill, { transform: [{ perspective: 800 }, { rotateY: backRotate }] }]}
+      >
+        <Text style={{ fontSize: 28 }}>🌟</Text>
+      </Animated.View>
+      <Animated.View
+        style={[
+          styles.cardFace, isMatched ? styles.cardMatched : styles.cardOpen, StyleSheet.absoluteFill,
+          { transform: [{ perspective: 800 }, { rotateY: frontRotate }] },
+        ]}
+      >
+        {card.image && <Image source={{ uri: card.image }} style={styles.cardImage} contentFit="cover" />}
+        <Text style={[styles.cardWord, card.image && { fontSize: 14 }]} numberOfLines={1}>{card.persian}</Text>
+        <Text style={styles.cardLatin} numberOfLines={1}>{card.english}</Text>
+      </Animated.View>
+    </Pressable>
+  )
+}
 
 interface Card {
   key: string
@@ -159,21 +195,7 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
         {cards.map((card) => {
           const isOpen = open.includes(card.key) || matched.has(card.wordId)
           const isMatched = matched.has(card.wordId)
-          return (
-            <Pressable key={card.key} style={styles.cardSlot} onPress={() => flip(card)}>
-              {isOpen ? (
-                <View style={[styles.cardFace, isMatched ? styles.cardMatched : styles.cardOpen]}>
-                  {card.image && <Image source={{ uri: card.image }} style={styles.cardImage} contentFit="cover" />}
-                  <Text style={[styles.cardWord, card.image && { fontSize: 14 }]} numberOfLines={1}>{card.persian}</Text>
-                  <Text style={styles.cardLatin} numberOfLines={1}>{card.english}</Text>
-                </View>
-              ) : (
-                <View style={[styles.cardFace, styles.cardBack]}>
-                  <Text style={{ fontSize: 28 }}>🌟</Text>
-                </View>
-              )}
-            </Pressable>
-          )
+          return <MemoryCard key={card.key} card={card} isOpen={isOpen} isMatched={isMatched} onPress={() => flip(card)} />
         })}
       </View>
 
@@ -194,10 +216,10 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 },
   statusText: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  cardSlot: { width: '31.5%', flexGrow: 1, aspectRatio: 0.78 },
+  cardSlot: { width: '31.5%', flexGrow: 1, aspectRatio: 0.78, position: 'relative' },
   cardFace: {
     flex: 1, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-    gap: 2, overflow: 'hidden', paddingHorizontal: 4,
+    gap: 2, overflow: 'hidden', paddingHorizontal: 4, backfaceVisibility: 'hidden',
   },
   cardBack: { backgroundColor: ramps.games.bright, borderWidth: 3, borderColor: ramps.games.deep },
   cardOpen: { backgroundColor: colors.card, borderWidth: 2, borderColor: '#ddd6fe' },

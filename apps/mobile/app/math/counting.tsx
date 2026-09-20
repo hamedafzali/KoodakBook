@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child } from '@koodakbook/shared'
@@ -20,6 +20,31 @@ const THINGS = ['🍎', '🐤', '🎈', '⭐', '🍓', '🐟', '🌸', '🚗']
 const ROUNDS = 5
 
 interface Round { emoji: string; count: number; options: number[] }
+
+// Quick bounce + wiggle on tap, replacing the old static scale(1.08) -- makes
+// a tap feel like it landed instead of just changing color (2026-09-20
+// audit, UI High #7).
+function CountItem({ emoji, tapped, onPress }: { emoji: string; tapped: boolean; onPress: () => void }) {
+  const anim = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    if (!tapped) return
+    anim.setValue(0)
+    Animated.sequence([
+      Animated.timing(anim, { toValue: 1, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.spring(anim, { toValue: 0, friction: 3, useNativeDriver: true }),
+    ]).start()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tapped])
+  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.28] })
+  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '-10deg'] })
+  return (
+    <Pressable onPress={onPress} disabled={tapped}>
+      <Animated.View style={[styles.item, tapped && styles.itemTapped, { transform: [{ scale }, { rotate }] }]}>
+        <Text style={{ fontSize: 40 }}>{emoji}</Text>
+      </Animated.View>
+    </Pressable>
+  )
+}
 
 export default function CountingPage() {
   const [maxN, setMaxN] = useState<number | null>(null)
@@ -120,13 +145,7 @@ function Game({ maxN, onReplay }: { maxN: number; onReplay: () => void }) {
         </Text>
         <View style={styles.items}>
           {Array.from({ length: r.count }, (_, i) => (
-            <Pressable
-              key={i}
-              onPress={() => tapItem(i)}
-              style={[styles.item, tapped.has(i) && styles.itemTapped]}
-            >
-              <Text style={{ fontSize: 40 }}>{r.emoji}</Text>
-            </Pressable>
+            <CountItem key={i} emoji={r.emoji} tapped={tapped.has(i)} onPress={() => tapItem(i)} />
           ))}
         </View>
         {tapped.size > 0 && (
@@ -172,7 +191,7 @@ const styles = StyleSheet.create({
     width: 64, height: 64, borderRadius: 18, backgroundColor: '#ecfdf5',
     alignItems: 'center', justifyContent: 'center',
   },
-  itemTapped: { backgroundColor: '#a7f3d0', transform: [{ scale: 1.08 }] },
+  itemTapped: { backgroundColor: '#a7f3d0' },
   count: { fontSize: 40, fontFamily: fonts.bold, color: '#059669' },
   countWord: { fontSize: 15, fontFamily: fonts.regular, color: '#10b981' },
   options: { flexDirection: 'row', gap: 10 },
