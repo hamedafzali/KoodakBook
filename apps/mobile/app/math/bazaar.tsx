@@ -8,6 +8,7 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { childAge, distractors, sayNumber, sayPhrase, shuffle } from '@/lib/math'
 import CelebrationOverlay from '@/components/CelebrationOverlay'
+import SceneBackdrop from '@/components/SceneBackdrop'
 import { colors, fonts } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
@@ -114,15 +115,20 @@ function Game({ mode, onReplay }: { mode: 'read' | 'sum'; onReplay: () => void }
         خرید {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}
       </Text>
 
-      {/* The stall */}
-      <View style={styles.stall}>
-        {q.items.map((it, i) => (
-          <View key={i} style={[styles.good, q.targets.includes(i) && picked === null && styles.goodTarget]}>
-            <Text style={{ fontSize: 30 }}>{it.emoji}</Text>
-            <Text style={styles.goodName}>{it.name}</Text>
-            <Text style={styles.goodPrice}>{toPersianDigits(it.price)} تومان</Text>
-          </View>
-        ))}
+      {/* The stall, over an illustrated bazaar backdrop -- was a plain white
+          row on the one math screen most suited to a scene (audit UI Low #12;
+          mobile already ships this exact SceneBackdrop for the story reader). */}
+      <View style={styles.stallScene}>
+        <SceneBackdrop scene="bazaar" style={StyleSheet.absoluteFill} />
+        <View style={styles.stall}>
+          {q.items.map((it, i) => (
+            <View key={i} style={[styles.good, q.targets.includes(i) && picked === null && styles.goodTarget]}>
+              <Text style={{ fontSize: 30 }}>{it.emoji}</Text>
+              <Text style={styles.goodName}>{it.name}</Text>
+              <Text style={styles.goodPrice}>{toPersianDigits(it.price)} تومان</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       <View style={styles.questionCard}>
@@ -161,6 +167,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
   subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
   progressLabel: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted },
+  stallScene: { borderRadius: 20, overflow: 'hidden', padding: 10 },
   stall: { flexDirection: 'row', gap: 8 },
   good: {
     flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 10,

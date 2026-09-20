@@ -1,15 +1,15 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, fonts, ramps } from '@/lib/theme'
+import { colors, fonts, tones } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
 /** دنیای اعداد — mobile hub for the math games (web: /child/math). */
 const GAMES = [
-  { key: 'counting', emoji: '🍎', title: 'شمارش', sub: 'ضربه بزن و بشمار', href: '/math/counting' as const, tint: ramps.math.soft },
-  { key: 'digits', emoji: '۳', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', href: '/math/digits' as const, tint: ramps.math.soft },
-  { key: 'bazaar', emoji: '🛒', title: 'بازار', sub: 'با تومان خرید کن', href: '/math/bazaar' as const, tint: ramps.math.soft },
+  { key: 'counting', emoji: '🍎', title: 'شمارش', sub: 'ضربه بزن و بشمار', href: '/math/counting' as const, tone: tones.emerald },
+  { key: 'digits', emoji: '۳', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', href: '/math/digits' as const, tone: tones.sky },
+  { key: 'bazaar', emoji: '🛒', title: 'بازار', sub: 'با تومان خرید کن', href: '/math/bazaar' as const, tone: tones.amber },
 ]
 
 export default function MathHub() {
@@ -25,14 +25,18 @@ export default function MathHub() {
       {GAMES.map((g) => (
         <Pressable
           key={g.key}
-          style={[styles.card, { backgroundColor: g.tint }, !g.href && { opacity: 0.55 }]}
+          style={[
+            styles.card,
+            { backgroundColor: g.tone.fill, borderBottomColor: g.tone.edge, borderBottomWidth: 4 },
+            !g.href && { opacity: 0.55 },
+          ]}
           disabled={!g.href}
           onPress={() => g.href && router.push(g.href)}
         >
           <Text style={{ fontSize: 40 }}>{g.emoji}</Text>
           <View>
-            <Text style={styles.gameTitle}>{g.title}</Text>
-            <Text style={styles.gameSub}>{g.sub}</Text>
+            <Text style={[styles.gameTitle, { color: g.tone.ink }]}>{g.title}</Text>
+            <Text style={[styles.gameSub, { color: g.tone.ink, opacity: 0.75 }]}>{g.sub}</Text>
           </View>
         </Pressable>
       ))}

@@ -11,7 +11,7 @@ import { getDeviceToken, setDeviceToken } from '@/lib/deviceToken'
 import { characterEmoji } from '@/lib/characterEmoji'
 import ScreenBackground from '@/components/ScreenBackground'
 import { StoryScene } from '@/components/AuthScene'
-import { colors, fonts } from '@/lib/theme'
+import { auth, colors, fonts } from '@/lib/theme'
 
 type Mode = 'parent' | 'kid'
 
@@ -168,7 +168,7 @@ export default function Login() {
           {error && <Text style={styles.error}>{error}</Text>}
 
           <Pressable style={[styles.button, busy && { opacity: 0.6 }]} disabled={busy} onPress={loginParent}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ورود</Text>}
+            {busy ? <ActivityIndicator color={auth.login.onAccent} /> : <Text style={styles.buttonText}>ورود</Text>}
           </Pressable>
 
           <Pressable onPress={() => router.replace('/signup')} hitSlop={8}>
@@ -195,7 +195,7 @@ export default function Login() {
           {error && <Text style={styles.error}>{error}</Text>}
 
           <Pressable style={[styles.button, busy && { opacity: 0.6 }]} disabled={busy} onPress={submitUsername}>
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>ورود</Text>}
+            {busy ? <ActivityIndicator color={auth.login.onAccent} /> : <Text style={styles.buttonText}>ورود</Text>}
           </Pressable>
         </>
       )}
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   expired: { color: colors.danger, fontFamily: fonts.regular, fontSize: 14 },
   tabs: { flexDirection: 'row', backgroundColor: colors.primarySoft, borderRadius: 14, padding: 4, gap: 4 },
   tab: { paddingVertical: 8, paddingHorizontal: 24, borderRadius: 10 },
-  tabActive: { backgroundColor: colors.primary },
+  tabActive: { backgroundColor: auth.login.accent },
   tabText: { color: colors.onPrimary, fontFamily: fonts.medium, fontSize: 15 },
   tabTextActive: { color: colors.onPrimary },
   form: { width: '100%', maxWidth: 360, gap: 10, alignItems: 'center' },
@@ -286,14 +286,14 @@ const styles = StyleSheet.create({
   kidInput: { textAlign: 'center', fontSize: 20, letterSpacing: 1 },
   error: { color: colors.danger, fontFamily: fonts.regular, fontSize: 14, textAlign: 'center' },
   button: {
-    backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14,
+    backgroundColor: auth.login.accent, borderRadius: 16, paddingVertical: 14,
     width: '100%', maxWidth: 360, alignItems: 'center',
   },
-  buttonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
+  buttonText: { color: auth.login.onAccent, fontSize: 17, fontFamily: fonts.bold },
   signupLink: { color: '#059669', fontFamily: fonts.medium, fontSize: 14, marginTop: 4 },
   dots: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.primarySoft },
-  dotFilled: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dotFilled: { backgroundColor: auth.login.accent, borderColor: auth.login.accent },
   charGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
   charCell: {
     width: 80, height: 80, borderRadius: 18, backgroundColor: colors.card,
