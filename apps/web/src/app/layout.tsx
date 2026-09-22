@@ -1,28 +1,22 @@
 import type { Metadata, Viewport } from 'next'
-import { Vazirmatn, Baloo_Bhaijaan_2 } from 'next/font/google'
+import { Vazirmatn } from 'next/font/google'
 import MotionProvider from '@/components/shared/MotionProvider'
 import './globals.css'
 
+// One typeface app-wide (see docs/design-system.md, "Type ladder" — this
+// replaced a second rounded display face, Baloo Bhaijaan 2, whose Persian
+// glyph coverage and join quality were weaker). Verified to carry the full
+// Persian set (پ چ ژ گ ک ی ۀ ZWNJ, Persian digits) with proper init/medi/fina
+// shaping across the loaded weights. Hierarchy is weight now, not family:
+// 900 for child headings (`font-display`, paired with `font-black` — nothing
+// else uses 900, see globals.css's `--font-display`), 400/500/700 for
+// body/UI. Re-audit (`grep -rn font-display apps/web/src`) before adding
+// another weight here.
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
   variable: '--font-vazirmatn',
   display: 'swap',
-  weight: ['400', '500', '700'],
-})
-
-// Rounded Arabic-script display face — child HEADINGS ONLY. Verified to carry
-// the full Persian set (پ چ ژ گ ک ی ۀ ZWNJ, Persian digits) with proper
-// init/medi/fina shaping. Letters being taught and all body text stay in
-// Vazirmatn: standard letterforms matter for learning. See DESIGN_CHARTER.md.
-//
-// Every `font-display` heading in the app pairs it with `font-bold` (700) —
-// nothing uses 500 or 800 — so only 700 is loaded. Re-audit
-// (`grep -rn font-display apps/web/src`) before adding another weight here.
-const baloo = Baloo_Bhaijaan_2({
-  subsets: ['arabic'],
-  variable: '--font-baloo',
-  display: 'swap',
-  weight: ['700'],
+  weight: ['400', '500', '700', '900'],
 })
 
 // Needed to resolve absolute URLs for OG/Twitter images and the file-based
@@ -77,7 +71,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${baloo.variable} h-full`}>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

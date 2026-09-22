@@ -181,7 +181,7 @@ export default function ChildHomePage() {
   if (showPicker) {
     return (
       <div className="fixed inset-0 z-50 child-bg flex flex-col items-center justify-center p-6 gap-8">
-        <h1 className="font-display text-h1 font-bold text-text-primary persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
+        <h1 className="font-display text-h1 font-black text-text-primary persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
             <motion.button key={c.id} onClick={() => resolveChild(c)} whileTap={{ scale: 0.94 }}
@@ -233,7 +233,7 @@ export default function ChildHomePage() {
         <div className="relative flex items-end justify-between">
           <div>
             <p className="text-body mb-1 opacity-80">{greeting()} 👋</p>
-            <h1 className="font-display text-h1 font-bold">{child?.name ?? 'کودک عزیز'}</h1>
+            <h1 className="font-display text-h1 font-black">{child?.name ?? 'کودک عزیز'}</h1>
             {band === 3 && (
               <div className="flex gap-2 mt-3 flex-wrap">
                 {stats.streak > 0 && <div className="bg-white/30 rounded-full px-3 py-1 text-small font-bold">🔥 {stats.streak} روز</div>}
@@ -275,7 +275,7 @@ export default function ChildHomePage() {
             <span className={`relative shrink-0 ${band === 1 ? 'text-6xl' : 'text-5xl'}`} aria-hidden="true">{nextUp.emoji}</span>
             <div className="relative flex-1 min-w-0">
               <p className="font-bold text-small opacity-80">{nextUp.label}</p>
-              <p className={`font-display font-bold truncate ${band === 1 ? 'text-h1' : 'text-card-title'}`}>{nextUp.title}</p>
+              <p className={`font-display font-black truncate ${band === 1 ? 'text-h1' : 'text-card-title'}`}>{nextUp.title}</p>
             </div>
             <ChunkyButton className={`relative ${band === 1 ? 'text-xl px-6 py-4' : 'px-5 py-3'}`}>
               بازی کن! 🎈

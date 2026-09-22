@@ -127,7 +127,7 @@ export function SectionTitle({ module: m, id, children }: { module?: ModuleKey; 
       {m && <span className={`w-1.5 h-5 rounded-full ${MODULE[m].bar}`} aria-hidden="true" />}
       {/* `id` so a <section> can point its aria-labelledby at the heading it
           already has, instead of repeating the label in an aria-label. */}
-      <h2 id={id} className="font-display font-bold text-text-primary text-card-title">{children}</h2>
+      <h2 id={id} className="font-display font-black text-text-primary text-card-title">{children}</h2>
     </div>
   )
 }

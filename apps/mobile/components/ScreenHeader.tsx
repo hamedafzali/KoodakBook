@@ -8,11 +8,12 @@ import { colors, fonts } from '@/lib/theme'
  * ~25 mobile screens (each with its own copy of styles.header/back/title/
  * subtitle -- found in the 2026-09-17 second parity-pass audit). One shared
  * component so a font/spacing/color fix lands everywhere at once instead of
- * drifting screen by screen, the way fonts.display (Baloo) had.
+ * drifting screen by screen, the way fonts.display used to.
  *
- * `variant="child"` (default) uses the Baloo display face for the title, per
- * DESIGN_CHARTER.md -- child-facing headings only. `variant="parent"` stays
- * on Vazirmatn bold throughout, matching web's calmer parent app.
+ * `variant="child"` (default) uses Vazirmatn's 900 display weight for the
+ * title, per docs/design-system.md -- child-facing headings only.
+ * `variant="parent"` stays on Vazirmatn bold (700) throughout, matching
+ * web's calmer parent app.
  */
 export default function ScreenHeader({
   title, subtitle, variant = 'child', onBack, right,

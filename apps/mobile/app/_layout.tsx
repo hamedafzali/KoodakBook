@@ -7,10 +7,12 @@ import {
   Vazirmatn_400Regular,
   Vazirmatn_500Medium,
   Vazirmatn_700Bold,
+  Vazirmatn_900Black,
 } from '@expo-google-fonts/vazirmatn'
-// Rounded display face for child headings only (matches web's --font-baloo,
-// DESIGN_CHARTER.md) -- never used for body text or the letter glyph.
-import { BalooBhaijaan2_700Bold } from '@expo-google-fonts/baloo-bhaijaan-2'
+// Vazirmatn_900Black is child headings only (matches web's --font-display,
+// docs/design-system.md) -- never used for body text or the letter glyph.
+// One typeface app-wide as of the redesign; hierarchy comes from weight
+// (900 display vs 400/500/700 body/UI), not a second family.
 import { setAudioModeAsync } from 'expo-audio'
 import LaunchScreen from '@/components/LaunchScreen'
 import { ensurePrefs } from '@/lib/prefs'
@@ -33,7 +35,7 @@ export default function RootLayout() {
     Vazirmatn_400Regular,
     Vazirmatn_500Medium,
     Vazirmatn_700Bold,
-    BalooBhaijaan2_700Bold,
+    Vazirmatn_900Black,
   })
   // Hold the branded launch screen for a beat so it registers as a real moment
   // (fonts often load in <100ms, which would flash it past).

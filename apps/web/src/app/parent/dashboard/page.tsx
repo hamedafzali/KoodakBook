@@ -143,7 +143,7 @@ export default function ParentDashboardPage() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 bg-parent-bg">
         <Mascot size={110} mood="happy" />
         <div className="text-center">
-          <h1 className="font-display text-xl font-bold text-parent-text">سیمرغ منتظر همراهش است</h1>
+          <h1 className="font-display text-xl font-black text-parent-text">سیمرغ منتظر همراهش است</h1>
           <p className="text-parent-muted font-medium mt-1.5 persian-text">یک پروفایل برای فرزندتان بسازید تا اولین قصه شروع شود</p>
         </div>
         <Link

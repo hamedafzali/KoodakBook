@@ -12,14 +12,14 @@
   --font-persian: 'Vazirmatn', sans-serif;
   --font-vazirmatn: 'Vazirmatn', sans-serif;
   --font-sans: var(--font-vazirmatn);
-  /* Rounded display face for CHILD HEADINGS ONLY. next/font sets the real
-     hashed family on <html> as --font-baloo; the literal here is the SSR/no-JS
-     fallback. `--font-display` is a var() alias so the `font-display` utility
-     resolves through the cascade to next/font's value (same trick as
-     --font-sans → --font-vazirmatn). Body text and letters-being-taught never
-     use this — see DESIGN_CHARTER.md. */
-  --font-baloo: 'Baloo Bhaijaan 2', 'Vazirmatn', sans-serif;
-  --font-display: var(--font-baloo);
+  /* One typeface app-wide (see docs/design-system.md, "Type ladder" — this
+     replaced a second rounded display face, Baloo Bhaijaan 2). `--font-display`
+     is still its own token, a var() alias onto Vazirmatn, so `font-display`
+     stays the marker for CHILD HEADINGS ONLY in every consumer's className —
+     it is always paired with `font-black` (900), never used for body text or
+     the letter-being-taught glyph. Weight, not family, carries the hierarchy
+     now. */
+  --font-display: var(--font-vazirmatn);
 
   /* Brand — Saffron */
   --color-brand:         #D4871A;

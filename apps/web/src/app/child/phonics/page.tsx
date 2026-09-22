@@ -144,7 +144,7 @@ export default function PhonicsPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="font-display text-h1 font-bold text-text-primary">آفرین! 🌟</h1>
+        <h1 className="font-display text-h1 font-black text-text-primary">آفرین! 🌟</h1>
         <p className="text-body text-text-secondary persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <ClayButton ramp="phonics" size="lg" icon="retry" onClick={() => setPhase('quiz')}>

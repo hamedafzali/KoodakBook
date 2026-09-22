@@ -27,6 +27,7 @@ its divergence for an oversight.
 - Chunky, rounded, tactile shapes with 3D bottom edges and springy press feedback.
 - Touch targets at least 56px for small fingers.
 - Large, clear Persian typography with correct RTL layout. Letters being learned are shown extra large.
+- One typeface, Vazirmatn, app-wide — not a second display face for headings. Hierarchy comes from weight (900 for child headings, 400-700 for body/UI), not family contrast. See `docs/design-system.md`, "Type ladder", for the token names and the reasoning (full Persian glyph coverage and shaping quality).
 
 ## Motion and feedback
 - Celebrate success generously: confetti, stars, sounds, bounces.

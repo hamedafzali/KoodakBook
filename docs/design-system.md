@@ -68,11 +68,17 @@ SectionTitle) + PageHeader/BottomNav. Parent material in
 
 ## 2. Type ladder
 
-Child headings use a **rounded display face**, Baloo Bhaijaan 2 (verified full
-Persian codepoint coverage + shaping), loaded via `next/font` as
-`--font-baloo`; `--font-display` is a `var()` alias so the `font-display`
-utility resolves through the cascade. **Headings only** — body text and any
-glyph a screen is actively teaching stay Vazirmatn (`--font-persian`).
+One typeface app-wide: **Vazirmatn** (verified full Persian codepoint
+coverage + init/medi/fina shaping), loaded via `next/font` as
+`--font-vazirmatn`. This replaced a second rounded display face, Baloo
+Bhaijaan 2, whose Persian glyph coverage and join quality were weaker — see
+the 2026-09-21 redesign plan for the comparison that settled it. `--font-display`
+is still its own token, a `var()` alias onto Vazirmatn, kept as the marker
+`font-display` in a className means "child heading" — **always paired with
+`font-black` (900)**, nothing else uses that weight. Body text, UI chrome and
+any glyph a screen is actively teaching stay on 400/500/700
+(`--font-persian`/`--font-vazirmatn`). Hierarchy is weight now, not family
+contrast.
 
 Seven steps, declared in `globals.css` `@theme inline` (Tailwind v4 generates
 `text-<name>` utilities):

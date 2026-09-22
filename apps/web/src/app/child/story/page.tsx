@@ -114,7 +114,7 @@ export default function StoryListPage() {
         >
           <span className="text-4xl" aria-hidden="true">✨</span>
           <div className="flex-1 text-right">
-            <p className="font-display font-bold text-card-title leading-tight">یک داستان برای من بساز</p>
+            <p className="font-display font-black text-card-title leading-tight">یک داستان برای من بساز</p>
             <p className="text-small text-white/90 mt-0.5 persian-text">داستان مخصوص خودت با موضوع دلخواه</p>
           </div>
           <span className="text-2xl" aria-hidden="true">←</span>
@@ -124,7 +124,7 @@ export default function StoryListPage() {
             so this is the only place they can re-open them). */}
         {myStories.length > 0 && (
           <section className="mb-6" aria-label="داستان‌های من">
-            <h2 className="font-display font-bold text-text-primary text-h2 mb-3">داستان‌های من ✨</h2>
+            <h2 className="font-display font-black text-text-primary text-h2 mb-3">داستان‌های من ✨</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="list">
               {myStories.map(story => {
                 const done = completed.has(story.id)
@@ -162,7 +162,7 @@ export default function StoryListPage() {
         )}
 
         {myStories.length > 0 && stories.length > 0 && (
-          <h2 className="font-display font-bold text-text-primary text-h2 mb-3">داستان‌های آماده 📚</h2>
+          <h2 className="font-display font-black text-text-primary text-h2 mb-3">داستان‌های آماده 📚</h2>
         )}
 
         {stories.length === 0 ? (

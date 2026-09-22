@@ -105,7 +105,7 @@ export default function ReviewPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="font-display text-h1 font-bold text-text-primary">
+        <h1 className="font-display text-h1 font-black text-text-primary">
           {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}
         </h1>
         <p className="text-body text-text-secondary persian-text">

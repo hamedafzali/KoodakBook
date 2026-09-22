@@ -129,7 +129,7 @@ function SectionTitle({ kicker, title, sub }: { kicker: string; title: string; s
   return (
     <div className="text-center max-w-2xl mx-auto mb-10">
       <p className="text-brand-text font-bold text-sm mb-2">{kicker}</p>
-      <h2 className="font-display text-2xl sm:text-3xl font-bold text-text-primary leading-snug">{title}</h2>
+      <h2 className="font-display text-2xl sm:text-3xl font-black text-text-primary leading-snug">{title}</h2>
       {sub && <p className="text-text-secondary mt-3 leading-relaxed">{sub}</p>}
     </div>
   )
@@ -271,7 +271,7 @@ export default async function Landing() {
               <Mascot size={44} mood="happy" />
               <p className="text-sm font-bold text-brand-text">سیمرغِ قصه‌گو همراه کودک شماست</p>
             </div>
-            <h1 className="font-display text-3xl sm:text-5xl font-bold leading-tight sm:leading-tight text-text-primary">
+            <h1 className="font-display text-3xl sm:text-5xl font-black leading-tight sm:leading-tight text-text-primary">
               کودک شما فارسی را<br />
               <span className="text-brand-text">با قصه و بازی</span> یاد می‌گیرد
             </h1>
@@ -451,7 +451,7 @@ export default async function Landing() {
           <p className="text-brand-text font-bold text-sm mb-2">
             تبلت کودک‌بوک <span className="bg-brand-light text-brand-text text-xs font-bold px-2.5 py-1 rounded-full mr-1">به‌زودی</span>
           </p>
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-text-primary leading-snug">
+          <h2 className="font-display text-2xl sm:text-3xl font-black text-text-primary leading-snug">
             یک تبلت، آماده و امن — روشن کنید و بدهید دست کودک
           </h2>
           <p className="text-text-secondary mt-3 leading-relaxed">
@@ -528,7 +528,7 @@ export default async function Landing() {
       {/* Final CTA */}
       <section className="bg-gradient-to-b from-brand-pale to-white">
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-          <h2 className="font-display text-2xl sm:text-3xl font-bold text-text-primary">فارسی، بهترین هدیه‌ای است که به کودکتان می‌دهید</h2>
+          <h2 className="font-display text-2xl sm:text-3xl font-black text-text-primary">فارسی، بهترین هدیه‌ای است که به کودکتان می‌دهید</h2>
           <p className="text-text-secondary mt-3">شروع رایگان است — نه کارت بانکی می‌خواهد، نه تعهدی.</p>
           <Link href="/signup" className="inline-block mt-7 btn-brand font-bold px-10 py-4 rounded-2xl text-lg transition shadow-lg">
             ساخت حساب رایگان

@@ -111,14 +111,16 @@ export const type = {
   display: 40, h1: 32, h2: 24, cardTitle: 20, body: 18, small: 15,
 }
 
-// Same face as web (next/font Vazirmatn) for body/UI text. RN picks weight by
-// family name, not fontWeight, so each weight is its own family. `display` is
-// web's `--font-baloo` (Baloo Bhaijaan 2) -- CHILD HEADINGS ONLY, never body
-// text or the letter-being-taught glyph (DESIGN_CHARTER.md). Parent screens
-// stay on Vazirmatn throughout, same as web's calmer parent app.
+// One typeface app-wide (matches web's --font-vazirmatn/--font-display, see
+// docs/design-system.md). RN picks weight by family name, not fontWeight, so
+// each weight is its own family. `display` is Vazirmatn's heaviest cut,
+// CHILD HEADINGS ONLY -- never body text or the letter-being-taught glyph --
+// and it is what carries the hierarchy a second display face used to (there
+// is no family contrast to lean on any more). Parent screens stay on
+// `regular`/`medium`/`bold`, same as web's calmer parent app.
 export const fonts = {
   regular: 'Vazirmatn_400Regular',
   medium: 'Vazirmatn_500Medium',
   bold: 'Vazirmatn_700Bold',
-  display: 'BalooBhaijaan2_700Bold',
+  display: 'Vazirmatn_900Black',
 }
