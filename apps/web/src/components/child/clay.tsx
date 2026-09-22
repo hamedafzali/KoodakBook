@@ -161,6 +161,11 @@ type TileProps = {
   big?: boolean
   locked?: boolean
   lockedHint?: string
+  /** Small corner pill (e.g. "امروز") for a real, page-computed due/status
+   *  signal — not a decorative flourish. Omit rather than pass a fabricated
+   *  one (child/home/page.tsx's file doc comment explains the rule this
+   *  follows). */
+  badge?: string
 }
 
 /** The tappable activity tile. The press is the whole point: the tile travels
@@ -168,7 +173,7 @@ type TileProps = {
  *  and only the top face moves. Mismatch those two numbers and it reads as
  *  sliding rather than being pushed. */
 export function ClayTile({
-  ramp, tone, icon, glyph, character, title, sub, href, big, locked, lockedHint,
+  ramp, tone, icon, glyph, character, title, sub, href, big, locked, lockedHint, badge,
 }: TileProps) {
   const pad = big ? 'p-5 min-h-[92px]' : 'p-4 min-h-[76px]'
   const vars = tone ? toneVars(tone) : clayVars(ramp)
@@ -204,6 +209,14 @@ export function ClayTile({
         {/* Toy-like sheen. Decorative: it reinforces the light direction the
             inset highlight already establishes, so the two agree. */}
         <span className="absolute -top-6 -left-6 w-20 h-20 bg-white/25 rounded-full" aria-hidden="true" />
+        {badge && (
+          <span
+            className="absolute top-2 right-2 z-10 rounded-pill px-2 py-0.5 text-[10px] font-bold text-white"
+            style={{ background: 'var(--clay-edge)' }}
+          >
+            {badge}
+          </span>
+        )}
         {character
           ? (
             <span className="relative shrink-0 -my-2" aria-hidden="true">

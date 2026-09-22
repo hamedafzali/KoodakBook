@@ -91,9 +91,11 @@ export function IconChip({ module: m, icon, size = 'md' }: {
 
 /** Chunky activity tile — the tactile "press me" language of great kids'
  *  apps. Still exactly one hue per module, so color keeps carrying meaning. */
-export function ModuleCard({ module: m, tone, title, sub, href, icon, glyph, big, locked, lockedHint }: {
+export function ModuleCard({ module: m, tone, title, sub, href, icon, glyph, big, locked, lockedHint, badge }: {
   module: ModuleKey; tone?: Tone; title: string; sub?: string; href: string
   icon?: IconName; glyph?: string; big?: boolean; locked?: boolean; lockedHint?: string
+  /** Real corner signal only — see ClayTile's `badge` doc comment. */
+  badge?: string
 }) {
   return (
     <ClayTile
@@ -104,7 +106,7 @@ export function ModuleCard({ module: m, tone, title, sub, href, icon, glyph, big
        * stands in for the module's own default emoji. */
       character={(!glyph && !icon) ? MODULE[m].character : undefined}
       title={title} sub={sub}
-      href={href} big={big} locked={locked} lockedHint={lockedHint}
+      href={href} big={big} locked={locked} lockedHint={lockedHint} badge={badge}
     />
   )
 }
