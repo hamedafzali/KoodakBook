@@ -412,12 +412,21 @@ export default function ChildHomePage() {
           <div className="flex items-center gap-2">
             {showStreak && (
               <div className="flex items-center gap-1.5 h-10 px-3 rounded-pill bg-white shadow-card">
-                <span style={{ color: 'var(--ramp-phonics-bright)' }}><Icon name="streak" size="sm" strokeWidth={2.4} /></span>
+                {/* Icon color: `-ink`, not `-bright` -- a Lucide stroke icon in the
+                    bright tone alone measures ~2.3:1 on this white pill (WCAG
+                    1.4.11 needs >=3:1 for a graphical UI object); `-ink` is the
+                    token this exact page already uses one line down for the
+                    adjacent streak-count text, and clears >=7:1 here too
+                    (2026-09-22 fresh-redesign contrast pass). */}
+                <span style={{ color: 'var(--ramp-phonics-ink)' }}><Icon name="streak" size="sm" strokeWidth={2.4} /></span>
                 <span className="font-bold text-sm" style={{ color: 'var(--ramp-phonics-ink)' }}>{toPersianDigits(stats.streak)}</span>
               </div>
             )}
             <div className="flex items-center gap-1.5 h-10 px-3 rounded-pill bg-white shadow-card">
-              <span style={{ color: 'var(--ramp-brand-bright)' }}><Icon name="star" size="sm" strokeWidth={2.4} /></span>
+              {/* Same fix as the streak icon above: `-bright` measured ~1.7:1 on
+                white, the worst contrast bug found in this pass. `-ink`
+                matches the xp-count text right beside it. */}
+              <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="star" size="sm" strokeWidth={2.4} /></span>
               <span className="font-bold text-sm" style={{ color: 'var(--ramp-brand-ink)' }}>{toPersianDigits(stats.xp)}</span>
             </div>
             <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center overflow-hidden border-4 shrink-0"

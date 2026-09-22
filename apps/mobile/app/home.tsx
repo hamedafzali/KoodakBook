@@ -277,8 +277,13 @@ export default function Home() {
           <View style={styles.headerRight}>
             {childAge(child) > 7 && stats.streak > 0 && (
               <View style={styles.streakPill}>
+                {/* fill=ink, not bright: bright alone measures ~2.3:1 on this
+                    white pill (web's home header had the identical bug in its
+                    Lucide-icon streak pill, fixed alongside this one,
+                    2026-09-22) -- ink is what streakText already uses one line
+                    down and clears >=7:1 here too. */}
                 <Svg viewBox="0 0 24 24" width={15} height={15}>
-                  <Path d={FLAME_PATH} fill={ramps.phonics.bright} stroke={ramps.phonics.deep} strokeWidth={1.3} />
+                  <Path d={FLAME_PATH} fill={ramps.phonics.ink} stroke={ramps.phonics.deep} strokeWidth={1.3} />
                 </Svg>
                 <Text style={styles.streakText}>{toPersianDigits(stats.streak)}</Text>
               </View>
