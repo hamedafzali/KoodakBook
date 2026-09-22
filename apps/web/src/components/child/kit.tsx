@@ -70,6 +70,13 @@ export const MODULE: Record<ModuleKey, {
   games:   { character: 'tondpa', emoji: '🃏', icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
   rewards: { character: 'simorgh', emoji: '🏆', icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
 }
+/* چرخی (pixel-wizards-charachters v1.3.1, role جاده‌ها/"roads") is
+ * deliberately absent from MODULE above — it doesn't host a content module,
+ * it's meant to live on the home screen's journey-path illustration (see the
+ * redesign plan doc / WebHome.dc.html mockup). Every other cast member's
+ * `role` in the library now matches its host here 1:1; don't add چرخی to
+ * this table to "complete" that mapping — that would be forcing a room onto
+ * a character that isn't one. */
 
 /** Rounded-square identity chip — the module's colour + its emoji, the pairing
  *  a child recognises a section by (DESIGN_CHARTER.md). Pass `icon` to force a
