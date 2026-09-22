@@ -3,6 +3,7 @@ import {
   ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View,
 } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter } from '@koodakbook/shared'
 import { api } from '@/lib/api'
@@ -81,7 +82,7 @@ export default function Talk() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={() => goBack('/friends')} hitSlop={10}>
           <Text style={styles.back}>→</Text>
         </Pressable>
         <Text style={{ fontSize: 30 }}>{emoji}</Text>

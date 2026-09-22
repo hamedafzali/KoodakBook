@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Lesson, StrandLevels } from '@koodakbook/shared'
 import { ALL_UNLOCKED, LESSON_TYPE_EMOJI, isLessonUnlocked, toPersianDigits } from '@koodakbook/shared'
@@ -54,7 +55,7 @@ export default function Lessons() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={() => goBack('/home')} hitSlop={10}>
           <Text style={styles.back}>→</Text>
         </Pressable>
         <View>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter, CharacterLine, Child, Word } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
@@ -167,7 +168,7 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
         <Pressable style={styles.primaryButton} onPress={onReplay}>
           <Text style={styles.primaryText}>دوباره بازی کن 🔁</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
+        <Pressable style={styles.secondaryButton} onPress={() => goBack('/games')}>
           <Text style={styles.secondaryText}>برگشت 🏠</Text>
         </Pressable>
       </View>
@@ -183,6 +184,7 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
       <ScreenHeader
         title="بازی حافظه 🃏"
         subtitle="جفت هر کلمه را پیدا کن"
+        fallback="/games"
         right={host ? <Text style={{ fontSize: 28 }}>{characterEmoji(host)}</Text> : undefined}
       />
 

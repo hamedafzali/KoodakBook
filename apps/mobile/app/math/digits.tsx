@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child } from '@koodakbook/shared'
 import { numberToPersianWord, toPersianDigits } from '@koodakbook/shared'
@@ -84,7 +85,7 @@ function Game({ max, onReplay }: { max: number; onReplay: () => void }) {
         <Pressable style={styles.primaryButton} onPress={onReplay}>
           <Text style={styles.primaryText}>دوباره 🔁</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
+        <Pressable style={styles.secondaryButton} onPress={() => goBack('/math')}>
           <Text style={styles.secondaryText}>دنیای اعداد 🏠</Text>
         </Pressable>
       </View>
@@ -103,6 +104,7 @@ function Game({ max, onReplay }: { max: number; onReplay: () => void }) {
       <ScreenHeader
         title="رقم‌های فارسی ۱۲۳"
         subtitle="۷ همان 7 است!"
+        fallback="/math"
         right={<Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>}
       />
 

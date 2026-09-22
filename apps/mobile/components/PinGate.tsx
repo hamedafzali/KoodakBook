@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
-import { router } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { api } from '@/lib/api'
 import { colors, fonts } from '@/lib/theme'
 
@@ -191,7 +191,7 @@ export default function PinGate({ hasPin, initialReset, onUnlocked }: {
             <Text style={styles.link}>پین را فراموش کردید؟</Text>
           </Pressable>
         )}
-        <Pressable onPress={() => router.back()} hitSlop={8}>
+        <Pressable onPress={() => goBack('/home')} hitSlop={8}>
           <Text style={styles.link}>برگشت</Text>
         </Pressable>
       </Animated.View>

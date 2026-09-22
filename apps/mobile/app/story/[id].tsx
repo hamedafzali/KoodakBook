@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type 
 import { Image } from 'expo-image'
 import Svg, { Path, Rect } from 'react-native-svg'
 import { router, useLocalSearchParams } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAudioPlayer, useAudioPlayerStatus, type AudioPlayer, type AudioStatus } from 'expo-audio'
 import type { Badge, Promotion, SceneSlug, SceneTime, Story, StoryPage } from '@koodakbook/shared'
@@ -110,7 +111,7 @@ export default function StoryReader() {
   }
 
   async function finish() {
-    if (!childId || !story) { router.back(); return }
+    if (!childId || !story) { goBack('/stories'); return }
     try {
       const res = await api.post('/api/progress/story', {
         child_id: childId, story_id: story.id, last_page: story.pages.length - 1, completed: true,
@@ -118,11 +119,11 @@ export default function StoryReader() {
       if (res.new_badges?.[0]) { setNewBadge(res.new_badges[0]); return }
       if (res.promotions?.length) {
         setShowUnlock(true)
-        setTimeout(() => router.back(), 2600)
+        setTimeout(() => goBack('/stories'), 2600)
         return
       }
     } catch { /* never leave the child stuck */ }
-    router.back()
+    goBack('/stories')
   }
 
   if (!story) {
@@ -147,10 +148,10 @@ export default function StoryReader() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      {newBadge && <RewardPopup badge={newBadge} onClose={() => router.back()} />}
+      {newBadge && <RewardPopup badge={newBadge} onClose={() => goBack('/stories')} />}
 
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={() => goBack('/stories')} hitSlop={10}>
           <Text style={styles.close}>✕</Text>
         </Pressable>
         <Text style={styles.storyTitle} numberOfLines={1}>{story.title_persian}</Text>

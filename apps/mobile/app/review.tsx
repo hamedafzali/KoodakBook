@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { ReviewItem, Word } from '@koodakbook/shared'
 import { toPersianDigits, buildReviewQuestions, buildPaddingQuestions } from '@koodakbook/shared'
@@ -100,7 +101,7 @@ export default function Review() {
             ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!'
             : `${toPersianDigits(correct)} از ${toPersianDigits(allQuestions.length)} درست`}
         </Text>
-        <Pressable style={styles.homeButton} onPress={() => router.back()}>
+        <Pressable style={styles.homeButton} onPress={() => goBack('/home')}>
           <Text style={styles.homeButtonText}>برگشت به خانه 🏠</Text>
         </Pressable>
       </View>
@@ -113,7 +114,7 @@ export default function Review() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={() => goBack('/home')} hitSlop={10}>
           <Text style={styles.close}>✕</Text>
         </Pressable>
         <View style={{ flex: 1 }}>

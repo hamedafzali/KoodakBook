@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Badge, Child, Lesson, LessonItem, Promotion } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
@@ -117,7 +118,7 @@ export default function LessonPlayer() {
         <Text style={styles.doneScore}>
           {toPersianDigits(correctCount)} از {toPersianDigits(total)} درست
         </Text>
-        <Pressable style={styles.homeButton} onPress={() => router.back()}>
+        <Pressable style={styles.homeButton} onPress={() => goBack('/lessons')}>
           <Text style={styles.homeButtonText}>برگشت 🏠</Text>
         </Pressable>
       </View>
@@ -131,7 +132,7 @@ export default function LessonPlayer() {
       {newBadge && <RewardPopup badge={newBadge} onClose={() => setCompleted(true)} />}
 
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
+        <Pressable onPress={() => goBack('/lessons')} hitSlop={10}>
           <Text style={styles.close}>✕</Text>
         </Pressable>
         <View style={{ flex: 1 }}>

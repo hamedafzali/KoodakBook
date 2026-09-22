@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { AppCharacter, CharacterLine } from '@koodakbook/shared'
 import { isSceneSlug } from '@koodakbook/shared'
@@ -47,7 +48,7 @@ export default function FriendHome() {
       </View>
     )
   }
-  if (!character) { router.back(); return null }
+  if (!character) { goBack('/friends'); return null }
 
   return (
     <View style={{ flex: 1 }}>
@@ -65,7 +66,7 @@ export default function FriendHome() {
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={10}>
+          <Pressable onPress={() => goBack('/friends')} hitSlop={10}>
             <Text style={styles.back}>→</Text>
           </Pressable>
         </View>

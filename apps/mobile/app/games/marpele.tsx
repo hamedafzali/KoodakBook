@@ -127,7 +127,7 @@ function Setup({ insets, childName, characters, onStart }: {
   return (
     <View style={{ flex: 1 }}>
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.setup, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}>
-      <ScreenHeader title="مارپله 🎲" subtitle="با کی بازی می‌کنی؟" />
+      <ScreenHeader title="مارپله 🎲" subtitle="با کی بازی می‌کنی؟" fallback="/games" />
 
       <Text style={styles.sectionLabel}>بازیکن‌های دیگر (خواهر و برادر)</Text>
       <View style={styles.stepper}>
@@ -335,7 +335,7 @@ function Game({ players, pool, level, childId, insets, onReplay, onChangePlayers
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-      <ScreenHeader title="مارپله 🎲" right={stars > 0 ? <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text> : undefined} />
+      <ScreenHeader title="مارپله 🎲" fallback="/games" right={stars > 0 ? <Text style={styles.stars}>⭐ {toPersianDigits(stars)}</Text> : undefined} />
 
       {/* Players leaderboard — avatars + square; current player glows */}
       <View style={styles.strip}>

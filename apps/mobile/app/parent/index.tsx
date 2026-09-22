@@ -109,6 +109,11 @@ export default function ParentHub() {
         title="حالت والدین"
         subtitle={`${me.email} · پلن ${me.plan}`}
         variant="parent"
+        // This IS the parent area's own root, not a sub-screen of it -- if
+        // there's no history (deep link, or this is genuinely the first
+        // screen in its stack), back should leave parent mode entirely
+        // rather than "fall back" into itself.
+        fallback="/home"
       />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}

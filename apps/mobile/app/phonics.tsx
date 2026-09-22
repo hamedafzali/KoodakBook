@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   PHONICS_CONSONANTS, SHORT_VOWELS, phonicsAudioUrl, phonicsSyllables,
@@ -51,7 +52,7 @@ export default function PhonicsPage() {
         <Pressable style={styles.primaryButton} onPress={() => setPhase('quiz')}>
           <Text style={styles.primaryText}>یک بار دیگه 🔁</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
+        <Pressable style={styles.secondaryButton} onPress={() => goBack('/home')}>
           <Text style={styles.secondaryText}>برگشت به خانه 🏠</Text>
         </Pressable>
       </View>

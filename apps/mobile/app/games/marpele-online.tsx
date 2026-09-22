@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
+import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, Word } from '@koodakbook/shared'
 import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDigits, wordEmoji } from '@koodakbook/shared'
@@ -230,7 +231,7 @@ export default function MarpeleOnline() {
         <Pressable style={styles.primaryButton} onPress={() => setPhase('lobby')}>
           <Text style={styles.primaryText}>بازی دوباره</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
+        <Pressable style={styles.secondaryButton} onPress={() => goBack('/games')}>
           <Text style={styles.secondaryText}>برگشت</Text>
         </Pressable>
       </View>
@@ -241,7 +242,7 @@ export default function MarpeleOnline() {
     return (
       <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}>
-        <ScreenHeader title="بازی آنلاین 🌐" subtitle="یک دوست آنلاین را برای بازی دعوت کن" />
+        <ScreenHeader title="بازی آنلاین 🌐" subtitle="یک دوست آنلاین را برای بازی دعوت کن" fallback="/games" />
 
         {notice && <Text style={styles.notice}>{notice}</Text>}
 
@@ -287,7 +288,7 @@ export default function MarpeleOnline() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); router.back() }} hitSlop={10}>
+        <Pressable onPress={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); goBack('/games') }} hitSlop={10}>
           <Text style={styles.back}>✕</Text>
         </Pressable>
         <Text style={[styles.turn, { color: myTurn ? colors.onPrimary : colors.muted }]}>
