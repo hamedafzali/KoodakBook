@@ -124,3 +124,15 @@ export const fonts = {
   bold: 'Vazirmatn_700Bold',
   display: 'Vazirmatn_900Black',
 }
+
+// Splash/scenery tokens (web's globals.css scenery block: --sky/--sky2/--far/
+// --mid/--near/--grass/--soil/--ink/--muted/--faint/--line), added for the
+// splash-unification port (2026-09-22) and meant to be reused by any other
+// screen that draws the same illustrated-scenery language (e.g. the home
+// screen's journey-path illustration) rather than re-hardcoding these hexes.
+export const scenery = {
+  ink: '#2b2116', muted: '#7d6a52', faint: '#a6947c',
+  line: 'rgba(43,33,22,0.08)',
+  sky: '#FFF8EA', sky2: '#FFEFD6',
+  far: '#CFEDE2', mid: '#8FE2CC', near: '#57D6BC', grass: '#3DBFA4', soil: '#F3E0B4',
+}

@@ -6,7 +6,7 @@
     "scheme": "koodakbook",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#FFF3DE",
+    "backgroundColor": "#FFF8EA",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
     "extra": {
@@ -34,7 +34,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFF3DE",
+          "backgroundColor": "#FFF8EA",
           "resizeMode": "contain",
           "image": "./assets/icon.png"
         }
