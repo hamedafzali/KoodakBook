@@ -98,7 +98,7 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="رقم‌های فارسی ۱۲۳" subtitle="۷ همان 7 است!" module="math" />
+      <PageHeader title="رقم‌های فارسی ۱۲۳" subtitle="۷ همان 7 است!" module="math" fallback="/child/math" />
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-6">
         <div className="flex items-center justify-between text-sm">

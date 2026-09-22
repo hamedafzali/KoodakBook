@@ -114,7 +114,7 @@ function Game({ mode, onReplay, onHome }: { mode: 'read' | 'sum'; onReplay: () =
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="بازار" subtitle="با تومان خرید کن" module="math" />
+      <PageHeader title="بازار" subtitle="با تومان خرید کن" module="math" fallback="/child/math" />
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-4">
         <div className="flex items-center justify-between text-sm">

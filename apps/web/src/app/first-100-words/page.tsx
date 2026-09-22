@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { wordEmoji } from "@koodakbook/shared";
 import {
   TapToHearExplorer,
@@ -133,7 +134,15 @@ export default async function First100WordsPage() {
 
       <header className="bg-brand-gradient-br text-white">
         <div className="max-w-2xl mx-auto px-5 pt-10 pb-8 text-center">
-          <h1 className="text-3xl sm:text-4xl font-extrabold">
+          {/* Every other public page here (alphabet, privacy, terms) has a
+              way back to "/" — this one didn't (its only outbound link went
+              sideways to /alphabet, never home), a real dead end for anyone
+              who landed here straight from search with no browser-back
+              history. Matches privacy/terms's own "→ بازگشت" wording. */}
+          <Link href="/" className="text-sm text-white/90 font-bold hover:underline">
+            → بازگشت به صفحه‌ی اصلی
+          </Link>
+          <h1 className="text-3xl sm:text-4xl font-extrabold mt-4">
             ۱۰۰ کلمه اول فارسی
           </h1>
           <p className="mt-2 text-white/90 text-sm sm:text-base">

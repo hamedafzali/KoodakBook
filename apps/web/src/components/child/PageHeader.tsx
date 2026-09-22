@@ -24,6 +24,14 @@ interface Props {
   /** Opt a `module` screen out of the identity emoji (e.g. the title already
    *  carries its own content glyph). */
   noEmoji?: boolean
+  /** Where to land when there's no browser history to go back to (a
+   *  bookmark, a PWA shortcut, a deep link, a fresh tab) -- router.back()
+   *  silently does nothing in that case otherwise, a dead button rather
+   *  than a crash, but still a dead end. Ignored when `onBack` or
+   *  `backHref` is set. Defaults to '/child/home'; a screen whose real
+   *  parent is a hub (e.g. a math sub-game -> '/child/math') should pass
+   *  its own. */
+  fallback?: string
 }
 
 export default function PageHeader({
@@ -38,13 +46,18 @@ export default function PageHeader({
   module: m,
   emoji,
   noEmoji = false,
+  fallback = '/child/home',
 }: Props) {
   const router = useRouter()
 
   function handleBack() {
     if (onBack) { onBack(); return }
     if (backHref) { router.push(backHref); return }
-    router.back()
+    // Guarded default: history.length is Next's own recommended heuristic
+    // for "is there anywhere to go back to" (there's no canGoBack() on the
+    // web). >1 because the current entry itself always counts as one.
+    if (typeof window !== 'undefined' && window.history.length > 1) { router.back(); return }
+    router.push(fallback)
   }
 
   // Design system v2: no saturated banner — a calm sticky header where the

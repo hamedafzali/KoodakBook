@@ -104,7 +104,7 @@ function Game({ maxN, onReplay, onHome }: { maxN: number; onReplay: () => void; 
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="شمارش" subtitle="ضربه بزن و بشمار" module="math" />
+      <PageHeader title="شمارش" subtitle="ضربه بزن و بشمار" module="math" fallback="/child/math" />
 
       <div className="px-4 pt-5 max-w-md mx-auto space-y-5">
         <div className="flex items-center justify-between text-sm">
