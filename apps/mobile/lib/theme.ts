@@ -41,6 +41,12 @@ export const colors = {
 //   ink     icon/label/title colour on `bright` or `soft`
 //   deep    3D edge / border / text-on-`soft`, and the only stop white text
 //           may sit on
+// Shared shape for a `ramps`/`tones`-style 4-stop record, widened past the
+// per-key literal string types `as const` gives each entry -- needed
+// wherever a value picks its ramp at runtime (ModuleCard, home.tsx's
+// NEXTUP_STYLE) rather than referencing one ramp by name at the type level.
+export type Ramp = { deep: string; bright: string; soft: string; ink: string }
+
 export const ramps = {
   brand:   { deep: '#745300', bright: '#FBBF24', soft: '#FEF3C7', ink: '#654900' },
   lessons: { deep: '#126547', bright: '#34D399', soft: '#ECFDF5', ink: '#0C4E36' },
