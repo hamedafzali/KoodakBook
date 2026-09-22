@@ -72,8 +72,15 @@ export default function CharacterHomePage() {
           aria-label={`دوباره سلام کن به ${character.name_persian}`}
           className="absolute inset-x-0 bottom-0 flex justify-center"
         >
+          {/* pettable: the one CharacterAvatar in the app big/central enough that a
+              stroke reads as "petting the friend" rather than a misclick on a small
+              icon — see CharacterAvatar.tsx's file doc comment (task 58, PetDriver
+              wiring). The button's own onClick (tap-to-replay-greeting) still fires
+              normally on a genuine tap; CharacterAvatar only swallows the click when
+              the pointer sequence was actually a drag/stroke. */}
           <CharacterAvatar slug={character.slug} size={150} mood={mood} talking={speaking}
             mouth={speaking ? actMouth : undefined} viseme={speaking ? actViseme : undefined}
+            pettable
             className="-mb-2 drop-shadow-lg" />
         </button>
         <Link href="/child/home" aria-label="برگشت به خانه"
