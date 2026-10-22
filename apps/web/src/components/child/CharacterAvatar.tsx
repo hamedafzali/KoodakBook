@@ -1,8 +1,10 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CharacterActor } from 'pixel-wizards-charachters/react'
 import { CHARACTERS, PetDriver } from 'pixel-wizards-charachters'
-import type { ActorRig, EmotionOverrides, VisemeName, Locomotion } from 'pixel-wizards-charachters'
+import type { ActorRig, ActorFrame, Gesture, EmotionOverrides, VisemeName, Locomotion } from 'pixel-wizards-charachters'
+import type { ThreeActor } from 'pixel-wizards-charachters/three'
+import Actor3D from './Actor3D'
 import { useCharacterEmotions } from '@/lib/characterEmotions'
 import { MOOD_TO_EMOTION, MOOD_INTENSITY, type CharacterMood } from './mood'
 
@@ -21,6 +23,17 @@ import { MOOD_TO_EMOTION, MOOD_INTENSITY, type CharacterMood } from './mood'
  *  - viseme : the actual mouth SHAPE for that beat (useActing again) — pairs
  *             with `mouth`; omitted, the shape stays 'rest' (today's flap).
  *  - pettable: opt-in stroke interaction (see below).
+ *
+ * 3D (pixel-wizards-charachters/three). At `size >= THREE_MIN_SIZE` (or when
+ * `three` is set) the avatar upgrades from the SVG rig to the library's real
+ * 3D model. The SVG renders first (server-side and instantly), the 3D model
+ * loads in the background, and the swap happens only once the 3D model is
+ * visible - so there's never a blank frame. Anything that stops 3D (no WebGL,
+ * the page-wide cap in Actor3D, an import error) just leaves the SVG, which is
+ * today's behaviour. Small decorative avatars stay SVG on purpose: each 3D
+ * character costs a WebGL context, and browsers allow only a handful.
+ * Everything below drives "the active driver" through act(), which is the 3D
+ * actor when it's live and the SVG rig otherwise - both share one API.
  *
  * PETTING (task 58 — wiring the library's PetDriver into the app). The
  * library ships `PetDriver` as a pure, DOM-free accumulator: feed it pointer
@@ -71,6 +84,8 @@ interface Props {
    *  can keep using a wrapping <button onClick> exactly as before, since
    *  there is nothing here to disambiguate a stroke from. */
   onTap?: () => void
+  /** Force the 3D model on or off. Default: on for `size >= THREE_MIN_SIZE`. */
+  three?: boolean
 }
 
 /** Below this many art-space units of travel, a pointer-down/up is a tap,
@@ -79,11 +94,30 @@ interface Props {
  *  second number. */
 const TAP_THRESHOLD = 6
 
-export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, viseme, emotions, locomotion, className, pettable = false, onTap }: Props) {
+/** Avatars at least this big (px) get the 3D model by default. Smaller ones
+ *  are badges/thumbnails where 3D adds nothing and costs a WebGL context. */
+const THREE_MIN_SIZE = 100
+
+/** Gentle three-quarter turn (frame `yaw`, -1..1) applied while the 3D model is
+ *  active. Face-on, a 3D character looks like its drawing, so without a turn
+ *  nobody could tell it from the SVG; 0.3 shows the depth and shading while the
+ *  character still faces the child. (SVG ignores this: it's never sent there.) */
+const THREE_YAW = 0.3
+
+/** What CharacterAvatar needs from a driver; ActorRig and ThreeActor both fit. */
+interface Driver { apply(frame: Partial<ActorFrame>): void; playGesture(g: Gesture): void }
+
+export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talking, mouth, viseme, emotions, locomotion, className, pettable = false, onTap, three }: Props) {
   // Every real character is in the library; unknown slugs fall back to سیمرغ so
   // the avatar still renders from the npm package rather than app-local art.
   const character = slug in CHARACTERS ? slug : 'simorgh'
-  const rig = useRef<ActorRig | null>(null)
+  const svgRig = useRef<ActorRig | null>(null)
+  const actor3d = useRef<ThreeActor | null>(null)
+  // True once the 3D model is on screen (see Actor3D). Effects below list it
+  // as a dependency so the current mood/mouth is re-applied to the new driver.
+  const [ready3d, setReady3d] = useState(false)
+  const want3d = three ?? size >= THREE_MIN_SIZE
+  const act = (): Driver | null => actor3d.current ?? svgRig.current
   const emotion = MOOD_TO_EMOTION[mood]
   const intensity = MOOD_INTENSITY[mood]
   // Explicit overrides win; otherwise use whatever the admin saved for this slug.
@@ -92,20 +126,20 @@ export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talki
 
   // Emotion / body-motion pose.
   useEffect(() => {
-    rig.current?.apply({ emotion, intensity })
-  }, [character, emotion, intensity])
+    act()?.apply(actor3d.current ? { emotion, intensity, yaw: THREE_YAW } : { emotion, intensity })
+  }, [character, emotion, intensity, ready3d])
 
   // Locomotion. Left untouched (rig default: idle) when the call site never
   // passes one, so every existing avatar keeps behaving exactly as before.
   useEffect(() => {
     if (locomotion == null) return
-    rig.current?.apply({ locomotion })
-  }, [character, locomotion])
+    act()?.apply({ locomotion })
+  }, [character, locomotion, ready3d])
 
   // Mouth: an explicit viseme track (mouth) wins; else a generic talking flap;
   // else the resting mouth for the emotion.
   useEffect(() => {
-    const r = rig.current
+    const r = act()
     if (!r) return
     if (mouth != null) {
       r.apply({ viseme: viseme ?? 'rest', mouthOpen: Math.max(0, Math.min(1, mouth)) })
@@ -121,7 +155,7 @@ export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talki
       r.apply({ viseme: 'rest', mouthOpen: 0.3 + 0.35 * (0.5 - 0.5 * Math.cos(p * 2 * Math.PI)) })
     }, 55)
     return () => clearInterval(id)
-  }, [character, mouth, viseme, talking])
+  }, [character, mouth, viseme, talking, ready3d])
 
   // --- Petting (PetDriver) --------------------------------------------
   const wrapRef = useRef<HTMLDivElement | null>(null)
@@ -165,7 +199,7 @@ export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talki
     lastTickRef.current = performance.now()
     const step = (now: number) => {
       const pet = petRef.current
-      const r = rig.current
+      const r = act()
       if (!pet || !r) { rafRef.current = null; return }
       const dt = Math.min(0.1, Math.max(0, (now - lastTickRef.current) / 1000))
       lastTickRef.current = now
@@ -222,16 +256,31 @@ export default function CharacterAvatar({ slug, size = 120, mood = 'idle', talki
     onTap?.()
   }
 
-  const actor = (
+  function on3d(a: ThreeActor | null) {
+    actor3d.current = a
+    setReady3d(a != null)
+  }
+
+  const svg = (
     <CharacterActor
       character={character}
       size={size}
-      className={pettable ? undefined : className}
-      style={pettable ? { width: size, height: size } : { width: size, height: size }}
+      className={want3d || pettable ? undefined : className}
+      style={{ width: size, height: size }}
       emotions={effEmotions}
-      rigRef={rig}
+      rigRef={svgRig}
     />
   )
+
+  // Plain SVG avatar: exactly the markup this component always produced.
+  // With 3D: a same-size box holding the SVG (until the 3D model is showing)
+  // and the 3D layer on top. `key` resets the ready flag per character.
+  const actor = want3d ? (
+    <div className={pettable ? undefined : className} style={{ position: 'relative', width: size, height: size }}>
+      {!ready3d && svg}
+      <Actor3D key={character} character={character} size={size} emotions={effEmotions} onActor={on3d} />
+    </div>
+  ) : svg
 
   if (!pettable) return actor
 
