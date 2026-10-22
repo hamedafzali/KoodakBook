@@ -247,6 +247,7 @@ export default async function Landing() {
             <a href="#features" className="hover:text-brand-text">ویژگی‌ها</a>
             <a href="#method" className="hover:text-brand-text">روش آموزش</a>
             <a href="#parents" className="hover:text-brand-text">والدین</a>
+            <a href="#try" className="hover:text-brand-text">امتحان رایگان</a>
             <a href="#pricing" className="hover:text-brand-text">قیمت</a>
             <a href="#tablet" className="hover:text-brand-text">تبلت</a>
             <a href="#faq" className="hover:text-brand-text">سؤالات</a>
@@ -415,6 +416,30 @@ export default async function Landing() {
         </div>
       </section>
 
+      {/* Free, no-signup practice pages. These two are real, crawlable
+          destinations (see app/alphabet, app/first-100-words) that were only
+          listed in sitemap.xml — nothing on the site linked to them, so
+          Google had no internal link vouching for them (SEO audit,
+          2026-10). Plain <Link>s so the URLs are in the server-rendered HTML. */}
+      <section id="try" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
+        <SectionTitle kicker="امتحان رایگان" title="همین حالا، بدون ثبت‌نام امتحان کنید"
+          sub="الفبا و ۱۰۰ کلمه‌ی اول فارسی را با صدای واقعی بشنوید — بدون نیاز به حساب کاربری." />
+        <div className="grid gap-4 sm:grid-cols-2 max-w-3xl mx-auto">
+          <Link href="/alphabet" className="rounded-3xl border border-border p-6 hover:border-brand-light hover:bg-brand-pale transition flex flex-col items-start gap-2">
+            <span className="text-brand-text"><Icon name="alphabet" size="xl" strokeWidth={1.8} /></span>
+            <h3 className="font-bold text-text-primary">الفبای فارسی</h3>
+            <p className="text-sm text-text-secondary leading-relaxed">۳۲ حرف، هر کدام با صدای واقعی. بزن و بشنو.</p>
+            <span className="text-sm font-bold text-brand-text mt-1">دیدن الفبا ←</span>
+          </Link>
+          <Link href="/first-100-words" className="rounded-3xl border border-border p-6 hover:border-brand-light hover:bg-brand-pale transition flex flex-col items-start gap-2">
+            <span className="text-brand-text"><Icon name="lessons" size="xl" strokeWidth={1.8} /></span>
+            <h3 className="font-bold text-text-primary">۱۰۰ کلمه‌ی اول فارسی</h3>
+            <p className="text-sm text-text-secondary leading-relaxed">پرکاربردترین واژه‌ها، هر کدام با تصویر و صدا.</p>
+            <span className="text-sm font-bold text-brand-text mt-1">دیدن کلمه‌ها ←</span>
+          </Link>
+        </div>
+      </section>
+
       {/* Parents / trust */}
       <section id="parents" className="max-w-6xl mx-auto px-4 py-16 scroll-mt-20">
         <SectionTitle kicker="برای والدین" title="خیال شما راحت، کنترل دست شما"
@@ -541,6 +566,8 @@ export default async function Landing() {
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-text-secondary">
           <p className="font-bold text-text-primary inline-flex items-center gap-2"><Icon name="book" size="sm" />کودک‌بوک — فارسی برای کودکان</p>
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="پیوندهای پایانی">
+            <Link href="/alphabet" className="hover:text-brand-text">الفبای فارسی</Link>
+            <Link href="/first-100-words" className="hover:text-brand-text">۱۰۰ کلمه‌ی اول</Link>
             <Link href="/privacy" className="hover:text-brand-text">حریم خصوصی</Link>
             <Link href="/terms" className="hover:text-brand-text">شرایط استفاده</Link>
             <Link href="/login" className="hover:text-brand-text">ورود به نرم‌افزار</Link>
