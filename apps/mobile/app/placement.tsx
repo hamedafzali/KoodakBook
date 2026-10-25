@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, PlacementProbe, ProbeChoice, ProbeResults, ProbeStep } from '@koodakbook/shared'
 import { wordEmoji, currentProbeStep, recordProbeAnswer, emptyProbeResults } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
-import { playClip } from '@/lib/sound'
+import { playClip, stopClip } from '@/lib/sound'
 import ScreenBackground from '@/components/ScreenBackground'
-import { colors, fonts } from '@/lib/theme'
+import LoadState from '@/components/LoadState'
+import { goBack } from '@/lib/navigation'
+import { CharacterArt, ClayButton, ClaySurface, TextButton } from '@/components/Clay'
+import { Icon } from '@/components/Icon'
+import { HostPrompt } from '@/components/QuizCard'
+import { RoomDoneCard } from '@/components/RoomScene'
+import { colors, fonts, naturalLineHeight, radii, ramps, spacing, textSize } from '@/lib/theme'
 
 /**
  * Placement probe (web: /onboarding/placement) — a short adaptive game that
@@ -45,6 +51,13 @@ function choiceFace(c: ProbeChoice): string {
 
 const LEVEL_LABELS = ['', 'تازه‌کار', 'آشنا با کلمه‌ها', 'خواننده‌ی کوچک', 'خواننده‌ی ماهر']
 
+// GET /api/placement/probe answers 503 with exactly this error when no strand
+// has a usable item (apps/backend/src/routes/placement.ts, `usable` check).
+// ApiResponse carries no status code, so the message is the only signal that
+// the probe is empty rather than unreachable. If the backend's wording
+// changes, this falls back to LoadState's retry (stuck, but no loop).
+const NO_PROBE_CONTENT = 'Not enough content to build a placement probe'
+
 export default function Placement() {
   const insets = useSafeAreaInsets()
   const { mode } = useLocalSearchParams<{ mode?: string }>()
@@ -58,27 +71,103 @@ export default function Placement() {
   // A ref because finish() needs the LATEST results synchronously, before the
   // setResults state update from the final answer has necessarily flushed.
   const resultsRef = useRef<ProbeResults>(emptyProbeResults())
+  // Lifecycle only (the probe flow itself is untouched): the feedback pause
+  // and the done -> home hop are timers, and neither was cleared. Leaving
+  // mid-probe (back gesture) within 1.1s of the last answer still ran
+  // finish() -- posting a result and router.replace('/home') from a screen
+  // that was gone -- and leaving the done screen early still yanked the user
+  // to /home 2.6s later. `alive` also stops the async load/finish from
+  // setting state or navigating after unmount.
+  const aliveRef = useRef(true)
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  // Set on the first tap of a question, so a second tap landing before the
+  // re-render (which disables the choices) can't record the answer twice.
+  const answeringRef = useRef(false)
+  // finish() can run from inside load(), before setChild has re-rendered, so
+  // it reads the child from here.
+  const childRef = useRef<Child | null>(null)
+  // No usable probe items: onboarding saves the empty result (the backend
+  // scores it as the default placement: level 1 everywhere, zero confidence,
+  // placement_done = true -- its own test «a fully-skipped probe») and goes
+  // straight home. It used to go home WITHOUT saving, and Home sends a child
+  // with placement_done = false straight back here: an endless loop.
+  const noContentRef = useRef(false)
+  // A failed load used to read as "no probe content" and hop to /home, which
+  // sends a child who hasn't been placed straight back here: now it stops on
+  // LoadState with a retry. Retry clears the error first (LoadState contract).
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  const retryLoad = () => { setLoadError(null); setReloadKey((k) => k + 1) }
+  // A failed result POST used to show the reveal anyway, with the default
+  // level (a level nobody computed) on onboarding, and move on unsaved.
+  const [saveError, setSaveError] = useState<string | null>(null)
+  // The spinner while it re-posts (the verdict card was still up underneath).
+  const retrySave = () => { setSaveError(null); setPhase('loading'); void finish() }
+  useEffect(() => {
+    aliveRef.current = true
+    return () => {
+      aliveRef.current = false
+      timersRef.current.forEach(clearTimeout)
+      timersRef.current = []
+      // A listen item's clip must not follow the child out.
+      stopClip()
+    }
+  }, [])
+  function later(fn: () => void, ms: number) {
+    const t = setTimeout(() => {
+      timersRef.current = timersRef.current.filter((x) => x !== t)
+      if (aliveRef.current) fn()
+    }, ms)
+    timersRef.current.push(t)
+  }
 
   useEffect(() => {
     async function load() {
       const childId = await getActiveChildId()
+      if (!aliveRef.current) return
       if (!childId) { router.replace('/children'); return }
       const [childRes, probeRes] = await Promise.all([
         api.get<Child[]>('/api/children'),
         api.get<PlacementProbe>('/api/placement/probe'),
       ])
-      const c = childRes.data?.find((x) => x.id === childId) ?? null
+      if (!aliveRef.current) return
+      if (!childRes.data) {
+        setLoadError(childRes.error || 'اتصال برقرار نشد. دوباره تلاش کن')
+        return
+      }
+      const c = childRes.data.find((x) => x.id === childId) ?? null
+      // A stale active child (removed since): the same exit as no child at
+      // all, instead of a probe whose result had nowhere to go.
+      if (!c) { router.replace('/children'); return }
       setChild(c)
-      if (!probeRes.data || !currentProbeStep(probeRes.data, emptyProbeResults())) {
-        // No usable probe content — skip gracefully, keep the default level.
-        router.replace('/home')
+      childRef.current = c
+      const noContent = probeRes.data
+        ? !currentProbeStep(probeRes.data, emptyProbeResults())
+        : probeRes.error === NO_PROBE_CONTENT
+      if (noContent) {
+        if (isReprobe) {
+          // Nothing to re-measure. Never post an empty reprobe result: that
+          // route rewrites children.level from the score, which would drop
+          // the child to level 1. Home only shows the card; no loop.
+          router.replace('/home')
+          return
+        }
+        // See noContentRef. Stays on the spinner; a failed save shows
+        // «نتیجه ذخیره نشد» with a retry (retrySave -> finish again).
+        noContentRef.current = true
+        resultsRef.current = emptyProbeResults()
+        void finish()
+        return
+      }
+      if (!probeRes.data) {
+        setLoadError(probeRes.error || 'اتصال برقرار نشد. دوباره تلاش کن')
         return
       }
       setBank(probeRes.data)
       setPhase('intro')
     }
     load()
-  }, [])
+  }, [reloadKey])
 
   const step: ProbeStep | null = bank ? currentProbeStep(bank, results) : null
   const q = step?.question
@@ -91,33 +180,45 @@ export default function Placement() {
   }, [phase, q])
 
   async function finish() {
+    const child = childRef.current
     if (child) {
       const path = isReprobe ? `/api/placement/${child.id}/reprobe-result` : '/api/placement/result'
       const body = isReprobe ? resultsRef.current : { child_id: child.id, results: resultsRef.current }
       if (isReprobe) {
-        await api.post(path, body)
+        const res = await api.post(path, body)
+        if (!aliveRef.current) return
+        if (res.error) { setSaveError(res.error); return }
       } else {
         // Scoring (§5) lives server-side — it needs gate.ts's w(n) for
         // confidence — so the level for the reveal screen comes back on the
         // response instead of being computed here before the request.
         const res = await api.post<Child>(path, body)
-        if (res.data) setFinalLevel(res.data.level)
+        if (!aliveRef.current) return
+        if (!res.data) { setSaveError(res.error || 'اتصال برقرار نشد. دوباره تلاش کن'); return }
+        setFinalLevel(res.data.level)
       }
     }
+    if (!aliveRef.current) return
+    // The default placement was saved without a game: no reveal to show.
+    if (noContentRef.current) { router.replace('/home'); return }
     setPhase('done')
-    setTimeout(() => router.replace('/home'), 2600)
+    later(() => router.replace('/home'), 2600)
   }
 
   function answer(choice: ProbeChoice) {
-    if (phase !== 'question' || !step) return
+    if (phase !== 'question' || !step || answeringRef.current) return
+    answeringRef.current = true
     const ok = choice.id === step.question.correct_id
     setLastCorrect(ok)
     setPhase('feedback')
-    setTimeout(() => {
+    // The verdict card's live region is Android-only; VoiceOver needs telling.
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(ok ? 'آفرین!' : 'اشکالی نداره')
+    later(() => {
       const updated = recordProbeAnswer(resultsRef.current, step, ok)
       resultsRef.current = updated
       setResults(updated)
       if (bank && currentProbeStep(bank, updated)) {
+        answeringRef.current = false
         setPhase('question')
       } else {
         finish()
@@ -125,26 +226,52 @@ export default function Placement() {
     }, 1100)
   }
 
+  if (loadError || saveError) {
+    return (
+      <ScreenBackground variant="warm">
+        <View style={styles.center}>
+          <LoadState
+            error={loadError ?? saveError}
+            title={saveError ? 'نتیجه ذخیره نشد' : undefined}
+            onRetry={saveError ? retrySave : retryLoad}
+            // Re-placement is a skippable card, so it can go home. Onboarding
+            // can't: home sends an unplaced child straight back here.
+            onBack={isReprobe ? () => goBack('/home') : undefined}
+          />
+        </View>
+      </ScreenBackground>
+    )
+  }
+
   if (phase === 'loading') {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.onPrimary} />
-      </View>
+      <ScreenBackground variant="warm">
+        <View style={styles.center}>
+          {/* The shared full-screen wait (چرخی over the spinner). */}
+          <LoadState error={null} loading="character" />
+        </View>
+      </ScreenBackground>
     )
   }
 
   if (phase === 'intro') {
     return (
       <ScreenBackground variant="warm" decor>
-        <View style={[styles.center, styles.transparent, { padding: 24, gap: 14 }]}>
-          <Text style={{ fontSize: 90 }}>🦅</Text>
-          <Text style={styles.introTitle}>سلام {child?.name}! من سیمرغم 🌟</Text>
-          <Text style={styles.introText}>
-            بیا با هم یک بازی کوچولو کنیم تا ببینم چی بلدی — امتحان نیست، فقط بازیه!
-          </Text>
-          <Pressable style={styles.bigButton} onPress={() => setPhase('question')}>
-            <Text style={styles.bigButtonText}>بزن بریم! 🎈</Text>
-          </Pressable>
+        <View style={[styles.center, styles.scene]}>
+          {/* سیمرغ in person on the brand room's stage (RoomDoneCard, the
+              learning rooms' card): Home's world, amber-tinted. */}
+          <RoomDoneCard
+            ramp={ramps.brand}
+            character="simorgh"
+            emotion="happy"
+            title={`سلام ${child?.name ?? ''}! من سیمرغم`}
+            body="بیا با هم یک بازی کوچولو کنیم تا ببینم چی بلدی — امتحان نیست، فقط بازیه!"
+          />
+          <ClayButton ramp={ramps.brand} label="بزن بریم!" emoji="🎈" onPress={() => setPhase('question')} style={styles.bigButton} />
+          {/* Re-placement is optional (Home's card), so its intro offers a
+              way out; nothing is saved until the child answers. Onboarding's
+              first placement has none: Home sends an unplaced child back. */}
+          {isReprobe ? <TextButton label="بعداً" onPress={() => goBack('/home')} /> : null}
         </View>
       </ScreenBackground>
     )
@@ -153,15 +280,17 @@ export default function Placement() {
   if (phase === 'done') {
     return (
       <ScreenBackground variant="warm" decor>
-        <View style={[styles.center, styles.transparent, { padding: 24, gap: 12 }]}>
-          <Text style={{ fontSize: 72 }}>🎉</Text>
-          <Text style={styles.introTitle}>آفرین {child?.name}!</Text>
-          {/* Re-placement never reveals a level — a recurring scorecard is
+        <View style={[styles.center, styles.scene]}>
+          {/* سیمرغ carries the moment, proud, on the same stage as the intro.
+              Re-placement never reveals a level — a recurring scorecard is
               exactly the signal the gate/trophy split exists to hide, and a
               re-placement result can legitimately move the gate down (§2/§3). */}
-          <Text style={styles.introText}>
-            {isReprobe ? 'خیلی خوب بود! 🌟' : `از اینجا شروع می‌کنیم: ${LEVEL_LABELS[finalLevel]}`}
-          </Text>
+          <RoomDoneCard
+            ramp={ramps.brand}
+            character="simorgh"
+            title={`آفرین ${child?.name ?? ''}!`}
+            body={isReprobe ? 'خیلی خوب بود!' : `از اینجا شروع می‌کنیم: ${LEVEL_LABELS[finalLevel]}`}
+          />
           <Text style={styles.goingHome}>در حال رفتن به خانه…</Text>
         </View>
       </ScreenBackground>
@@ -170,96 +299,107 @@ export default function Placement() {
 
   if (!q) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.onPrimary} />
-      </View>
+      <ScreenBackground variant="warm">
+        <View style={styles.center}>
+          <LoadState error={null} loading="character" />
+        </View>
+      </ScreenBackground>
     )
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+    <ScreenBackground variant="warm">
+    <View style={[styles.container, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.md }]}>
       {/* No difficulty tier, question number, or "X of N" counter — the
           child's staircase branch is never revealed (§6). A single mascot
           face is enough progress feedback for this age group. */}
-      <View style={styles.mascotRow}>
-        <Text style={{ fontSize: 48 }}>🦅</Text>
-      </View>
-
       <View style={styles.body}>
-        <Text style={styles.prompt}>{q.prompt}</Text>
+        {/* سیمرغ asks, like every child quiz (HostPrompt); the prompt is
+            the item's own words, nothing more. */}
+        <HostPrompt ramp={ramps.brand} host="simorgh" emotion="thinking" text={q.prompt} />
 
         {q.mode === 'listen' ? (
-          <Pressable
-            style={styles.speaker}
+          <Pressable accessibilityRole="button" accessibilityLabel="دوباره بشنو"
             onPress={() => q.audio_url && playClip(q.audio_url)}
           >
-            <Text style={{ fontSize: 44 }}>🔊</Text>
+            {({ pressed }) => (
+              <ClaySurface ramp={ramps.brand} tone="bright" pressed={pressed} radius={radii.pill} faceStyle={styles.speaker}>
+                <Icon name="volume" color={ramps.brand.ink} size={48} strokeWidth={2.2} />
+              </ClaySurface>
+            )}
           </Pressable>
         ) : (
-          <View style={styles.showTextCard}>
+          <ClaySurface ramp={ramps.brand} tone="soft" radius={radii.md} faceStyle={styles.showTextCard}>
             <Text style={styles.showText}>{q.show_text}</Text>
-          </View>
+          </ClaySurface>
         )}
 
         <View style={styles.choices}>
           {q.choices.map((c) => (
             <Pressable
               key={c.id}
-              style={styles.choice}
               disabled={phase !== 'question'}
               onPress={() => answer(c)}
+              accessibilityRole="button"
+              // The face itself (a letter, or a picture read out by its emoji
+              // description); a hint gives the Persian verb. Never the choice's
+              // word: on a read item that would hand over the answer.
+              accessibilityHint="انتخاب کن"
             >
-              <Text style={c.kind === 'letter' ? styles.choiceLetter : styles.choiceEmoji}>{choiceFace(c)}</Text>
+              {({ pressed }) => (
+                <ClaySurface ramp={ramps.brand} tone="soft" pressed={pressed && phase === 'question'} radius={radii.lg} faceStyle={styles.choice}>
+                  <Text
+                    style={c.kind === 'letter' ? styles.choiceLetter : wordEmoji(c.english ?? '') ? styles.choiceEmoji : styles.choiceWord}
+                  >
+                    {choiceFace(c)}
+                  </Text>
+                </ClaySurface>
+              )}
             </Pressable>
           ))}
         </View>
       </View>
 
       {phase === 'feedback' && (
-        <View style={styles.feedback} pointerEvents="none">
-          <Text style={{ fontSize: 56 }}>{lastCorrect ? '🌟' : '💛'}</Text>
-          <Text style={[styles.feedbackText, { color: lastCorrect ? colors.success : '#d97706' }]}>
-            {lastCorrect ? 'آفرین!' : 'اشکالی نداره'}
-          </Text>
+        <View style={styles.feedback} pointerEvents="none" accessibilityLiveRegion="polite">
+          <ClaySurface ramp={lastCorrect ? ramps.lessons : ramps.brand} tone="soft" radius={radii.lg} faceStyle={styles.feedbackFace}>
+            {/* سیمرغ reacts (was 🌟 / 💛): proud for a right answer,
+                encouraging for a miss -- never sad in a placement game. */}
+            <CharacterArt character="simorgh" emotion={lastCorrect ? 'proud' : 'encouraging'} size={88} />
+            <Text style={[styles.feedbackText, { color: lastCorrect ? ramps.lessons.ink : ramps.brand.ink }]}>
+              {lastCorrect ? 'آفرین!' : 'اشکالی نداره'}
+            </Text>
+          </ClaySurface>
         </View>
       )}
     </View>
+    </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  transparent: { backgroundColor: 'transparent' },
-  introTitle: { fontSize: 24, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
-  introText: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', lineHeight: 26, maxWidth: 300 },
-  goingHome: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 8 },
-  bigButton: {
-    marginTop: 16, backgroundColor: colors.primary, borderRadius: 20,
-    paddingVertical: 16, paddingHorizontal: 48,
-  },
-  bigButtonText: { color: colors.onPrimary, fontSize: 20, fontFamily: fonts.bold },
-  mascotRow: { flexDirection: 'row', justifyContent: 'center' },
-  body: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 24 },
-  prompt: { fontSize: 18, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
-  speaker: {
-    width: 112, height: 112, borderRadius: 56, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
-  },
-  showTextCard: {
-    backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 28, paddingVertical: 20,
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
-  },
-  showText: { fontSize: 38, fontFamily: fonts.bold, color: colors.text },
-  choices: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, maxWidth: 340 },
-  choice: {
-    width: 96, height: 96, borderRadius: 24, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
-  },
+  container: { flex: 1, paddingHorizontal: spacing.md },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scene: { padding: spacing.lg, gap: spacing.sm + spacing.xs },
+  goingHome: { fontSize: textSize.caption, fontFamily: fonts.medium, color: colors.text, marginTop: spacing.sm },
+  bigButton: { width: '100%', maxWidth: 360 },
+  body: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+  speaker: { width: 112, height: 112, alignItems: 'center', justifyContent: 'center' },
+  showTextCard: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md + spacing.xs, alignItems: 'center' },
+  // naturalLineHeight: a read item's word can carry vowel marks.
+  showText: { fontSize: 38, fontFamily: fonts.bold, color: ramps.brand.ink, lineHeight: naturalLineHeight(38) },
+  choices: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm + spacing.xs, maxWidth: 340 },
+  // min, not fixed: a word choice without an emoji shows the word itself,
+  // which at the emoji's 34pt overflowed a 96pt tile.
+  choice: { minWidth: 96, minHeight: 96, paddingHorizontal: spacing.sm, alignItems: 'center', justifyContent: 'center' },
   choiceEmoji: { fontSize: 34 },
-  choiceLetter: { fontSize: 34, fontFamily: fonts.bold, color: colors.text },
-  feedback: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  feedbackText: { fontSize: 22, fontFamily: fonts.bold },
+  // naturalLineHeight: a letter choice can carry marks (Android clips them
+  // in a tighter line box).
+  choiceLetter: { fontSize: 34, lineHeight: naturalLineHeight(34), fontFamily: fonts.bold, color: ramps.brand.ink },
+  choiceWord: { fontSize: textSize.cardTitle, lineHeight: naturalLineHeight(textSize.cardTitle), fontFamily: fonts.bold, color: ramps.brand.ink, textAlign: 'center' },
+  feedback: { position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, alignItems: 'center', justifyContent: 'center' },
+  // A card behind the verdict: it used to float bare over the choice tiles.
+  feedbackFace: { alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
+  // Ramp inks, not colors.success / #d97706 (~2.2:1 and ~3:1 on the page).
+  feedbackText: { fontSize: textSize.h2, fontFamily: fonts.bold },
 })

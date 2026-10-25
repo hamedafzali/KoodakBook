@@ -9,6 +9,7 @@ import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import type { DashboardSummary, Child } from '@koodakbook/shared'
 import { buildShareText } from '@koodakbook/shared'
+import { CHARACTERS, defaultFrame, renderActorSVG } from 'pixel-wizards-charachters'
 import { containerWidths } from '@/components/shared/layout'
 import { PageHeader } from '@/components/parent/flat'
 
@@ -36,6 +37,35 @@ function token(name: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
   return v || fallback
+}
+
+/** سیمرغ, rendered from the same pixel-wizards-charachters art the app draws
+ *  everywhere else (renderActorSVG is the library's own static SVG render),
+ *  rasterised on a scratch canvas first. Returns null when the SVG can't be
+ *  loaded or the scratch canvas comes out tainted (an engine that treats SVG
+ *  images as cross-origin) — the caller then draws the 🦅 glyph the app maps
+ *  simorgh to, so the export never fails on the mascot's account. */
+async function simorghImage(px: number): Promise<HTMLCanvasElement | null> {
+  try {
+    const svg = renderActorSVG(CHARACTERS.simorgh, { ...defaultFrame('simorgh'), emotion: 'happy' }, px)
+    const img = new Image()
+    img.decoding = 'async'
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('simorgh svg failed to load'))
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+    })
+    const off = document.createElement('canvas')
+    off.width = px
+    off.height = px
+    const octx = off.getContext('2d')
+    if (!octx) return null
+    octx.drawImage(img, 0, 0, px, px)
+    octx.getImageData(0, 0, 1, 1)   // throws if tainted — keeps the share export working
+    return off
+  } catch {
+    return null
+  }
 }
 
 /** Draw the shareable progress card onto a canvas (no external deps). */
@@ -75,13 +105,18 @@ async function drawCard(canvas: HTMLCanvasElement | null, s: DashboardSummary) {
 
   const cx = W / 2
 
-  // Mascot / celebration
-  // EMOJI-CONTENT: this canvas is an exported *image* shared outside the app,
-  // not UI chrome. Vector icons can't be painted into a 2D context, and the
-  // card is decorative artwork — it wants a real mascot render from
-  // pixel-wizards-charachters, which is the tracked follow-up here.
-  ctx.font = '180px sans-serif'
-  ctx.fillText('🦚', cx, 320)
+  // Mascot: سیمرغ from the character library (2026-09-29) — this was a 🦚
+  // peacock glyph, which is not our Simorgh. Same box the glyph occupied
+  // (~y 140–330, centred). EMOJI-CONTENT fallback: 🦅, the glyph the app's
+  // characterEmoji maps simorgh to, only when the art can't be rasterised.
+  const MASCOT = 230
+  const mascot = await simorghImage(MASCOT)
+  if (mascot) {
+    ctx.drawImage(mascot, cx - MASCOT / 2, 100, MASCOT, MASCOT)
+  } else {
+    ctx.font = '180px sans-serif'
+    ctx.fillText('🦅', cx, 320)
+  }
 
   // Headline
   ctx.fillStyle = '#1f2937'

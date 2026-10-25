@@ -7,26 +7,40 @@ import { isLoggedIn } from '@/lib/auth'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
-import { ClayButton } from '@/components/child/clay'
+import ErrorState from '@/components/child/ErrorState'
+import EmptyState from '@/components/child/EmptyState'
+import { ClayButton, softClayVars } from '@/components/child/clay'
 import Emoji from '@/components/shared/Emoji'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
-import type { Letter } from '@koodakbook/shared'
+import { toPersianDigits, type Letter } from '@koodakbook/shared'
+
+/** A ramp stop for the canvas, which can't read CSS custom properties. */
+function cssVar(name: string, fallback: string): string {
+  if (typeof window === 'undefined') return fallback
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+}
 
 export default function WritePage() {
   const router = useRouter()
   const [letters, setLetters] = useState<Letter[]>([])
   const [idx, setIdx] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
+    let cancelled = false
     api.get<Letter[]>('/api/letters').then(res => {
+      if (cancelled) return
       if (res.data) setLetters(res.data)
+      else setLoadError(res.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
       setLoading(false)
     })
-  }, [router])
+    return () => { cancelled = true }
+  }, [router, attempt])
 
   const letter = letters[idx]
 
@@ -40,20 +54,31 @@ export default function WritePage() {
   }, [letter?.id])
 
   if (loading) return <LoadingScreen message="در حال بارگذاری..." />
-  if (letters.length === 0) return <LoadingScreen message="حرفی برای تمرین نیست" />
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => { setLoadError(null); setLoading(true); setAttempt(a => a + 1) }} />
+  }
+  // Nothing to practise is an empty state, not a loading one (it used to be
+  // LoadingScreen, pulsing as if more were coming).
+  if (letters.length === 0) {
+    return (
+      <div className="min-h-screen child-bg pb-nav">
+        <PageHeader title="تمرین نوشتن" module="write" />
+        <EmptyState message="حرفی برای تمرین نیست" />
+        <BottomNav />
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="تمرین نوشتن" subtitle={`حرف ${idx + 1} از ${letters.length}`} module="write" />
+    <div className="min-h-screen child-bg pb-nav flex flex-col">
+      <PageHeader title="تمرین نوشتن" subtitle={`حرف ${toPersianDigits(idx + 1)} از ${toPersianDigits(letters.length)}`} module="write" />
 
-      {/* pb-44: clears BOTH fixed bars below (the action bar + BottomNav),
-          not just BottomNav's own .pb-nav reserve — see the action bar's
-          comment for why it's fixed instead of sitting in normal flow. */}
-      <div className="px-4 pt-5 pb-44 flex flex-col items-center gap-4">
+      <div className="px-4 pt-5 pb-6 flex flex-col items-center gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={() => { playTap(); speakOrPlay(letter.audio_url, letter.name_persian) }}
-            className="bg-white rounded-2xl shadow-card px-5 py-2 flex items-center gap-2 min-h-[56px]"
+            className="clay-option px-5 py-2 flex items-center gap-2 min-h-[56px]"
+            style={softClayVars('write')}
             aria-label={`بشنو: ${letter.name_persian}`}
           >
             <span className="text-2xl font-bold text-text-primary">{letter.character}</span>
@@ -72,23 +97,32 @@ export default function WritePage() {
           (bottom-20 = BottomNav's own .pb-nav reserve) it's always inside
           the one-thumb reach zone instead. Prev/Next also gained arrow
           glyphs — this screen exists because the child can't fully read
-          yet, so the direction shouldn't be gated on reading "قبلی"/"بعدی". */}
-      <div className="fixed inset-x-0 bottom-20 z-20 left-1/2 -translate-x-1/2 w-full max-w-[540px] px-4 pb-3">
+          yet, so the direction shouldn't be gated on reading "قبلی"/"بعدی".
+          Sticky at the bottom of the stage now, not `fixed`: `inset-x-0` is
+          logical in Tailwind 4 (inset-inline), so under RTL it pinned the
+          RIGHT edge and `left-1/2 -translate-x-1/2` then dragged the bar half
+          off-screen to the left at every width; and on desktop a viewport-
+          fixed bar floated off the centred stage. mt-auto keeps it at the
+          bottom of a short page; sticky keeps it in reach on a tall one. */}
+      <div className="sticky bottom-20 lg:bottom-4 z-20 mt-auto w-full px-4 pb-3">
         <div className="flex gap-3 bg-white/95 backdrop-blur-md rounded-2xl shadow-raised p-3">
           <motion.button
             onClick={() => { playTap(); setIdx(i => Math.max(0, i - 1)) }}
             disabled={idx === 0}
             whileTap={{ scale: 0.94 }}
-            className="flex-1 py-4 rounded-2xl border-2 border-border text-text-secondary font-bold disabled:opacity-30 min-h-[56px]"
+            aria-label="حرف قبلی"
+            className="clay-option flex-1 py-4 font-bold disabled:opacity-30 min-h-[56px]"
+            style={softClayVars('write')}
           >
-            → قبلی
+            <span aria-hidden="true">→</span> قبلی
           </motion.button>
           <ClayButton
             ramp="write" size="lg" className="flex-[2]"
             onClick={() => { playSuccess(); setIdx(i => Math.min(letters.length - 1, i + 1)) }}
             disabled={idx === letters.length - 1}
+            aria-label="حرف بعدی"
           >
-            بعدی ←
+            بعدی <span aria-hidden="true">←</span>
           </ClayButton>
         </div>
       </div>
@@ -115,7 +149,9 @@ function TracingCanvas({ letter }: { letter: string }) {
   function redrawGuide(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, ch: string) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
-    ctx.fillStyle = '#e5e7eb' // faint guide
+    // Faint guide in the write room's own hue (was a one-off gray #e5e7eb).
+    ctx.fillStyle = cssVar('--ramp-write-bright', '#22D3EE')
+    ctx.globalAlpha = 0.28
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.font = `${canvas.height * 0.6}px Vazirmatn, sans-serif`
@@ -147,7 +183,7 @@ function TracingCanvas({ letter }: { letter: string }) {
     e.preventDefault()
     const ctx = canvasRef.current!.getContext('2d')!
     const p = pos(e)
-    ctx.strokeStyle = '#2563eb'
+    ctx.strokeStyle = cssVar('--ramp-write-deep', '#056271')   // was a one-off blue
     ctx.lineWidth = 14
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
@@ -166,24 +202,28 @@ function TracingCanvas({ letter }: { letter: string }) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <canvas
-        ref={canvasRef}
-        width={300}
-        height={300}
-        className="bg-white rounded-2xl shadow-card touch-none"
-        style={{ width: 'min(80vw, 300px)', height: 'min(80vw, 300px)' }}
-        onPointerDown={start}
-        onPointerMove={move}
-        onPointerUp={end}
-        onPointerLeave={end}
-        role="img"
-        aria-label={`بوم نقاشی برای نوشتن حرف ${letter}`}
-      />
+      {/* The clay container wraps the canvas rather than styling it: a
+          border on the canvas itself would skew pos()'s pointer mapping. */}
+      <div className="clay-static overflow-hidden" style={softClayVars('write')}>
+        <canvas
+          ref={canvasRef}
+          width={300}
+          height={300}
+          className="block bg-white touch-none"
+          style={{ width: 'min(80vw, 300px)', height: 'min(80vw, 300px)' }}
+          onPointerDown={start}
+          onPointerMove={move}
+          onPointerUp={end}
+          onPointerLeave={end}
+          role="img"
+          aria-label={`بوم نقاشی برای نوشتن حرف ${letter}`}
+        />
+      </div>
       <motion.button
         onClick={clear}
         whileTap={{ scale: 0.94 }}
         className={`px-5 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[56px] ${
-          hasDrawn ? 'bg-amber-100 text-amber-700' : 'bg-surface-subtle text-text-secondary'
+          hasDrawn ? 'bg-write-soft text-write-ink' : 'bg-surface-subtle text-text-secondary'
         }`}
       >
         <span aria-hidden="true">🧹</span> پاک کن

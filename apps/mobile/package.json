@@ -5,9 +5,10 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "lint": "tsc --noEmit"
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "lint": "tsc --noEmit",
+    "check:theme": "node scripts/check-startup-theme.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/vazirmatn": "^0.4.1",
@@ -21,6 +22,7 @@
     "expo-image": "~57.0.5",
     "expo-linear-gradient": "~57.0.2",
     "expo-linking": "~57.0.10",
+    "expo-localization": "~57.0.2",
     "expo-router": "~57.0.21",
     "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.9",

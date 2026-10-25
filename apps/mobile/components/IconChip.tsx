@@ -23,7 +23,13 @@ export default function IconChip({
   const bg = tone === 'danger' ? colors.dangerSoft : colors.primarySoft
   const fg = tone === 'danger' ? colors.danger : colors.primaryDeep
   return (
-    <View style={[styles.chip, { width: size, height: size, borderRadius: size * 0.32, backgroundColor: bg }]}>
+    // Decorative: the row it sits in carries the words (an icon font glyph
+    // would otherwise be read as an unknown character).
+    <View
+      style={[styles.chip, { width: size, height: size, borderRadius: size * 0.32, backgroundColor: bg }]}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       <Ionicons name={name} size={iconSize} color={fg} />
     </View>
   )

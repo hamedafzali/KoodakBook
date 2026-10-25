@@ -414,11 +414,17 @@ export interface ReadAloudRecording {
 export interface ApiSuccess<T> {
   data: T
   error: null
+  /** HTTP status of the response (set by createApiClient). Undefined when no
+   *  response arrived (offline / unreachable) or for a hand-built response. */
+  status?: number
 }
 
 export interface ApiError {
   data: null
   error: string
+  /** HTTP status of the response (set by createApiClient). Undefined when no
+   *  response arrived (offline / unreachable) or for a hand-built response. */
+  status?: number
 }
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiError

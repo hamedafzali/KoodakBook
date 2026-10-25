@@ -149,6 +149,18 @@ export function ModuleBar({ module: m, ...rest }: {
   return <ClayBar ramp={m} {...rest} />
 }
 
+/** A room's header band (2026-09-28 visual-fidelity pass): the module's
+ *  soft tint, a touch of its bright hue, and a tinted hairline — so every
+ *  screen inside a room (its list, its player, its reader) is visibly IN that
+ *  room. Pair with `rounded-b-[1.75rem] shadow-card`. Text on it stays
+ *  text-primary: the band never gets darker than ~16% of the bright stop. */
+export function roomBand(m: ModuleKey): React.CSSProperties {
+  return {
+    background: `linear-gradient(180deg, color-mix(in oklab, var(--ramp-${m}-bright) 16%, white), color-mix(in oklab, var(--ramp-${m}-soft) 70%, white))`,
+    borderColor: `color-mix(in oklab, var(--ramp-${m}-bright) 40%, transparent)`,
+  }
+}
+
 export function ModuleChip({ module: m, icon, children }: {
   module: ModuleKey; icon?: IconName; children: React.ReactNode
 }) {

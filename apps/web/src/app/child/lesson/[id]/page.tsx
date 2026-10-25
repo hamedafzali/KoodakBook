@@ -6,10 +6,13 @@ import { isLoggedIn } from '@/lib/auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { celebrate } from '@/lib/confetti'
 import Mascot from '@/components/child/Mascot'
-import { clayVars } from '@/components/child/clay'
+import { ClayButton } from '@/components/child/clay'
+import { roomBand } from '@/components/child/kit'
+import { Icon } from '@/components/icons'
 import QuizCard, { type QuizQuestion, type QuizMode } from '@/components/child/QuizCard'
 import RewardPopup from '@/components/child/RewardPopup'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import { pickChild } from '@/lib/activeChild'
@@ -62,24 +65,44 @@ export default function LessonPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [completed, setCompleted] = useState(false)
   const completedFiredRef = useRef(false)
+  // A failed fetch used to leave this page on its loading screen forever (the
+  // api client resolves `{ data: null, error }`, it never rejects). `attempt`
+  // re-runs the load from the error screen's retry.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  // Saving the finished lesson can fail (or there's no child to save it for).
+  // The child still gets the completion screen -- never stuck on the last
+  // question -- with an honest note and a retry.
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const lastScore = useRef(100)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
+    let cancelled = false
     async function load() {
       const [lessonRes, childRes] = await Promise.all([
         api.get<LessonWithItems>(`/api/lessons/${id}`),
         api.get<Child[]>('/api/children'),
       ])
-      if (lessonRes.data) setLesson(lessonRes.data)
-      const child = pickChild(childRes.data ?? [])
+      if (cancelled) return
+      // The child is needed too: without its id nothing the child does here
+      // is saved, and the last answer can't complete the lesson.
+      if (!lessonRes.data || !childRes.data) {
+        setLoadError(lessonRes.error ?? childRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
+        return
+      }
+      setLesson(lessonRes.data)
+      const child = pickChild(childRes.data)
       if (child) {
         setChildId(child.id)
         setChildLevel(child.level ?? 1)
       }
     }
     load()
-  }, [id, router])
+    return () => { cancelled = true }
+  }, [id, router, attempt])
 
   /* Fire confetti + sound exactly once when completed becomes true */
   useEffect(() => {
@@ -94,15 +117,35 @@ export default function LessonPage() {
     await api.post('/api/progress/word', { child_id: childId, word_id: wordId, status: 'practiced' })
   }
 
-  async function handleComplete(correct: number, total: number) {
-    if (!childId || !lesson) return
-    const score = total > 0 ? Math.round((correct / total) * 100) : 100
+  async function saveLesson(score: number) {
+    if (!lesson) return null
     // new_badges / promotions are top-level on the response, not under `data`
     // (same contract as /api/progress/story).
     const res = await api.post(
       '/api/progress/lesson',
       { child_id: childId, lesson_id: lesson.id, score }
-    ) as { new_badges?: Badge[]; promotions?: Promotion[] }
+    ) as { error?: string | null; new_badges?: Badge[]; promotions?: Promotion[] }
+    setSaveError(res.error ? res.error : null)
+    return res
+  }
+
+  async function retrySave() {
+    setSaving(true)
+    const res = await saveLesson(lastScore.current)
+    setSaving(false)
+    if (res?.promotions?.length) setPromotions(res.promotions)
+    if (res?.new_badges?.[0]) setNewBadge(res.new_badges[0])
+  }
+
+  async function handleComplete(correct: number, total: number) {
+    if (!lesson) return
+    const score = total > 0 ? Math.round((correct / total) * 100) : 100
+    lastScore.current = score
+    // It used to `return` here without a child, leaving the child on the
+    // last question with nothing happening.
+    if (!childId) { setSaveError('پیشرفتت ذخیره نشد.'); setCompleted(true); return }
+    const res = await saveLesson(score)
+    if (!res) return
     if (res.promotions?.length) setPromotions(res.promotions)
     if (res.new_badges?.[0]) setNewBadge(res.new_badges[0])
     else setCompleted(true)
@@ -113,6 +156,16 @@ export default function LessonPage() {
     return lesson.items.map(item => buildQuestion(item, lesson.items, childLevel))
   }, [lesson, childLevel])
 
+  if (loadError) {
+    return (
+      <ErrorState
+        message={loadError}
+        onRetry={() => { setLoadError(null); setAttempt(a => a + 1) }}
+        backHref="/child/lesson"
+        backLabel="برگشت به درس‌ها"
+      />
+    )
+  }
   if (!lesson) return <LoadingScreen message="در حال بارگذاری درس..." />
 
   const isLast = currentIdx === questions.length - 1
@@ -138,7 +191,7 @@ export default function LessonPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <h1 className="text-3xl font-bold text-text-primary">آفرین! 🌟</h1>
+          <h1 className="text-3xl font-bold text-text-primary">آفرین! <span aria-hidden="true">🌟</span></h1>
           <p className="text-text-secondary mt-1 persian-text">درس «{lesson.title}» تمام شد</p>
         </motion.div>
 
@@ -151,54 +204,72 @@ export default function LessonPage() {
         >
           <div className="flex justify-around">
             <div>
-              <p className="text-3xl font-bold text-green-600">{correctCount}</p>
-              <p className="text-xs text-text-secondary mt-0.5">درست ✅</p>
+              <p className="text-3xl font-bold text-green-700">{toPersianDigits(correctCount)}</p>
+              <p className="text-xs text-text-secondary mt-0.5">درست <span aria-hidden="true">✅</span></p>
             </div>
             <div className="w-px bg-surface-subtle" />
             <div>
-              <p className="text-3xl font-bold text-red-400">{incorrectCount}</p>
-              <p className="text-xs text-text-secondary mt-0.5">نادرست ❌</p>
+              <p className="text-3xl font-bold text-red-600">{toPersianDigits(incorrectCount)}</p>
+              <p className="text-xs text-text-secondary mt-0.5">نادرست <span aria-hidden="true">❌</span></p>
             </div>
             <div className="w-px bg-surface-subtle" />
             <div>
-              <p className="text-3xl font-bold text-amber-500">{score}٪</p>
+              <p className="text-3xl font-bold text-amber-700">{toPersianDigits(score)}٪</p>
               <p className="text-xs text-text-secondary mt-0.5">نمره</p>
             </div>
           </div>
         </motion.div>
 
+        {saveError && (
+          <div role="alert" className="w-full max-w-xs rounded-2xl p-4 text-center flex flex-col items-center gap-2"
+            style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}>
+            <p className="font-bold text-small persian-text">این بار ذخیره نشد</p>
+            <p className="text-small persian-text">{saveError}</p>
+            {childId && (
+              <ClayButton size="md" onClick={retrySave} disabled={saving}>
+                {saving ? 'در حال ذخیره...' : 'دوباره ذخیره کن'}
+              </ClayButton>
+            )}
+          </div>
+        )}
+
         {promotions.length > 0 && (
           <motion.div
-            className="text-white rounded-3xl shadow-card p-4 w-full max-w-xs text-center"
-            style={{ background: 'linear-gradient(to left, var(--ramp-rewards-bright), var(--ramp-rewards-deep))' }}
+            /* Was white text on a rewards bright→deep gradient: the bright
+               end is saffron #FBBF24, where white measures ~1.7:1. The ramp's
+               own pairing is dark ink on bright (DESIGN_CHARTER.md). */
+            className="rounded-3xl shadow-card p-4 w-full max-w-xs text-center"
+            style={{ background: 'var(--ramp-rewards-bright)', color: 'var(--ramp-rewards-ink)' }}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.55, type: 'spring', stiffness: 300, damping: 16 }}
           >
             <p className="text-2xl mb-1" aria-hidden="true">🔓✨</p>
             <p className="font-bold">محتوای جدید باز شد!</p>
-            <p className="text-xs text-white/85 mt-0.5 persian-text">درس‌ها و داستان‌های تازه در خانه منتظرت هستند</p>
+            <p className="text-xs mt-0.5 persian-text">درس‌ها و داستان‌های تازه در خانه منتظرت هستند</p>
           </motion.div>
         )}
 
-        <motion.button
-          onClick={() => router.push('/child/home')}
-          style={clayVars('lessons')}
-          className="clay w-full max-w-xs font-bold py-4 text-lg touch-target-child min-h-[56px]"
+        <motion.div
+          className="w-full max-w-xs"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.96 }}
         >
-          برگشت به خانه 🏠
-        </motion.button>
+          <ClayButton ramp="lessons" size="lg" onClick={() => router.push('/child/home')}>
+            برگشت به خانه <span aria-hidden="true">🏠</span>
+          </ClayButton>
+        </motion.div>
       </div>
     )
   }
 
   const question = questions[currentIdx]
-  if (!question) return <LoadingScreen />
+  // A lesson with no items has no first question: that used to be an endless
+  // loading screen. It's content that isn't there, so no retry.
+  if (!question) {
+    return <ErrorState title="این درس هنوز تمرینی ندارد" backHref="/child/lesson" backLabel="برگشت به درس‌ها" />
+  }
 
   return (
     <div className="min-h-screen child-bg flex flex-col">
@@ -209,23 +280,25 @@ export default function LessonPage() {
         />
       )}
 
-      {/* Header with progress */}
-      <div className="bg-white/85 backdrop-blur-md border-b border-amber-100 px-5 py-3 flex items-center gap-3">
+      {/* Header with progress — in the lessons room's own band (roomBand),
+          the same band /child/lesson's PageHeader wears. */}
+      <div style={roomBand('lessons')} className="backdrop-blur-md border-b rounded-b-[1.75rem] shadow-card px-5 py-3 flex items-center gap-3">
         <motion.button
           onClick={() => router.back()}
           whileTap={{ scale: 0.85 }}
           aria-label="برگشت"
           className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 18l6-6-6-6" />
-          </svg>
+          <Icon name="back" size="md" strokeWidth={2.5} />
         </motion.button>
 
-        <div className="flex-1">
+        {/* min-w-0 on both levels: without it a long lesson title can't
+            shrink, so `truncate` never engages and the counter is pushed off
+            a 360px screen. */}
+        <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-text-primary text-sm truncate">{lesson.title}</h1>
-            <span className="text-sm font-bold text-amber-600 shrink-0 mr-2 persian-text">
+            <h1 className="font-bold text-text-primary text-sm truncate min-w-0">{lesson.title}</h1>
+            <span className="text-sm font-bold text-lessons-ink shrink-0 ms-2 persian-text">
               {toPersianDigits(currentIdx + 1)} از {toPersianDigits(questions.length)}
             </span>
           </div>
@@ -234,7 +307,7 @@ export default function LessonPage() {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(progress)}
-            aria-label={`پیشرفت درس: ${Math.round(progress)} درصد`}
+            aria-label={`پیشرفت درس: ${toPersianDigits(Math.round(progress))} درصد`}
             className="h-2 bg-surface-subtle rounded-full overflow-hidden"
           >
             <motion.div
@@ -262,6 +335,7 @@ export default function LessonPage() {
               transition={{ type: 'spring', stiffness: 300, damping: 28 }}
             >
               <QuizCard
+                ramp="lessons"
                 question={question}
                 onCorrect={() => {
                   question.correctWord && handleItemInteraction(question.correctWord.id)

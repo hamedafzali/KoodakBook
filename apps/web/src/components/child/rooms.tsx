@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import CharacterAvatar from '@/components/child/CharacterAvatar'
+import { softClayVars } from '@/components/child/clay'
 import { MODULE, ModuleCard, SectionTitle } from '@/components/child/kit'
 import type { ModuleKey } from '@/components/child/kit'
 import type { AppCharacter } from '@koodakbook/shared'
@@ -104,8 +105,10 @@ export function RoomSections({ friends = [], band = 2 }: { friends?: AppCharacte
               <Link key={f.slug} href={`/child/friends/${f.slug}`} aria-label={`برو پیش ${f.name_persian}`}>
                 <motion.div
                   whileTap={{ scale: 0.93 }}
+                  tabIndex={-1}
                   transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-                  className={`bg-white rounded-2xl shadow-card flex flex-col items-center gap-1 py-3 justify-center ${big ? 'min-h-[136px]' : 'min-h-[112px]'}`}
+                  style={softClayVars('speak')}
+                  className={`clay-static flex flex-col items-center gap-1 py-3 justify-center ${big ? 'min-h-[136px]' : 'min-h-[112px]'}`}
                 >
                   <CharacterAvatar slug={f.slug} size={big ? 88 : 64} mood="idle" />
                   <p className={`font-bold text-text-primary text-center px-1 ${big ? 'text-sm' : 'text-xs'}`}>{f.name_persian}</p>

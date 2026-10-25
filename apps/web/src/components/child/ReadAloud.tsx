@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Icon } from '@/components/icons'
 import Mascot from '@/components/child/Mascot'
@@ -37,6 +37,9 @@ export default function ReadAloud({
   onDone: () => void
 }) {
   const [sent, setSent] = useState(false)
+  // onDone after the thank-you: cleared if the reader goes away first.
+  const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (doneTimer.current) clearTimeout(doneTimer.current) }, [])
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { state, elapsedMs, level, recording, start, stop, reset } = useRecorder()
@@ -59,7 +62,7 @@ export default function ReadAloud({
     setSending(false)
     if (!res.ok) { setError(res.error); return }
     setSent(true)
-    setTimeout(onDone, 2200)
+    doneTimer.current = setTimeout(onDone, 2200)
   }
 
   const micBlocked = state === 'denied' || state === 'unsupported'
@@ -176,7 +179,7 @@ function LevelRing({ level, active }: { level: number; active: boolean }) {
         animate={{ scale: active ? 1 + level * 0.34 : 1, opacity: active ? 0.55 + level * 0.35 : 0.4 }}
         transition={{ type: 'spring', stiffness: 320, damping: 22 }}
       />
-      <div className="relative w-[92px] h-[92px] rounded-full grid place-items-center text-white"
+      <div className="relative w-[92px] h-[92px] rounded-full grid place-items-center text-speak-ink"
         style={{ background: 'var(--ramp-speak-bright)' }}>
         <Icon name="record" size="xl" />
       </div>
@@ -199,12 +202,15 @@ function SelfPlayback({ url, durationMs }: { url: string; durationMs: number }) 
           if (!el) return
           if (playing) { el.pause() } else { el.play().then(() => setPlaying(true)).catch(() => {}) }
         }}
-        className="w-14 h-14 rounded-full grid place-items-center text-white shrink-0"
+        /* Dark speak ink on the bright fill: the white glyph measured ~2.5:1
+           on speak-bright (#F472B6), under WCAG 1.4.11's 3:1 for the only
+           thing identifying this control. */
+        className="w-14 h-14 rounded-full grid place-items-center text-speak-ink shrink-0"
         style={{ background: 'var(--ramp-speak-bright)' }}
       >
         <Icon name={playing ? 'pause' : 'play'} size="lg" />
       </button>
-      <div className="text-right flex-1">
+      <div className="text-start flex-1 min-w-0">
         <p className="font-bold text-text-primary persian-text">صدای من</p>
         <p className="text-sm text-text-secondary tabular-nums">{faDuration(durationMs)}</p>
       </div>

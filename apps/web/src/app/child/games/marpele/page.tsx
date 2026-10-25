@@ -10,10 +10,12 @@ import { characterEmoji } from '@/lib/characterEmoji'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
-import { ClayButton } from '@/components/child/clay'
+import { ClayButton, clayVars, softClayVars } from '@/components/child/clay'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 import { type QuizQuestion } from '@/components/child/QuizCard'
 import MarpeleBoard, { ChallengeModal, GameOverScreen, RollRow, TurnChip } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import type { AppCharacter, Child, Word } from '@koodakbook/shared'
 import { LADDERS, SIZE, SNAKES, buildQuestion, preferVisual, sleep, toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
@@ -40,15 +42,25 @@ export default function MarpelePage() {
   const [characters, setCharacters] = useState<AppCharacter[]>([])
   const [players, setPlayers] = useState<Player[] | null>(null)
   const [run, setRun] = useState(0)
+  // A failed fetch used to deal a board with no questions behind its ladders
+  // and snakes, and no child to save the answers to.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
+    let cancelled = false
     async function load() {
       const [wordsRes, childRes, charsRes] = await Promise.all([
         api.get<Word[]>('/api/words'),
         api.get<Child[]>('/api/children'),
         api.get<AppCharacter[]>('/api/characters'),
       ])
+      if (cancelled) return
+      if (!wordsRes.data || !childRes.data) {
+        setLoadError(wordsRes.error ?? childRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
+        return
+      }
       const child = pickChild(childRes.data ?? [])
       setChildId(child?.id ?? '')
       const lv = child?.level ?? 1
@@ -61,8 +73,12 @@ export default function MarpelePage() {
       setPool(preferVisual(base, w => !!(wordEmoji(w.english) || w.image_url)))
     }
     load()
-  }, [router])
+    return () => { cancelled = true }
+  }, [router, attempt])
 
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => { setLoadError(null); setAttempt(a => a + 1) }} />
+  }
   if (!pool) return <LoadingScreen message="در حال آماده کردن تخته..." />
 
   if (!players) {
@@ -121,7 +137,7 @@ function Setup({ childName, characters, onStart, onBack }: {
           {/* violet was this screen's own accent, related to nothing else in the
               app. The stepper is games-soft/games-ink now — the same pair every
               quiet control on a games screen uses. */}
-          <div className="inline-flex items-center gap-4 bg-white rounded-2xl p-2.5 shadow-card">
+          <div className="inline-flex items-center gap-4 clay-static p-2.5" style={softClayVars('games')}>
             <button
               onClick={() => setExtraHumans(n => Math.max(0, n - 1))}
               aria-label="یک بازیکن کمتر"
@@ -148,11 +164,14 @@ function Setup({ childName, characters, onStart, onBack }: {
                   disabled={!on && full}
                   onClick={() => toggleChar(ch.slug)}
                   aria-pressed={on}
-                  className={`rounded-2xl p-3 flex flex-col items-center gap-1 border-2 transition-colors ${
-                    on ? 'bg-games-bright border-games-deep' : 'bg-white border-transparent'} ${!on && full ? 'opacity-40' : ''}`}
+                  /* Chosen = the games clay, bright; not chosen = its soft face.
+                     The friend's real art from the character library, not a
+                     stand-in emoji (the emoji stays as the board token). */
+                  style={on ? clayVars('games') : softClayVars('games')}
+                  className={`clay-option p-3 flex flex-col items-center gap-1 ${!on && full ? 'opacity-40' : ''}`}
                 >
-                  <span className="text-2xl" aria-hidden="true">{characterEmoji(ch)}</span>
-                  <span className={`text-xs font-medium truncate w-full text-center ${on ? 'text-white' : 'text-text-primary'}`}>{ch.name_persian}</span>
+                  <CharacterAvatar slug={ch.slug} size={44} mood={on ? 'happy' : 'idle'} />
+                  <span className="text-xs font-bold truncate w-full text-center">{ch.name_persian}</span>
                 </button>
               )
             })}
@@ -163,7 +182,7 @@ function Setup({ childName, characters, onStart, onBack }: {
           {toPersianDigits(total)} بازیکن{total === 1 ? ' · تنها بازی می‌کنی' : ''}
         </p>
 
-        <ClayButton ramp="games" size="lg" icon="play" onClick={start}>شروع بازی 🎲</ClayButton>
+        <ClayButton ramp="games" size="lg" icon="play" onClick={start}>شروع بازی <span aria-hidden="true">🎲</span></ClayButton>
 
         {/* The secondary route out of this screen, so it stays an outline
             rather than a second clay slab — but on the games ramp, not the
@@ -305,7 +324,7 @@ function Game({ players, pool, level, childId, onReplay, onChangePlayers }: {
         note={stars > 0 ? `${toPersianDigits(stars)} پاسخ درست دادی — عالی بود!` : undefined}
       >
         <ClayButton ramp="games" size="lg" onClick={onReplay}>دوباره بازی کن</ClayButton>
-        <button onClick={onChangePlayers} className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold">
+        <button onClick={onChangePlayers} className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold min-h-[56px]">
           تغییر بازیکن‌ها
         </button>
       </GameOverScreen>

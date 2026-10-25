@@ -1,17 +1,22 @@
 import { useState } from 'react'
+import { toPersianDigits } from '@koodakbook/shared'
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View,
+  KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import type { AppCharacter } from '@koodakbook/shared'
 import { api } from '@/lib/api'
-import { setToken } from '@/lib/auth'
+import { authErrorMessage, setToken } from '@/lib/auth'
 import { setActiveChildId } from '@/lib/activeChild'
 import { getDeviceToken, setDeviceToken } from '@/lib/deviceToken'
-import { characterEmoji } from '@/lib/characterEmoji'
 import ScreenBackground from '@/components/ScreenBackground'
-import { StoryScene } from '@/components/AuthScene'
-import { auth, colors, fonts } from '@/lib/theme'
+import { AuthField, AuthHero, AuthNote, AuthSheet, AuthTitle } from '@/components/AuthScene'
+import { ClayButton, ClayCard, TextButton } from '@/components/Clay'
+import FriendAvatar from '@/components/FriendAvatar'
+import { Icon, type IconName } from '@/components/Icon'
+import LoadState from '@/components/LoadState'
+import { ParentLock } from '@/components/Illustrations'
+import { auth, clay, colors, fonts, radii, ramps, spacing, textSize, ui } from '@/lib/theme'
 
 type Mode = 'parent' | 'kid'
 
@@ -34,7 +39,10 @@ export default function Login() {
 
   const [kidStep, setKidStep] = useState<KidStep>('name')
   const [child, setChild] = useState<{ id: string; name: string } | null>(null)
-  const [characters, setCharacters] = useState<AppCharacter[]>([])
+  const [characters, setCharacters] = useState<AppCharacter[] | null>(null)
+  // The picture grid's own load: a failed /api/characters used to leave an
+  // empty grid the child could never get past.
+  const [charsError, setCharsError] = useState<string | null>(null)
   const [picked, setPicked] = useState<string[]>([])
   const [pin, setPin] = useState('')
 
@@ -42,7 +50,8 @@ export default function Login() {
     setBusy(true); setError(null)
     const res = await api.post<{ token: string; user_id: string }>('/api/auth/login', { email: email.trim(), password })
     setBusy(false)
-    if (!res.data) { setError(res.error ?? 'ورود ناموفق بود'); return }
+    // No token is sent on login, so a 401 can only mean the credentials.
+    if (!res.data) { setError(authErrorMessage(res, 'ورود ناموفق بود. دوباره تلاش کنید', { 401: 'ایمیل یا رمز عبور اشتباه است' })); return }
     await setToken(res.data.token)
     router.replace('/children')
   }
@@ -56,6 +65,14 @@ export default function Login() {
 
   function resetKidFlow() {
     setKidStep('name'); setChild(null); setPicked([]); setPin(''); setError(null)
+    setCharacters(null); setCharsError(null)
+  }
+
+  async function loadCharacters() {
+    setCharsError(null)
+    const chars = await api.get<AppCharacter[]>('/api/characters')
+    if (chars.data?.length) setCharacters(chars.data)
+    else setCharsError(chars.error || 'اتصال برقرار نشد. دوباره تلاش کن')
   }
 
   async function submitUsername() {
@@ -63,13 +80,12 @@ export default function Login() {
     const res = await api.post<{ token?: string; child_id: string; child_name: string; needs_picture_password?: boolean }>(
       '/api/auth/child-login', { username: username.trim().toLowerCase() })
     setBusy(false)
-    if (!res.data) { setError(res.error ?? 'ورود ناموفق بود'); return }
+    if (!res.data) { setError(authErrorMessage(res, 'ورود ناموفق بود. دوباره امتحان کن')); return }
 
     if (res.data.needs_picture_password) {
       setChild({ id: res.data.child_id, name: res.data.child_name })
-      const chars = await api.get<AppCharacter[]>('/api/characters')
-      setCharacters(chars.data ?? [])
       setKidStep('picture')
+      await loadCharacters()
       return
     }
     await finishKidLogin(res.data.token!, res.data.child_id)
@@ -88,7 +104,7 @@ export default function Login() {
       { child_id: child.id, slugs: next, device_token: deviceToken ?? undefined }
     )
     setBusy(false)
-    if (!res.data) { setError('یک مشکلی پیش آمد — دوباره امتحان کن'); setPicked([]); return }
+    if (!res.data) { setError(authErrorMessage(res, 'یک مشکلی پیش آمد — دوباره امتحان کن')); setPicked([]); return }
 
     if (!res.data.ok) {
       setPicked([])
@@ -112,7 +128,7 @@ export default function Login() {
       '/api/auth/child-login/bind-device', { child_id: child.id, pin }
     )
     setBusy(false)
-    if (!res.data) { setError('یک مشکلی پیش آمد — دوباره امتحان کن'); return }
+    if (!res.data) { setError(authErrorMessage(res, 'یک مشکلی پیش آمد — دوباره امتحان کن')); return }
     if (!res.data.ok) {
       setPin('')
       setError(res.data.locked ? 'تلاش‌های زیاد. چند دقیقه دیگر دوباره امتحان کن' : 'پین اشتباه است')
@@ -121,182 +137,219 @@ export default function Login() {
     await finishKidLogin(res.data.token!, res.data.child_id, res.data.device_token)
   }
 
-  return (
-    <ScreenBackground variant="warm" decor>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-      <StoryScene />
-      <Text style={styles.title}>کودک‌ بوک</Text>
-      {expired === '1' && <Text style={styles.expired}>نشست شما تمام شد — دوباره وارد شوید</Text>}
+  const title = mode === 'parent'
+    ? 'ورود به کودک‌بوک'
+    : kidStep === 'picture' ? `سلام ${child?.name ?? ''}!`
+    : kidStep === 'parent_pin' ? 'یک بار با کمک بزرگ‌ترها'
+    : 'سلام! بیا وارد شویم'
+  const lead = mode === 'parent'
+    ? 'حساب والدین: با ایمیل و رمز عبور'
+    : kidStep === 'picture' ? '۳ دوستت را به ترتیب لمس کن'
+    : kidStep === 'parent_pin' ? undefined
+    : 'اسمی که مامان یا بابا برایت ساخته را بنویس'
 
-      <View style={styles.tabs}>
-        <Pressable style={[styles.tab, mode === 'parent' && styles.tabActive]} onPress={() => setMode('parent')}>
-          <Text style={[styles.tabText, mode === 'parent' && styles.tabTextActive]}>والدین</Text>
-        </Pressable>
-        <Pressable style={[styles.tab, mode === 'kid' && styles.tabActive]} onPress={() => { setMode('kid'); resetKidFlow() }}>
-          <Text style={[styles.tabText, mode === 'kid' && styles.tabTextActive]}>بچه‌ها</Text>
-        </Pressable>
+  return (
+    <ScreenBackground variant="warm">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+      <AuthHero character="simorgh" emotion={mode === 'kid' ? 'encouraging' : 'happy'} motif="sun" />
+      <AuthSheet>
+      <AuthTitle title={title} lead={lead} />
+      {expired === '1' && <AuthNote text="نشست شما تمام شد — دوباره وارد شوید" tone="info" />}
+
+      {/* Who is signing in. A tab bar, not two buttons: the choice swaps the
+          form below. */}
+      <View style={styles.tabs} accessibilityRole="tablist">
+        <ModeTab label="والدین" icon="users" active={mode === 'parent'} onPress={() => { setMode('parent'); setError(null) }} />
+        <ModeTab label="بچه‌ها" icon="star" active={mode === 'kid'} onPress={() => { setMode('kid'); resetKidFlow() }} />
       </View>
 
       {mode === 'parent' && (
         <>
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="ایمیل"
-              placeholderTextColor={colors.muted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="رمز عبور"
-              placeholderTextColor={colors.muted}
-              secureTextEntry
-              textContentType="password"
-              value={password}
-              onChangeText={setPassword}
-            />
-          </View>
+          <AuthField
+            label="ایمیل"
+            placeholder="name@example.com"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            textContentType="emailAddress"
+            autoComplete="email"
+            returnKeyType="next"
+            value={email}
+            onChangeText={(t) => { setEmail(t); setError(null) }}
+            error={error}
+          />
+          <AuthField
+            label="رمز عبور"
+            placeholder="رمز عبور"
+            secureTextEntry
+            textContentType="password"
+            autoComplete="password"
+            returnKeyType="go"
+            onSubmitEditing={() => { if (!busy) void loginParent() }}
+            value={password}
+            onChangeText={(t) => { setPassword(t); setError(null) }}
+            error={error}
+          />
 
-          {error && <Text style={styles.error}>{error}</Text>}
+          {error && <AuthNote text={error} />}
 
-          <Pressable style={[styles.button, busy && { opacity: 0.6 }]} disabled={busy} onPress={loginParent}>
-            {busy ? <ActivityIndicator color={auth.login.onAccent} /> : <Text style={styles.buttonText}>ورود</Text>}
-          </Pressable>
+          <ClayButton ramp={ramps.brand} label="ورود" busy={busy} onPress={loginParent} />
 
-          <Pressable onPress={() => router.replace('/signup')} hitSlop={8}>
-            <Text style={styles.signupLink}>حساب ندارید؟ ثبت‌نام رایگان</Text>
-          </Pressable>
+          <TextButton
+            label="حساب ندارید؟ ثبت‌نام رایگان"
+            accessibilityRole="link"
+            color={auth.signup.accentDeep}
+            onPress={() => router.replace('/signup')}
+          />
         </>
       )}
 
       {mode === 'kid' && kidStep === 'name' && (
         <>
-          <View style={styles.form}>
-            <Text style={styles.hint}>اسمی که مامان یا بابا برایت ساخته را بنویس</Text>
-            <TextInput
-              style={[styles.input, styles.kidInput]}
-              placeholder="username"
-              placeholderTextColor={colors.muted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={username}
-              onChangeText={setUsername}
-            />
-          </View>
+          <AuthField
+            label="نام کاربری"
+            placeholder="username"
+            align="center"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={() => { if (!busy && username.trim()) void submitUsername() }}
+            value={username}
+            onChangeText={(t) => { setUsername(t); setError(null) }}
+            error={error}
+          />
 
-          {error && <Text style={styles.error}>{error}</Text>}
+          {error && <AuthNote text={error} />}
 
-          <Pressable style={[styles.button, busy && { opacity: 0.6 }]} disabled={busy} onPress={submitUsername}>
-            {busy ? <ActivityIndicator color={auth.login.onAccent} /> : <Text style={styles.buttonText}>ورود</Text>}
-          </Pressable>
+          <ClayButton ramp={ramps.brand} label="ورود" busy={busy} disabled={!username.trim()} onPress={submitUsername} />
         </>
       )}
 
       {mode === 'kid' && kidStep === 'picture' && (
-        <View style={styles.form}>
-          <Text style={styles.hint}>سلام {child?.name}! ۳ دوستت را به ترتیب لمس کن</Text>
-
-          <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <>
+          {/* The progress a sighted child sees (how many dots are filled),
+              read out as a count; never which friends were tapped. */}
+          <View
+            style={styles.dots}
+            accessible
+            accessibilityLabel={`${toPersianDigits(picked.length)} از ۳`}
+          >
             {[0, 1, 2].map(i => (
               <View key={i} style={[styles.dot, i < picked.length && styles.dotFilled]} />
             ))}
           </View>
 
-          {error && <Text style={styles.error}>{error}</Text>}
+          {error && <AuthNote text={error} />}
 
-          <View style={styles.charGrid}>
-            {characters.map(c => (
-              <Pressable
-                key={c.slug}
-                style={styles.charCell}
-                disabled={busy}
-                onPress={() => tapCharacter(c.slug)}
-              >
-                <Text style={{ fontSize: 40 }}>{characterEmoji(c)}</Text>
-              </Pressable>
-            ))}
-          </View>
+          {characters ? (
+            <View style={styles.charGrid}>
+              {characters.map(c => (
+                <ClayCard
+                  key={c.slug}
+                  ramp={ramps.review}
+                  tone="soft"
+                  edge={clay.edgeSm}
+                  radius={radii.md}
+                  disabled={busy}
+                  onPress={() => { void tapCharacter(c.slug) }}
+                  accessibilityLabel={c.name_persian}
+                  faceStyle={styles.charFace}
+                >
+                  <FriendAvatar character={c} size={60} />
+                </ClayCard>
+              ))}
+            </View>
+          ) : (
+            <LoadState error={charsError} onRetry={() => { void loadCharacters() }} />
+          )}
 
-          <Pressable onPress={resetKidFlow} hitSlop={8}>
-            <Text style={styles.signupLink}>اسم دیگری وارد کنم</Text>
-          </Pressable>
-        </View>
+          <TextButton label="اسم دیگری وارد کنم" onPress={resetKidFlow} />
+        </>
       )}
 
       {mode === 'kid' && kidStep === 'parent_pin' && (
-        <View style={styles.form}>
-          <Text style={styles.title}>🔒</Text>
-          <Text style={styles.hint}>
-            این دستگاه جدید است — برای اولین ورود {child?.name} روی این دستگاه، از مامان یا بابا بخواه پین را وارد کند
-          </Text>
-          <TextInput
-            style={[styles.input, styles.kidInput]}
+        <>
+          <View style={styles.lockRow}>
+            <ParentLock size={64} />
+            <Text style={styles.hint}>
+              این دستگاه جدید است — برای اولین ورود {child?.name} روی این دستگاه، از مامان یا بابا بخواه پین را وارد کند
+            </Text>
+          </View>
+          <AuthField
+            label="پین والدین"
             placeholder="••••"
-            placeholderTextColor={colors.muted}
+            align="center"
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
             value={pin}
             onChangeText={t => { setPin(t.replace(/\D/g, '').slice(0, 4)); setError(null) }}
+            error={error}
           />
 
-          {error && <Text style={styles.error}>{error}</Text>}
+          {error && <AuthNote text={error} />}
 
-          <Pressable
-            style={[styles.button, (busy || pin.length < 4) && { opacity: 0.6 }]}
-            disabled={busy || pin.length < 4}
+          <ClayButton
+            ramp={ramps.brand} label="تأیید" busy={busy} disabled={pin.length < 4}
             onPress={submitParentPin}
-          >
-            {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>تأیید</Text>}
-          </Pressable>
+          />
 
-          <Pressable onPress={resetKidFlow} hitSlop={8}>
-            <Text style={styles.signupLink}>بازگشت</Text>
-          </Pressable>
-        </View>
+          <TextButton label="بازگشت" onPress={resetKidFlow} />
+        </>
       )}
+      </AuthSheet>
+      </ScrollView>
       </KeyboardAvoidingView>
     </ScreenBackground>
   )
 }
 
+/** One segment of the parent/kid switch: 44pt, icon + word, the active one
+ *  on the brand's bright face with its ink (never colour alone: the icon and
+ *  weight change too, and the state is reported as selected). */
+function ModeTab({ label, icon, active, onPress }: { label: string; icon: IconName; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.tab, active && styles.tabActive, pressed && !active && styles.tabPressed]}
+      onPress={onPress}
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
+    >
+      <Icon name={icon} color={active ? ramps.brand.ink : ui.textMuted} size={18} filled={active && icon === 'star'} />
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
+    </Pressable>
+  )
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 },
-  title: { fontSize: 34, fontFamily: fonts.bold, color: colors.text },
-  expired: { color: colors.danger, fontFamily: fonts.regular, fontSize: 14 },
-  tabs: { flexDirection: 'row', backgroundColor: colors.primarySoft, borderRadius: 14, padding: 4, gap: 4 },
-  tab: { paddingVertical: 8, paddingHorizontal: 24, borderRadius: 10 },
-  tabActive: { backgroundColor: auth.login.accent },
-  tabText: { color: colors.onPrimary, fontFamily: fonts.medium, fontSize: 15 },
-  tabTextActive: { color: colors.onPrimary },
-  form: { width: '100%', maxWidth: 360, gap: 10, alignItems: 'center' },
-  hint: { color: colors.muted, fontFamily: fonts.regular, fontSize: 13, textAlign: 'center' },
-  input: {
-    width: '100%', backgroundColor: colors.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
-    fontSize: 16, fontFamily: fonts.regular, color: colors.text, textAlign: 'right',
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1 },
+  tabs: {
+    flexDirection: 'row', backgroundColor: ramps.brand.soft, borderRadius: radii.pill,
+    padding: spacing.xs, gap: spacing.xs, borderWidth: 2, borderColor: ui.divider,
   },
-  kidInput: { textAlign: 'center', fontSize: 20, letterSpacing: 1 },
-  error: { color: colors.danger, fontFamily: fonts.regular, fontSize: 14, textAlign: 'center' },
-  button: {
-    backgroundColor: auth.login.accent, borderRadius: 16, paddingVertical: 14,
-    width: '100%', maxWidth: 360, alignItems: 'center',
+  tab: {
+    flex: 1, flexDirection: 'row', gap: spacing.xs + 2, minHeight: ui.hit,
+    alignItems: 'center', justifyContent: 'center', borderRadius: radii.pill, paddingHorizontal: spacing.sm,
   },
-  buttonText: { color: auth.login.onAccent, fontSize: 17, fontFamily: fonts.bold },
-  signupLink: { color: '#059669', fontFamily: fonts.medium, fontSize: 14, marginTop: 4 },
-  dots: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.primarySoft },
-  dotFilled: { backgroundColor: auth.login.accent, borderColor: auth.login.accent },
-  charGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
-  charCell: {
-    width: 80, height: 80, borderRadius: 18, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
+  tabActive: { backgroundColor: ramps.brand.bright, borderBottomWidth: 3, borderBottomColor: ramps.brand.deep },
+  tabPressed: { opacity: 0.7 },
+  tabText: { color: ui.textMuted, fontFamily: fonts.medium, fontSize: textSize.small },
+  tabTextActive: { color: ramps.brand.ink, fontFamily: fonts.bold },
+  hint: { flex: 1, color: colors.text, fontFamily: fonts.medium, fontSize: textSize.caption + 1, lineHeight: 24 },
+  lockRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4,
+    backgroundColor: ramps.brand.soft, borderRadius: radii.md, padding: spacing.sm + 4,
   },
+  dots: { flexDirection: 'row', gap: spacing.sm + 2, justifyContent: 'center' },
+  dot: { width: 16, height: 16, borderRadius: radii.pill, backgroundColor: colors.card, borderWidth: 2, borderColor: ui.track },
+  dotFilled: { backgroundColor: ramps.brand.bright, borderColor: ramps.brand.deep },
+  charGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4, justifyContent: 'center' },
+  charFace: { width: 80, height: 80, alignItems: 'center', justifyContent: 'center' },
 })

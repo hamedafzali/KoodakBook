@@ -158,6 +158,9 @@
 
   /* Neutral — Warm */
   --color-warm-white:    #FEFAF5;
+  /* The warm "desk" around the child app's stage on a wide screen (was a
+     literal bg-[#ece2d1] in child/layout.tsx). */
+  --color-stage-backdrop:#ECE2D1;
   --color-surface:       #FFFFFF;
   --color-surface-subtle:#F5EFE6;
   --color-border:        #E8DDD0;
@@ -349,10 +352,13 @@ body {
 }
 
 /* ── Focus ─────────────────────────────────────────────────────────────────── */
+/* Deep brand (#745300, ~7:1 on cream) instead of --color-brand (#D4871A,
+   ~2.7:1). No border-radius here: outside Tailwind's layers it overrode
+   every rounded-* button and squared its corners while focused; the
+   outline already follows the element's own radius. */
 :focus-visible {
-  outline: 3px solid var(--color-brand);
+  outline: 3px solid var(--ramp-brand-deep);
   outline-offset: 3px;
-  border-radius: 4px;
 }
 
 /* ── Touch Targets ─────────────────────────────────────────────────────────── */
@@ -379,6 +385,33 @@ body {
  * card  = resting cards; raised = the one primary action per screen. */
 .shadow-card { box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.06); }
 .shadow-raised { box-shadow: 0 2px 4px rgb(15 23 42 / 0.06), 0 12px 28px rgb(245 158 11 / 0.22); }
+
+/* Child Home's "continue" card (2026-09-28 visual-fidelity pass): the one
+   deep surface on the cream page, in the reference's indigo family — the
+   single decision the app makes for the child should be the darkest, most
+   certain thing on screen. White text only: #FFF on the lighter stop
+   (#4F46E5) is 6.3:1, on the deeper stop 10:1+. The soft top highlight is
+   the same light direction `.clay` uses. */
+.card-indigo {
+  --indigo-from: #312E81;
+  --indigo-to: #4F46E5;
+  background:
+    radial-gradient(ellipse 60% 70% at 85% 0%, rgb(255 255 255 / 0.16), transparent 60%),
+    linear-gradient(115deg, var(--indigo-to), var(--indigo-from));
+  color: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.18),
+    0 4px 0 #26236B,
+    0 14px 30px rgb(49 46 129 / 0.32);
+}
+
+/* The quieter home cards — reward (warm) and parent (lavender) — share one
+   soft recipe so they read as a family below the loud continue card. */
+.card-soft {
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 2px 0 rgb(255 255 255 / 0.7), 0 4px 14px rgb(61 48 40 / 0.07);
+}
 
 /* ── Clay surfaces — the CHILD register ─────────────────────────────────────
  * Two registers, deliberately: the child app is clay (thick, pressable,
@@ -455,6 +488,31 @@ body {
   box-shadow:
     inset 0 2px 0 rgb(255 255 255 / 0.6),
     0 4px 14px color-mix(in oklab, var(--clay-edge, #3D3028) 26%, transparent);
+}
+
+/* An answer tile (quiz options, math answers, phonics choices): the quieter
+ * `soft` clay face -- mobile's ClaySurface tone="soft" -- whose colours come
+ * from the same three vars (softClayVars / answerVars in clay.tsx). Unlike
+ * `.clay` it keeps its colours when disabled: once a child has answered, every
+ * option is disabled, and the right/wrong faces are exactly what they need
+ * to see. Not for primary actions -- those stay `.clay` (ClayButton). */
+.clay-option {
+  background: var(--clay-fill, var(--color-surface));
+  color: var(--clay-ink, var(--color-text-primary));
+  border: 2px solid color-mix(in oklab, var(--clay-edge, var(--color-border)) 45%, transparent);
+  border-bottom: 5px solid var(--clay-edge, var(--color-border));
+  border-radius: var(--clay-radius, var(--radius-md));
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.55),
+    0 4px 12px color-mix(in oklab, var(--clay-edge, #3D3028) 20%, transparent);
+  transition:
+    transform var(--dur-press) var(--ease-bounce),
+    border-bottom-width var(--dur-press) var(--ease-bounce),
+    background-color var(--dur-press) var(--ease-out);
+}
+.clay-option:not(:disabled):active {
+  transform: translateY(3px);
+  border-bottom-width: 2px;
 }
 
 /* Disabled/locked clay: keeps the shape so the layout doesn't shift, drops

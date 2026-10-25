@@ -10,13 +10,14 @@ import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { speakOrPlay, speakOrPlayFirst, initSpeech } from '@/lib/speech'
 import { audioCandidates } from '@/lib/premium'
+import { useTimers } from '@/lib/useTimers'
 import {
   SHORT_VOWELS, PHONICS_CONSONANTS, phonicsSyllables, phonicsAudioUrl, toPersianDigits,
   type Syllable,
 } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
 import { SectionTitle, ClayButton } from '@/components/child/kit'
-import { ClayBar, clayVars, toneVars, type Tone } from '@/components/child/clay'
+import { ClayBar, clayVars, toneVars, answerVars, softClayVars, type Tone } from '@/components/child/clay'
 import Emoji from '@/components/shared/Emoji'
 
 const DEMO = 'ب' // base consonant used to demonstrate each vowel mark
@@ -64,19 +65,19 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
   const reduce = useReducedMotion()
   if (!demo) return (
     <div
-      className="bg-white/80 border-2 border-dashed rounded-2xl h-28 flex items-center justify-center persian-text text-sm text-center px-4"
-      style={{ borderColor: 'var(--ramp-phonics-soft)', color: 'var(--ramp-phonics-ink)' }}
+      className="bg-surface/80 border-2 border-dashed rounded-2xl h-28 flex items-center justify-center persian-text text-sm text-center px-4"
+      style={{ borderColor: 'var(--ramp-phonics-bright)', color: 'var(--ramp-phonics-ink)' }}
     >
       روی یک هجا ضربه بزن تا ببینی چطور ساخته می‌شود ✨
     </div>
   )
   if (reduce) return (
-    <div className="bg-white rounded-2xl h-28 shadow-card flex items-center justify-center">
+    <div className="clay-static h-28 flex items-center justify-center" style={softClayVars('phonics')}>
       <span className="text-6xl font-bold" style={{ color: 'var(--ramp-phonics-ink)' }}>{demo.text}</span>
     </div>
   )
   return (
-    <div key={demo.run} className="bg-white rounded-2xl h-28 shadow-card relative overflow-hidden" aria-label={`ساخت هجای ${demo.text}`}>
+    <div key={demo.run} className="clay-static h-28 relative overflow-hidden" style={softClayVars('phonics')} aria-label={`ساخت هجای ${demo.text}`}>
       {/* the two parts fly together… */}
       <motion.span className="absolute inset-0 flex items-center justify-center text-6xl font-bold text-text-primary"
         initial={{ x: 70, opacity: 0 }}
@@ -101,11 +102,11 @@ function MergeStage({ demo }: { demo: MergeDemo | null }) {
         transition={{ duration: 1.05, times: [0, 0.55, 0.8, 1], ease: 'easeOut' }}>
         {demo.text}
       </motion.span>
-      <motion.span className="absolute left-4 top-3 text-xl" initial={{ scale: 0 }}
+      <motion.span className="absolute end-4 top-3 text-xl" initial={{ scale: 0 }}
         animate={{ scale: [0, 0, 1.3, 0] }} transition={{ duration: 1.3, times: [0, 0.6, 0.8, 1] }}>
         <span className="text-3xl" aria-hidden="true">✨</span>
       </motion.span>
-      <span className="absolute right-3 bottom-2 text-[11px] text-text-secondary persian-text">{demo.markName}</span>
+      <span className="absolute start-3 bottom-2 text-[11px] text-text-secondary persian-text">{demo.markName}</span>
     </div>
   )
 }
@@ -122,6 +123,8 @@ export default function PhonicsPage() {
 
   const [demo, setDemo] = useState<MergeDemo | null>(null)
   const demoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // The merge demo's audio fires 550ms after the tap: not after leaving.
+  useEffect(() => () => { if (demoTimer.current) clearTimeout(demoTimer.current) }, [])
 
   function say(text: string, slug: string) {
     playTap()
@@ -144,7 +147,7 @@ export default function PhonicsPage() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
           <Mascot size={130} mood="excited" />
         </motion.div>
-        <h1 className="font-display text-h1 font-black text-text-primary">آفرین! 🌟</h1>
+        <h1 className="font-display text-h1 font-black text-text-primary">آفرین! <span aria-hidden="true">🌟</span></h1>
         <p className="text-body text-text-secondary persian-text">حالا می‌تونی حرف‌ها رو بخونی!</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <ClayButton ramp="phonics" size="lg" icon="retry" onClick={() => setPhase('quiz')}>
@@ -152,7 +155,7 @@ export default function PhonicsPage() {
           </ClayButton>
           <motion.button onClick={() => router.push('/child/home')} whileTap={{ scale: 0.96 }}
             className="w-full py-3.5 rounded-2xl border-2 border-border text-text-primary font-bold min-h-[56px]">
-            برگشت به خانه 🏠
+            برگشت به خانه <span aria-hidden="true">🏠</span>
           </motion.button>
         </div>
       </div>
@@ -212,7 +215,8 @@ export default function PhonicsPage() {
                 const slug = c.latin + v.latin
                 return (
                   <motion.button key={slug} onClick={() => demoMerge(c.ch, v.mark, v.namePersian, text, slug)} whileTap={{ scale: 0.92 }}
-                    className="bg-white rounded-2xl py-3 shadow-card flex flex-col items-center gap-0.5 touch-target-child"
+                    className="clay-option py-3 flex flex-col items-center gap-0.5 touch-target-child"
+                    style={softClayVars('phonics')}
                     aria-label={`بخوان: ${text}`}>
                     <span className="text-3xl font-bold text-text-primary">{text}</span>
                     <span className="text-[11px] text-text-secondary ltr">{slug}</span>
@@ -252,6 +256,9 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
   const [picked, setPicked] = useState<string | null>(null)
   const [correctCount, setCorrectCount] = useState(0)
   const firedRef = useRef(false)
+  // The advance (and the confetti/complete sound on the last one) dies with
+  // the screen instead of firing after the child left.
+  const later = useTimers()
   const q = questions[idx]
 
   // auto-play the target when the question appears
@@ -264,7 +271,7 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
     setPicked(slug)
     const ok = slug === q.correct.slug
     if (ok) { playSuccess(); setCorrectCount(c => c + 1) } else { playErrorSound() }
-    setTimeout(() => {
+    later(() => {
       if (idx >= questions.length - 1) {
         if (!firedRef.current) {
           firedRef.current = true
@@ -278,13 +285,13 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
 
   return (
     <div className="min-h-screen child-bg flex flex-col">
-      <div className="bg-white/90 backdrop-blur-md border-b border-border px-5 py-3 flex items-center gap-3">
+      <div className="bg-surface/90 backdrop-blur-md border-b border-border px-5 py-3 flex items-center gap-3">
         <motion.button onClick={onExit} whileTap={{ scale: 0.85 }} aria-label="برگشت"
           className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle">
           <Icon name="back" size="md" strokeWidth={2.5} />
         </motion.button>
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1.5">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
             <h1 className="font-bold text-text-primary text-sm">گوش کن و انتخاب کن</h1>
             <span className="text-sm font-bold tabular-nums persian-text" style={{ color: 'var(--ramp-phonics-ink)' }}>
               {toPersianDigits(idx + 1)} از {toPersianDigits(questions.length)}
@@ -311,19 +318,19 @@ function PhonicsQuiz({ all, say, onDone, onExit }: {
             {q.options.map(opt => {
               const isCorrect = opt.slug === q.correct.slug
               const show = picked !== null
-              /* Feedback greens and reds are semantic, not the module hue, so
-               * they stay outside the ramps — but at the -700 steps, where the
-               * text clears AA on its own tint (the -600/-400 pair it replaced
-               * did not). The dimmed non-answers go to slate-500 (4.8:1), not
-               * gray-400 (2.6:1) — a wrong answer still has to be readable. */
-              const cls = show
-                ? isCorrect ? 'bg-emerald-50 border-emerald-600 text-emerald-800'
-                  : opt.slug === picked ? 'bg-rose-50 border-rose-400 text-rose-700' : 'bg-white border-border text-text-secondary'
-                : 'bg-white border-border text-text-primary'
+              /* Answer tiles in the shared answer faces (clay.tsx answerVars,
+               * = mobile's answerRamps): phonics' soft clay until a pick, then
+               * the right one bright green and a wrong pick pale rose — each
+               * face's ink is solved for AA on it. */
+              const state = !show ? null : isCorrect ? 'right' : opt.slug === picked ? 'wrong' : null
               return (
                 <motion.button key={opt.slug} onClick={() => choose(opt.slug)} whileTap={{ scale: 0.95 }}
-                  className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target-child ${cls}`}
-                  aria-label={`انتخاب ${opt.text}`}>
+                  className="clay-option py-6 font-bold text-4xl touch-target-child"
+                  style={answerVars(state, 'phonics')}
+                  /* Result joins the name only after a pick (never before —
+                     that would give the answer away), same rule as QuizCard. */
+                  aria-label={`انتخاب ${opt.text}${!show ? '' : opt.slug === picked ? (isCorrect ? '، درست' : '، نادرست') : isCorrect ? '، جواب درست' : ''}`}
+                  aria-pressed={show ? opt.slug === picked : undefined}>
                   {opt.text}
                 </motion.button>
               )

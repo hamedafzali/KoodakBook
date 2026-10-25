@@ -1,57 +1,82 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, fonts, tones } from '@/lib/theme'
-import ScreenHeader from '@/components/ScreenHeader'
+import ScreenBackground from '@/components/ScreenBackground'
+import { BazaarArt, CountingArt, DigitsArt, GameRoomCard } from '@/components/GameKit'
+import { ramps, spacing } from '@/lib/theme'
+import { RoomBand } from '@/components/RoomScene'
 import BottomNav from '@/components/BottomNav'
 
-/** دنیای اعداد — mobile hub for the math games (web: /child/math). */
+/** دنیای اعداد — mobile hub for the math games (web: /child/math). Each game
+ *  is pitched at an age band (see each screen's header comment), shown as the
+ *  card's tag so a parent or child can pick the right one. */
 const GAMES = [
-  { key: 'counting', emoji: '🍎', title: 'شمارش', sub: 'ضربه بزن و بشمار', href: '/math/counting' as const, tone: tones.emerald },
-  { key: 'digits', emoji: '۳', title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', href: '/math/digits' as const, tone: tones.sky },
-  { key: 'bazaar', emoji: '🛒', title: 'بازار', sub: 'با تومان خرید کن', href: '/math/bazaar' as const, tone: tones.amber },
+  { key: 'counting', Art: CountingArt, title: 'شمارش', sub: 'ضربه بزن و بشمار', tag: '۳ تا ۵ سال', href: '/math/counting' as const },
+  { key: 'digits', Art: DigitsArt, title: 'رقم‌های فارسی', sub: '۷ همان 7 است!', tag: '۶ و ۷ سال', href: '/math/digits' as const },
+  { key: 'bazaar', Art: BazaarArt, title: 'بازار', sub: 'با تومان خرید کن', tag: '۸ تا ۱۰ سال', href: '/math/bazaar' as const },
 ]
+
+// 2026-09-28 visual-fidelity pass: the same room layout as the games hub.
+// خرسی, math's host (web kit.tsx MODULE mapping), greets from an illustrated
+// band; the three games are illustrated clay cards (apples being counted,
+// ۷ = 7, a bazaar stall), counting as the wide hero. Was three plain rows
+// and an empty half page.
+const GAP = spacing.sm + spacing.xs
 
 export default function MathHub() {
   const insets = useSafeAreaInsets()
+  const [hero, ...rest] = GAMES
   return (
-    <View style={{ flex: 1 }}>
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
-    >
-      <ScreenHeader title="دنیای اعداد 🔢" />
+    <ScreenBackground variant="warm">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 92 }]}>
+        {/* The rooms' shared header (RoomScene, 2026-09-29): the room's
+            landscape full-bleed under the status bar, back + title, and the
+            host greeting the child in a speech bubble. Replaces ScreenHeader
+            + GameKit's own host band (same words, same host, same back). */}
+        <View style={styles.bandWrap}>
+          <RoomBand
+            ramp={ramps.math}
+            character="khersi"
+            size="tall"
+            topInset={insets.top}
+            title="دنیای اعداد"
+            speechTitle="سلام! من خرسی‌ام"
+            speech="بیا با هم با عددها بازی کنیم!"
+          />
+        </View>
 
-      {GAMES.map((g) => (
-        <Pressable
-          key={g.key}
-          style={[
-            styles.card,
-            { backgroundColor: g.tone.fill, borderBottomColor: g.tone.edge, borderBottomWidth: 4 },
-            !g.href && { opacity: 0.55 },
-          ]}
-          disabled={!g.href}
-          onPress={() => g.href && router.push(g.href)}
-        >
-          <Text style={{ fontSize: 40 }}>{g.emoji}</Text>
-          <View>
-            <Text style={[styles.gameTitle, { color: g.tone.ink }]}>{g.title}</Text>
-            <Text style={[styles.gameSub, { color: g.tone.ink, opacity: 0.75 }]}>{g.sub}</Text>
-          </View>
-        </Pressable>
-      ))}
-    </ScrollView>
-    <BottomNav />
-    </View>
+        <GameRoomCard
+          hero
+          ramp={ramps.math}
+          title={hero.title}
+          sub={hero.sub}
+          tag={hero.tag}
+          art={<hero.Art />}
+          onPress={() => router.push(hero.href)}
+        />
+        <View style={styles.grid}>
+          {rest.map((g) => (
+            <GameRoomCard
+              key={g.key}
+              ramp={ramps.math}
+              title={g.title}
+              sub={g.sub}
+              tag={g.tag}
+              art={<g.Art />}
+              onPress={() => router.push(g.href)}
+            />
+          ))}
+        </View>
+      </ScrollView>
+      <BottomNav />
+    </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, gap: 12 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 6 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: 20, padding: 18 },
-  gameTitle: { fontSize: 18, fontFamily: fonts.display, color: colors.text },
-  gameSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
+  content: { paddingHorizontal: spacing.md, gap: GAP },
+  // Full-bleed: the band spans the screen; the cards keep the gutter.
+  bandWrap: { marginHorizontal: -spacing.md },
+  // Wraps and stretches: both cards in the row share the taller one's height.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
 })

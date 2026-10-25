@@ -212,9 +212,12 @@ export function TurnChip({ emoji, name, square, active }: {
         : { background: '#FFFFFF' }}
     >
       <span className="text-lg" aria-hidden="true">{emoji}</span>
-      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-white' : 'text-text-primary'}`}>{name}</span>
+      {/* Active chip: dark games ink on the bright fill, not white — white on
+          games-bright (#C084FC) measured ~2.6:1 (DESIGN_CHARTER.md: dark ink
+          on bright, white only on deep). */}
+      <span className={`text-xs font-bold max-w-[70px] truncate ${active ? 'text-games-ink' : 'text-text-primary'}`}>{name}</span>
       <span
-        className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/25 text-white' : 'bg-surface-subtle text-text-primary'}`}
+        className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[22px] text-center ${active ? 'bg-white/50 text-games-ink' : 'bg-surface-subtle text-text-primary'}`}
         aria-label={`خانه ${toPersianDigits(square)}`}
       >
         {toPersianDigits(square)}
@@ -253,7 +256,7 @@ export function ChallengeModal({ prompt, question, onResolve }: {
     <motion.div
       className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-5"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      role="dialog" aria-modal="true"
+      role="dialog" aria-modal="true" aria-label={prompt}
     >
       <motion.div
         className="bg-white rounded-3xl p-5 w-full max-w-sm flex flex-col gap-3"
@@ -261,6 +264,7 @@ export function ChallengeModal({ prompt, question, onResolve }: {
       >
         <p className="text-center font-bold text-text-primary persian-text">{prompt}</p>
         <QuizCard
+          ramp="games"
           question={question}
           onCorrect={() => onResolve(true)}
           onIncorrect={() => onResolve(false)}
@@ -292,7 +296,7 @@ export function GameOverScreen({ won, title, note, token, children }: {
       <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
         {children}
         {/* Was slate-400: 2.56:1, and the only way out of this screen. */}
-        <Link href="/child/home" className="text-sm text-text-secondary hover:text-text-primary mt-1">برگشت به خانه 🏠</Link>
+        <Link href="/child/home" className="text-sm text-text-secondary hover:text-text-primary mt-1 min-h-[48px] inline-flex items-center justify-center gap-1">برگشت به خانه <span aria-hidden="true">🏠</span></Link>
       </div>
     </div>
   )

@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "کودک‌ بوک",
+    "name": "کودک‌بوک",
     "slug": "koodakbook",
     "version": "0.1.0",
     "scheme": "koodakbook",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#FFF8EA",
+    "backgroundColor": "#FFF3DE",
     "newArchEnabled": true,
     "icon": "./assets/icon.png",
     "extra": {
       "supportsRTL": true,
+      "forcesRTL": true,
       "router": {},
       "eas": {
         "projectId": "6157380f-e9eb-448a-9995-2a4722f87947"
@@ -34,11 +35,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFF8EA",
+          "backgroundColor": "#FFF3DE",
           "resizeMode": "contain",
           "image": "./assets/icon.png"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "owner": "hamed.afzali"
   }

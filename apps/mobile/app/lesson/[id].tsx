@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AccessibilityInfo, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Badge, Child, Lesson, LessonItem, Promotion } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
-import QuizCard, { type QuizMode, type QuizQuestion } from '@/components/QuizCard'
+import QuizCard, { QuizTopBar, type QuizMode, type QuizQuestion } from '@/components/QuizCard'
 import RewardPopup from '@/components/RewardPopup'
+import CelebrationOverlay from '@/components/CelebrationOverlay'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
-import { colors, fonts } from '@/lib/theme'
+import { stopClip } from '@/lib/sound'
+import { fonts, radii, spacing, textSize, ui } from '@/lib/theme'
+import { lessonRoomStyle } from '@/lib/roomStyle'
+import LoadState, { EmptyState } from '@/components/LoadState'
+import ScreenBackground from '@/components/ScreenBackground'
+import { ClayButton, TextButton } from '@/components/Clay'
+import { RoomDoneCard } from '@/components/RoomScene'
 
 type LessonWithItems = Lesson & { items: LessonItem[] }
 
@@ -43,23 +50,63 @@ export default function LessonPlayer() {
   const [newBadge, setNewBadge] = useState<Badge | null>(null)
   const [completed, setCompleted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Bumped by LoadState's retry to re-run the load below.
+  const [reloadKey, setReloadKey] = useState(0)
+  const retry = () => { setError(null); setReloadKey((k) => k + 1) }
 
   useEffect(() => {
+    // Guards a response that lands after the child closed the lesson (or
+    // after `id` changed): it must not redirect or set state for a screen
+    // that's gone.
+    let cancelled = false
     async function load() {
       const activeId = await getActiveChildId()
+      if (cancelled) return
       if (!activeId) { router.replace('/children'); return }
       setChildId(activeId)
       const [lessonRes, childRes] = await Promise.all([
         api.get<LessonWithItems>(`/api/lessons/${id}`),
         api.get<Child[]>('/api/children'),
       ])
+      if (cancelled) return
       if (lessonRes.data) setLesson(lessonRes.data)
       else setError(lessonRes.error)
       const child = childRes.data?.find((c) => c.id === activeId)
       if (child) setChildLevel(child.level ?? 1)
     }
     load()
-  }, [id])
+    return () => { cancelled = true }
+  }, [id, reloadKey])
+
+  // The lesson's progress save. A failed POST used to land on the same
+  // completion screen as a saved one, so the lesson silently stayed
+  // unfinished. The celebration still shows either way; a failure adds a
+  // small note with a retry that re-sends the SAME score (scoreRef).
+  // savingRef: one request at a time, whatever the tap speed.
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'failed' | 'saved'>('idle')
+  const savingRef = useRef(false)
+  const scoreRef = useRef<number | null>(null)
+  const aliveRef = useRef(true)
+
+  // A word still playing (or still downloading) when the child closes the
+  // lesson must not talk over the screen they went back to.
+  useEffect(() => {
+    aliveRef.current = true
+    return () => { aliveRef.current = false; stopClip() }
+  }, [])
+
+  // The done card replaces the quiz with no focus change: say the result
+  // once (Android also reads the header, iOS needs telling).
+  const total = correctCount + incorrectCount
+  useEffect(() => {
+    if (!completed || !lesson) return
+    AccessibilityInfo.announceForAccessibility(
+      `آفرین! درس ${lesson.title} تمام شد. ${toPersianDigits(correctCount)} از ${toPersianDigits(total)} درست`
+        + (saveState === 'failed' ? `. ${SAVE_FAILED}` : '')
+    )
+    // Once per completion; the counts don't change after it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completed])
 
   const questions = useMemo<QuizQuestion[]>(
     () => (lesson ? lesson.items.map((item) => buildQuestion(item, lesson.items, childLevel)) : []),
@@ -75,19 +122,55 @@ export default function LessonPlayer() {
     })
   }
 
-  async function finish(correct: number, total: number) {
-    if (!childId || !lesson) { setCompleted(true); return }
-    const score = total > 0 ? Math.round((correct / total) * 100) : 100
+  /** Posts scoreRef's score. Resolves to the first new badge, null when
+   *  saved without one, 'failed', or 'busy' when a save is already running
+   *  (a second tap in the same frame). Scoring is unchanged: the score is
+   *  computed once in finish() and only re-sent here. */
+  async function saveProgress(): Promise<Badge | null | 'failed' | 'busy'> {
+    if (savingRef.current) return 'busy'
+    if (!childId || !lesson || scoreRef.current === null) return 'failed'
+    savingRef.current = true
+    setSaveState('saving')
+    let res: { error?: string | null; new_badges?: Badge[]; promotions?: Promotion[] }
     try {
       // new_badges / promotions arrive top-level on the response, not under
       // `data` — same contract as /api/progress/story.
-      const res = await api.post('/api/progress/lesson', {
-        child_id: childId, lesson_id: lesson.id, score,
-      }) as { new_badges?: Badge[]; promotions?: Promotion[] }
-      if (res.new_badges?.[0]) { setNewBadge(res.new_badges[0]); return }
-    } catch { /* completion screen still shows */ }
+      res = await api.post('/api/progress/lesson', {
+        child_id: childId, lesson_id: lesson.id, score: scoreRef.current,
+      }) as typeof res
+    } catch {
+      res = { error: 'failed' }
+    }
+    savingRef.current = false
+    if (!aliveRef.current) return 'failed'
+    if (res.error) { setSaveState('failed'); return 'failed' }
+    setSaveState('saved')
+    const badge = res.new_badges?.[0] ?? null
+    if (badge) setNewBadge(badge)
+    return badge
+  }
+
+  // A retry from the completion screen: its result is said out loud (the
+  // note changes in place).
+  async function retrySave() {
+    const r = await saveProgress()
+    if (r === 'busy' || !aliveRef.current) return
+    AccessibilityInfo.announceForAccessibility(r === 'failed' ? SAVE_FAILED : 'پیشرفتت ذخیره شد')
+  }
+
+  async function finish(correct: number, total: number) {
+    if (!childId || !lesson) { setCompleted(true); return }
+    scoreRef.current = total > 0 ? Math.round((correct / total) * 100) : 100
+    const r = await saveProgress()
+    // A new badge: RewardPopup shows over the quiz and its close opens the
+    // completion screen.
+    if (r !== 'failed' && r !== 'busy' && r !== null) return
     setCompleted(true)
   }
+
+  // Closing the badge popup (over the quiz, or over the completion screen
+  // after a retry that earned one).
+  const closeBadge = () => { setNewBadge(null); setCompleted(true) }
 
   function advance(result: 'correct' | 'incorrect' | 'seen') {
     const correct = correctCount + (result !== 'incorrect' ? 1 : 0)
@@ -99,94 +182,124 @@ export default function LessonPlayer() {
     else setIdx(idx + 1)
   }
 
+  // The lesson wears its type's room (lib/roomStyle.ts): the same ramp and
+  // host as its section on the lessons list and Home's path tile, so an
+  // alphabet lesson is the letters room, not always the green one.
+  // Visual only. A room without a host (phonics) asks with its emoji and
+  // cheers with سیمرغ, the app's guide.
+  const room = lessonRoomStyle(lesson?.type ?? '')
+  const ramp = room.ramp
+
   if (!lesson) {
     return (
-      <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
-      </View>
+      <ScreenBackground variant="warm">
+        <View style={styles.center}>
+          <LoadState error={error} onRetry={retry} onBack={() => goBack('/lessons')} />
+        </View>
+      </ScreenBackground>
+    )
+  }
+
+  // A lesson with no items used to hand QuizCard `undefined` and crash on
+  // its destructure. Nothing to practise, nothing to score: say so, no retry.
+  // Empty, not failed: EmptyState (no error live region), with the way back
+  // as its action -- this screen has no bottom nav.
+  if (questions.length === 0) {
+    return (
+      <ScreenBackground variant="warm">
+        <View style={styles.center}>
+          <EmptyState
+            character="roozi"
+            emotion="thinking"
+            title="این درس هنوز آماده نیست"
+            body="به‌زودی تمرین‌هاش اضافه می‌شه."
+            actionLabel="برگشت به درس‌ها"
+            onAction={() => goBack('/lessons')}
+            ramp={ramp}
+          />
+        </View>
+      </ScreenBackground>
     )
   }
 
   if (completed) {
-    const total = correctCount + incorrectCount
-    const score = total > 0 ? Math.round((correctCount / total) * 100) : 100
     return (
-      <View style={[styles.center, { gap: 12, padding: 24 }]}>
-        <Text style={{ fontSize: 56 }}>{score >= 80 ? '🌟' : '🎈'}</Text>
-        <Text style={styles.doneTitle}>آفرین! 🌟</Text>
-        <Text style={styles.doneSub}>درس «{lesson.title}» تمام شد</Text>
-        <Text style={styles.doneScore}>
-          {toPersianDigits(correctCount)} از {toPersianDigits(total)} درست
-        </Text>
-        <Pressable style={styles.homeButton} onPress={() => goBack('/lessons')}>
-          <Text style={styles.homeButtonText}>برگشت 🏠</Text>
-        </Pressable>
-      </View>
+      <ScreenBackground variant="warm">
+        <View style={[styles.center, styles.doneWrap, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+          {/* The same celebration as review, phonics and the math games'
+              done screens (CelebrationOverlay's own list names this one):
+              mounted only in this branch, so it fires once. */}
+          <CelebrationOverlay />
+          {newBadge && <RewardPopup badge={newBadge} onClose={closeBadge} />}
+          {/* The room's host, proud, on its own little stage (the room's
+              landscape, components/RoomScene.tsx). */}
+          <RoomDoneCard
+            ramp={ramp}
+            character={room.character ?? 'simorgh'}
+            title="آفرین!"
+            body={`درس «${lesson.title}» تمام شد`}
+            score={`${toPersianDigits(correctCount)} از ${toPersianDigits(total)} درست`}
+          />
+          {/* Non-blocking: the celebration stays, the note sits under it. */}
+          {saveState === 'failed' || saveState === 'saving' ? (
+            <View style={styles.saveNote} accessibilityLiveRegion="polite">
+              <Text style={styles.saveNoteText}>{saveState === 'saving' ? 'در حال ذخیره…' : SAVE_FAILED}</Text>
+              <TextButton
+                label="دوباره امتحان کن"
+                size="caption"
+                disabled={saveState === 'saving'}
+                onPress={() => { void retrySave() }}
+              />
+            </View>
+          ) : null}
+          <ClayButton ramp={ramp} label="برگشت به درس‌ها" accessibilityLabel="برگشت به درس‌ها" onPress={() => goBack('/lessons')} style={styles.doneButton} />
+        </View>
+      </ScreenBackground>
     )
   }
 
-  const progress = (idx / Math.max(questions.length, 1)) * 100
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      {newBadge && <RewardPopup badge={newBadge} onClose={() => setCompleted(true)} />}
+    <ScreenBackground variant="warm" style={{ paddingTop: insets.top + spacing.sm }}>
+      {newBadge && <RewardPopup badge={newBadge} onClose={closeBadge} />}
 
-      <View style={styles.topBar}>
-        <Pressable onPress={() => goBack('/lessons')} hitSlop={10}>
-          <Text style={styles.close}>✕</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <View style={styles.topRow}>
-            <Text style={styles.lessonTitle} numberOfLines={1}>{lesson.title}</Text>
-            <Text style={styles.counter}>
-              {toPersianDigits(idx + 1)}/{toPersianDigits(questions.length)}
-            </Text>
-          </View>
-          <View style={styles.track}>
-            <View style={[styles.fill, { width: `${progress}%` }]} />
-          </View>
-        </View>
-      </View>
+      {/* The shared quiz bar (review and the phonics quiz use the same). */}
+      <QuizTopBar
+        title={lesson.title}
+        index={idx}
+        total={questions.length}
+        ramp={ramp}
+        onClose={() => goBack('/lessons')}
+      />
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}>
         <QuizCard
           key={idx}
+          ramp={ramp}
+          host={room.character}
+          hostEmoji={room.emoji}
           question={questions[idx]}
           onCorrect={() => advance('correct')}
           onIncorrect={() => advance('incorrect')}
           onFlashcardNext={() => advance('seen')}
         />
       </ScrollView>
-    </View>
+    </ScreenBackground>
   )
 }
 
+const SAVE_FAILED = 'پیشرفتت ذخیره نشد.'
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 12 },
-  close: { fontSize: 20, color: colors.muted },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  lessonTitle: { fontSize: 15, fontFamily: fonts.bold, color: colors.text, flex: 1 },
-  counter: { fontSize: 13, fontFamily: fonts.medium, color: '#d97706' },
-  track: { height: 8, backgroundColor: '#e5e7eb', borderRadius: 999, overflow: 'hidden' },
-  fill: { height: '100%', backgroundColor: colors.primary, borderRadius: 999 },
-  body: { padding: 20, paddingBottom: 40 },
-  doneTitle: { fontSize: 26, fontFamily: fonts.bold, color: colors.text },
-  doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
-  doneScore: { fontSize: 16, fontFamily: fonts.medium, color: colors.success },
-  scoreRow: { flexDirection: 'row', gap: 14, alignItems: 'center' },
-  scoreCorrect: { fontSize: 15, fontFamily: fonts.medium, color: colors.success },
-  scoreIncorrect: { fontSize: 15, fontFamily: fonts.medium, color: colors.danger },
-  scorePercent: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
-  unlockBanner: {
-    backgroundColor: colors.primarySoft, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 18,
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  body: { padding: spacing.md + spacing.xs },
+
+  doneWrap: { gap: spacing.md, padding: spacing.lg },
+  doneButton: { width: '100%', maxWidth: 360 },
+  // A quiet row, not an alert: the lesson is done either way.
+  saveNote: {
+    width: '100%', maxWidth: 360, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center',
+    justifyContent: 'center', columnGap: spacing.sm, paddingHorizontal: spacing.md,
+    borderRadius: radii.md, borderWidth: 2, borderColor: ui.divider, backgroundColor: ui.surfaceSoft,
   },
-  unlockText: { fontSize: 14, fontFamily: fonts.bold, color: colors.onPrimary },
-  homeButton: {
-    marginTop: 12, backgroundColor: colors.primary, borderRadius: 16,
-    paddingVertical: 14, paddingHorizontal: 48,
-  },
-  homeButtonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
-  error: { color: colors.danger, fontFamily: fonts.regular },
+  saveNoteText: { fontFamily: fonts.medium, fontSize: textSize.caption, color: ui.text, textAlign: 'center' },
 })

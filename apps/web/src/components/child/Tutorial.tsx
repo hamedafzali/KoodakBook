@@ -1,9 +1,10 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Mascot from './Mascot'
 import { speakPersian } from '@/lib/speech'
 import { Icon, type IconName } from '@/components/icons'
+import { ClayButton, softClayVars } from './clay'
 
 const SEEN_KEY = 'koodakbook_seen_tutorial'
 
@@ -50,6 +51,37 @@ export default function Tutorial({ childName, onClose }: Props) {
     setStep(s => s + 1)
   }
 
+  /* A modal dialog has to take focus when it opens and let Escape out — it
+   * did neither, so a keyboard user stayed behind the overlay on the home
+   * screen. Escape counts as «رد کردن» (same as the skip button). */
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    // Hand focus back to wherever it was when the dialog closes.
+    const prev = document.activeElement as HTMLElement | null
+    panelRef.current?.focus()
+    return () => { prev?.focus?.() }
+  }, [])
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { finish(); return }
+      // aria-modal only tells a screen reader; Tab itself walked straight out
+      // onto the home screen behind the overlay. Keep it inside the panel.
+      if (e.key !== 'Tab') return
+      const panel = panelRef.current
+      if (!panel) return
+      const items = Array.from(panel.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'))
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      const active = document.activeElement
+      const outside = !panel.contains(active) || active === panel
+      if (e.shiftKey && (outside || active === first)) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && (outside || active === last)) { e.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  })
+
   return (
     <motion.div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6"
@@ -61,7 +93,13 @@ export default function Tutorial({ childName, onClose }: Props) {
       aria-label="راهنمای شروع"
     >
       <motion.div
-        className="bg-white rounded-[2rem] p-7 max-w-xs w-full text-center shadow-2xl"
+        ref={panelRef}
+        tabIndex={-1}
+        /* The panel is a focus landing spot, not a control — no ring on it
+           (inline, because the unlayered global :focus-visible rule would
+           beat a Tailwind outline utility). */
+        style={{ ...softClayVars('brand'), outline: 'none' }}
+        className="clay-static p-7 max-w-xs w-full text-center shadow-2xl"
         initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 22 }}
@@ -85,7 +123,7 @@ export default function Tutorial({ childName, onClose }: Props) {
             <div className="text-4xl mb-2 flex justify-center text-amber-500" aria-hidden="true">
               {current.emoji ?? <Icon name={current.icon!} size={40} strokeWidth={1.8} />}
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-1">
+            <h2 className="font-display text-xl font-black text-text-primary mb-1">
               {step === 0 && childName ? `سلام ${childName}!` : current.title}
             </h2>
             <p className="text-text-secondary persian-text mb-5">{current.body}</p>
@@ -95,7 +133,7 @@ export default function Tutorial({ childName, onClose }: Props) {
         {/* Step dots */}
         <div className="flex justify-center gap-2 mb-5" aria-hidden="true">
           {STEPS.map((_, i) => (
-            <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i === step ? 'bg-amber-500' : 'bg-gray-200'}`} />
+            <div key={i} className={`w-2 h-2 rounded-full transition-colors ${i === step ? 'bg-brand-bright' : 'bg-border'}`} />
           ))}
         </div>
 
@@ -107,14 +145,9 @@ export default function Tutorial({ childName, onClose }: Props) {
           >
             رد کردن
           </motion.button>
-          <motion.button
-            onClick={() => { speakPersian(current.body); next() }}
-            className="flex-[2] py-3 rounded-md bg-brand-gradient text-on-brand font-bold shadow-md min-h-[56px]"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.96 }}
-          >
+          <ClayButton ramp="brand" size="lg" className="flex-[2]" onClick={() => { speakPersian(current.body); next() }}>
             {isLast ? 'بزن بریم!' : 'بعدی ←'}
-          </motion.button>
+          </ClayButton>
         </div>
       </motion.div>
     </motion.div>

@@ -1,14 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AccessibilityInfo, I18nManager, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
 import { Image } from 'expo-image'
 import type { Letter, Word } from '@koodakbook/shared'
-import { wordEmoji } from '@koodakbook/shared'
+import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import { mediaUrl } from '@/lib/media'
 import { playClip } from '@/lib/sound'
-import { colors, fonts } from '@/lib/theme'
+import { ClayButton, ClaySurface, HostAvatar, ProgressTrack } from '@/components/Clay'
+import { Icon } from '@/components/Icon'
+import { answerRamps, fonts, iconSize, naturalLineHeight, radii, ramps, scenery, shape, spacing, textSize, textStart, textStyles, ui, type Ramp } from '@/lib/theme'
 
 // Mobile port of web's QuizCard (components/child/QuizCard.tsx) — same four
 // modes, same reveal-then-advance rhythm, minus the web-only sound effects.
+//
+// 2026-09-26 consistency pass: the cards, options, speaker and next button
+// are the shared clay now (components/Clay.tsx) in the caller's `ramp` --
+// the same soft-clay options, bright-clay speaker disc and answer states
+// (theme `answerRamps`) as the phonics and placement quizzes -- instead of
+// flat white cards, a one-off amber button and #d97706 hint text (~3:1).
+// Quiz logic, modes and timing are unchanged.
 export type QuizMode = 'flashcard' | 'listen_tap' | 'match_image' | 'name_it'
 
 export interface QuizQuestion {
@@ -23,6 +32,12 @@ interface Props {
   onCorrect: () => void
   onIncorrect: () => void
   onFlashcardNext: () => void
+  /** The room's ramp (lessons, review...). Defaults to the brand ramp. */
+  ramp?: Ramp
+  /** The room's host (a cast slug) who asks the question; without one the
+   *  room's emoji sits in the disc (Clay.tsx's Fallback rule). */
+  host?: string
+  hostEmoji?: string
 }
 
 function wordVisual(word: Word): { type: 'img' | 'emoji'; value: string } | null {
@@ -42,10 +57,25 @@ function shuffleOnce<T>(arr: T[]): T[] {
   return a
 }
 
-export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcardNext }: Props) {
+export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcardNext, ramp = ramps.brand, host, hostEmoji }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null)
-  const { mode, correctWord, correctLetter, distractorWords = [] } = question
+  // `feedback` is state, so two taps in one frame both saw null and both
+  // answered (two onCorrect calls: a skipped question). The ref flips at once.
+  // The card remounts per question, so one answer per mount is right.
+  const answeredRef = useRef(false)
+  const answerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Leaving mid-feedback must not fire onCorrect/onIncorrect on a screen
+  // that is gone.
+  useEffect(() => () => { if (answerTimer.current) clearTimeout(answerTimer.current) }, [])
+  const { correctWord, correctLetter, distractorWords = [] } = question
+  // match_image asks «what is this picture?», so a word with no image and no
+  // emoji used to show a bare ❓ and a question nobody can answer. Such a word
+  // is asked as listen_tap instead: same options, same right answer, only the
+  // prompt is the word's sound rather than a missing picture.
+  const mode: QuizMode = question.mode === 'match_image' && correctWord && !wordVisual(correctWord)
+    ? 'listen_tap'
+    : question.mode
 
   // Shuffle once per question, not per render.
   const options = useMemo(
@@ -66,11 +96,17 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
   }, [])
 
   function handleAnswer(id: string, isCorrect: boolean) {
-    if (feedback !== null) return
+    if (answeredRef.current) return
+    answeredRef.current = true
     setSelected(id)
     setFeedback(isCorrect ? 'correct' : 'incorrect')
+    // The options' labels gain the result, but a label change isn't spoken:
+    // say it once. Only after answering, so nothing gives the answer away.
+    AccessibilityInfo.announceForAccessibility(
+      isCorrect ? 'درست! آفرین' : correctWord ? `نادرست. جواب درست: ${correctWord.persian}` : 'نادرست'
+    )
     if (isCorrect && correctWord) playClip(correctWord.audio_url)
-    setTimeout(isCorrect ? onCorrect : onIncorrect, 950)
+    answerTimer.current = setTimeout(isCorrect ? onCorrect : onIncorrect, 950)
   }
 
   function speakPrompt() {
@@ -83,26 +119,38 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
     const visual = correctWord ? wordVisual(correctWord) : null
     return (
       <View style={styles.column}>
-        <Pressable style={styles.flashcard} onPress={speakPrompt}>
-          {correctWord ? (
-            <>
-              {visual?.type === 'img' && <Image source={{ uri: visual.value }} style={styles.flashImage} contentFit="contain" />}
-              {visual?.type === 'emoji' && <Text style={styles.flashEmoji}>{visual.value}</Text>}
-              <Text style={styles.flashWord}>{correctWord.persian}</Text>
-              <Text style={styles.flashLatin}>{correctWord.english}</Text>
-            </>
-          ) : correctLetter ? (
-            <>
-              <Text style={styles.flashLetter}>{correctLetter.character}</Text>
-              <Text style={styles.flashWord}>{correctLetter.name_persian}</Text>
-              <Text style={styles.flashLatin}>{correctLetter.name_english}</Text>
-            </>
-          ) : null}
-          <Text style={styles.tapHint}>🔊 ضربه بزن تا بشنوی</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={correctWord || correctLetter ? `${correctWord?.persian ?? correctLetter?.name_persian}، بشنو` : 'بشنو'}
+          style={styles.fullWidth}
+          onPress={speakPrompt}
+        >
+          {({ pressed }) => (
+            <ClaySurface ramp={ramp} tone="soft" pressed={pressed} radius={radii.lg} faceStyle={styles.flashcard}>
+              {correctWord ? (
+                <>
+                  {visual?.type === 'img' && <Image source={{ uri: visual.value }} style={styles.flashImage} contentFit="contain" />}
+                  {visual?.type === 'emoji' && <Text style={styles.flashEmoji}>{visual.value}</Text>}
+                  <Text style={[styles.flashWord, { color: ramp.ink }]}>{correctWord.persian}</Text>
+                  <Text style={styles.flashLatin}>{correctWord.english}</Text>
+                </>
+              ) : correctLetter ? (
+                <>
+                  <Text style={[styles.flashLetter, { color: ramp.ink }]}>{correctLetter.character}</Text>
+                  <Text style={[styles.flashWord, { color: ramp.ink }]}>{correctLetter.name_persian}</Text>
+                  <Text style={styles.flashLatin}>{correctLetter.name_english}</Text>
+                </>
+              ) : null}
+              <ListenHint ramp={ramp} label="ضربه بزن تا بشنوی" />
+            </ClaySurface>
+          )}
         </Pressable>
-        <Pressable style={styles.nextButton} onPress={onFlashcardNext}>
-          <Text style={styles.nextText}>بعدی ←</Text>
-        </Pressable>
+        <ClayButton ramp={ramp} label="بعدی" icon="chevron" iconPosition="end" onPress={() => {
+          // Same one-shot guard: a double tap skipped the next card.
+          if (answeredRef.current) return
+          answeredRef.current = true
+          onFlashcardNext()
+        }} style={styles.fullWidth} />
       </View>
     )
   }
@@ -114,13 +162,14 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
     const visual = wordVisual(correctWord)
     return (
       <View style={styles.column}>
-        <View style={styles.promptCard}>
+        <ClaySurface ramp={ramp} tone="soft" radius={radii.lg} style={styles.fullWidth} faceStyle={styles.promptCard}>
           {visual?.type === 'img'
             ? <Image source={{ uri: visual.value }} style={styles.promptImage} contentFit="contain" />
-            : <Text style={styles.promptEmoji}>{visual?.value ?? '❓'}</Text>}
-        </View>
-        <Text style={styles.questionText}>این چه کلمه‌ای است؟</Text>
+            : <Text style={styles.promptEmoji}>{visual?.value}</Text>}
+        </ClaySurface>
+        <HostPrompt ramp={ramp} host={host} emoji={hostEmoji} text="این چه کلمه‌ای است؟" />
         <OptionGrid
+          ramp={ramp}
           options={options} correctId={correctWord.id} selected={selected} feedback={feedback}
           render={(w) => ({ label: w.persian })}
           onSelect={handleAnswer}
@@ -133,11 +182,17 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
   if (mode === 'listen_tap') {
     return (
       <View style={styles.column}>
-        <Pressable style={styles.speakerButton} onPress={speakPrompt}>
-          <Text style={{ fontSize: 44 }}>🔊</Text>
+        {/* The phonics/placement speaker: a bright clay disc, ink glyph. */}
+        <Pressable accessibilityRole="button" accessibilityLabel="دوباره بشنو" onPress={speakPrompt}>
+          {({ pressed }) => (
+            <ClaySurface ramp={ramp} tone="bright" pressed={pressed} radius={radii.pill} faceStyle={styles.speaker}>
+              <Icon name="volume" color={ramp.ink} size={SPEAKER_ICON} strokeWidth={2.2} />
+            </ClaySurface>
+          )}
         </Pressable>
-        <Text style={styles.questionText}>کدام کلمه را شنیدی؟</Text>
+        <HostPrompt ramp={ramp} host={host} emoji={hostEmoji} text="کدام کلمه را شنیدی؟" />
         <OptionGrid
+          ramp={ramp}
           options={options} correctId={correctWord.id} selected={selected} feedback={feedback}
           render={(w) => {
             const v = wordVisual(w)
@@ -156,12 +211,17 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
   /* ── NAME IT — show Persian word, pick the matching picture ── */
   return (
     <View style={styles.column}>
-      <Pressable style={styles.promptCard} onPress={speakPrompt}>
-        <Text style={styles.flashWord}>{correctWord.persian}</Text>
-        <Text style={styles.tapHint}>🔊 بشنو</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${correctWord.persian}، بشنو`} style={styles.fullWidth} onPress={speakPrompt}>
+        {({ pressed }) => (
+          <ClaySurface ramp={ramp} tone="soft" pressed={pressed} radius={radii.lg} faceStyle={styles.promptCard}>
+            <Text style={[styles.flashWord, { color: ramp.ink }]}>{correctWord.persian}</Text>
+            <ListenHint ramp={ramp} label="بشنو" />
+          </ClaySurface>
+        )}
       </Pressable>
-      <Text style={styles.questionText}>کدام تصویر درست است؟</Text>
+      <HostPrompt ramp={ramp} host={host} emoji={hostEmoji} text="کدام تصویر درست است؟" />
       <OptionGrid
+        ramp={ramp}
         options={options} correctId={correctWord.id} selected={selected} feedback={feedback}
         render={(w) => {
           const v = wordVisual(w)
@@ -180,7 +240,8 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
   )
 }
 
-function OptionGrid({ options, correctId, selected, feedback, render, onSelect }: {
+function OptionGrid({ ramp, options, correctId, selected, feedback, render, onSelect }: {
+  ramp: Ramp
   options: Word[]
   correctId: string
   selected: string | null
@@ -190,28 +251,46 @@ function OptionGrid({ options, correctId, selected, feedback, render, onSelect }
 }) {
   return (
     <View style={styles.grid}>
-      {options.map((w) => {
+      {options.map((w, i) => {
         const { label, emoji, imageUrl, bigVisual } = render(w)
         const isCorrect = w.id === correctId
         const isSelected = selected === w.id
         const revealResult = feedback !== null && isSelected
         const showCorrect = feedback !== null && isCorrect && !isSelected
+        // A picture-only option has no text for a screen reader, and naming
+        // the picture would give the answer away, so it gets a neutral
+        // number. (Web labels the right picture «گزینه درست» -- mobile
+        // deliberately doesn't.) The result is announced only after answering.
+        const result = revealResult ? (isCorrect ? '، درست' : '، نادرست') : showCorrect ? '، جواب درست' : ''
+        const a11yLabel = `${label ?? `گزینه ${toPersianDigits(i + 1)}`}${result}`
+        // Neutral (the room's soft clay) until answered; then the right one
+        // is bright green, a wrong pick pale rose -- phonics' exact states.
+        const state = revealResult ? (isCorrect ? 'right' : 'wrong') : showCorrect ? 'right' : null
+        const face = state ? answerRamps[state] : ramp
         return (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={w.id}
             disabled={feedback !== null}
             onPress={() => onSelect(w.id, isCorrect)}
-            style={[
-              styles.option,
-              revealResult && (isCorrect ? styles.optionRight : styles.optionWrong),
-              showCorrect && styles.optionRight,
-            ]}
+            accessibilityLabel={a11yLabel}
+            accessibilityState={{ disabled: feedback !== null, selected: isSelected }}
+            style={styles.optionCell}
           >
-            {imageUrl && <Image source={{ uri: imageUrl }} style={bigVisual ? styles.optionImageBig : styles.optionImage} contentFit="contain" />}
-            {!imageUrl && emoji && <Text style={bigVisual ? styles.optionEmojiBig : styles.optionEmoji}>{emoji}</Text>}
-            {label ? <Text style={styles.optionLabel}>{label}</Text> : null}
-            {(revealResult || showCorrect) && (
-              <Text style={{ fontSize: 16 }}>{isCorrect ? '✅' : '❌'}</Text>
+            {({ pressed }) => (
+              <ClaySurface
+                ramp={face}
+                tone={state === 'right' ? 'bright' : 'soft'}
+                pressed={pressed && feedback === null}
+                radius={radii.md}
+                style={styles.fill}
+                faceStyle={styles.option}
+              >
+                {imageUrl && <Image source={{ uri: imageUrl }} style={bigVisual ? styles.optionImageBig : styles.optionImage} contentFit="contain" />}
+                {!imageUrl && emoji && <Text style={bigVisual ? styles.optionEmojiBig : styles.optionEmoji}>{emoji}</Text>}
+                {/* No numberOfLines: a long answer wraps and the option grows. */}
+                {label ? <Text style={[styles.optionLabel, { color: face.ink }]}>{label}</Text> : null}
+                {state && <AnswerMark state={state} />}
+              </ClaySurface>
             )}
           </Pressable>
         )
@@ -220,45 +299,170 @@ function OptionGrid({ options, correctId, selected, feedback, render, onSelect }
   )
 }
 
+/** «ضربه بزن تا بشنوی» under a tappable prompt: the line speaker icon and
+ *  the words, in the room's ink (the 🔊 emoji drew in its own colours). */
+function ListenHint({ ramp, label }: { ramp: Ramp; label: string }) {
+  return (
+    <View style={styles.listenHint}>
+      <Icon name="volume" color={ramp.ink} size={iconSize.inline} />
+      <Text style={[styles.tapHint, { color: ramp.ink }]}>{label}</Text>
+    </View>
+  )
+}
+
+/**
+ * The question, asked by the room's host: the host in its white disc at the
+ * reading start and the question in a speech bubble beside it (a row, so it
+ * mirrors under RTL). Used by QuizCard, the phonics quiz and placement, so
+ * every child quiz asks the same way. The bubble text is the header; the
+ * art is decorative. Never carries anything that hints at the answer.
+ */
+export function HostPrompt({ ramp, host, emoji, text, emotion = 'encouraging' }: {
+  ramp: Ramp
+  host?: string
+  emoji?: string
+  text: string
+  emotion?: 'encouraging' | 'thinking' | 'happy'
+}) {
+  return (
+    <View style={styles.prompt}>
+      {host || emoji ? <HostAvatar ramp={ramp} size={PROMPT_HOST} character={host} emoji={emoji} emotion={emotion} /> : null}
+      <View style={[styles.bubble, { borderColor: ramp.bright }]}>
+        {host || emoji ? <View style={[styles.bubbleTail, { borderColor: ramp.bright }]} /> : null}
+        <Text style={styles.questionText} accessibilityRole="header">{text}</Text>
+      </View>
+    </View>
+  )
+}
+
+/** The ✓ / ✗ mark on an answered option, as a line icon in a disc of the
+ *  answer ramp's deep stop (white clears >=7:1 there). Decorative: the
+ *  option's label says «درست» / «نادرست». */
+export function AnswerMark({ state }: { state: 'right' | 'wrong' }) {
+  return (
+    <View style={[styles.mark, { backgroundColor: answerRamps[state].deep }]}>
+      <Icon name={state === 'right' ? 'check' : 'close'} color={ui.onDeep} size={16} strokeWidth={3} />
+    </View>
+  )
+}
+
+/**
+ * The quiz screens' top bar -- a lesson, review and the phonics quiz: a close
+ * disc (ScreenHeader's child back disc, holding ✕), the quiz's title, «۲ از ۶»
+ * and a progress track in the room's ramp. It was three hand-copied twins
+ * (phonics had no track at all). The track is a row, so under RTL it fills
+ * from the reading start, like Home's learning-path tracks. `index` is the
+ * 0-based question on screen; the track shows the questions already behind
+ * the child.
+ */
+export function QuizTopBar({ title, index, total, ramp, onClose, style }: {
+  title: string
+  index: number
+  total: number
+  ramp: Ramp
+  onClose: () => void
+  /** Layout overrides, e.g. { paddingHorizontal: 0 } inside a padded view. */
+  style?: StyleProp<ViewStyle>
+}) {
+  const n = Math.min(index + 1, Math.max(total, 1))
+  return (
+    <View style={[styles.topBar, style]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="بستن" onPress={onClose} hitSlop={10}>
+        {({ pressed }) => (
+          <View style={[styles.closeDisc, pressed && styles.pressed]}>
+            <Icon name="close" color={scenery.ink} size={iconSize.control} strokeWidth={2.5} />
+          </View>
+        )}
+      </Pressable>
+      <View style={styles.topMain}>
+        <View style={styles.topRow}>
+          {/* Wraps rather than «…»: a lesson's name is the screen's title. */}
+          <Text style={styles.topTitle} accessibilityRole="header">{title}</Text>
+          <Text
+            style={[styles.counter, { color: ramp.ink }]}
+            accessibilityLabel={`سؤال ${toPersianDigits(n)} از ${toPersianDigits(total)}`}
+          >
+            {toPersianDigits(n)} از {toPersianDigits(total)}
+          </Text>
+        </View>
+        {/* The shared bar (Clay.tsx): a neutral warm track, not ramp.bright
+            -- at question 1 the bright track with an empty fill read as a
+            full, finished bar (iOS Simulator, 2026-09-28). The questions
+            already behind the child; the counter above carries the words. */}
+        <ProgressTrack value={Math.min(index, total)} total={Math.max(total, 1)} ramp={ramp} height={10} decorative />
+      </View>
+    </View>
+  )
+}
+
+// Home's rhythm between sibling items: 12, between the scale's 8 and 16.
+const GAP = spacing.sm + spacing.xs
+const PROMPT_HOST = 52
+// The listen prompt's glyph in its 104pt disc.
+const SPEAKER_ICON = 48
+
 const styles = StyleSheet.create({
-  column: { width: '100%', alignItems: 'center', gap: 16 },
-  flashcard: {
-    width: '100%', backgroundColor: colors.card, borderRadius: 22, padding: 24,
-    alignItems: 'center', gap: 8,
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: GAP, paddingHorizontal: spacing.md, paddingBottom: GAP },
+  closeDisc: {
+    width: ui.hit, height: ui.hit, borderRadius: radii.pill, backgroundColor: ui.surface,
+    borderWidth: 2, borderColor: ui.divider, alignItems: 'center', justifyContent: 'center',
   },
+  pressed: { opacity: 0.6 },
+  topMain: { flex: 1, gap: spacing.xs + 2 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  topTitle: { flex: 1, fontFamily: fonts.display, fontSize: textSize.small, color: scenery.ink, textAlign: textStart },
+  counter: { fontFamily: fonts.bold, fontSize: textSize.caption },
+  column: { width: '100%', alignItems: 'center', gap: spacing.md },
+  fullWidth: { alignSelf: 'stretch' },
+  fill: { flex: 1 },
+  flashcard: { padding: spacing.lg, alignItems: 'center', gap: spacing.sm },
   flashImage: { width: 170, height: 170 },
-  flashEmoji: { fontSize: 96, lineHeight: 110 },
-  flashLetter: { fontSize: 84, lineHeight: 100, fontFamily: fonts.bold, color: colors.text },
-  flashWord: { fontSize: 40, fontFamily: fonts.bold, color: colors.text },
-  flashLatin: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
-  tapHint: { fontSize: 12, fontFamily: fonts.regular, color: '#d97706', marginTop: 4 },
-  nextButton: {
-    width: '100%', backgroundColor: colors.primary, borderRadius: 16,
-    paddingVertical: 14, alignItems: 'center',
-  },
-  nextText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
-  promptCard: {
-    width: '100%', minHeight: 170, backgroundColor: colors.card, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center', padding: 16, gap: 4,
-  },
+  // Emoji: no fixed lineHeight. The old ~1.15x boxes could cut them on
+  // Android; they draw in the system emoji font, so its own height is right
+  // (naturalLineHeight is Vazirmatn's metric, not the emoji font's).
+  flashEmoji: { fontSize: 96 },
+  // naturalLineHeight: the letter being taught can carry marks.
+  flashLetter: { fontSize: 84, lineHeight: naturalLineHeight(84), fontFamily: fonts.bold },
+  flashWord: { fontSize: 40, lineHeight: naturalLineHeight(40), fontFamily: fonts.bold, textAlign: 'center' },
+  // muted is fine here: the clay face is the ramp's near-white soft stop.
+  flashLatin: { fontSize: textSize.small, fontFamily: fonts.regular, color: ui.textMuted, textAlign: 'center' },
+  // The room's ink, not the old #d97706 (~3:1 on white).
+  listenHint: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  tapHint: { ...textStyles.label },
+  promptCard: { minHeight: 170, alignItems: 'center', justifyContent: 'center', padding: spacing.md, gap: spacing.xs },
   promptImage: { width: 160, height: 160 },
-  promptEmoji: { fontSize: 100, lineHeight: 116 },
-  speakerButton: {
-    width: 104, height: 104, borderRadius: 52, backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
+  promptEmoji: { fontSize: 100 },
+  speaker: { width: 104, height: 104, alignItems: 'center', justifyContent: 'center' },
+  prompt: { flexDirection: 'row', alignItems: 'center', gap: GAP, alignSelf: 'stretch' },
+  // A white speech bubble rimmed in the room's bright stop; its tail points
+  // back at the host (logical `start`, so it follows RTL).
+  bubble: {
+    flex: 1, minHeight: PROMPT_HOST, justifyContent: 'center',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: shape.bubble, borderWidth: 2, backgroundColor: ui.surface,
   },
-  questionText: { fontSize: 17, fontFamily: fonts.bold, color: colors.text },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: '100%' },
+  bubbleTail: {
+    position: 'absolute', start: -7, top: '50%', marginTop: -6, width: 12, height: 12,
+    backgroundColor: ui.surface, borderStartWidth: 2, borderBottomWidth: 2,
+    // The start+bottom corner turned to face the host: clockwise under LTR,
+    // counter-clockwise under RTL (where `start` is the right edge).
+    transform: [{ rotate: I18nManager.isRTL ? '-45deg' : '45deg' }],
+  },
+  // scenery.ink, like every other child heading.
+  questionText: { ...textStyles.sectionTitle, textAlign: textStart },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, width: '100%' },
+  // 40% + flexGrow (ModuleCard's rule): always two per row, and the row
+  // stretches both options to the taller one (`fill` + the face's flex: 1).
+  optionCell: { width: '40%', flexGrow: 1 },
+  // Big, calm targets: 88pt, the label at cardTitle size.
   option: {
-    width: '48%', flexGrow: 1, minHeight: 76, backgroundColor: colors.card,
-    borderRadius: 16, borderWidth: 2, borderColor: '#e5e7eb',
-    alignItems: 'center', justifyContent: 'center', padding: 10, gap: 4,
+    flex: 1, minHeight: 88, alignItems: 'center', justifyContent: 'center',
+    padding: spacing.sm + spacing.xs, gap: spacing.xs,
   },
-  optionRight: { borderColor: colors.success, backgroundColor: '#f0fdf4' },
-  optionWrong: { borderColor: colors.danger, backgroundColor: '#fef2f2' },
   optionImage: { width: 54, height: 54 },
   optionImageBig: { width: 76, height: 76 },
-  optionEmoji: { fontSize: 34, lineHeight: 40 },
-  optionEmojiBig: { fontSize: 56, lineHeight: 64 },
-  optionLabel: { fontSize: 19, fontFamily: fonts.bold, color: colors.text },
+  optionEmoji: { fontSize: 34 },
+  optionEmojiBig: { fontSize: 56 },
+  optionLabel: { fontSize: textSize.cardTitle, lineHeight: naturalLineHeight(textSize.cardTitle), fontFamily: fonts.bold, textAlign: 'center' },
+  mark: { width: 26, height: 26, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center' },
 })

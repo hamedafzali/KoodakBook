@@ -11,6 +11,7 @@ import { useActing } from '@/lib/useActing'
 import { recognitionSupported, dictateOnce } from '@/lib/recognition'
 import { playTap } from '@/lib/sounds'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import CharacterAvatar, { type CharacterMood } from '@/components/child/CharacterAvatar'
 import { isSceneSlug, type AppCharacter, type Child } from '@koodakbook/shared'
@@ -37,26 +38,38 @@ export default function TalkPage() {
   const canListen = useMemo(() => recognitionSupported(), [])
   const { mouth: actMouth, speaking, viseme: actViseme } = useActing()   // sentence-matched lip-sync + bob
 
+  // A failed fetch, or a friend that doesn't exist, used to keep the loading
+  // screen up forever.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
+    let cancelled = false
     async function load() {
       const [charsRes, childRes] = await Promise.all([
         api.get<AppCharacter[]>('/api/characters'),
         api.get<Child[]>('/api/children'),
       ])
-      const c = charsRes.data?.find(x => x.slug === slug) ?? null
+      if (cancelled) return
+      if (!charsRes.data || !childRes.data) {
+        setLoadError(charsRes.error ?? childRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
+        return
+      }
+      const c = charsRes.data.find(x => x.slug === slug) ?? null
+      if (!c) { router.replace('/child/home'); return }
       setCharacter(c)
       const child = pickChild(childRes.data ?? [])
       if (child && c) {
         setChildId(child.id)
         const t = await api.get<Turn[]>(`/api/characters/${slug}/chat/${child.id}`)
-        if (t.data) setTurns(t.data.slice(-10))
+        if (t.data && !cancelled) setTurns(t.data.slice(-10))
       }
     }
     load()
-    return () => stopSpeaking()
-  }, [router, slug])
+    return () => { cancelled = true; stopSpeaking() }
+  }, [router, slug, attempt])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [turns, busy])
 
@@ -95,6 +108,16 @@ export default function TalkPage() {
     }
   }
 
+  if (loadError) {
+    return (
+      <ErrorState
+        message={loadError}
+        onRetry={() => { setLoadError(null); setAttempt(a => a + 1) }}
+        backHref={`/child/friends/${slug}`}
+        backLabel="برگشت"
+      />
+    )
+  }
   if (!character) return <LoadingScreen message="دوستت داره می‌آد..." />
   const scene = isSceneSlug(character.home_scene) ? character.home_scene : 'garden'
 
@@ -109,13 +132,15 @@ export default function TalkPage() {
             mood={busy === 'think' ? 'thinking' : mood} className="-mb-1 drop-shadow-lg" />
         </div>
         <Link href={`/child/friends/${slug}`} aria-label="برگشت"
-          className="absolute top-3 right-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+          className="absolute top-3 start-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
+          <Icon name="back" size="md" strokeWidth={2.5} />
         </Link>
       </div>
 
       {/* Transcript */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 max-w-md w-full mx-auto">
+      {/* role="log": the friend's replies arrive asynchronously and were
+          only shown — now appended turns are announced politely. */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 max-w-md w-full mx-auto" role="log" aria-live="polite" aria-label={`گفتگو با ${character.name_persian}`}>
         {turns.length === 0 && (
           <p className="text-center text-sm text-text-secondary persian-text pt-4">
             سلام کن یا یکی از جمله‌های پایین را بزن!
@@ -127,8 +152,8 @@ export default function TalkPage() {
               className={`flex ${t.role === 'child' ? 'justify-start' : 'justify-end'}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm persian-text leading-relaxed ${
                 t.role === 'child'
-                  ? 'bg-amber-700 text-white rounded-tr-sm'
-                  : 'bg-white shadow-card text-text-primary rounded-tl-sm'}`}>
+                  ? 'bg-brand-bright text-brand-ink rounded-ss-sm'
+                  : 'bg-white shadow-card text-text-primary rounded-se-sm'}`}>
                 {t.text}
               </div>
             </motion.div>
@@ -136,17 +161,18 @@ export default function TalkPage() {
         </AnimatePresence>
         {busy === 'think' && (
           <div className="flex justify-end">
-            <div className="bg-white shadow-card rounded-2xl rounded-tl-sm px-4 py-3">
+            <div className="bg-white shadow-card rounded-2xl rounded-se-sm px-4 py-3">
+              <span className="sr-only">{character.name_persian} دارد فکر می‌کند…</span>
               <motion.span className="inline-flex gap-1"
                 animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.1, repeat: Infinity }}>
-                <span className="w-2 h-2 bg-amber-400 rounded-full" />
-                <span className="w-2 h-2 bg-amber-400 rounded-full" />
-                <span className="w-2 h-2 bg-amber-400 rounded-full" />
+                <span className="w-2 h-2 bg-brand-bright rounded-full" />
+                <span className="w-2 h-2 bg-brand-bright rounded-full" />
+                <span className="w-2 h-2 bg-brand-bright rounded-full" />
               </motion.span>
             </div>
           </div>
         )}
-        {notice && <p className="text-center text-xs text-amber-700 bg-amber-50 rounded-xl px-3 py-2 persian-text">{notice}</p>}
+        {notice && <p className="text-center text-xs text-brand-ink bg-brand-soft rounded-xl px-3 py-2 persian-text">{notice}</p>}
         <div ref={endRef} />
       </div>
 
@@ -156,7 +182,7 @@ export default function TalkPage() {
         <div className="flex gap-2 overflow-x-auto pb-1 max-w-md mx-auto">
           {STARTERS.map(sTxt => (
             <button key={sTxt} onClick={() => { playTap(); send(sTxt) }} disabled={busy === 'think'}
-              className="flex-shrink-0 bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium rounded-full px-4 py-2 disabled:opacity-50">
+              className="flex-shrink-0 bg-brand-soft border border-brand-bright text-brand-ink text-sm font-medium rounded-full px-4 py-2 min-h-[48px] disabled:opacity-50">
               {sTxt}
             </button>
           ))}

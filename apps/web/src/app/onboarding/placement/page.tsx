@@ -9,10 +9,12 @@ import { enterChildMode } from '@/lib/mode'
 import Mascot from '@/components/child/Mascot'
 import CharacterAvatar from '@/components/child/CharacterAvatar'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
+import { ClayButton, clayVars, softClayVars } from '@/components/child/clay'
 import { speakOrPlay, speakPersian, stopSpeaking, initSpeech } from '@/lib/speech'
 import { useSpeaking } from '@/lib/useSpeaking'
 import { playTap, playSuccess } from '@/lib/sounds'
-import { wordEmoji, currentProbeStep, recordProbeAnswer, emptyProbeResults } from '@koodakbook/shared'
+import { wordEmoji, currentProbeStep, recordProbeAnswer, emptyProbeResults, toPersianDigits } from '@koodakbook/shared'
 import type { Child, PlacementProbe, ProbeChoice, ProbeResults, ProbeStep } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
 
@@ -46,6 +48,9 @@ export default function PlacementPage() {
 // an easier item is still forward motion, never a stop, for either flow.
 function PlacementInner() {
   const router = useRouter()
+  // The reveal's 2.6s hop home: cleared if the child leaves first.
+  const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (doneTimer.current) clearTimeout(doneTimer.current) }, [])
   const searchParams = useSearchParams()
   const isReprobe = searchParams.get('mode') === 'reprobe'
   const [child, setChild] = useState<Child | null>(null)
@@ -57,21 +62,76 @@ function PlacementInner() {
   // A ref because finish() needs the LATEST results synchronously, before the
   // setResults state update from the final answer has necessarily flushed.
   const resultsRef = useRef<ProbeResults>(emptyProbeResults())
+  // A failed load or result save stops on ErrorState with a retry (mirrors
+  // mobile's placement.tsx). Before: a failed /api/children read as "no
+  // children" and sent the parent to /onboarding to create a duplicate; a
+  // failed probe fetch went home without placing the child, and home sent
+  // the child straight back here (a loop); a failed save was ignored.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  // Whether the save being retried should show the reveal afterwards.
+  const revealRef = useRef(true)
+  const retryLoad = () => { setLoadError(null); setPhase('loading'); setReloadKey(k => k + 1) }
+  /** Saves the result; `reveal` false skips the level reveal (no questions
+   *  were asked). `target` is for the load path, before `child` state lands. */
+  async function finish(reveal = true, target: Child | null = child) {
+    revealRef.current = reveal
+    if (target) {
+      if (isReprobe) {
+        const res = await api.post(`/api/placement/${target.id}/reprobe-result`, resultsRef.current)
+        if (res.error) { setSaveError(res.error); return }
+      } else {
+        // Scoring (§5) now lives server-side — it needs gate.ts's w(n) for
+        // confidence — so the level for the reveal screen comes back on the
+        // response instead of being computed here before the request.
+        const res = await api.post<Child>('/api/placement/result', { child_id: target.id, results: resultsRef.current })
+        if (!res.data) { setSaveError(res.error || 'اتصال برقرار نشد. دوباره تلاش کن'); return }
+        setFinalLevel(res.data.level)
+      }
+    }
+    enterChildMode()
+    if (!reveal) { router.push('/child/home'); return }
+    setPhase('done')
+    doneTimer.current = setTimeout(() => router.push('/child/home'), 2600)
+  }
+
+  const retrySave = () => { setSaveError(null); setPhase('loading'); void finish(revealRef.current) }
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
+    let cancelled = false
     async function load() {
       const [childRes, probeRes] = await Promise.all([
         api.get<Child[]>('/api/children'),
         api.get<PlacementProbe>('/api/placement/probe'),
       ])
-      const c = pickChild(childRes.data ?? [])
+      if (cancelled) return
+      // Too little content for a probe: an empty bank, or the backend's 503
+      // «Not enough content…» (routes/placement.ts). Not an error a retry
+      // could fix: home sends every unplaced child back here, so treating it
+      // as one locked the child out. Same rule as mobile placement.tsx.
+      const noContent = probeRes.data
+        ? !currentProbeStep(probeRes.data, emptyProbeResults())
+        : probeRes.status === 503 || probeRes.error === 'Not enough content to build a placement probe'
+      if (!childRes.data || (!probeRes.data && !noContent)) {
+        const msg = childRes.error || probeRes.error
+        // The backend's English messages stay off the child's screen.
+        setLoadError(msg && /[\u0600-\u06FF]/.test(msg) ? msg : 'اتصال برقرار نشد. دوباره تلاش کن')
+        return
+      }
+      // Only a list that really is empty means "add a child first".
+      const c = pickChild(childRes.data)
       if (!c) { router.push('/onboarding'); return }
       setChild(c)
-      if (!probeRes.data || !currentProbeStep(probeRes.data, emptyProbeResults())) {
-        // No usable probe content — skip gracefully, keep the default level.
-        enterChildMode()
-        router.push('/child/home')
+      if (noContent || !probeRes.data) {
+        // No usable probe content. Onboarding records the empty result: the
+        // backend scores every skipped strand as level 1 with zero confidence
+        // (lib/probe.ts scoreBranchStrand([]) / scoreSingleStrand(null)) and
+        // sets placement_done, so home doesn't send the child back here. A
+        // re-probe has nothing to refresh and simply goes home.
+        if (isReprobe) { enterChildMode(); router.push('/child/home'); return }
+        void finish(false, c)
         return
       }
       setBank(probeRes.data)
@@ -80,7 +140,10 @@ function PlacementInner() {
       setPhase('intro')
     }
     load()
-  }, [router])
+    return () => { cancelled = true }
+    // finish is a plain function of this render; the load only re-runs on retry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, reloadKey, isReprobe])
 
   const step: ProbeStep | null = bank ? currentProbeStep(bank, results) : null
   const q = step?.question
@@ -103,23 +166,6 @@ function PlacementInner() {
     return () => clearTimeout(t)
   }, [phase, q])
 
-  async function finish() {
-    if (child) {
-      if (isReprobe) {
-        await api.post(`/api/placement/${child.id}/reprobe-result`, resultsRef.current)
-      } else {
-        // Scoring (§5) now lives server-side — it needs gate.ts's w(n) for
-        // confidence — so the level for the reveal screen comes back on the
-        // response instead of being computed here before the request.
-        const res = await api.post<Child>('/api/placement/result', { child_id: child.id, results: resultsRef.current })
-        if (res.data) setFinalLevel(res.data.level)
-      }
-    }
-    setPhase('done')
-    enterChildMode()
-    setTimeout(() => router.push('/child/home'), 2600)
-  }
-
   function answer(choice: ProbeChoice) {
     if (phase !== 'question' || !step) return
     const ok = choice.id === step.question.correct_id
@@ -139,21 +185,33 @@ function PlacementInner() {
     }, 1100)
   }
 
+  if (loadError || saveError) {
+    return (
+      <ErrorState
+        title={saveError ? 'نتیجه ذخیره نشد' : 'نتونستیم بازی رو بیاریم'}
+        message={loadError ?? saveError}
+        onRetry={saveError ? retrySave : retryLoad}
+        backHref={isReprobe ? '/child/home' : null}
+      />
+    )
+  }
+
   if (phase === 'loading') return <LoadingScreen message="آماده‌سازی بازی..." />
 
   if (phase === 'intro') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center child-bg p-6 text-center">
         <CharacterAvatar slug="simorgh" size={150} mood="happy" talking={speaking} />
-        <h1 className="text-2xl font-bold text-gray-800 mt-5 persian-text">سلام {child?.name}! من سیمرغم</h1>
-        <p className="text-gray-600 mt-2 persian-text leading-relaxed max-w-xs">
+        <h1 className="font-display font-black text-2xl text-text-primary mt-5 persian-text">سلام {child?.name}! من سیمرغم</h1>
+        <p className="text-text-secondary mt-2 persian-text leading-relaxed max-w-xs">
           بیا با هم یک بازی کوچولو کنیم تا ببینم چی بلدی — امتحان نیست، فقط بازیه!
         </p>
-        <motion.button whileTap={{ scale: 0.94, y: 4 }}
-          onClick={() => { playTap(); stopSpeaking(); setPhase('question') }}
-          className="mt-8 bg-amber-500 text-white font-bold text-xl rounded-2xl px-12 py-4 shadow-lg border-b-[6px] border-amber-600 touch-target-child">
-          بزن بریم!
-        </motion.button>
+        {/* Clay, like every child action (was white on amber-500, ~2.1:1). */}
+        <div className="mt-8 w-full max-w-xs">
+          <ClayButton size="lg" onClick={() => { playTap(); stopSpeaking(); setPhase('question') }}>
+            بزن بریم!
+          </ClayButton>
+        </div>
       </div>
     )
   }
@@ -165,11 +223,11 @@ function PlacementInner() {
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-gray-800 mt-4">آفرین {child?.name}!</h1>
+        <h1 className="font-display font-black text-2xl text-text-primary mt-4">آفرین {child?.name}!</h1>
         {/* Re-placement never reveals a level — a recurring scorecard is
             exactly the signal the gate/trophy split exists to hide, and a
             re-placement result can legitimately move the gate down (§2/§3). */}
-        <p className="text-gray-600 mt-2 persian-text">
+        <p className="text-text-secondary mt-2 persian-text">
           {isReprobe ? 'خیلی خوب بود!' : <>از اینجا شروع می‌کنیم: <b>{labels[finalLevel]}</b></>}
         </p>
         <p className="text-sm text-text-secondary mt-4 persian-text">در حال رفتن به خانه...</p>
@@ -189,35 +247,42 @@ function PlacementInner() {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-5 gap-6">
-        <p className="text-lg font-bold text-gray-800 text-center persian-text">{q.prompt}</p>
+        <p className="text-lg font-bold text-text-primary text-center persian-text">{q.prompt}</p>
 
         {/* Prompt media */}
         {q.mode === 'listen' ? (
           <button
             onClick={() => { playTap(); const correct = q.choices.find(c => c.id === q.correct_id); speakOrPlay(q.audio_url, correct?.persian ?? '') }}
-            className="w-28 h-28 rounded-full bg-white shadow-lg flex items-center justify-center text-5xl touch-target-child active:scale-95 transition-transform"
+            className="clay w-28 h-28 flex items-center justify-center text-5xl touch-target-child"
+            style={{ ...clayVars('stories'), '--clay-radius': '9999px' } as React.CSSProperties}
             aria-label="دوباره گوش کن"
           >
             <Icon name="listen" size="lg" />
           </button>
         ) : (
-          <div className="bg-white rounded-lg shadow-lg px-6 py-6 sm:px-10 sm:py-8">
-            <span className="text-4xl sm:text-6xl font-bold text-gray-800">{q.show_text}</span>
+          <div className="clay-static px-6 py-6 sm:px-10 sm:py-8" style={{ '--clay-edge': 'var(--ramp-brand-bright)' } as React.CSSProperties}>
+            <span className="text-4xl sm:text-6xl font-bold text-text-primary">{q.show_text}</span>
           </div>
         )}
 
         {/* Choices */}
         <div className="grid grid-cols-3 gap-3 w-full max-w-sm" role="group" aria-label="گزینه‌ها">
-          {q.choices.map(c => (
+          {q.choices.map((c, i) => (
             <motion.button
               key={c.id}
               onClick={() => answer(c)}
               disabled={phase !== 'question'}
               whileTap={{ scale: 0.92 }}
-              className="aspect-square bg-white rounded-[1.5rem] shadow-md flex flex-col items-center justify-center gap-1 disabled:opacity-60 touch-target-child"
-              aria-label={c.persian}
+              className="clay-option aspect-square flex flex-col items-center justify-center gap-1 disabled:opacity-60 touch-target-child"
+              style={softClayVars('brand')}
+              // Neutral while answering: the choice's word IS the answer on a
+              // listen item (and on a read item). Once answered, the choices
+              // are named and the right one is marked, as a sighted child sees.
+              aria-label={phase === 'question'
+                ? `گزینه ${toPersianDigits(i + 1)}`
+                : `${c.persian}${c.id === q.correct_id ? ' — جواب درست' : ''}`}
             >
-              <span className={c.kind === 'letter' ? 'text-3xl sm:text-5xl font-bold text-gray-800' : 'text-3xl sm:text-5xl'}>{choiceFace(c)}</span>
+              <span className={c.kind === 'letter' ? 'text-3xl sm:text-5xl font-bold text-text-primary' : 'text-3xl sm:text-5xl'}>{choiceFace(c)}</span>
             </motion.button>
           ))}
         </div>
@@ -232,7 +297,7 @@ function PlacementInner() {
           >
             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-2">
               <Mascot size={100} mood={lastCorrect ? 'excited' : 'encouraging'} />
-              <p className={`font-bold text-xl ${lastCorrect ? 'text-green-600' : 'text-amber-600'}`}>
+              <p className={`font-display font-black text-xl ${lastCorrect ? 'text-green-700' : 'text-amber-800'}`}>
                 {lastCorrect ? 'آفرین!' : 'اشکالی نداره'}
               </p>
             </motion.div>

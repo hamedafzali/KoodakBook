@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { setActiveChildId } from '@/lib/activeChild'
 import Mascot from '@/components/child/Mascot'
+import { ClayButton } from '@/components/child/clay'
 import type { Child } from '@koodakbook/shared'
 import { Icon } from '@/components/icons'
 
@@ -52,7 +53,7 @@ export default function OnboardingPage() {
         <button
           type="button"
           onClick={() => router.push('/parent/dashboard')}
-          className="flex items-center gap-1 text-sm text-text-secondary hover:text-amber-600 transition-colors mb-3"
+          className="flex items-center gap-1 min-h-[44px] text-sm font-bold text-text-secondary hover:text-brand-text transition-colors mb-1"
         >
           <span aria-hidden="true">→</span> بازگشت به پنل والدین
         </button>
@@ -66,13 +67,13 @@ export default function OnboardingPage() {
           >
             <Mascot size={80} mood="happy" />
           </motion.div>
-          <h1 className="text-xl font-bold text-gray-800">معرفی کودک</h1>
+          <h1 className="font-display font-black text-2xl text-text-primary">معرفی کودک</h1>
           <p className="text-sm text-text-secondary mt-1 persian-text">بیایید با هم شروع کنیم</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div>
-            <label htmlFor="child-name" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="child-name" className="block text-sm font-bold text-text-primary mb-1.5">
               اسم کودک
             </label>
             <input
@@ -80,15 +81,17 @@ export default function OnboardingPage() {
               type="text"
               required
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => { setName(e.target.value); setError(null) }}
               autoComplete="given-name"
-              className="w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 min-h-[48px]"
+              aria-invalid={!!error}
+              aria-describedby={error ? 'onboarding-error' : undefined}
+              className="w-full border-2 border-b-4 border-border rounded-[1rem] bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-text focus:border-[color:var(--ramp-brand-bright)] min-h-[52px]"
               placeholder="مثلاً لیلا"
             />
           </div>
 
           <div>
-            <label htmlFor="birth-year" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="birth-year" className="block text-sm font-bold text-text-primary mb-1.5">
               سال تولد <span className="text-text-secondary font-normal">(اختیاری)</span>
             </label>
             <input
@@ -100,14 +103,14 @@ export default function OnboardingPage() {
               min={2012}
               max={2025}
               autoComplete="bday-year"
-              className="ltr w-full border border-gray-300 rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-700 focus:border-amber-700 min-h-[48px] text-center"
+              className="ltr w-full border-2 border-b-4 border-border rounded-[1rem] bg-white px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-text focus:border-[color:var(--ramp-brand-bright)] min-h-[52px] text-center"
               placeholder="2018"
             />
           </div>
 
-          <div className="bg-amber-50 rounded-[0.875rem] p-3 flex items-center gap-2.5">
-            <span className="text-amber-500"><Icon name="games" size="lg" /></span>
-            <p className="text-xs text-amber-800 persian-text leading-relaxed">
+          <div className="rounded-[1rem] p-3 flex items-center gap-2.5 border-2" style={{ background: 'var(--ramp-brand-soft)', borderColor: 'var(--ramp-brand-bright)' }}>
+            <span style={{ color: 'var(--ramp-brand-ink)' }} aria-hidden="true"><Icon name="games" size="lg" /></span>
+            <p className="text-sm persian-text leading-relaxed" style={{ color: 'var(--ramp-brand-ink)' }}>
               بعد از این، یک بازی کوتاه و آسان انجام می‌دهیم تا بفهمیم از کجا شروع کنیم.
             </p>
           </div>
@@ -121,7 +124,7 @@ export default function OnboardingPage() {
                 exit={{ opacity: 0 }}
                 className="space-y-2"
               >
-                <p className="text-red-500 text-sm persian-text">{error}</p>
+                <p id="onboarding-error" className="text-red-700 text-sm persian-text">{error}</p>
                 {limitReached && (
                   <button
                     type="button"
@@ -135,14 +138,11 @@ export default function OnboardingPage() {
             )}
           </AnimatePresence>
 
-          <motion.button
-            type="submit"
-            disabled={loading || !name.trim()}
-            whileTap={{ scale: 0.97 }}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-[0.875rem] transition-colors disabled:opacity-50 text-lg min-h-[52px]"
-          >
+          {/* Clay, like every primary action on the child side: white on
+              amber-500 measured ~2:1 (DESIGN_CHARTER: dark ink on bright). */}
+          <ClayButton type="submit" size="lg" disabled={loading || !name.trim()}>
             {loading ? 'در حال ذخیره...' : 'بریم بازی کنیم!'}
-          </motion.button>
+          </ClayButton>
         </form>
       </div>
     </div>

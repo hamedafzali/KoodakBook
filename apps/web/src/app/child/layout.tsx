@@ -28,7 +28,7 @@ export default function ChildLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const wide = isWideRoute(pathname)
   return (
-    <div className="min-h-screen w-full flex bg-[#ece2d1]">
+    <div className="min-h-screen w-full flex bg-stage-backdrop">
       <ChildRail />
       <div className="flex-1 min-w-0 flex justify-center">
         <div

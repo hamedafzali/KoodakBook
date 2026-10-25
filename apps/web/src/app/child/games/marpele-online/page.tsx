@@ -10,10 +10,11 @@ import { pickChild } from '@/lib/activeChild'
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
-import { ClayButton, clayVars } from '@/components/child/clay'
+import { ClayButton, clayVars, softClayVars } from '@/components/child/clay'
 import { type QuizQuestion } from '@/components/child/QuizCard'
 import MarpeleBoard, { ChallengeModal, GameOverScreen, RollRow, TurnChip } from '@/components/child/MarpeleBoard'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import { Icon } from '@/components/icons'
 
 /* Online مارپله — web port of mobile's app/games/marpele-online.tsx (parity
@@ -27,6 +28,11 @@ import { Icon } from '@/components/icons'
 // art from pixel-wizards-charachters, not an outline glyph set.
 const TOKEN_EMOJI = ['🧒', '👧']
 const REACTIONS = ['👏', '🎉', '😄', '⭐', '💪']
+/** Persian names for the emoji-only reaction buttons — without them a screen
+ *  reader announced the raw emoji (often in English) or nothing at all. */
+const REACTION_LABEL: Record<string, string> = {
+  '👏': 'تشویق', '🎉': 'جشن', '😄': 'خنده', '⭐': 'ستاره', '💪': 'قوی باش',
+}
 
 type Phase = 'loading' | 'lobby' | 'waiting' | 'playing' | 'ended'
 interface Friend { id: string; name: string; online: boolean }
@@ -54,17 +60,33 @@ export default function MarpeleOnlinePage() {
 
   const roomRef = useRef<RoomInfo | null>(null)
   const mounted = useRef(true)
+  // The phase as the socket handlers see it (mirrors mobile's 2026-09-26
+  // fix): they are bound once, so they can't read `phase`, and it has to
+  // change at once (not a render later) so a second event or tap in the same
+  // frame sees it.
+  const phaseRef = useRef<Phase>('loading')
+  function go(p: Phase) { phaseRef.current = p; setPhase(p) }
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     mounted.current = true
+    let cancelled = false
 
     async function boot() {
       const [childRes, wordsRes] = await Promise.all([
         api.get<Child[]>('/api/children'),
         api.get<Word[]>('/api/words'),
       ])
-      const child = pickChild(childRes.data ?? [])
+      if (cancelled) return
+      // A failed fetch used to bounce the child home (no child found) or
+      // open a lobby whose ladders had no questions behind them.
+      if (!childRes.data || !wordsRes.data) {
+        setLoadError(childRes.error ?? wordsRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
+        return
+      }
+      const child = pickChild(childRes.data)
       if (!child) { router.push('/child/home'); return }
       const lv = child.level ?? 1
       setMe({ id: child.id, name: child.name })
@@ -74,10 +96,11 @@ export default function MarpeleOnlinePage() {
       setPool(preferVisual(filtered.length >= 4 ? filtered : all, w => !!(wordEmoji(w.english) || w.image_url)))
 
       const friendsRes = await api.get<{ id: string; name: string }[]>(`/api/friends/of/${child.id}`)
+      if (cancelled) return
       setFriends((friendsRes.data ?? []).map(f => ({ ...f, online: false })))
 
       const socket = connectSocket(child.name, '🧒')
-      if (!socket) { setNotice('اتصال برقرار نشد'); setPhase('lobby'); return }
+      if (!socket) { setNotice('اتصال برقرار نشد'); go('lobby'); return }
 
       socket.on('connect', () => socket.emit('presence:friends'))
       socket.emit('presence:friends')
@@ -89,9 +112,12 @@ export default function MarpeleOnlinePage() {
       socket.on('invite:incoming', (inv: { roomId: string; fromChildId: string; fromName: string; fromEmoji: string }) => {
         if (mounted.current) setInvite({ roomId: inv.roomId, fromName: inv.fromName, fromEmoji: inv.fromEmoji })
       })
-      socket.on('invite:offline', () => { if (mounted.current) { setNotice('دوستت الان آنلاین نیست'); setPhase('lobby') } })
-      socket.on('invite:declined', ({ name }: { name: string }) => { if (mounted.current) { setNotice(`${name} دعوت را رد کرد`); setPhase('lobby') } })
-      socket.on('invite:gone', () => { if (mounted.current) { setNotice('دعوت منقضی شد'); setPhase('lobby') } })
+      // Only a lobby/waiting screen goes back to the lobby: a late reply to
+      // an old invite used to kick a child out of a game (or its result) into
+      // the lobby.
+      socket.on('invite:offline', () => { if (mounted.current && phaseRef.current === 'waiting') { setNotice('دوستت الان آنلاین نیست'); go('lobby') } })
+      socket.on('invite:declined', ({ name }: { name: string }) => { if (mounted.current && phaseRef.current === 'waiting') { setNotice(`${name} دعوت را رد کرد`); go('lobby') } })
+      socket.on('invite:gone', () => { if (mounted.current && (phaseRef.current === 'waiting' || phaseRef.current === 'lobby')) { setNotice('دعوت منقضی شد'); go('lobby') } })
       socket.on('game:start', ({ roomId, players, firstTurn }: { roomId: string; players: RoomInfo['players']; firstTurn: number }) => {
         if (!mounted.current) return
         const myIndex = players.findIndex(p => p.childId === child.id)
@@ -101,32 +127,46 @@ export default function MarpeleOnlinePage() {
         setDie(null)
         setChallenge(null)
         setInvite(null)
-        setPhase('playing')
+        setNotice(null)
+        go('playing')
       })
       socket.on('game:state', ({ state }: { state: GameState }) => {
-        if (!mounted.current) return
+        // Only the game in progress: the relay carries no room id.
+        if (!mounted.current || phaseRef.current !== 'playing') return
         setPositions(state.positions)
         setCurrent(state.current)
         setDie(state.die)
         if (state.winner !== null) {
           const won = roomRef.current?.myIndex === state.winner
           setEndReason(won ? 'won' : 'lost')
-          setPhase('ended')
+          go('ended')
         }
       })
       socket.on('game:reaction', ({ emoji }: { emoji: string }) => {
         if (mounted.current) setReaction({ emoji, key: Date.now() })
       })
+      // Only while playing: on the result screen it overwrote «تو بردی!» with
+      // «دوستت از بازی خارج شد» the moment the friend left theirs.
       socket.on('game:opponent-left', () => {
-        if (mounted.current && roomRef.current) { setEndReason('left'); setPhase('ended') }
+        if (mounted.current && roomRef.current && phaseRef.current === 'playing') { setEndReason('left'); go('ended') }
       })
 
-      setPhase('lobby')
+      go('lobby')
     }
     boot()
-    return () => { mounted.current = false; disconnectSocket() }
+    return () => {
+      cancelled = true
+      mounted.current = false
+      // Leaving mid-game without the back button (browser back, a nav tab):
+      // tell the friend, as the back button does.
+      if (phaseRef.current === 'playing' && roomRef.current) {
+        getSocket()?.emit('game:leave', { roomId: roomRef.current.roomId })
+        roomRef.current = null
+      }
+      disconnectSocket()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router])
+  }, [router, attempt])
 
   useEffect(() => {
     if (!reaction) return
@@ -135,10 +175,11 @@ export default function MarpeleOnlinePage() {
   }, [reaction])
 
   function inviteFriend(f: Friend) {
+    if (phaseRef.current !== 'lobby') return   // one invite at a time
     if (!f.online) { setNotice(`${f.name} آنلاین نیست`); return }
     getSocket()?.emit('invite', { toChildId: f.id })
     setNotice(`منتظر ${f.name}…`)
-    setPhase('waiting')
+    go('waiting')
   }
   function acceptInvite() {
     if (!invite) return
@@ -179,7 +220,8 @@ export default function MarpeleOnlinePage() {
     const from = positions[idx]
     const target = Math.min(from + r, SIZE)
     await stepTo(idx, from, target)
-    if (!mounted.current) return
+    // The friend may have left (or the game ended) while the token walked.
+    if (!mounted.current || phaseRef.current !== 'playing') return
     setAnimating(false)
     const pos = [...positions]; pos[idx] = target
     if (target >= SIZE) { win(idx, pos); return }
@@ -198,6 +240,9 @@ export default function MarpeleOnlinePage() {
     if (c.question.correctWord && me.id) {
       void api.post('/api/progress/word', { child_id: me.id, word_id: c.question.correctWord.id, status: 'practiced', result: correct ? 'correct' : 'incorrect' })
     }
+    // QuizCard's answer delay outlives its modal: if the friend left
+    // meanwhile, don't move or emit into a finished room.
+    if (!mounted.current || phaseRef.current !== 'playing') return
     setChallenge(null)
     const pos = [...positions]
     if (c.kind === 'ladder' && correct) pos[idx] = c.target
@@ -210,7 +255,7 @@ export default function MarpeleOnlinePage() {
   function win(idx: number, pos: number[]) {
     setEndReason(room?.myIndex === idx ? 'won' : 'lost')
     emitState({ positions: pos, current, die, winner: idx })
-    setPhase('ended')
+    go('ended')
   }
 
   function react(emoji: string) {
@@ -218,13 +263,19 @@ export default function MarpeleOnlinePage() {
     setReaction({ emoji, key: Date.now() })
   }
 
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => { setLoadError(null); go('loading'); setAttempt(a => a + 1) }} />
+  }
   if (phase === 'loading') return <LoadingScreen message="در حال اتصال..." />
 
   if (phase === 'ended') {
     const title = endReason === 'won' ? 'تو بردی! 🏆' : endReason === 'lost' ? 'این بار دوستت برد!' : 'دوستت از بازی خارج شد'
     return (
       <GameOverScreen won={endReason === 'won'} title={title}>
-        <ClayButton ramp="games" size="lg" onClick={() => setPhase('lobby')}>بازی دوباره</ClayButton>
+        {/* Forget the finished room on the way back to the lobby: its
+            game:opponent-left (the friend leaving their result screen) must
+            not land on the lobby as «دوستت از بازی خارج شد». */}
+        <ClayButton ramp="games" size="lg" onClick={() => { roomRef.current = null; setNotice(null); go('lobby') }}>بازی دوباره</ClayButton>
       </GameOverScreen>
     )
   }
@@ -239,7 +290,7 @@ export default function MarpeleOnlinePage() {
             className="text-center text-sm font-medium text-amber-700 persian-text">{notice}</p>}
 
           {friends.length === 0 ? (
-            <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-2.5 shadow-card">
+            <div className="clay-static p-6 flex flex-col items-center gap-2.5" style={softClayVars('games')}>
               <span style={{ color: 'var(--ramp-games-ink)' }}><Icon name="partner" size="xl" /></span>
               <p className="text-center text-sm text-text-secondary persian-text leading-6">
                 هنوز دوستی نداری. از حالت والدین با کد دوستی، دوست اضافه کن.
@@ -251,11 +302,12 @@ export default function MarpeleOnlinePage() {
                 key={f.id}
                 disabled={phase === 'waiting'}
                 onClick={() => inviteFriend(f)}
-                className="flex items-center gap-2.5 bg-white rounded-2xl p-3.5 shadow-card disabled:opacity-60 text-right"
+                className="clay-option flex items-center gap-2.5 p-3.5 disabled:opacity-60 text-start min-h-[56px]"
+                style={softClayVars('games')}
               >
-                <span className="text-2xl">🧒</span>
+                <span className="text-2xl" aria-hidden="true">🧒</span>
                 <span className="flex-1 font-bold text-text-primary">{f.name}</span>
-                <span className={`w-2.5 h-2.5 rounded-full ${f.online ? 'bg-emerald-500' : 'bg-border'}`} />
+                <span className={`w-2.5 h-2.5 rounded-full ${f.online ? 'bg-emerald-500' : 'bg-border'}`} aria-hidden="true" />
                 <span className={`text-xs font-medium ${f.online ? 'text-emerald-600' : 'text-text-secondary'}`}>
                   {f.online ? 'آنلاین — دعوت کن' : 'آفلاین'}
                 </span>
@@ -269,16 +321,17 @@ export default function MarpeleOnlinePage() {
             <motion.div
               className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-5"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              role="dialog" aria-modal="true" aria-labelledby="invite-title"
             >
               <motion.div
                 className="bg-white rounded-3xl p-6 w-full max-w-sm flex flex-col items-center gap-3"
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               >
-                <span className="text-5xl">{invite.fromEmoji || '🧒'}</span>
-                <p className="text-center font-bold text-text-primary persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
+                <span className="text-5xl" aria-hidden="true">{invite.fromEmoji || '🧒'}</span>
+                <p id="invite-title" className="text-center font-bold text-text-primary persian-text">«{invite.fromName}» تو را به بازی مارپله دعوت کرد!</p>
                 <div className="flex gap-2.5">
-                  <button onClick={acceptInvite} style={clayVars('games')} className="clay font-bold px-6 py-3 min-h-[56px]">بریم! 🎲</button>
-                  <button onClick={declineInvite} className="bg-surface-subtle text-text-primary font-bold rounded-xl px-6 py-3">نه</button>
+                  <button onClick={acceptInvite} style={clayVars('games')} className="clay font-bold px-6 py-3 min-h-[56px]">بریم! <span aria-hidden="true">🎲</span></button>
+                  <button onClick={declineInvite} className="bg-surface-subtle text-text-primary font-bold rounded-xl px-6 py-3 min-h-[56px]">نه</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -296,7 +349,7 @@ export default function MarpeleOnlinePage() {
     <div className="min-h-screen child-bg pb-nav">
       <PageHeader
         title={myTurn ? 'نوبت توست! 🎲' : `نوبت ${cur?.name}…`}
-        onBack={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); router.push('/child/games/marpele') }}
+        onBack={() => { getSocket()?.emit('game:leave', { roomId: room?.roomId }); roomRef.current = null; router.push('/child/games/marpele') }}
         module="games"
       />
 
@@ -330,9 +383,12 @@ export default function MarpeleOnlinePage() {
           </motion.span>
         )}
 
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-2" role="group" aria-label="واکنش‌ها">
           {REACTIONS.map(e => (
-            <button key={e} onClick={() => react(e)} className="text-2xl">{e}</button>
+            <button key={e} onClick={() => react(e)} aria-label={REACTION_LABEL[e] ?? 'واکنش'}
+              className="text-2xl min-w-[48px] min-h-[48px] rounded-2xl flex items-center justify-center">
+              <span aria-hidden="true">{e}</span>
+            </button>
           ))}
         </div>
 

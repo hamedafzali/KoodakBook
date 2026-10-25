@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { router } from 'expo-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type {
   Child, ChildLessonProgress, ChildSession, ChildStoryProgress, ChildWordProgress,
@@ -8,10 +8,12 @@ import type {
 } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
 import { Ionicons } from '@expo/vector-icons'
-import ScreenHeader from '@/components/ScreenHeader'
+import ParentLoadState, { PARENT_FALLBACK_ERROR } from '@/components/ParentLoadState'
+import { ParentHeader, ParentPage, parentUI } from '@/components/ParentUI'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
-import { colors, fonts } from '@/lib/theme'
+import { isParentUnlocked } from '@/lib/parentGate'
+import { fonts, radii, ramps, spacing, textSize, textStart, ui } from '@/lib/theme'
 
 interface RawProgress {
   words: ChildWordProgress[]
@@ -23,11 +25,13 @@ interface RawProgress {
 const MASTERY_ORDER = ['consolidated', 'mastered', 'practicing', 'introduced'] as const
 type MasteryKey = typeof MASTERY_ORDER[number]
 
+// The same four colours as the hub's «وضعیت کلمه‌ها» dots (parent/index.tsx):
+// each ramp's soft fill with its ink (>=7:1 on the soft, tools/design/ramps.py).
 const MASTERY_TINT: Record<MasteryKey, { bg: string; fg: string }> = {
-  consolidated: { bg: '#d1fae5', fg: '#047857' },
-  mastered: { bg: '#dcfce7', fg: '#15803d' },
-  practicing: { bg: '#fef3c7', fg: '#b45309' },
-  introduced: { bg: '#f1f5f9', fg: '#64748b' },
+  consolidated: { bg: ramps.letters.soft, fg: ramps.letters.ink },
+  mastered: { bg: ramps.lessons.soft, fg: ramps.lessons.ink },
+  practicing: { bg: ramps.brand.soft, fg: ramps.brand.ink },
+  introduced: { bg: parentUI.field, fg: ui.textMuted },
 }
 const MASTERY_LABEL: Record<MasteryKey, string> = {
   consolidated: 'تثبیت‌شده', mastered: 'یاد گرفته', practicing: 'در حال تمرین', introduced: 'معرفی شده',
@@ -52,17 +56,32 @@ interface Enriched {
 /** Full learning report per child (web: /parent/progress). */
 export default function ParentProgress() {
   const insets = useSafeAreaInsets()
+  // The child picked on the parent hub (?child=<id>). Without it (an older
+  // link) this falls back to the device's active child, as before.
+  const { child: childParam } = useLocalSearchParams<{ child?: string }>()
+  const allowed = isParentUnlocked()
   const [child, setChild] = useState<Child | null>(null)
   const [data, setData] = useState<Enriched | null>(null)
   const [tab, setTab] = useState<TabKey>('words')
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  const retry = () => { setError(null); setReloadKey((k) => k + 1) }
+
+  // A deep link straight here must face the PIN like the hub does.
+  useFocusEffect(useCallback(() => {
+    if (!isParentUnlocked()) router.replace('/parent')
+  }, []))
 
   useEffect(() => {
+    if (!allowed) return
+    let cancelled = false
     async function load() {
-      const childId = await getActiveChildId()
-      if (!childId) { router.replace('/children'); return }
+      const childId = childParam || await getActiveChildId().catch(() => null)
+      if (cancelled) return
       const childRes = await api.get<Child[]>('/api/children')
-      const c = childRes.data?.find((x) => x.id === childId) ?? childRes.data?.[0] ?? null
+      if (cancelled) return
+      if (!childRes.data) { setError(childRes.error || PARENT_FALLBACK_ERROR); return }
+      const c = childRes.data.find((x) => x.id === childId) ?? childRes.data[0] ?? null
       setChild(c)
       if (!c) { setError('پروفایل کودک یافت نشد'); return }
       const [progRes, wordsRes, lessonsRes, storiesRes] = await Promise.all([
@@ -71,7 +90,8 @@ export default function ParentProgress() {
         api.get<Lesson[]>('/api/lessons'),
         api.get<Story[]>('/api/stories'),
       ])
-      if (!progRes.data) { setError(progRes.error); return }
+      if (cancelled) return
+      if (!progRes.data) { setError(progRes.error || PARENT_FALLBACK_ERROR); return }
       const wordMap = Object.fromEntries((wordsRes.data ?? []).map((w) => [w.id, w]))
       const lessonMap = Object.fromEntries((lessonsRes.data ?? []).map((l) => [l.id, l]))
       const storyMap = Object.fromEntries((storiesRes.data ?? []).map((s) => [s.id, s]))
@@ -83,7 +103,8 @@ export default function ParentProgress() {
       })
     }
     load()
-  }, [])
+    return () => { cancelled = true }
+  }, [allowed, childParam, reloadKey])
 
   const wordsByMastery = useMemo(() => {
     const groups = { consolidated: [], mastered: [], practicing: [], introduced: [] } as Record<MasteryKey, Enriched['words']>
@@ -91,12 +112,9 @@ export default function ParentProgress() {
     return groups
   }, [data])
 
+  if (!allowed) return <View style={styles.center} />
   if (!data) {
-    return (
-      <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
-      </View>
-    )
+    return <ParentLoadState title={child ? `پیشرفت ${child.name}` : 'پیشرفت'} subtitle="گزارش کامل یادگیری" error={error} onRetry={error === 'پروفایل کودک یافت نشد' ? undefined : retry} />
   }
 
   const learnedCount = wordsByMastery.consolidated.length + wordsByMastery.mastered.length
@@ -111,23 +129,26 @@ export default function ParentProgress() {
   ]
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
-      <ScreenHeader title={`پیشرفت ${child?.name ?? ''}`} subtitle="گزارش کامل یادگیری" variant="parent" />
+    <ParentPage>
+      <ParentHeader title={`پیشرفت ${child?.name ?? ''}`} subtitle="گزارش کامل یادگیری" />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
         stickyHeaderIndices={[1]}
       >
 
       <View style={styles.statsRow}>
-        <Stat value={learnedCount} label="کلمه یاد گرفته" bg="#dcfce7" fg="#15803d" />
-        <Stat value={lessonsDone} label="درس تمام شده" bg="#fef3c7" fg="#b45309" />
-        <Stat value={storiesDone} label="داستان خوانده" bg="#dbeafe" fg="#1d4ed8" />
+        <Stat value={learnedCount} label="کلمه یاد گرفته" bg={ramps.lessons.soft} fg={ramps.lessons.ink} />
+        <Stat value={lessonsDone} label="درس تمام شده" bg={ramps.brand.soft} fg={ramps.brand.ink} />
+        <Stat value={storiesDone} label="داستان خوانده" bg={ramps.letters.soft} fg={ramps.letters.ink} />
       </View>
 
-      <View style={styles.tabs}>
+      <View style={styles.tabs} accessibilityRole="tablist">
         {TABS.map((t) => (
-          <Pressable key={t.key} style={[styles.tab, tab === t.key && styles.tabActive]} onPress={() => setTab(t.key)}>
-            <Text style={[styles.tabText, tab === t.key && { color: colors.onPrimary }]}>
+          <Pressable
+            key={t.key} style={[styles.tab, tab === t.key && styles.tabActive]} onPress={() => setTab(t.key)}
+            accessibilityRole="tab" accessibilityState={{ selected: tab === t.key }}
+          >
+            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
               {t.label} ({toPersianDigits(t.count)})
             </Text>
           </Pressable>
@@ -164,7 +185,7 @@ export default function ParentProgress() {
           {data.lessons.length === 0 && <Empty text="هنوز درسی شروع نشده" />}
           {data.lessons.map((l) => (
             <View key={l.id} style={styles.listRow}>
-              <Ionicons name={l.completed ? 'checkmark-circle' : 'time-outline'} size={22} color={l.completed ? colors.success : colors.muted} />
+              <Ionicons name={l.completed ? 'checkmark-circle' : 'time-outline'} size={22} color={l.completed ? ui.success : ui.textMuted} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.listTitle}>{l.lesson?.title ?? '—'}</Text>
                 {l.completed && l.score != null && (
@@ -181,7 +202,7 @@ export default function ParentProgress() {
           {data.stories.length === 0 && <Empty text="هنوز داستانی خوانده نشده" />}
           {data.stories.map((s) => (
             <View key={s.id} style={styles.listRow}>
-              <Ionicons name={s.completed ? 'book' : 'document-outline'} size={22} color={s.completed ? colors.success : colors.muted} />
+              <Ionicons name={s.completed ? 'book' : 'document-outline'} size={22} color={s.completed ? ui.success : ui.textMuted} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.listTitle}>{s.story?.title_persian ?? '—'}</Text>
                 <Text style={styles.listMeta}>
@@ -200,7 +221,7 @@ export default function ParentProgress() {
           {data.recent_sessions.map((s, i) => (
             <View key={i} style={[styles.listRow, { justifyContent: 'space-between' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="calendar-outline" size={16} color={colors.text} />
+                <Ionicons name="calendar-outline" size={16} color={parentUI.text} />
                 <Text style={styles.listTitle}>{new Date(s.started_at).toLocaleDateString('fa-IR')}</Text>
               </View>
               <Text style={styles.listMeta}>
@@ -211,13 +232,13 @@ export default function ParentProgress() {
         </View>
       )}
       </ScrollView>
-    </View>
+    </ParentPage>
   )
 }
 
 function Stat({ value, label, bg, fg }: { value: number; label: string; bg: string; fg: string }) {
   return (
-    <View style={[styles.stat, { backgroundColor: bg }]}>
+    <View style={[styles.stat, { backgroundColor: bg }]} accessible accessibilityLabel={`${label}: ${toPersianDigits(value)}`}>
       <Text style={[styles.statValue, { color: fg }]}>{toPersianDigits(value)}</Text>
       <Text style={[styles.statLabel, { color: fg }]}>{label}</Text>
     </View>
@@ -229,30 +250,34 @@ function Empty({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  content: { paddingHorizontal: 20, gap: 14 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 20, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  statsRow: { flexDirection: 'row', gap: 10 },
-  stat: { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 2 },
-  statValue: { fontSize: 22, fontFamily: fonts.bold },
-  statLabel: { fontSize: 11, fontFamily: fonts.regular, textAlign: 'center' },
-  tabs: { flexDirection: 'row', gap: 6, backgroundColor: colors.bg, paddingVertical: 6 },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 12, alignItems: 'center', backgroundColor: colors.card },
-  tabActive: { backgroundColor: colors.primarySoft },
-  tabText: { fontSize: 12, fontFamily: fonts.medium, color: colors.muted },
-  masteryHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  masteryPill: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  masteryPillText: { fontSize: 12, fontFamily: fonts.bold },
-  masteryCount: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted },
-  wordWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  wordChip: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6 },
-  wordChipText: { fontSize: 14, fontFamily: fonts.medium },
-  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 14, padding: 14 },
-  listTitle: { fontSize: 14, fontFamily: fonts.medium, color: colors.text },
-  listMeta: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  empty: { textAlign: 'center', color: colors.muted, fontFamily: fonts.regular, paddingVertical: 30 },
-  error: { color: colors.danger, fontFamily: fonts.regular },
+  center: { flex: 1, backgroundColor: parentUI.page },
+  content: { paddingHorizontal: spacing.md + 4, gap: spacing.md - 2 },
+  statsRow: { flexDirection: 'row', gap: spacing.sm + 2 },
+  stat: { flex: 1, borderRadius: parentUI.radius, padding: spacing.md - 2, alignItems: 'center', gap: 2 },
+  statValue: { fontSize: textSize.h2, fontFamily: fonts.bold },
+  statLabel: { fontSize: textSize.micro, fontFamily: fonts.medium, textAlign: 'center' },
+  // Sticky under the header: the page's own colour so rows scroll under it.
+  tabs: { flexDirection: 'row', gap: 6, backgroundColor: parentUI.page, paddingVertical: 6 },
+  tab: {
+    flex: 1, minHeight: ui.hit, paddingHorizontal: 2, borderRadius: parentUI.controlRadius,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: parentUI.surface, borderWidth: 1, borderColor: parentUI.line,
+  },
+  tabActive: { backgroundColor: parentUI.accentSoft, borderColor: parentUI.accent },
+  tabText: { fontSize: textSize.micro + 1, fontFamily: fonts.medium, color: parentUI.muted, textAlign: 'center' },
+  tabTextActive: { fontFamily: fonts.bold, color: parentUI.accentText },
+  masteryHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  masteryPill: { borderRadius: radii.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: 3 },
+  masteryPillText: { fontSize: textSize.micro + 1, fontFamily: fonts.bold },
+  masteryCount: { fontSize: textSize.micro + 1, fontFamily: fonts.regular, color: parentUI.muted },
+  wordWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  wordChip: { borderRadius: parentUI.controlRadius, paddingHorizontal: spacing.sm + 4, paddingVertical: 6 },
+  wordChipText: { fontSize: textSize.caption + 1, fontFamily: fonts.medium },
+  listRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, backgroundColor: parentUI.surface,
+    borderRadius: parentUI.controlRadius + 2, borderWidth: 1, borderColor: parentUI.line, padding: spacing.md - 2,
+  },
+  listTitle: { fontSize: textSize.caption + 1, fontFamily: fonts.medium, color: parentUI.text, textAlign: textStart },
+  listMeta: { fontSize: textSize.micro + 1, fontFamily: fonts.regular, color: parentUI.muted, marginTop: 2, textAlign: textStart },
+  empty: { textAlign: 'center', color: parentUI.muted, fontFamily: fonts.regular, fontSize: textSize.caption + 1, paddingVertical: spacing.xl - 2 },
 })

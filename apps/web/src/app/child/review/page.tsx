@@ -8,8 +8,10 @@ import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import QuizCard, { type QuizQuestion } from '@/components/child/QuizCard'
 import Mascot from '@/components/child/Mascot'
-import { clayVars } from '@/components/child/clay'
+import { ClayButton } from '@/components/child/clay'
+import { Icon } from '@/components/icons'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import { playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
 import type { Child, Word, ReviewItem } from '@koodakbook/shared'
@@ -42,26 +44,37 @@ export default function ReviewPage() {
   const reteachShownRef = useRef<Set<string>>(new Set())
   const sessionWinsRef = useRef<Word[]>([])
   const firedRef = useRef(false)
+  // A failed fetch used to land on «همه را مرور کردی!» — a celebration for
+  // a review that never loaded. Failed is not "nothing due".
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
+    let cancelled = false
+    const fail = (e: string | null) => { setLoadError(e ?? 'اتصال برقرار نشد. دوباره تلاش کن'); setLoading(false) }
     async function load() {
       const childRes = await api.get<Child[]>('/api/children')
-      const child = pickChild(childRes.data ?? [])
+      if (cancelled) return
+      if (!childRes.data) { fail(childRes.error); return }
+      const child = pickChild(childRes.data)
       if (child) {
         setChildId(child.id)
         const [reviewRes, wordsRes] = await Promise.all([
           api.get<ReviewItem[]>(`/api/progress/${child.id}/review`),
           api.get<Word[]>('/api/words'),
         ])
-        setItems(reviewRes.data ?? [])
-        setPool(wordsRes.data ?? [])
+        if (cancelled) return
+        if (!reviewRes.data || !wordsRes.data) { fail(reviewRes.error ?? wordsRes.error); return }
+        setItems(reviewRes.data)
+        setPool(wordsRes.data)
       }
       setLoading(false)
     }
     load()
-  }, [router])
+    return () => { cancelled = true }
+  }, [router, attempt])
 
   const questions = useMemo<QuizQuestion[]>(
     () => (items.length === 0 ? [] : buildReviewQuestions(items, pool)),
@@ -94,6 +107,9 @@ export default function ReviewPage() {
   }
 
   if (loading) return <LoadingScreen message="در حال آماده‌سازی مرور..." />
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => { setLoadError(null); setLoading(true); setAttempt(a => a + 1) }} />
+  }
 
   // `done` is set reactively one render after idx crosses allQuestions.length
   // (see the useEffect above) — guard the in-between render rather than index
@@ -106,19 +122,15 @@ export default function ReviewPage() {
           <Mascot size={130} mood="excited" />
         </motion.div>
         <h1 className="font-display text-h1 font-black text-text-primary">
-          {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}
+          {allCaughtUp ? 'همه را مرور کردی! ' : 'آفرین! مرور تمام شد '}
+          <span aria-hidden="true">{allCaughtUp ? '🎉' : '🌟'}</span>
         </h1>
         <p className="text-body text-text-secondary persian-text">
-          {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${correct} از ${allQuestions.length} درست`}
+          {allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : `${toPersianDigits(correct)} از ${toPersianDigits(allQuestions.length)} درست`}
         </p>
-        <motion.button
-          onClick={() => router.push('/child/home')}
-          whileTap={{ scale: 0.96 }}
-          style={clayVars('review')}
-          className="clay w-full max-w-xs font-bold py-4 text-lg min-h-[56px]"
-        >
-          برگشت به خانه 🏠
-        </motion.button>
+        <ClayButton ramp="review" size="lg" className="max-w-xs" onClick={() => router.push('/child/home')}>
+          برگشت به خانه <span aria-hidden="true">🏠</span>
+        </ClayButton>
       </div>
     )
   }
@@ -135,16 +147,16 @@ export default function ReviewPage() {
           aria-label="برگشت"
           className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+          <Icon name="back" size="md" strokeWidth={2.5} />
         </motion.button>
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-1.5">
-            <h1 className="font-bold text-text-primary text-sm">مرور کلمه‌ها 🔄</h1>
-            <span className="text-sm font-bold text-amber-600 persian-text">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <h1 className="font-bold text-text-primary text-sm">مرور کلمه‌ها <span aria-hidden="true">🔄</span></h1>
+            <span className="text-sm font-bold text-amber-700 shrink-0 persian-text">
               {toPersianDigits(idx + 1)} از {toPersianDigits(allQuestions.length)}
             </span>
           </div>
-          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} className="h-2 bg-surface-subtle rounded-full overflow-hidden">
+          <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label={`پیشرفت مرور: ${toPersianDigits(Math.round(progress))} درصد`} className="h-2 bg-surface-subtle rounded-full overflow-hidden">
             <motion.div className="h-full bg-brand-gradient rounded-full" animate={{ width: `${progress}%` }} transition={{ type: 'spring', stiffness: 120, damping: 20 }} />
           </div>
         </div>
@@ -155,6 +167,7 @@ export default function ReviewPage() {
           <AnimatePresence mode="wait">
             <motion.div key={idx} initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }} transition={{ type: 'spring', stiffness: 300, damping: 28 }}>
               <QuizCard
+                ramp="review"
                 question={question}
                 onCorrect={() => {
                   if (question.correctWord) {
