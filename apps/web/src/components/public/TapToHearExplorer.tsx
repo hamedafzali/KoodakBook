@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { speakOrPlay } from '@/lib/speech'
 import { playTap } from '@/lib/sounds'
 import { Icon, type IconName } from '@/components/icons'
@@ -67,9 +68,11 @@ export function TapToHearExplorer({
             {tileStyle === 'word' ? (
               <>
                 <span className="text-3xl leading-none h-9 flex items-center" aria-hidden="true">
+                  {/* next/image: the word art is 1024×1024 PNG (~0.7 MB each, ~70 MB
+                      for the page). The optimizer serves a 36px WebP instead,
+                      and only for tiles that scroll into view. */}
                   {item.detailImage
-                    // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={item.detailImage} alt="" className="w-9 h-9 object-contain" />
+                    ? <Image src={item.detailImage} alt="" width={36} height={36} sizes="36px" className="w-9 h-9 object-contain" />
                     : item.tileEmoji ?? ''}
                 </span>
                 <span className="leading-snug text-center break-words">{item.tile}</span>
@@ -87,8 +90,7 @@ export function TapToHearExplorer({
             className="w-14 h-14 rounded-xl bg-brand-pale border border-brand-light flex items-center justify-center text-2xl shrink-0"
           >
             {selected.detailImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={selected.detailImage} alt="" className="w-10 h-10 object-contain" />
+              <Image src={selected.detailImage} alt="" width={40} height={40} sizes="40px" className="w-10 h-10 object-contain" />
             ) : selected.tileEmoji ? (
               <span aria-hidden="true">{selected.tileEmoji}</span>
             ) : (
