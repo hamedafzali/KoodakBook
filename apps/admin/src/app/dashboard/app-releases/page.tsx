@@ -47,30 +47,46 @@ export default function AppReleasesPage() {
   const latest = rows?.find(r => r.is_published)
   const nextCode = rows && rows.length ? Math.max(...rows.map(r => r.version_code)) + 1 : 1
 
-  // XHR rather than fetch so the progress bar is real (APKs are 60-120 MB).
-  const pickFile = (file: File) => {
+  // Chunked upload (backend routes/appReleases.ts): the admin's Next.js proxy
+  // refuses request bodies over 10 MB and gives up after 30 s, so the APK
+  // (60-120 MB) goes up in 8 MB pieces, in order, each retried a few times.
+  const pickFile = async (file: File) => {
     if (!/\.apk$/i.test(file.name)) { setError('فقط فایل .apk'); return }
-    setError(null); setUpload({ pct: 0 })
-    const xhr = new XMLHttpRequest()
-    xhr.open('POST', '/api/admin/app-releases/upload')
-    xhr.setRequestHeader('Authorization', `Bearer ${getToken()}`)
-    xhr.upload.onprogress = e => { if (e.lengthComputable) setUpload({ pct: Math.round((e.loaded / e.total) * 100) }) }
-    xhr.onload = () => {
-      setUpload(null)
-      try {
-        const res = JSON.parse(xhr.responseText) as { data: { url: string; bytes: number; sha256: string } | null; error: string | null }
-        if (!res.data) { setError(res.error ?? `آپلود ناموفق (${xhr.status})`); return }
-        setForm(f => ({ ...f, download_url: res.data!.url, file_bytes: res.data!.bytes, sha256: res.data!.sha256 }))
-        setNotice('فایل آپلود شد ✓')
-      } catch {
-        setError(xhr.status === 413
-          ? 'فایل برای مسیر آپلود پنل بزرگ است — فایل را جای دیگری (مثلاً GitHub Releases) بگذارید و لینک https آن را وارد کنید'
-          : `آپلود ناموفق (${xhr.status})`)
+    setError(null); setNotice(null); setUpload({ pct: 0 })
+    const auth = { Authorization: `Bearer ${getToken()}` }
+    const fail = (msg: string) => { setUpload(null); setError(msg) }
+    try {
+      const start = await api.post<{ upload_id: string; chunk_size: number }>('/api/admin/app-releases/upload/start', {})
+      if (!start.data) { fail(start.error ?? 'شروع آپلود ناموفق بود'); return }
+      const { upload_id: id, chunk_size: chunk } = start.data
+      let offset = 0
+      while (offset < file.size) {
+        const piece = file.slice(offset, Math.min(offset + chunk, file.size))
+        let sent = false
+        for (let attempt = 1; attempt <= 4 && !sent; attempt++) {
+          try {
+            const r = await fetch(`/api/admin/app-releases/upload/${id}/chunk?offset=${offset}`, {
+              method: 'PUT', headers: { ...auth, 'Content-Type': 'application/octet-stream' }, body: piece,
+            })
+            const j = await r.json().catch(() => null) as { data: { size: number } | null; error: string | null } | null
+            if (r.ok && j?.data) { offset = j.data.size; sent = true }
+            else if (r.status === 409 && j?.data) { offset = j.data.size; sent = true }   // server says where it really is
+            else if (attempt === 4) { fail(j?.error ?? `آپلود ناموفق (${r.status})`); return }
+          } catch {
+            if (attempt === 4) { fail('اتصال قطع شد — دوباره امتحان کنید'); return }
+          }
+        }
+        setUpload({ pct: Math.round((offset / file.size) * 100) })
       }
+      const done = await api.post<{ url: string; bytes: number; sha256: string }>(
+        `/api/admin/app-releases/upload/${id}/finish`, { size: file.size })
+      if (!done.data) { fail(done.error ?? 'پایان آپلود ناموفق بود'); return }
+      setUpload(null)
+      setForm(f => ({ ...f, download_url: done.data!.url, file_bytes: done.data!.bytes, sha256: done.data!.sha256 }))
+      setNotice(`فایل آپلود شد ✓ (${bytes(done.data.bytes)})`)
+    } catch {
+      fail('آپلود ناموفق بود')
     }
-    xhr.onerror = () => { setUpload(null); setError('اتصال قطع شد — لینک https فایل را وارد کنید') }
-    const fd = new FormData(); fd.append('file', file)
-    xhr.send(fd)
   }
 
   const create = async () => {

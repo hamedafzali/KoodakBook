@@ -1,7 +1,8 @@
-import { Router } from 'express'
+import { Router, raw } from 'express'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
 import crypto from 'crypto'
 import { z } from 'zod'
 import { query, queryOne } from '../lib/db'
@@ -106,6 +107,87 @@ adminAppReleasesRouter.post('/app-releases/upload', requireAdmin, requirePermiss
       data: { url: `/uploads/apps/${req.file.filename}`, bytes: req.file.size, sha256 },
       error: null,
     })
+  }))
+
+/* Chunked upload — what the admin panel uses. The admin's Next.js rewrite
+ * proxy caps a request body at 10 MB and gives up after 30 s, so a ~110 MB
+ * APK can't go up in one request ("آپلود ناموفق (500)"). Instead:
+ *
+ *   POST /app-releases/upload/start              → { upload_id }
+ *   PUT  /app-releases/upload/:id/chunk?offset=N  raw bytes, ≤ 8 MB each, in order
+ *   POST /app-releases/upload/:id/finish          { size } → { url, bytes, sha256 }
+ *
+ * Parts go to the OS temp dir (never the public uploads folder) and are
+ * copied into /uploads/apps only once complete. A chunk is accepted only at
+ * the current end of the part, so a retried chunk can't duplicate bytes. */
+const CHUNK_MAX = 8 * 1024 * 1024
+const PARTIAL_DIR = path.join(os.tmpdir(), 'koodakbook-apk-uploads')
+fs.mkdirSync(PARTIAL_DIR, { recursive: true })
+// Leftovers from abandoned uploads (older than a day) are removed at startup.
+for (const f of fs.readdirSync(PARTIAL_DIR)) {
+  const p = path.join(PARTIAL_DIR, f)
+  try { if (Date.now() - fs.statSync(p).mtimeMs > 86_400_000) fs.unlinkSync(p) } catch { /* ignore */ }
+}
+const UPLOAD_ID_RE = /^[0-9a-f]{32}$/
+const partPath = (id: string) => path.join(PARTIAL_DIR, `${id}.part`)
+
+adminAppReleasesRouter.post('/app-releases/upload/start', requireAdmin, requirePermission('admin.manage'),
+  asyncHandler(async (_req, res) => {
+    const id = crypto.randomBytes(16).toString('hex')
+    fs.writeFileSync(partPath(id), Buffer.alloc(0))
+    res.json({ data: { upload_id: id, chunk_size: CHUNK_MAX }, error: null })
+  }))
+
+adminAppReleasesRouter.put('/app-releases/upload/:id/chunk', requireAdmin, requirePermission('admin.manage'),
+  raw({ type: () => true, limit: CHUNK_MAX + 1024 }), asyncHandler(async (req, res) => {
+    const id = String(req.params.id)
+    if (!UPLOAD_ID_RE.test(id) || !fs.existsSync(partPath(id))) {
+      res.status(404).json({ data: null, error: 'upload not found' }); return
+    }
+    const offset = Number(req.query.offset)
+    const body = req.body as Buffer
+    if (!Buffer.isBuffer(body) || body.length === 0) { res.status(400).json({ data: null, error: 'empty chunk' }); return }
+    const size = fs.statSync(partPath(id)).size
+    if (!Number.isInteger(offset) || offset !== size) {
+      // The client resumes from `size` — tells it where the part really ends.
+      res.status(409).json({ data: { size }, error: `offset must be ${size}` }); return
+    }
+    if (size + body.length > MAX_APK_BYTES) { res.status(413).json({ data: null, error: 'فایل خیلی بزرگ است' }); return }
+    fs.appendFileSync(partPath(id), body)
+    res.json({ data: { size: size + body.length }, error: null })
+  }))
+
+adminAppReleasesRouter.post('/app-releases/upload/:id/finish', requireAdmin, requirePermission('admin.manage'),
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.id)
+    if (!UPLOAD_ID_RE.test(id) || !fs.existsSync(partPath(id))) {
+      res.status(404).json({ data: null, error: 'upload not found' }); return
+    }
+    const size = fs.statSync(partPath(id)).size
+    if (Number(req.body?.size) !== size || size === 0) {
+      res.status(409).json({ data: { size }, error: `فایل کامل نرسید (${size} از ${req.body?.size} بایت)` }); return
+    }
+    // An APK is a zip: refuse anything that doesn't start like one.
+    const head = Buffer.alloc(4)
+    const fd = fs.openSync(partPath(id), 'r'); fs.readSync(fd, head, 0, 4, 0); fs.closeSync(fd)
+    if (head.readUInt32LE(0) !== 0x04034b50) {
+      fs.unlinkSync(partPath(id))
+      res.status(400).json({ data: null, error: 'این فایل APK نیست' }); return
+    }
+    const filename = `koodakbook-${Date.now()}-${crypto.randomBytes(3).toString('hex')}.apk`
+    const finalPath = path.join(APPS_DIR, filename)
+    // Copy (not rename: the temp dir and the uploads volume are different
+    // filesystems in Docker) and hash in the same pass.
+    const sha256 = await new Promise<string>((resolve, reject) => {
+      const h = crypto.createHash('sha256')
+      const src = fs.createReadStream(partPath(id))
+      const dst = fs.createWriteStream(finalPath)
+      src.on('data', d => h.update(d)).on('error', reject)
+      dst.on('error', reject).on('finish', () => resolve(h.digest('hex')))
+      src.pipe(dst)
+    })
+    fs.unlinkSync(partPath(id))
+    res.json({ data: { url: `/uploads/apps/${filename}`, bytes: size, sha256 }, error: null })
   }))
 
 const createSchema = z.object({
