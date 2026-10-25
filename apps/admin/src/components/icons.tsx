@@ -5,6 +5,7 @@ import {
   RefreshCw, Headphones, Paperclip, Save, MessageSquare, Trash2,
   Home, ShieldCheck, CreditCard, Folder, ScrollText, Pencil, Type, FlaskConical,
   Smile, Inbox, LogOut, Plus, ChevronLeft, BarChart3,
+  Download, Upload, Activity, Server, Bell, Rocket, TrendingUp, TrendingDown, ExternalLink,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -87,6 +88,15 @@ export const ICON = {
   logout: LogOut,
   add: Plus,
   chevron: ChevronLeft,
+  download: Download,
+  upload: Upload,
+  activity: Activity,
+  server: Server,
+  bell: Bell,
+  rocket: Rocket,
+  up: TrendingUp,
+  down: TrendingDown,
+  external: ExternalLink,
 } satisfies Record<string, LucideIcon>
 
 export type IconName = keyof typeof ICON

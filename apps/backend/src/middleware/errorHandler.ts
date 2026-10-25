@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from 'express'
+import { notifyServerError } from '../lib/adminNotify'
 
 /* Final middleware in the chain. Postgres error codes we can attribute to a
  * malformed request (bad type, not a server fault) map to 400; everything
@@ -12,7 +13,7 @@ const CLIENT_ERROR_PG_CODES = new Set([
   '22003', // numeric_value_out_of_range
 ])
 
-export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   const pgCode = typeof err === 'object' && err !== null ? (err as { code?: string }).code : undefined
   if (pgCode && CLIENT_ERROR_PG_CODES.has(pgCode)) {
     res.status(400).json({ data: null, error: 'invalid request parameter' })
@@ -20,4 +21,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   }
   console.error(err)
   res.status(500).json({ data: null, error: 'internal server error' })
+  // Admin Telegram heads-up, throttled per route + message (lib/adminNotify).
+  const message = err instanceof Error ? err.message : String(err)
+  notifyServerError({ method: req.method, path: req.originalUrl ?? req.path, message }).catch(() => {})
 }

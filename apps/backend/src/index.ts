@@ -36,6 +36,12 @@ import readAloudRouter, { sweepExpiredReadAloud } from './routes/readAloud'
 import billingRouter from './routes/billing'
 import billingWebhookRouter from './routes/billingWebhook'
 import { errorHandler } from './middleware/errorHandler'
+import { notifyCrash, notifyStartup } from './lib/adminNotify'
+import { startDailySummary } from './lib/adminSummary'
+import { logAudit } from './lib/audit'
+import appReleasesRouter, { adminAppReleasesRouter } from './routes/appReleases'
+import adminReportsRouter from './routes/adminReports'
+import feedbackRouter, { adminFeedbackRouter } from './routes/feedback'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -114,6 +120,11 @@ app.use('/api/admin',     adminImagesRouter)
 app.use('/api/admin',     adminWordImagesRouter)
 app.use('/api/admin',     adminStoryCoversRouter)
 app.use('/api/admin',     adminPostDraftsRouter)
+app.use('/api/admin',     adminReportsRouter)
+app.use('/api/admin',     adminAppReleasesRouter)
+app.use('/api/app',       appReleasesRouter)
+app.use('/api/admin',     adminFeedbackRouter)
+app.use('/api/feedback',  feedbackRouter)
 app.use('/api/characters', charactersRouter)
 app.use('/api/friends',   friendsRouter)
 app.use('/api/leads',     leadsRouter)
@@ -130,10 +141,35 @@ const server = http.createServer(app)
 const io = new SocketServer(server, { cors: { origin: '*' } })
 setupRealtime(io)
 
+// A dying process tells the operator before it goes (lib/adminNotify,
+// throttled so a crash loop is one message, not one per restart). Behaviour is
+// otherwise Node's default: log and exit non-zero so Docker restarts it. The
+// exit waits for the Telegram call, but never more than 3 seconds.
+function dieWithNotice(kind: string, err: unknown) {
+  console.error(`[${kind}]`, err)
+  const message = err instanceof Error ? `${err.message}\n${err.stack?.split('\n').slice(1, 3).join(' ') ?? ''}` : String(err)
+  const exit = () => process.exit(1)
+  const timer = setTimeout(exit, 3000)
+  notifyCrash({ kind, message }).catch(() => {}).finally(() => { clearTimeout(timer); exit() })
+}
+process.on('uncaughtException', err => dieWithNotice('uncaughtException', err))
+process.on('unhandledRejection', err => dieWithNotice('unhandledRejection', err))
+
 server.listen(PORT, async () => {
   console.log(`Backend running on http://localhost:${PORT}`)
-  await migrate()
+  let applied: string[]
+  try {
+    applied = await migrate()
+  } catch (err) {
+    dieWithNotice('migration', err)
+    return
+  }
   await seedAdmin()
+  const version = process.env.APP_VERSION || process.env.npm_package_version || 'dev'
+  // Deploy history for the admin System report, and a Telegram heads-up.
+  logAudit('system', 'system.startup', null, null, { version, migrations: applied }).catch(() => {})
+  notifyStartup({ version, migrations: applied }).catch(() => {})
+  startDailySummary()
 
   // Child voice recordings expire unless a parent keeps them (mig 061). The
   // sweep is cheap (a partial index covers it) and runs in-process rather than

@@ -10,11 +10,13 @@ type Item = { href: string; label: string; icon: IconName; perm?: string }
 const GROUPS: { title: string; items: Item[] }[] = [
   { title: 'مرور', items: [
     { href: '/dashboard', label: 'داشبورد', icon: 'home' },
+    { href: '/dashboard/reports', label: 'گزارش‌ها', icon: 'chart', perm: 'analytics.view' },
   ] },
   { title: 'افراد', items: [
     { href: '/dashboard/users', label: 'کاربران', icon: 'users', perm: 'users.read' },
     { href: '/dashboard/team', label: 'تیم و دسترسی', icon: 'shield', perm: 'admin.manage' },
     { href: '/dashboard/plans', label: 'پلن‌ها', icon: 'card', perm: 'plans.manage' },
+    { href: '/dashboard/feedback', label: 'بازخورد خانواده‌ها', icon: 'characters', perm: 'users.read' },
     { href: '/dashboard/leads', label: 'درخواست‌ها', icon: 'inbox', perm: 'users.read' },
   ] },
   { title: 'تحلیل', items: [
@@ -33,6 +35,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     { href: '/dashboard/characters', label: 'شخصیت‌ها', icon: 'smile', perm: 'content.read' },
   ] },
   { title: 'سیستم', items: [
+    { href: '/dashboard/app-releases', label: 'انتشار اپ اندروید', icon: 'mobile', perm: 'admin.manage' },
     { href: '/dashboard/ai', label: 'هوش مصنوعی', icon: 'flask', perm: 'ai.manage' },
   ] },
 ]
@@ -99,8 +102,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-white border-b border-slate-200 flex items-center px-6 flex-shrink-0">
+        <header className="h-14 bg-white border-b border-slate-200 flex items-center gap-4 px-6 flex-shrink-0">
           <h2 className="text-sm font-semibold text-slate-600">{active?.label ?? 'پنل مدیریت'}</h2>
+          <span className="ms-auto text-xs text-slate-400">
+            {new Date().toLocaleDateString('fa-IR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </span>
+          {has(perms, 'analytics.view') && pathname !== '/dashboard/reports' && (
+            <Link href="/dashboard/reports" className="text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5">
+              <Icon name="chart" size={14} /> گزارش‌ها
+            </Link>
+          )}
         </header>
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>

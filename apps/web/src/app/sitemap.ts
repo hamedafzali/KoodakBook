@@ -12,7 +12,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 // Root is listed as '/', not '', so its <loc> is `${SITE_URL}/` — matching
 // the homepage's own `alternates.canonical` in page.tsx exactly (Google's
 // sitemap docs: each <loc> should match the page's canonical URL).
-const PUBLIC_ROUTES = ['/', '/privacy', '/terms']
+const PUBLIC_ROUTES = ['/', '/app', '/privacy', '/terms']
 
 // Content pages: real destinations in their own right (free alphabet /
 // vocabulary practice, no signup), not funnel steps.

@@ -319,6 +319,11 @@ export default function SettingsPage() {
             <NavRow label="پلن و اشتراک" href="/parent/plan" />
           </Group>
 
+          {/* Feedback to the team (app/parent/feedback) */}
+          <Group title="ارتباط با ما" id="contact-section-title">
+            <NavRow label="پیشنهاد، مشکل یا سؤال" href="/parent/feedback" icon="message" />
+          </Group>
+
           {/* Account settings */}
           <Group title="حساب کاربری" id="account-settings-title" className="divide-y divide-border">
               {email && (

@@ -69,6 +69,17 @@ services:
       TELEGRAM_CHANNEL:         ${TELEGRAM_CHANNEL:-@koodakbook_app}
       ADMIN_TELEGRAM_BOT_TOKEN: ${ADMIN_TELEGRAM_BOT_TOKEN:-}
       ADMIN_TELEGRAM_CHAT_ID:   ${ADMIN_TELEGRAM_CHAT_ID:-}
+      # Daily admin summary (lib/adminSummary.ts): local hour + IANA zone.
+      ADMIN_SUMMARY_TZ:         ${ADMIN_SUMMARY_TZ:-Europe/Berlin}
+      ADMIN_SUMMARY_HOUR:       ${ADMIN_SUMMARY_HOUR:-21}
+      # Ops alerting (lib/alerts, docs/alerting.md): healthchecks.io pings and
+      # the optional direct-to-Telegram path. These were never passed into the
+      # container before, so alert() could only dry-run in production.
+      HEALTHCHECKS_PING_KEY:    ${HEALTHCHECKS_PING_KEY:-}
+      ALERT_TELEGRAM_BOT_TOKEN: ${ALERT_TELEGRAM_BOT_TOKEN:-}
+      ALERT_TELEGRAM_CHAT_ID:   ${ALERT_TELEGRAM_CHAT_ID:-}
+      # Shown in the "backend started" message and the deploy history.
+      APP_VERSION:              ${APP_VERSION:-}
     volumes:
       - uploads:/app/uploads
       - read_aloud:/app/private/read-aloud

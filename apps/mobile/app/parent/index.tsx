@@ -6,6 +6,7 @@ import type { Child, DashboardSummary } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
 import { Ionicons } from '@expo/vector-icons'
 import PinGate, { PIN_BACKDROP } from '@/components/PinGate'
+import AppUpdateCard from '@/components/AppUpdateCard'
 import { PARENT_FALLBACK_ERROR } from '@/components/ParentLoadState'
 import { CharacterArt } from '@/components/Clay'
 import {
@@ -45,6 +46,8 @@ export default function ParentHub() {
   const [summaryError, setSummaryError] = useState<string | null>(null)
   const [loadKey, setLoadKey] = useState(0)
   const [summaryKey, setSummaryKey] = useState(0)
+  // Team replies the parent hasn't opened (app/parent/feedback.tsx).
+  const [unreadReplies, setUnreadReplies] = useState(0)
   const retryLoad = () => { setMeError(null); setChildrenError(null); setLoadKey((k) => k + 1) }
 
   useFocusEffect(
@@ -85,6 +88,18 @@ export default function ParentHub() {
       })
       return () => { cancelled = true }
     }, [selected, unlocked, summaryKey])
+  )
+
+  // Refetched on focus, so coming back from the feedback screen clears it.
+  useFocusEffect(
+    useCallback(() => {
+      if (!unlocked) return
+      let cancelled = false
+      api.get<{ unread: number }>('/api/feedback/mine').then((res) => {
+        if (!cancelled) setUnreadReplies(res.data?.unread ?? 0)
+      })
+      return () => { cancelled = true }
+    }, [unlocked])
   )
 
   if (!me) {
@@ -219,6 +234,9 @@ export default function ParentHub() {
         </>
       ) : null}
 
+      {/* Android direct-install builds only: a newer release is out. */}
+      <AppUpdateCard />
+
       {/* Menu — the rest of the parent area */}
       <ParentCard style={styles.menu}>
         <ParentRow icon="trending-up" label="پیشرفت کامل" sub="کلمات، درس‌ها، داستان‌ها، جلسات" onPress={() => router.push(selected ? { pathname: '/parent/progress', params: { child: selected } } : '/parent/progress')} />
@@ -234,6 +252,13 @@ export default function ParentHub() {
         <ParentRow icon="card" label="پلن و اشتراک" onPress={() => router.push('/parent/plan')} />
         <ParentDivider />
         <ParentRow icon="settings" label="تنظیمات" sub="هدف روزانه، زبان ترجمه، پین، خروج" onPress={() => router.push('/parent/settings')} />
+        <ParentDivider />
+        <ParentRow
+          icon="chatbubble-ellipses"
+          label="پیشنهاد، مشکل یا سؤال"
+          sub={unreadReplies > 0 ? `${toPersianDigits(String(unreadReplies))} جواب تازه از تیم کودک‌بوک` : 'مستقیم برای تیم کودک‌بوک بنویسید'}
+          onPress={() => router.push('/parent/feedback')}
+        />
       </ParentCard>
       </ScrollView>
     </ParentPage>
