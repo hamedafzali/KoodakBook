@@ -10,9 +10,11 @@ import { useActing } from '@/lib/useActing'
 import { playTap } from '@/lib/sounds'
 import BottomNav from '@/components/child/BottomNav'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import SceneBackdrop from '@/components/child/SceneBackdrop'
 import CharacterAvatar, { type CharacterMood } from '@/components/child/CharacterAvatar'
 import { ModuleCard } from '@/components/child/kit'
+import { Icon } from '@/components/icons'
 import { isSceneSlug, type AppCharacter, type CharacterLine } from '@koodakbook/shared'
 
 
@@ -31,14 +33,29 @@ export default function CharacterHomePage() {
   const [chars, setChars] = useState<AppCharacter[] | null>(null)
   const [mood, setMood] = useState<CharacterMood>('happy')
   const { mouth: actMouth, speaking, viseme: actViseme } = useActing()
+  // A failed fetch used to keep «در حال آمدن دوستت...» up forever.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
-    api.get<AppCharacter[]>('/api/characters').then(r => { if (r.data) setChars(r.data) })
-  }, [router])
+    let cancelled = false
+    api.get<AppCharacter[]>('/api/characters').then(r => {
+      if (cancelled) return
+      if (r.data) setChars(r.data)
+      else setLoadError(r.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
+    })
+    return () => { cancelled = true }
+  }, [router, attempt])
 
   const character = useMemo(() => chars?.find(c => c.slug === slug) ?? null, [chars, slug])
+
+  // An unknown friend goes home — from an effect, not from render (a router
+  // call during render is a side effect React may run twice or warn about).
+  useEffect(() => {
+    if (chars && !character) router.replace('/child/home')
+  }, [chars, character, router])
 
   function say(trigger: string, fallbackMood: CharacterMood = 'happy') {
     if (!character) return
@@ -56,8 +73,11 @@ export default function CharacterHomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [character?.id])
 
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => { setLoadError(null); setAttempt(a => a + 1) }} />
+  }
   if (!chars) return <LoadingScreen message="در حال آمدن دوستت..." />
-  if (!character) { router.replace('/child/home'); return null }
+  if (!character) return null
 
   const scene = isSceneSlug(character.home_scene) ? character.home_scene : 'garden'
   const greeting = lineFor(character, 'greeting')
@@ -84,8 +104,8 @@ export default function CharacterHomePage() {
             className="-mb-2 drop-shadow-lg" />
         </button>
         <Link href="/child/home" aria-label="برگشت به خانه"
-          className="absolute top-3 right-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+          className="absolute top-3 start-3 w-14 h-14 bg-white/90 backdrop-blur rounded-2xl shadow flex items-center justify-center text-text-secondary">
+          <Icon name="back" size="md" strokeWidth={2.5} />
         </Link>
       </div>
 

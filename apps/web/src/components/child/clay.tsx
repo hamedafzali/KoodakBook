@@ -69,6 +69,29 @@ export function toneVars(tone: Tone): CSSProperties {
   return { '--clay-fill': fill, '--clay-edge': edge, '--clay-ink': ink } as CSSProperties
 }
 
+/** The quieter clay face -- mobile ClaySurface tone="soft": `soft` fill,
+ *  `bright` edge, `ink` label (the soft/ink pair is solved for AA in
+ *  ramps.py). Feeds `.clay-option` and `.clay-static`. */
+export function softClayVars(ramp: Ramp): CSSProperties {
+  return {
+    '--clay-fill': `var(--ramp-${ramp}-soft)`,
+    '--clay-edge': `var(--ramp-${ramp}-bright)`,
+    '--clay-ink': `var(--ramp-${ramp}-ink)`,
+  } as CSSProperties
+}
+
+/** An answered option's face (mobile theme `answerRamps`): right = the
+ *  lessons green, bright; wrong = pale rose with rose-950 ink (>= 10:1).
+ *  Neutral (not yet answered) = the room's soft clay. */
+export function answerVars(state: 'right' | 'wrong' | null, ramp: Ramp = 'brand'): CSSProperties {
+  if (state === 'right') return clayVars('lessons')
+  if (state === 'wrong') {
+    const [fill, , ink] = TONES.rose
+    return { '--clay-fill': '#FFE4E6', '--clay-edge': fill, '--clay-ink': ink } as CSSProperties
+  }
+  return softClayVars(ramp)
+}
+
 const SPRING = { type: 'spring', stiffness: 500, damping: 20 } as const
 
 /* ── Button ───────────────────────────────────────────────────────────────── */
@@ -184,12 +207,14 @@ export function ClayTile({
      * The warmth lives in the copy, not in the glyph — same call as the rest
      * of the app's locked states. */
     return (
+      /* No aria-label here: a name on a plain <div> is not announced
+       * (generic role), so the lock went unheard. The padlock itself carries
+       * the state as a named img, read before the title and hint. */
       <div
         aria-disabled="true"
-        aria-label={lockedHint ? `${title} — ${lockedHint}` : title}
         className={`clay ${pad} flex items-center gap-3`}
       >
-        <Icon name="locked" size={big ? 'hero' : 'xl'} strokeWidth={2.2} />
+        <Icon name="locked" label="قفل" size={big ? 'hero' : 'xl'} strokeWidth={2.2} />
         <div className="flex-1 min-w-0">
           <p className={`font-bold ${big ? 'text-lg' : 'text-[15px]'}`}>{title}</p>
           {lockedHint && <p className="text-xs mt-0.5 truncate">{lockedHint}</p>}
@@ -202,6 +227,9 @@ export function ClayTile({
     <Link href={href} aria-label={sub ? `${title}: ${sub}` : title} className="block group">
       <motion.div
         whileTap={{ y: 4 }}
+        /* The Link is the tab stop; without this, whileTap makes this
+           wrapper a second, nameless one (framer-motion adds tabindex=0). */
+        tabIndex={-1}
         transition={SPRING}
         style={vars}
         className={`clay relative overflow-hidden ${pad} flex items-center gap-3`}
@@ -211,7 +239,7 @@ export function ClayTile({
         <span className="absolute -top-6 -left-6 w-20 h-20 bg-white/25 rounded-full" aria-hidden="true" />
         {badge && (
           <span
-            className="absolute top-2 right-2 z-10 rounded-pill px-2 py-0.5 text-[10px] font-bold text-white"
+            className="absolute top-2 start-2 z-10 rounded-pill px-2 py-0.5 text-[10px] font-bold text-white"
             style={{ background: 'var(--clay-edge)' }}
           >
             {badge}
@@ -263,15 +291,19 @@ export function ClayMiniTile({
   inList?: boolean
   label?: string
 }) {
-  return (
+  const layout = big ? 'group block' : 'flex-shrink-0 snap-start group'
+  const tile = (
     <Link
       href={href}
-      role={inList ? 'listitem' : undefined}
       aria-label={label ?? title}
-      className={big ? 'group block' : 'flex-shrink-0 snap-start group'}
+      /* role="listitem" used to sit on this Link itself, which replaced its
+       * link role — the tile stopped being announced (or operable) as a link.
+       * In a list it is wrapped instead. */
+      className={inList ? 'group block' : layout}
     >
       <motion.div
         whileTap={{ y: 4 }}
+        tabIndex={-1}
         transition={SPRING}
         style={clayVars(ramp)}
         className={`clay relative overflow-hidden flex flex-col items-center justify-center ${
@@ -291,6 +323,7 @@ export function ClayMiniTile({
       </motion.div>
     </Link>
   )
+  return inList ? <div role="listitem" className={layout}>{tile}</div> : tile
 }
 
 /* ── Bar ──────────────────────────────────────────────────────────────────── */

@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { AccessibilityInfo, ScrollView, StyleSheet, View } from 'react-native'
 import { router } from 'expo-router'
 import { goBack } from '@/lib/navigation'
+import LoadState from '@/components/LoadState'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { ReviewItem, Word } from '@koodakbook/shared'
 import { toPersianDigits, buildReviewQuestions, buildPaddingQuestions } from '@koodakbook/shared'
-import QuizCard, { type QuizQuestion } from '@/components/QuizCard'
+import QuizCard, { QuizTopBar, type QuizQuestion } from '@/components/QuizCard'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import CelebrationOverlay from '@/components/CelebrationOverlay'
-import { colors, fonts } from '@/lib/theme'
+import { stopClip } from '@/lib/sound'
+import { ramps, spacing } from '@/lib/theme'
+import ScreenBackground from '@/components/ScreenBackground'
+import { ClayButton } from '@/components/Clay'
+import { RoomDoneCard } from '@/components/RoomScene'
 
 // Frustration loop (mig-051): the backend attaches `easing`/`needsReteach` to
 // each due word — thresholds live server-side (frustration.ts), and what to
@@ -37,21 +42,33 @@ export default function Review() {
   // threshold numbers (which this file never needs to know).
   const reteachShownRef = useRef<Set<string>>(new Set())
   const sessionWinsRef = useRef<Word[]>([])
+  const [error, setError] = useState<string | null>(null)
+  // Bumped by LoadState's retry to re-run the load below.
+  const [reloadKey, setReloadKey] = useState(0)
+  const retry = () => { setError(null); setReloadKey((k) => k + 1) }
 
   useEffect(() => {
+    // Guards a response that lands after the child closed the screen: it
+    // must not redirect or set state for a screen that's gone.
+    let cancelled = false
     async function load() {
       const activeId = await getActiveChildId()
+      if (cancelled) return
       if (!activeId) { router.replace('/children'); return }
       setChildId(activeId)
       const [reviewRes, wordsRes] = await Promise.all([
         api.get<ReviewItem[]>(`/api/progress/${activeId}/review`),
         api.get<Word[]>('/api/words'),
       ])
-      setItems(reviewRes.data ?? [])
+      if (cancelled) return
+      // A failed fetch used to land on the empty «nothing to review» state.
+      if (!reviewRes.data) { setError(reviewRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن'); return }
+      setItems(reviewRes.data)
       setPool(wordsRes.data ?? [])
     }
     load()
-  }, [])
+    return () => { cancelled = true }
+  }, [reloadKey])
 
   const questions = useMemo<QuizQuestion[]>(
     () => (!items || items.length === 0 ? [] : buildReviewQuestions(items, pool)),
@@ -67,6 +84,21 @@ export default function Review() {
     if (allQuestions.length > 0 && idx >= allQuestions.length) setDone(true)
   }, [idx, allQuestions.length])
 
+  // A word still playing (or downloading) when the child leaves must not talk
+  // over the next screen.
+  useEffect(() => () => stopClip(), [])
+
+  // The done card replaces the quiz with no focus change: say the result once.
+  const finished = !!items && items.length > 0 && (done || idx >= allQuestions.length)
+  useEffect(() => {
+    if (!finished) return
+    AccessibilityInfo.announceForAccessibility(
+      `آفرین! مرور تمام شد. ${toPersianDigits(correct)} از ${toPersianDigits(allQuestions.length)} درست`
+    )
+    // Once, when the session ends; nothing changes after it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished])
+
   function report(wordId: string, result: 'correct' | 'incorrect') {
     if (!childId) return
     void api.post('/api/progress/word', { child_id: childId, word_id: wordId, status: 'practiced', result })
@@ -78,9 +110,11 @@ export default function Review() {
 
   if (!items) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.onPrimary} />
-      </View>
+      <ScreenBackground variant="warm">
+        <View style={styles.center}>
+          <LoadState error={error} onRetry={retry} onBack={() => goBack('/home')} />
+        </View>
+      </ScreenBackground>
     )
   }
 
@@ -90,49 +124,44 @@ export default function Review() {
   if (items.length === 0 || done || idx >= allQuestions.length) {
     const allCaughtUp = items.length === 0
     return (
-      <View style={[styles.center, { gap: 12, padding: 24 }]}>
-        {!allCaughtUp && <CelebrationOverlay />}
-        <Text style={{ fontSize: 56 }}>{allCaughtUp ? '🎉' : '🌟'}</Text>
-        <Text style={styles.doneTitle}>
-          {allCaughtUp ? 'همه را مرور کردی! 🎉' : 'آفرین! مرور تمام شد 🌟'}
-        </Text>
-        <Text style={styles.doneSub}>
-          {allCaughtUp
-            ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!'
-            : `${toPersianDigits(correct)} از ${toPersianDigits(allQuestions.length)} درست`}
-        </Text>
-        <Pressable style={styles.homeButton} onPress={() => goBack('/home')}>
-          <Text style={styles.homeButtonText}>برگشت به خانه 🏠</Text>
-        </Pressable>
-      </View>
+      <ScreenBackground variant="warm">
+        <View style={[styles.center, styles.doneWrap, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+          {!allCaughtUp && <CelebrationOverlay />}
+          {/* لاکی, the review room's host (Home's room card), on the review
+              room's stage: happy when there's nothing due (an empty state,
+              not a result, so no score), proud after a session. */}
+          <RoomDoneCard
+            ramp={ramps.review}
+            character="laki"
+            emotion={allCaughtUp ? 'happy' : 'proud'}
+            title={allCaughtUp ? 'همه را مرور کردی!' : 'آفرین! مرور تمام شد'}
+            body={allCaughtUp ? 'الان کلمه‌ای برای مرور نداری. بعداً برگرد!' : undefined}
+            score={allCaughtUp ? undefined : `${toPersianDigits(correct)} از ${toPersianDigits(allQuestions.length)} درست`}
+          />
+          <ClayButton ramp={ramps.review} label="برگشت به خانه" onPress={() => goBack('/home')} style={styles.doneButton} />
+        </View>
+      </ScreenBackground>
     )
   }
 
   const question = allQuestions[idx]
-  const progress = (idx / Math.max(allQuestions.length, 1)) * 100
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      <View style={styles.topBar}>
-        <Pressable onPress={() => goBack('/home')} hitSlop={10}>
-          <Text style={styles.close}>✕</Text>
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <View style={styles.topRow}>
-            <Text style={styles.title}>مرور کلمه‌ها 🔄</Text>
-            <Text style={styles.counter}>
-              {toPersianDigits(idx + 1)}/{toPersianDigits(allQuestions.length)}
-            </Text>
-          </View>
-          <View style={styles.track}>
-            <View style={[styles.fill, { width: `${progress}%` }]} />
-          </View>
-        </View>
-      </View>
+    <ScreenBackground variant="warm" style={{ paddingTop: insets.top + spacing.sm }}>
+      {/* The shared quiz bar (the lesson player and phonics quiz use it too). */}
+      <QuizTopBar
+        title="مرور کلمه‌ها"
+        index={idx}
+        total={allQuestions.length}
+        ramp={ramps.review}
+        onClose={() => goBack('/home')}
+      />
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}>
         <QuizCard
           key={idx}
+          ramp={ramps.review}
+          host="laki"
           question={question}
           onCorrect={() => {
             if (question.correctWord) {
@@ -167,26 +196,14 @@ export default function Review() {
           }}
         />
       </ScrollView>
-    </View>
+    </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 12 },
-  close: { fontSize: 20, color: colors.muted },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  title: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
-  counter: { fontSize: 13, fontFamily: fonts.medium, color: '#d97706' },
-  track: { height: 8, backgroundColor: '#e5e7eb', borderRadius: 999, overflow: 'hidden' },
-  fill: { height: '100%', backgroundColor: colors.primary, borderRadius: 999 },
-  body: { padding: 20, paddingBottom: 40 },
-  doneTitle: { fontSize: 24, fontFamily: fonts.display, color: colors.text, textAlign: 'center' },
-  doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
-  homeButton: {
-    marginTop: 12, backgroundColor: colors.primary, borderRadius: 16,
-    paddingVertical: 14, paddingHorizontal: 40,
-  },
-  homeButtonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  body: { padding: spacing.md + spacing.xs },
+
+  doneWrap: { gap: spacing.md, padding: spacing.lg },
+  doneButton: { width: '100%', maxWidth: 360 },
 })

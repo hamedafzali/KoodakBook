@@ -4,8 +4,8 @@
   "description": "Helping diaspora children learn Persian through stories and play",
   "start_url": "/child/home",
   "display": "standalone",
-  "background_color": "#fef3c7",
-  "theme_color": "#f97316",
+  "background_color": "#FFFBF0",
+  "theme_color": "#FFFBF0",
   "orientation": "portrait",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },

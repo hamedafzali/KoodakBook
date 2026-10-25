@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native'
+import { Animated, Easing, I18nManager, StyleSheet, Text, View } from 'react-native'
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Polyline, Stop } from 'react-native-svg'
 import { COLS, LADDERS, ROWS, SIZE, SNAKES, toPersianDigits } from '@koodakbook/shared'
-import { colors, fonts } from '@/lib/theme'
-export { default as Confetti } from '@/components/Confetti'
+import { clay, colors, fonts, radii, ramps } from '@/lib/theme'
 
 /**
  * The مارپله board — a big winding path of vibrant tiles with a soft 2.5D tilt,
@@ -13,11 +12,30 @@ export { default as Confetti } from '@/components/Confetti'
  */
 
 const TILE_COLORS = ['#fda4af', '#fcd34d', '#86efac', '#7dd3fc', '#c4b5fd', '#f9a8d4']
+const BORDER = 4   // styles.board's borderWidth, drawn inside the board's box
+const DEPTH = 8    // how far styles.depth shows below the board
+
+/* RTL (2026-09-26): the board is one physical coordinate space. The SVG road,
+ * snakes and ladders are drawn in physical x, but under the app's forced RTL
+ * React Native swaps a View's `left` to the start (right) edge, so the tiles
+ * came out mirrored against the drawings and the tokens (left + translateX)
+ * were pushed off the board's far edge. The board now lays out LTR
+ * (styles.stage `direction`) and the serpentine itself is mirrored here
+ * instead, so square 1 still starts at the bottom-right under RTL and the
+ * tiles, road, snakes, ladders and tokens all share one path.
+ *
+ * Text size (2026-09-27): every glyph on the board (tile numbers, tile and
+ * token emoji) is sized from the cell, so it opts out of the system text size
+ * (allowFontScaling={false}); scaled, the numbers overflowed their tiles at
+ * the larger settings. The board is one image to a screen reader, and the
+ * screen's label carries who is where. */
+const MIRROR = I18nManager.isRTL
 
 function centre(n: number, cell: number) {
   const r = Math.floor((n - 1) / COLS)
   const cRaw = (n - 1) % COLS
-  const c = r % 2 === 0 ? cRaw : COLS - 1 - cRaw
+  const cLtr = r % 2 === 0 ? cRaw : COLS - 1 - cRaw
+  const c = MIRROR ? COLS - 1 - cLtr : cLtr
   return { x: c * cell + cell / 2, y: (ROWS - 1 - r) * cell + cell / 2 }
 }
 
@@ -85,7 +103,8 @@ function Snake({ head, tail, cell, id }: { head: number; tail: number; cell: num
  *    long moves (ladders & snakes) ───────────────────────────────────── */
 function Token({ emoji, square, index, cell }: { emoji: string; square: number; index: number; cell: number }) {
   const [ox, oy] = OFFSETS[index % OFFSETS.length]
-  const target = square > 0 ? centre(square, cell) : { x: cell / 2, y: (ROWS - 0.5) * cell }
+  // Off the board (0) waits on square 1, on whichever side it is.
+  const target = centre(Math.max(1, square), cell)
   const tx = target.x + ox * cell
   const ty = target.y + oy * cell
 
@@ -100,12 +119,16 @@ function Token({ emoji, square, index, cell }: { emoji: string; square: number; 
     const long = dist > cell * 1.3            // a ladder climb or snake slide
     const dur = long ? 620 : 200
     prog.setValue(0)
-    Animated.parallel([
+    const move = Animated.parallel([
       Animated.timing(ax, { toValue: tx, duration: dur, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       Animated.timing(ay, { toValue: ty, duration: dur, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       Animated.timing(prog, { toValue: 1, duration: dur, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-    ]).start()
+    ])
+    move.start()
     prev.current = { x: tx, y: ty }
+    // A hop still running when the next one starts (or the board unmounts)
+    // is stopped; the next one continues from wherever the token is.
+    return () => move.stop()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tx, ty])
 
@@ -124,30 +147,37 @@ function Token({ emoji, square, index, cell }: { emoji: string; square: number; 
       }}
     >
       <View style={[styles.tokenDisc, { width: size, height: size, borderRadius: size / 2 }]}>
-        <Text style={{ fontSize: size * 0.62 }}>{emoji}</Text>
+        <Text style={{ fontSize: size * 0.62 }} allowFontScaling={false}>{emoji}</Text>
       </View>
     </Animated.View>
   )
 }
 
-export default function MarpeleBoard({ positions, emojis, maxWidth, maxHeight }: {
+export default function MarpeleBoard({ positions, emojis, maxWidth, maxHeight, accessibilityLabel = 'صفحهٔ مارپله' }: {
   positions: number[]
   emojis: string[]
   maxWidth: number
   maxHeight: number
+  /** The board is one image to a screen reader (30 numbered tiles read one
+   *  by one was noise); the screen passes who is on which square. */
+  accessibilityLabel?: string
 }) {
   // Fill the available area: size cells to the smaller of the width/height fit.
-  const cell = Math.floor(Math.min((maxWidth - 6) / COLS, (maxHeight - 6) / ROWS))
+  // The border is inside the board's box, so it is added around the cells
+  // (it used to eat 8pt of them, clipping the last column and the bottom row).
+  const cell = Math.max(1, Math.floor(Math.min((maxWidth - 2 * BORDER) / COLS, (maxHeight - 2 * BORDER - DEPTH) / ROWS)))
   const boardW = cell * COLS
   const boardH = cell * ROWS
+  const outerW = boardW + 2 * BORDER
+  const outerH = boardH + 2 * BORDER
 
   const tiles = Array.from({ length: SIZE }, (_, i) => ({ n: i + 1, ...centre(i + 1, cell) }))
   const roadPts = tiles.map((t) => `${t.x},${t.y}`).join(' ')
 
   return (
-    <View style={styles.stage}>
-      <View style={[styles.depth, { width: boardW, height: boardH }]} />
-      <View style={[styles.board, { width: boardW, height: boardH }]}>
+    <View style={styles.stage} accessible accessibilityRole="image" accessibilityLabel={accessibilityLabel}>
+      <View style={[styles.depth, { width: outerW, height: outerH }]} />
+      <View style={[styles.board, { width: outerW, height: outerH }]}>
         {/* winding road behind the tiles */}
         <Svg width={boardW} height={boardH} style={StyleSheet.absoluteFill} pointerEvents="none">
           <Polyline points={roadPts} fill="none" stroke="#e7c9a0" strokeWidth={cell * 0.5} strokeLinecap="round" strokeLinejoin="round" />
@@ -164,11 +194,11 @@ export default function MarpeleBoard({ positions, emojis, maxWidth, maxHeight }:
           return (
             <View key={t.n} style={[styles.tile, { width: cell * 0.8, height: cell * 0.8, left: t.x - cell * 0.4, top: t.y - cell * 0.4, backgroundColor: bg }]}>
               <View style={styles.gloss} />
-              <Text style={[styles.num, { fontSize: cell * 0.15 }]}>{toPersianDigits(t.n)}</Text>
-              {start && <Text style={{ fontSize: cell * 0.34 }}>🏠</Text>}
-              {finish && <Text style={{ fontSize: cell * 0.34 }}>🏆</Text>}
-              {ladder && !start && !finish && <Text style={{ fontSize: cell * 0.28 }}>🪜</Text>}
-              {snake && !start && !finish && <Text style={{ fontSize: cell * 0.28 }}>🐍</Text>}
+              <Text style={[styles.num, { fontSize: cell * 0.15 }]} allowFontScaling={false}>{toPersianDigits(t.n)}</Text>
+              {start && <Text style={{ fontSize: cell * 0.34 }} allowFontScaling={false}>🏠</Text>}
+              {finish && <Text style={{ fontSize: cell * 0.34 }} allowFontScaling={false}>🏆</Text>}
+              {ladder && !start && !finish && <Text style={{ fontSize: cell * 0.28 }} allowFontScaling={false}>🪜</Text>}
+              {snake && !start && !finish && <Text style={{ fontSize: cell * 0.28 }} allowFontScaling={false}>🐍</Text>}
             </View>
           )
         })}
@@ -214,16 +244,27 @@ export function Dice({ value, rolling }: { value: number | null; rolling: boolea
       loop.start()
       return () => loop.stop()
     }
+    // Upright again: stopping the loop left the die at whatever angle the
+    // spin had reached, so the result showed tilted (e.g. 130°).
     spin.stopAnimation()
-    Animated.sequence([
+    spin.setValue(0)
+    const land = Animated.sequence([
       Animated.timing(pop, { toValue: 1.25, duration: 120, useNativeDriver: true }),
       Animated.spring(pop, { toValue: 1, friction: 4, useNativeDriver: true }),
-    ]).start()
+    ])
+    land.start()
+    return () => land.stop()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rolling])
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
   const face = value ?? 1
   return (
-    <Animated.View style={[styles.die, { transform: [{ perspective: 500 }, { rotate }, { scale: pop }] }]}>
+    <Animated.View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={rolling ? 'تاس در حال چرخیدن' : value ? `تاس: ${toPersianDigits(value)}` : 'تاس'}
+      style={[styles.die, { transform: [{ perspective: 500 }, { rotate }, { scale: pop }] }]}
+    >
       <View style={styles.pipGrid}>
         {[0, 1, 2].map((r) => (
           <View key={r} style={styles.pipRow}>
@@ -239,14 +280,15 @@ export function Dice({ value, rolling }: { value: number | null; rolling: boolea
 }
 
 const styles = StyleSheet.create({
-  stage: { alignItems: 'center', justifyContent: 'center' },
-  depth: { position: 'absolute', backgroundColor: '#b98a5e', borderRadius: 22, top: 8 },
+  // Physical coordinates for everything inside (see MIRROR above).
+  stage: { alignItems: 'center', justifyContent: 'center', direction: 'ltr' },
+  depth: { position: 'absolute', backgroundColor: '#b98a5e', borderRadius: 22, top: DEPTH },
   board: {
     backgroundColor: '#d9b892', borderRadius: 22, overflow: 'hidden',
-    borderWidth: 4, borderColor: '#b98a5e',
+    borderWidth: BORDER, borderColor: '#b98a5e',
   },
   tile: {
-    position: 'absolute', borderRadius: 12, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+    position: 'absolute', borderRadius: radii.sm, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
     borderWidth: 2, borderColor: 'rgba(255,255,255,0.55)',
     shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
@@ -254,16 +296,20 @@ const styles = StyleSheet.create({
   num: { position: 'absolute', top: 3, right: 5, fontFamily: fonts.bold, color: 'rgba(0,0,0,0.45)' },
   tokenDisc: {
     backgroundColor: 'rgba(255,255,255,0.9)', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#fff',
+    borderWidth: 2, borderColor: colors.card,
     shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 3 }, elevation: 5,
   },
   die: {
-    width: 66, height: 66, borderRadius: 16, backgroundColor: '#fff', padding: 8,
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4,
-    borderWidth: 1, borderColor: '#e5e7eb',
+    width: 66, height: 66, borderRadius: radii.sm, backgroundColor: colors.card, padding: 8,
+    // Clay (2026-09-28): the games ramp's rim with a thicker bottom edge,
+    // like the roll button beside it, instead of a cold grey hairline.
+    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 3,
+    borderWidth: 2, borderBottomWidth: clay.edge, borderColor: ramps.games.bright,
   },
   pipGrid: { flex: 1, justifyContent: 'space-between' },
   pipRow: { flexDirection: 'row', justifyContent: 'space-between' },
   pipSlot: { width: '30%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
-  pip: { width: '78%', height: '78%', borderRadius: 999, backgroundColor: colors.primary },
+  // games deep (7.0:1 on the white face); the brand yellow pips were 1.7:1,
+  // faint enough that a 3 and a 5 were hard to tell apart at a glance.
+  pip: { width: '78%', height: '78%', borderRadius: radii.pill, backgroundColor: ramps.games.deep },
 })

@@ -1,9 +1,10 @@
 'use client'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { Word, Letter } from '@koodakbook/shared'
-import { wordEmoji } from '@koodakbook/shared'
+import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import Emoji from '@/components/shared/Emoji'
+import { ClayButton, answerVars, softClayVars, type Ramp } from '@/components/child/clay'
 import { mediaUrl } from '@/lib/media'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay } from '@/lib/speech'
@@ -23,6 +24,9 @@ interface Props {
   onCorrect: () => void
   onIncorrect: () => void
   onFlashcardNext: () => void
+  /** The room this card sits in: the soft clay of its cards and options
+   *  (mobile QuizCard's `ramp`). */
+  ramp?: Ramp
 }
 
 function playErrorSound() {
@@ -49,10 +53,36 @@ function wordVisual(word: Word): { type: 'img' | 'emoji'; value: string } | null
   return null
 }
 
-export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcardNext }: Props) {
+export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcardNext, ramp = 'brand' }: Props) {
+  // Prompt cards are the clay container (white face, the room's soft edge)
+  // instead of one-off white/gray cards; options are `.clay-option`.
+  const card = softClayVars(ramp)
   const [selected, setSelected] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null)
-  const { mode, correctWord, correctLetter, distractorWords = [] } = question
+  // One answer per card (it remounts per question): `feedback` is state, so
+  // two clicks in one frame both saw null and both answered. And the 950ms
+  // result callback is cleared on unmount, so it can't fire on a lesson the
+  // child already left.
+  const answeredRef = useRef(false)
+  const answerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (answerTimer.current) clearTimeout(answerTimer.current) }, [])
+  const { correctWord, correctLetter, distractorWords = [] } = question
+  // A match_image card whose word has no picture asked «این چه کلمه‌ای است؟»
+  // over a ❓ — unanswerable. It becomes listen_tap, whose prompt is the
+  // word's sound (same fallback as mobile's QuizCard).
+  const mode: QuizMode = question.mode === 'match_image' && correctWord && !wordVisual(correctWord)
+    ? 'listen_tap'
+    : question.mode
+  // Shuffled ONCE per question. This used to run in each mode's render body,
+  // so answering (setSelected/setFeedback re-render) reshuffled the grid: the
+  // options jumped to new places the moment the result showed, and a
+  // screen-reader user's «گزینه N» pointed at a different word. Same as
+  // mobile's QuizCard.
+  const options = useMemo(
+    () => (correctWord ? shuffleOnce([correctWord, ...distractorWords.slice(0, 3)]) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [question],
+  )
 
   // Auto-play the prompt the moment a card appears — the child listens
   // immediately; the speaker button stays for replay. Skip match_image, where
@@ -69,18 +99,19 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
   }, [])
 
   const handleAnswer = useCallback((id: string, isCorrect: boolean) => {
-    if (feedback !== null) return
+    if (answeredRef.current) return
+    answeredRef.current = true
     setSelected(id)
     setFeedback(isCorrect ? 'correct' : 'incorrect')
     if (isCorrect) {
       playSuccess()
       if (correctWord) speakOrPlay(correctWord.audio_url, correctWord.persian)
-      setTimeout(onCorrect, 950)
+      answerTimer.current = setTimeout(onCorrect, 950)
     } else {
       playErrorSound()
-      setTimeout(onIncorrect, 950)
+      answerTimer.current = setTimeout(onIncorrect, 950)
     }
-  }, [feedback, onCorrect, onIncorrect, correctWord])
+  }, [onCorrect, onIncorrect, correctWord])
 
   function speakPrompt() {
     playTap()
@@ -97,15 +128,16 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
           initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}>
           <motion.button
             onClick={speakPrompt}
-            className="w-full bg-white rounded-lg shadow-lg p-6 flex flex-col items-center gap-3 touch-target-child"
+            className="w-full clay-static p-6 flex flex-col items-center gap-3 touch-target-child"
+            style={card}
             whileTap={{ scale: 0.96 }}
             aria-label={`کلمه فارسی: ${correctWord.persian}. ضربه بزن تا بشنوی`}
           >
             {visual?.type === 'img' && <img src={visual.value} alt="" className="w-48 h-48 object-contain rounded-2xl" />}
             {visual?.type === 'emoji' && <span className="text-[7rem] leading-none" aria-hidden="true">{visual.value}</span>}
-            <span className="text-5xl font-bold text-gray-800">{correctWord.persian}</span>
+            <span className="text-5xl font-bold text-text-primary">{correctWord.persian}</span>
             <span className="text-base text-text-secondary ltr">{correctWord.english}</span>
-            <span className="text-xs text-amber-500 flex items-center gap-1"><Emoji name="speaker-high-volume" size={14} /> ضربه بزن تا بشنوی</span>
+            <span className="text-xs text-brand-text flex items-center gap-1"><Emoji name="speaker-high-volume" size={14} /> ضربه بزن تا بشنوی</span>
           </motion.button>
           <NextButton onClick={onFlashcardNext} />
         </motion.div>
@@ -117,14 +149,15 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
           initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}>
           <motion.button
             onClick={() => { playTap(); speakOrPlay(correctLetter.audio_url, correctLetter.name_persian) }}
-            className="w-full bg-white rounded-lg shadow-lg p-8 flex flex-col items-center gap-2 touch-target-child"
+            className="w-full clay-static p-8 flex flex-col items-center gap-2 touch-target-child"
+            style={card}
             whileTap={{ scale: 0.96 }}
             aria-label={`حرف فارسی: ${correctLetter.name_persian}. ضربه بزن تا بشنوی`}
           >
-            <span className="text-7xl font-bold text-gray-800">{correctLetter.character}</span>
-            <span className="text-xl text-gray-600">{correctLetter.name_persian}</span>
+            <span className="text-7xl font-bold text-text-primary">{correctLetter.character}</span>
+            <span className="text-xl text-text-secondary">{correctLetter.name_persian}</span>
             <span className="text-sm text-text-secondary ltr">{correctLetter.name_english}</span>
-            <span className="text-xs text-amber-500 flex items-center gap-1"><Emoji name="speaker-high-volume" size={14} /> ضربه بزن تا بشنوی</span>
+            <span className="text-xs text-brand-text flex items-center gap-1"><Emoji name="speaker-high-volume" size={14} /> ضربه بزن تا بشنوی</span>
           </motion.button>
           <NextButton onClick={onFlashcardNext} />
         </motion.div>
@@ -134,26 +167,28 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
 
   /* ── MATCH IMAGE — show picture, pick the Persian word ─────────────── */
   if (mode === 'match_image' && correctWord) {
-    const options = shuffleOnce([correctWord, ...distractorWords.slice(0, 3)])
     const visual = wordVisual(correctWord)
     return (
       <motion.div className="flex flex-col items-center gap-5 w-full"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="w-full bg-white rounded-lg shadow-md p-4 flex items-center justify-center min-h-[180px]">
+        <div className="w-full clay-static p-4 flex items-center justify-center min-h-[180px]" style={card}>
           {visual?.type === 'img'
             ? <img src={visual.value} alt="این چیست؟" className="w-44 h-44 object-contain rounded-xl" />
             : <span className="text-[8rem] leading-none" aria-hidden="true">{visual?.value ?? '❓'}</span>}
         </div>
-        <p className="font-bold text-gray-700 text-lg persian-text">این چه کلمه‌ای است؟</p>
+        <p className="font-bold text-text-primary text-lg persian-text">این چه کلمه‌ای است؟</p>
+        <ResultAnnouncer feedback={feedback} answer={correctWord.persian} />
         <div className="grid grid-cols-2 gap-3 w-full">
-          {options.map(word => (
+          {options.map((word, i) => (
             <OptionButton
               key={word.id}
+              index={i}
               label={word.persian}
               isCorrect={word.id === correctWord.id}
               isSelected={selected === word.id}
               feedback={feedback}
               onSelect={() => handleAnswer(word.id, word.id === correctWord.id)}
+              ramp={ramp}
             />
           ))}
         </div>
@@ -163,7 +198,6 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
 
   /* ── LISTEN & TAP — hear the word (TTS or recording), pick it ──────── */
   if (mode === 'listen_tap' && correctWord) {
-    const options = shuffleOnce([correctWord, ...distractorWords.slice(0, 3)])
     return (
       <motion.div className="flex flex-col items-center gap-5 w-full"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
@@ -177,13 +211,15 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
         >
           <Emoji name="speaker-high-volume" size={56} />
         </motion.button>
-        <p className="font-bold text-gray-700 text-lg persian-text">کدام کلمه را شنیدی؟</p>
+        <p className="font-bold text-text-primary text-lg persian-text">کدام کلمه را شنیدی؟</p>
+        <ResultAnnouncer feedback={feedback} answer={correctWord.persian} />
         <div className="grid grid-cols-2 gap-3 w-full">
-          {options.map(word => {
+          {options.map((word, i) => {
             const v = wordVisual(word)
             return (
               <OptionButton
                 key={word.id}
+                index={i}
                 label={word.persian}
                 emoji={v?.type === 'emoji' ? v.value : undefined}
                 imageUrl={v?.type === 'img' ? v.value : undefined}
@@ -191,6 +227,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
                 isSelected={selected === word.id}
                 feedback={feedback}
                 onSelect={() => handleAnswer(word.id, word.id === correctWord.id)}
+                ramp={ramp}
               />
             )
           })}
@@ -201,25 +238,27 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
 
   /* ── NAME IT — show Persian word, pick the matching picture ────────── */
   if (mode === 'name_it' && correctWord) {
-    const options = shuffleOnce([correctWord, ...distractorWords.slice(0, 3)])
     return (
       <motion.div className="flex flex-col items-center gap-5 w-full"
         initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <button
           onClick={() => { playTap(); speakOrPlay(correctWord.audio_url, correctWord.persian) }}
-          className="bg-white rounded-lg shadow-md px-8 py-5 text-center touch-target-child"
+          className="clay-static px-8 py-5 text-center touch-target-child"
+          style={card}
           aria-label={`کلمه: ${correctWord.persian}. ضربه بزن تا بشنوی`}
         >
-          <span className="text-5xl font-bold text-gray-800">{correctWord.persian}</span>
-          <span className="block text-xs text-amber-500 mt-1" aria-hidden="true"><Emoji name="speaker-high-volume" size={14} /> بشنو</span>
+          <span className="text-5xl font-bold text-text-primary">{correctWord.persian}</span>
+          <span className="block text-xs text-brand-text mt-1" aria-hidden="true"><Emoji name="speaker-high-volume" size={14} /> بشنو</span>
         </button>
-        <p className="font-bold text-gray-700 text-lg persian-text">کدام تصویر درست است؟</p>
+        <p className="font-bold text-text-primary text-lg persian-text">کدام تصویر درست است؟</p>
+        <ResultAnnouncer feedback={feedback} answer={correctWord.persian} />
         <div className="grid grid-cols-2 gap-3 w-full">
-          {options.map(word => {
+          {options.map((word, i) => {
             const v = wordVisual(word)
             return (
               <OptionButton
                 key={word.id}
+                index={i}
                 emoji={v?.type === 'emoji' ? v.value : undefined}
                 imageUrl={v?.type === 'img' ? v.value : undefined}
                 label={feedback !== null ? word.persian : ''}
@@ -227,6 +266,7 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
                 isSelected={selected === word.id}
                 feedback={feedback}
                 onSelect={() => handleAnswer(word.id, word.id === correctWord.id)}
+                ramp={ramp}
                 bigVisual
               />
             )
@@ -239,22 +279,21 @@ export default function QuizCard({ question, onCorrect, onIncorrect, onFlashcard
   return null
 }
 
+/** The shared clay primary (brand ramp) rather than a one-off gradient slab. */
 function NextButton({ onClick }: { onClick: () => void }) {
   return (
-    <motion.button
-      onClick={onClick}
-      className="w-full py-4 rounded-md bg-brand-gradient text-on-brand font-bold text-lg shadow-md touch-target-child"
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.96 }}
-    >
+    <ClayButton ramp="brand" size="lg" onClick={onClick}>
       بعدی ←
-    </motion.button>
+    </ClayButton>
   )
 }
 
 function OptionButton({
-  label, emoji, imageUrl, isCorrect, isSelected, feedback, onSelect, bigVisual = false,
+  index, label, emoji, imageUrl, isCorrect, isSelected, feedback, onSelect, bigVisual = false, ramp,
 }: {
+  ramp: Ramp
+  /** Position in the grid, for the neutral «گزینه N» name below. */
+  index: number
   label?: string
   emoji?: string
   imageUrl?: string
@@ -267,27 +306,49 @@ function OptionButton({
   const revealResult = feedback !== null && isSelected
   const showCorrect = feedback !== null && isCorrect && !isSelected
 
-  let borderClass = 'border-gray-200 bg-white'
-  if (revealResult) borderClass = isCorrect ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'
-  else if (showCorrect) borderClass = 'border-green-400 bg-green-50'
+  // A picture-only option has no text, and naming it by correctness gave the
+  // answer away to screen readers before the child chose («گزینه درست» on the
+  // right picture). Neutral number until answered, then the result -- the
+  // same rule as mobile's QuizCard.
+  const result = revealResult ? (isCorrect ? '، درست' : '، نادرست') : showCorrect ? '، جواب درست' : ''
+  const ariaLabel = `${label || `گزینه ${toPersianDigits(index + 1)}`}${result}`
+
+  // Neutral = the room's soft clay; answered = mobile's answerRamps (right
+  // bright green, a wrong pick pale rose). Was gray-200/green-50/red-50.
+  const state = revealResult ? (isCorrect ? 'right' : 'wrong') : showCorrect ? 'right' : null
 
   return (
     <motion.button
       onClick={onSelect}
       disabled={feedback !== null}
-      className={`min-h-[72px] rounded-md border-2 p-3 flex flex-col items-center justify-center gap-1 transition-colors touch-target-child ${borderClass}`}
+      className="clay-option min-h-[72px] p-3 flex flex-col items-center justify-center gap-1 touch-target-child"
+      style={answerVars(state, ramp)}
       whileTap={feedback === null ? { scale: 0.93 } : {}}
       animate={revealResult && !isCorrect ? { x: [-5, 5, -4, 4, 0] } : {}}
       transition={{ duration: 0.3 }}
-      aria-label={label || (isCorrect ? 'گزینه درست' : 'گزینه')}
+      aria-label={ariaLabel}
       aria-pressed={isSelected}
     >
       {imageUrl && <img src={imageUrl} alt="" aria-hidden="true" className={bigVisual ? 'w-20 h-20 object-contain' : 'w-14 h-14 object-contain rounded-lg'} />}
       {!imageUrl && emoji && <span aria-hidden="true" className={bigVisual ? 'text-6xl leading-none' : 'text-4xl leading-none'}>{emoji}</span>}
-      {label && <span className="font-bold text-gray-800 text-xl">{label}</span>}
+      {label && <span className="font-bold text-xl">{label}</span>}
       {revealResult && <Emoji name={isCorrect ? 'check-mark-button' : 'cross-mark'} size={18} className="mt-0.5" />}
       {showCorrect && <Emoji name="check-mark-button" size={18} className="mt-0.5" />}
     </motion.button>
+  )
+}
+
+/** Screen-reader half of the answer feedback. The options go `disabled` the
+ *  moment one is picked, so focus drops and the result suffix on the picked
+ *  button's name is never read. This region is mounted empty with the card
+ *  and only filled AFTER the answer — so it can never reveal the answer
+ *  early (same rule as OptionButton's neutral «گزینه N» names). Wording is
+ *  StoryQuiz's own feedback lines. */
+function ResultAnnouncer({ feedback, answer }: { feedback: 'correct' | 'incorrect' | null; answer: string }) {
+  return (
+    <p className="sr-only" role="status">
+      {feedback === 'correct' ? 'آفرین، درست بود!' : feedback === 'incorrect' ? `جواب درست: «${answer}»` : ''}
+    </p>
   )
 }
 

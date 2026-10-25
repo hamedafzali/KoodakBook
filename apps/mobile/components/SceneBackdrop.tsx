@@ -1,8 +1,9 @@
 import { StyleSheet, View } from 'react-native'
 import Svg, {
-  Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop, Text as SvgText,
+  Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop,
 } from 'react-native-svg'
 import type { SceneSlug, SceneTime } from '@koodakbook/shared'
+import { SvgCloud, SvgSparkle } from '@/components/Illustrations'
 
 /**
  * The 12-scene story backdrop library (web: components/child/SceneBackdrop),
@@ -189,18 +190,30 @@ function SceneShapes({ scene, p }: { scene: SceneSlug; p: Palette }) {
   }
 }
 
+// Clouds and night twinkles are shapes (2026-09-28): the ☁️ / ✦ glyphs they
+// replace drew in each platform's own emoji style (grey on Android) and
+// looked pasted onto the flat scenes. SvgCloud / SvgSparkle are the shared
+// in-SVG pieces from components/Illustrations.tsx (Home's hero language).
 function Floats({ scene, night }: { scene: SceneSlug; night: boolean }) {
-  const items = night
-    ? [{ x: 40, y: 30, e: '✦' }, { x: 340, y: 24, e: '✦' }, { x: 250, y: 56, e: '✧' }, { x: 120, y: 44, e: '✦' }]
-    : scene === 'sea'
-      ? [{ x: 60, y: 120, e: '☁️' }, { x: 300, y: 90, e: '☁️' }]
-      : [{ x: 70, y: 40, e: '☁️' }, { x: 290, y: 60, e: '☁️' }]
+  if (night) {
+    return (
+      <G>
+        <SvgSparkle cx={40} cy={24} r={6} color="#fef3c7" opacity={0.9} />
+        <SvgSparkle cx={340} cy={18} r={6} color="#fef3c7" opacity={0.9} />
+        <SvgSparkle cx={250} cy={50} r={4.5} color="#fef3c7" opacity={0.9} />
+        <SvgSparkle cx={120} cy={38} r={6} color="#fef3c7" opacity={0.9} />
+        <Circle cx="330" cy="46" r="18" fill="#fef3c7" opacity="0.95" />
+      </G>
+    )
+  }
+  // Top-left corners of 54x27 clouds, where the emoji used to sit (their y
+  // was the text baseline of a ~26pt glyph).
+  const clouds = scene === 'sea'
+    ? [{ x: 46, y: 92 }, { x: 286, y: 62 }]
+    : [{ x: 56, y: 12 }, { x: 276, y: 32 }]
   return (
     <G>
-      {items.map((it, i) => (
-        <SvgText key={i} x={it.x} y={it.y} fontSize={night ? 16 : 26} opacity={night ? 0.9 : 0.8}>{it.e}</SvgText>
-      ))}
-      {night && <Circle cx="330" cy="46" r="18" fill="#fef3c7" opacity="0.95" />}
+      {clouds.map((c, i) => <SvgCloud key={i} x={c.x} y={c.y} s={0.9} opacity={0.92} />)}
     </G>
   )
 }
@@ -212,8 +225,11 @@ export default function SceneBackdrop({ scene, time = 'day', style }: {
 }) {
   const p = (time === 'night' ? NIGHT : DAY)[scene]
   const gid = `sky-${scene}-${time}`
+  // Decorative: hidden from screen readers (the clouds/stars used to be
+  // emoji SvgText a screen reader could land on; they are shapes now); the
+  // page's own text carries the story.
   return (
-    <View style={[styles.wrap, style]}>
+    <View style={[styles.wrap, style]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Svg width="100%" height="100%" viewBox="0 0 400 240" preserveAspectRatio="xMidYMax slice">
         <Defs>
           <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">

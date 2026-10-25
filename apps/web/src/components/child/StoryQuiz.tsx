@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Mascot from '@/components/child/Mascot'
 import { ClayButton } from '@/components/child/clay'
@@ -32,6 +32,10 @@ export default function StoryQuiz({
 }) {
   const [index, setIndex] = useState(0)
   const [picked, setPicked] = useState<number | null>(null)
+  // The advance after feedback: cleared on unmount, so a quiz closed
+  // mid-feedback can't call onDone (and post completion) afterwards.
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (advanceTimer.current) clearTimeout(advanceTimer.current) }, [])
   const q = questions[index]
   const isLast = index === questions.length - 1
   const correct = picked !== null && picked === q.correct_index
@@ -40,7 +44,7 @@ export default function StoryQuiz({
     if (picked !== null) return   // ignore extra taps while feedback is showing
     setPicked(i)
     if (i === q.correct_index) playSuccess(); else playTap()
-    setTimeout(() => {
+    advanceTimer.current = setTimeout(() => {
       if (isLast) { onDone(); return }
       setIndex(index + 1)
       setPicked(null)
@@ -85,15 +89,20 @@ export default function StoryQuiz({
             ))}
           </div>
 
-          {picked !== null && (
-            <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-sm font-bold persian-text"
-              style={{ color: correct ? 'var(--ramp-review-ink)' : 'var(--color-text-secondary)' }}
-            >
-              {correct ? 'آفرین، درست بود! 🎉' : `جواب درست: «${q.choices[q.correct_index]}»`}
-            </motion.p>
-          )}
+          {/* Live region mounted with the question and filled only after a
+              pick: the choices go `disabled` on tap, so focus drops and the
+              result was otherwise never announced. */}
+          <div role="status">
+            {picked !== null && (
+              <motion.p
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="text-sm font-bold persian-text"
+                style={{ color: correct ? 'var(--ramp-review-ink)' : 'var(--color-text-secondary)' }}
+              >
+                {correct ? <>آفرین، درست بود! <span aria-hidden="true">🎉</span></> : `جواب درست: «${q.choices[q.correct_index]}»`}
+              </motion.p>
+            )}
+          </div>
 
           {picked === null && (
             <button onClick={onDone} className="min-h-[56px] px-5 text-text-secondary font-bold persian-text">

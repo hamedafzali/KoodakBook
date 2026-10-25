@@ -5,6 +5,9 @@ import Image from 'next/image'
 import { parseSceneRef, toPersianDigits, type StoryPage, type Story, type SceneSlug, type SceneTime } from '@koodakbook/shared'
 import Emoji from '../shared/Emoji'
 import SceneBackdrop from './SceneBackdrop'
+import { ClayButton, softClayVars } from './clay'
+import { roomBand } from './kit'
+import { Icon } from '@/components/icons'
 import { mediaUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakOrPlay, speakPersian, stopSpeaking } from '@/lib/speech'
@@ -109,24 +112,25 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
     <div className="flex flex-col h-dvh overflow-hidden child-bg">
 
       {/* Header */}
-      <div className="shrink-0 bg-white/90 backdrop-blur-md border-b border-amber-100 px-4 py-3">
+      {/* The stories room's band (roomBand) — same as the shelf's header. */}
+      <div style={roomBand('stories')} className="shrink-0 backdrop-blur-md border-b rounded-b-[1.75rem] shadow-card px-4 py-3">
         <div className="flex items-center gap-3">
           {onBack && (
             <motion.button
               onClick={onBack}
               whileTap={{ scale: 0.85 }}
               aria-label="برگشت به لیست داستان‌ها"
-              className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="min-w-[56px] min-h-[56px] flex items-center justify-center rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-subtle transition-colors"
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+              <Icon name="back" size="md" strokeWidth={2.5} />
             </motion.button>
           )}
-          <h1 className="flex-1 font-bold text-gray-800 truncate persian-text">{story.title_persian}</h1>
+          <h1 className="flex-1 min-w-0 font-display font-black text-text-primary truncate persian-text">{story.title_persian}</h1>
           {/* Persian ordinal reads correctly in RTL on its own — an LTR
               "N / total" string flips under bidi (e.g. "12 / 1"). */}
-          <span className="text-sm text-text-secondary shrink-0 persian-text">
+          {/* Polite live region: a page turn otherwise says nothing to a
+              screen reader (focus stays on «بعدی»). */}
+          <span className="text-sm text-text-secondary shrink-0 persian-text" aria-live="polite">
             {toPersianDigits(currentPage + 1)} از {toPersianDigits(story.pages.length)}
           </span>
         </div>
@@ -146,18 +150,18 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           {story.pages.map((_, i) => (
             <div key={i} className="flex items-center flex-1 min-w-0 last:flex-none">
               <div className="relative shrink-0 w-5 h-5 flex items-center justify-center">
-                <span className={`w-2.5 h-2.5 rounded-full ${i <= currentPage ? 'bg-amber-500' : 'bg-gray-200'}`} />
+                <span className={`w-2.5 h-2.5 rounded-full ${i <= currentPage ? 'bg-stories-deep' : 'bg-border'}`} />
                 {i === currentPage && (
                   <motion.span layoutId="story-walker" transition={{ type: 'spring', stiffness: 400, damping: 22 }}
-                    className="absolute -top-2 text-sm leading-none select-none">{/* EMOJI-CONTENT: the read-along chick follows the words. */}🐣</motion.span>
+                    className="absolute -top-2 text-sm leading-none select-none" aria-hidden="true">{/* EMOJI-CONTENT: the read-along chick follows the words. */}🐣</motion.span>
                 )}
               </div>
               {i < story.pages.length - 1 && (
-                <div className={`flex-1 h-0.5 border-t-2 border-dotted ${i < currentPage ? 'border-amber-400' : 'border-gray-200'}`} />
+                <div className={`flex-1 h-0.5 border-t-2 border-dotted ${i < currentPage ? 'border-stories-bright' : 'border-border'}`} />
               )}
             </div>
           ))}
-          <span className="shrink-0 text-sm mr-1 leading-none select-none" aria-hidden="true">🚩</span>
+          <span className="shrink-0 text-sm ms-1 leading-none select-none" aria-hidden="true">🚩</span>
         </div>
       </div>
 
@@ -202,9 +206,9 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
             {/* Story text — Persian words are individually tappable (each one
                 calls speakPersian on its own), so a child can hear a single
                 word they didn't catch without replaying the whole page. */}
-            <div className="bg-white rounded-lg p-5 shadow-sm lg:w-1/2 lg:p-8 lg:self-stretch lg:flex lg:flex-col lg:justify-center">
+            <div className="clay-static p-5 lg:w-1/2 lg:p-8 lg:self-stretch lg:flex lg:flex-col lg:justify-center" style={softClayVars('stories')}>
               <div className="space-y-1">
-                <p lang="fa" dir="rtl" className="persian-text text-right persian-body-lg font-bold">
+                <p lang="fa" dir="rtl" className="persian-text text-start persian-body-lg font-bold">
                   {tokenizeWords(page.text_persian).map((tok, i) => tok.tappable ? (
                     <button
                       key={i}
@@ -220,7 +224,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                   ))}
                 </p>
                 {showBilingual && (page.translation ?? page.text_english) && (
-                  <p lang="en" dir="ltr" className="text-left text-text-secondary text-base mt-2">
+                  <p lang="en" dir="ltr" className="text-start text-text-secondary text-base mt-2">
                     {page.translation ?? page.text_english}
                   </p>
                 )}
@@ -229,7 +233,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 onClick={() => { playTap(); readPage() }}
                 whileTap={{ scale: 0.9 }}
                 aria-label="پخش دوباره‌ی صدای این صفحه"
-                className="mt-4 flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 px-4 py-2.5 rounded-full text-sm font-medium transition-colors min-h-[56px]"
+                className="mt-4 flex items-center gap-2 bg-stories-soft text-stories-ink px-4 py-2.5 rounded-full text-sm font-bold transition-colors min-h-[56px]"
               >
                 <Emoji name="speaker-high-volume" size={22} />
                 <span>دوباره بشنو</span>
@@ -241,7 +245,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
 
       {/* Navigation */}
       <div
-        className="shrink-0 px-4 pb-6 pt-3 flex gap-3 bg-white/80 backdrop-blur-md border-t border-amber-100"
+        className="shrink-0 px-4 pb-6 pt-3 flex gap-3 bg-surface/80 backdrop-blur-md border-t border-border"
         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
       >
         <motion.button
@@ -249,19 +253,21 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
           disabled={currentPage === 0}
           whileTap={{ scale: 0.93 }}
           aria-label="صفحه قبلی"
-          className="flex-1 py-4 rounded-md border-2 border-gray-200 text-text-secondary font-bold disabled:opacity-30 min-h-[56px] touch-target-child"
+          className="clay-option flex-1 py-4 font-bold disabled:opacity-30 min-h-[56px] touch-target-child"
+          style={softClayVars('stories')}
         >
           صفحه قبل
         </motion.button>
-        <motion.button
+        {/* The shared clay primary, not a one-off gradient slab. The name
+            keeps the visible words in it (WCAG 2.5.3) — «پایان داستان» alone
+            didn't contain «تمام شد», which is what a voice user would say. */}
+        <ClayButton
+          ramp="brand" size="lg" className="flex-[2]"
           onClick={goNext}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.96 }}
-          aria-label={isLast ? 'پایان داستان' : 'صفحه بعدی'}
-          className="flex-[2] py-4 rounded-md bg-brand-gradient text-on-brand font-bold text-lg shadow-md min-h-[56px] touch-target-child"
+          aria-label={isLast ? 'تمام شد، پایان داستان' : 'صفحه بعدی'}
         >
           {isLast ? <><span aria-hidden="true">✅</span> تمام شد!</> : 'بعدی ←'}
-        </motion.button>
+        </ClayButton>
       </div>
     </div>
   )

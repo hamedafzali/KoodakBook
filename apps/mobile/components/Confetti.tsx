@@ -1,5 +1,25 @@
-import { useEffect, useRef } from 'react'
-import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { AccessibilityInfo, Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native'
+
+/**
+ * The system "Reduce Motion" setting (iOS) / "Remove animations" (Android),
+ * live: null until the first read resolves, then true/false, updated when
+ * the setting changes. Decorative motion (confetti, drifting motifs) waits
+ * for `false` before it starts, so a reduce-motion user never sees a frame of
+ * it (2026-09-29). Feedback that isn't motion (sounds, text) is unaffected.
+ */
+export function useReduceMotion(): boolean | null {
+  const [reduce, setReduce] = useState<boolean | null>(null)
+  useEffect(() => {
+    let live = true
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((v) => { if (live) setReduce(v) })
+      .catch(() => { if (live) setReduce(false) })
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', (v) => setReduce(v))
+    return () => { live = false; sub.remove() }
+  }, [])
+  return reduce
+}
 
 /**
  * A burst of falling emoji confetti -- mobile's equivalent of web's
@@ -13,7 +33,8 @@ import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-n
 const CONFETTI = ['🎉', '⭐', '🎈', '✨', '🏅']
 
 export default function Confetti({ count = 22 }: { count?: number }) {
-  const { width } = useWindowDimensions()
+  const reduce = useReduceMotion()
+  const { width, height } = useWindowDimensions()
   const pieces = useRef(
     Array.from({ length: count }, () => ({
       x: Math.random() * width,
@@ -25,16 +46,21 @@ export default function Confetti({ count = 22 }: { count?: number }) {
   ).current
 
   useEffect(() => {
-    Animated.stagger(40, pieces.map((p) =>
+    // Reduce motion (or not known yet): no falling pieces at all.
+    if (reduce !== false) return
+    const anim = Animated.stagger(40, pieces.map((p) =>
       Animated.timing(p.fall, { toValue: 1, duration: 2200, delay: p.delay, easing: Easing.in(Easing.quad), useNativeDriver: true })
-    )).start()
+    ))
+    anim.start()
+    return () => anim.stop()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [reduce])
 
+  if (reduce !== false) return null
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {pieces.map((p, i) => {
-        const translateY = p.fall.interpolate({ inputRange: [0, 1], outputRange: [-40, 700] })
+        const translateY = p.fall.interpolate({ inputRange: [0, 1], outputRange: [-40, height + 40] })
         const rotate = p.fall.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '540deg'] })
         const opacity = p.fall.interpolate({ inputRange: [0, 0.85, 1], outputRange: [1, 1, 0] })
         return (

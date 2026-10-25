@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native'
-import { router } from 'expo-router'
+import { useCallback, useEffect, useState } from 'react'
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PLAN_FEATURES, toPersianDigits } from '@koodakbook/shared'
-import { Ionicons } from '@expo/vector-icons'
-import ScreenHeader from '@/components/ScreenHeader'
+import ParentLoadState, { PARENT_FALLBACK_ERROR } from '@/components/ParentLoadState'
+import { Icon } from '@/components/Icon'
+import { ParentButton, ParentHeader, ParentPage, parentUI } from '@/components/ParentUI'
 import { api } from '@/lib/api'
+import { isParentUnlocked } from '@/lib/parentGate'
 import { API_BASE } from '@/lib/config'
-import { colors, fonts } from '@/lib/theme'
+import { fonts, radii, spacing, textSize, textStart, ui } from '@/lib/theme'
 
 /* Checkout is web-only (product decision, 2026-09-17): mobile has no Stripe/
  * Play Billing integration and isn't getting one — "we will open website for
@@ -47,33 +49,47 @@ export default function PlanPage() {
   const [plans, setPlans] = useState<PlanRow[] | null>(null)
   const [current, setCurrent] = useState('free')
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  const allowed = isParentUnlocked()
+
+  // A deep link straight here must face the PIN like the hub does.
+  useFocusEffect(useCallback(() => {
+    if (!isParentUnlocked()) router.replace('/parent')
+  }, []))
 
   useEffect(() => {
+    if (!allowed) return
+    let cancelled = false
     async function load() {
       const [plansRes, meRes] = await Promise.all([
         api.get<PlanRow[]>('/api/plans'),
         api.get<{ plan: string }>('/api/auth/me'),
       ])
-      if (plansRes.data) setPlans(plansRes.data)
-      else setError(plansRes.error)
-      if (meRes.data?.plan) setCurrent(meRes.data.plan)
+      if (cancelled) return
+      // Without /me the "current plan" badge would silently say free.
+      if (!plansRes.data || !meRes.data) { setError(plansRes.error || meRes.error || PARENT_FALLBACK_ERROR); return }
+      if (meRes.data.plan) setCurrent(meRes.data.plan)
+      setPlans(plansRes.data)
     }
     load()
-  }, [])
+    return () => { cancelled = true }
+  }, [allowed, reloadKey])
 
+  if (!allowed) return <View style={styles.center} />
   if (!plans) {
     return (
-      <View style={styles.center}>
-        {error ? <Text style={styles.error}>{error}</Text> : <ActivityIndicator color={colors.onPrimary} />}
-      </View>
+      <ParentLoadState
+        title="پلن‌ها و اشتراک" subtitle="امکانات هر پلن را مقایسه کنید" error={error}
+        onRetry={() => { setError(null); setReloadKey((k) => k + 1) }}
+      />
     )
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
-      <ScreenHeader title="پلن‌ها و اشتراک" subtitle="امکانات هر پلن را مقایسه کنید" variant="parent" />
+    <ParentPage>
+      <ParentHeader title="پلن‌ها و اشتراک" subtitle="امکانات هر پلن را مقایسه کنید" />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
       >
 
       {plans.map((plan) => {
@@ -83,27 +99,29 @@ export default function PlanPage() {
           <View key={plan.id} style={[styles.planCard, isCurrent && styles.planCurrent]}>
             <View style={[styles.planHead, isPremium ? styles.planHeadPremium : styles.planHeadFree]}>
               <View style={styles.planTitleRow}>
-                <Text style={[styles.planName, isPremium && { color: colors.onPrimary }]}>{plan.name}</Text>
+                <Text style={styles.planName} accessibilityRole="header">{plan.name}</Text>
                 {isCurrent && (
-                  <View style={styles.currentPill}><Text style={styles.currentPillText}>پلن فعلی</Text></View>
+                  <View style={styles.currentPill}>
+                    <Icon name="check" color={parentUI.accentText} size={12} strokeWidth={2.8} />
+                    <Text style={styles.currentPillText}>پلن فعلی</Text>
+                  </View>
                 )}
               </View>
-              <Text style={[styles.planPrice, isPremium && { color: colors.onPrimary }]}>{priceLabel(plan)}</Text>
-              {plan.description && (
-                <Text style={[styles.planDesc, isPremium && { color: colors.onPrimary }]}>{plan.description}</Text>
-              )}
+              <Text style={styles.planPrice}>{priceLabel(plan)}</Text>
+              {plan.description && <Text style={styles.planDesc}>{plan.description}</Text>}
             </View>
 
             <View style={styles.featureList}>
               {PLAN_FEATURES.map((def) => {
                 const value = plan.features[def.key] ?? def.default
+                const spoken = def.type === 'number' ? toPersianDigits(value) : value === 'true' ? 'دارد' : 'ندارد'
                 return (
-                  <View key={def.key} style={styles.featureRow}>
+                  <View key={def.key} style={styles.featureRow} accessible accessibilityLabel={`${def.label}: ${spoken}`}>
                     <Text style={styles.featureLabel}>{def.label}</Text>
                     {def.type === 'number' ? (
                       <Text style={styles.featureNumber}>{toPersianDigits(value)}</Text>
                     ) : value === 'true' ? (
-                      <Text style={styles.featureYes}>✓</Text>
+                      <Icon name="check" color={ui.success} size={18} strokeWidth={2.6} />
                     ) : (
                       <Text style={styles.featureNo}>—</Text>
                     )}
@@ -112,18 +130,20 @@ export default function PlanPage() {
               })}
             </View>
 
-            <View style={{ padding: 14 }}>
-              {isCurrent ? (
-                <View style={styles.planButtonDisabled}><Text style={styles.planButtonDisabledText}>پلن فعلی شما</Text></View>
-              ) : isPremium ? (
-                <Pressable onPress={openWebCheckout} style={styles.planButtonUpgrade}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.planButtonUpgradeText}>ارتقا در سایت</Text>
-                    <Ionicons name="open-outline" size={15} color={colors.onPrimary} />
-                  </View>
-                </Pressable>
-              ) : null}
-            </View>
+            {isCurrent || isPremium ? (
+              <View style={styles.planFoot}>
+                {isCurrent ? (
+                  <View style={styles.planButtonDisabled}><Text style={styles.planButtonDisabledText}>پلن فعلی شما</Text></View>
+                ) : (
+                  <ParentButton
+                    label="ارتقا در سایت ↗"
+                    accessibilityLabel="ارتقا در سایت کودک‌بوک"
+                    accessibilityHint="در مرورگر باز می‌شود"
+                    onPress={openWebCheckout}
+                  />
+                )}
+              </View>
+            ) : null}
           </View>
         )
       })}
@@ -132,41 +152,46 @@ export default function PlanPage() {
         پرداخت از داخل اپ انجام نمی‌شود — دکمه بالا سایت کودک‌بوک را در مرورگر باز می‌کند تا ارتقا را آنجا کامل کنید.
       </Text>
       </ScrollView>
-    </View>
+    </ParentPage>
   )
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  content: { paddingHorizontal: 20, gap: 14 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 20, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  planCard: { backgroundColor: colors.card, borderRadius: 18, overflow: 'hidden', borderWidth: 2, borderColor: 'transparent' },
-  planCurrent: { borderColor: '#fbbf24' },
-  planHead: { padding: 16, gap: 4 },
-  planHeadFree: { backgroundColor: '#f1f5f9' },
-  planHeadPremium: { backgroundColor: colors.primary },
-  planTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  planName: { fontSize: 18, fontFamily: fonts.bold, color: colors.text },
-  currentPill: { backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  currentPillText: { fontSize: 11, fontFamily: fonts.bold, color: '#b45309' },
-  planPrice: { fontSize: 24, fontFamily: fonts.bold, color: colors.text },
-  planDesc: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted },
-  featureList: { paddingHorizontal: 16 },
-  featureRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingVertical: 11, borderTopWidth: 1, borderTopColor: '#f1f5f9',
+  center: { flex: 1, backgroundColor: parentUI.page },
+  content: { paddingHorizontal: spacing.md + 4, gap: spacing.md - 2 },
+  planCard: {
+    backgroundColor: parentUI.surface, borderRadius: parentUI.radius, overflow: 'hidden',
+    borderWidth: 2, borderColor: parentUI.line,
   },
-  featureLabel: { flex: 1, fontSize: 13, fontFamily: fonts.regular, color: colors.text },
-  featureNumber: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
-  featureYes: { fontSize: 16, fontFamily: fonts.bold, color: colors.success },
-  featureNo: { fontSize: 16, color: '#cbd5e1' },
-  planButtonDisabled: { backgroundColor: '#f1f5f9', borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  planButtonDisabledText: { fontSize: 14, fontFamily: fonts.bold, color: colors.muted },
-  planButtonUpgrade: { backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 13, alignItems: 'center' },
-  planButtonUpgradeText: { fontSize: 14, fontFamily: fonts.bold, color: colors.onPrimary },
-  footNote: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', paddingHorizontal: 10 },
-  error: { color: colors.danger, fontFamily: fonts.regular },
+  planCurrent: { borderColor: parentUI.accent },
+  planHead: { padding: spacing.md, gap: spacing.xs },
+  planHeadFree: { backgroundColor: parentUI.field },
+  planHeadPremium: { backgroundColor: parentUI.accentSoft },
+  planTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  planName: { flexShrink: 1, fontSize: textSize.body, fontFamily: fonts.bold, color: parentUI.text, textAlign: textStart },
+  currentPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: parentUI.surface, borderRadius: radii.pill, paddingHorizontal: spacing.sm + 2, paddingVertical: 3,
+  },
+  currentPillText: { fontSize: textSize.micro, fontFamily: fonts.bold, color: parentUI.accentText },
+  planPrice: { fontSize: textSize.h2, fontFamily: fonts.bold, color: parentUI.text, textAlign: textStart },
+  planDesc: { fontSize: textSize.caption, fontFamily: fonts.regular, color: parentUI.muted, textAlign: textStart },
+  featureList: { paddingHorizontal: spacing.md },
+  featureRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm,
+    minHeight: 44, paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: parentUI.line,
+  },
+  featureLabel: { flex: 1, fontSize: textSize.caption, fontFamily: fonts.regular, color: parentUI.text, textAlign: textStart },
+  featureNumber: { fontSize: textSize.caption + 1, fontFamily: fonts.bold, color: parentUI.text },
+  featureNo: { fontSize: textSize.body, color: ui.faint },
+  planFoot: { padding: spacing.md - 2 },
+  planButtonDisabled: {
+    backgroundColor: parentUI.field, borderRadius: parentUI.controlRadius, minHeight: 48,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  planButtonDisabledText: { fontSize: textSize.caption + 1, fontFamily: fonts.bold, color: parentUI.muted },
+  footNote: {
+    fontSize: textSize.caption - 1, fontFamily: fonts.regular, color: parentUI.muted,
+    textAlign: 'center', paddingHorizontal: spacing.sm + 2, lineHeight: 20,
+  },
 })

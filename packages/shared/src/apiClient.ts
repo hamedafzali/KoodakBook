@@ -42,13 +42,17 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
       })
       if (token && res.status === 401) config.onSessionRevoked()
       try {
-        return await res.json()
+        // `status` is additive: callers can tell a 409 or a 401 from a
+        // network failure without matching message text.
+        const body = (await res.json()) as ApiResponse<T>
+        return { ...body, status: res.status }
       } catch {
         // Non-JSON response (e.g. 502 HTML page)
-        return { data: null, error: 'اتصال برقرار نشد. دوباره تلاش کن' }
+        return { data: null, error: 'اتصال برقرار نشد. دوباره تلاش کن', status: res.status }
       }
     } catch {
-      // Network failure / offline — never let the promise reject
+      // Network failure / offline — never let the promise reject. No
+      // response, so no `status`.
       return { data: null, error: 'اینترنت قطع است. دوباره تلاش کن' }
     }
   }

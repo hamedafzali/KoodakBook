@@ -1,19 +1,19 @@
-import { useCallback, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useCallback, useRef, useState } from 'react'
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TRANSLATION_LANGS } from '@koodakbook/shared'
-import { Ionicons } from '@expo/vector-icons'
-import ScreenHeader from '@/components/ScreenHeader'
-import IconChip from '@/components/IconChip'
+import {
+  ParentButton, ParentCard, ParentChip, ParentDivider, ParentHeader, ParentPage, ParentRow, ParentSection, parentUI,
+} from '@/components/ParentUI'
 import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
 import { clearActiveChildId } from '@/lib/activeChild'
 import { isParentUnlocked, setParentUnlocked } from '@/lib/parentGate'
 import {
-  ensurePrefs, getDailyGoal, getTranslationLang, setDailyGoal, setTranslationLang,
+  ensurePrefs, getDailyGoal, getTranslationLang, prefsReady, setDailyGoal, setTranslationLang,
 } from '@/lib/prefs'
-import { colors, fonts } from '@/lib/theme'
+import { fonts, spacing, textSize, textStart } from '@/lib/theme'
 
 const DAILY_GOALS = [
   { value: 5, label: '۵ دقیقه' },
@@ -28,24 +28,43 @@ export default function Settings() {
   const [goal, setGoal] = useState(getDailyGoal())
   const [lang, setLang] = useState(getTranslationLang())
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [loggingOutBusy, setLoggingOutBusy] = useState(false)
+  // Gates, checked during render (not in an effect after it): a deep link
+  // here while locked used to paint the whole settings page for a frame
+  // before the focus effect sent it to the PIN, and on a cold start the
+  // goal/language chips could show the defaults and then jump to the
+  // stored values.
+  const allowed = isParentUnlocked()
+  const [ready, setReady] = useState(prefsReady())
 
   useFocusEffect(
     useCallback(() => {
       if (!isParentUnlocked()) { router.replace('/parent'); return }
       // Prefs may not have hydrated yet on a cold start — refresh once ready.
-      ensurePrefs().then(() => { setGoal(getDailyGoal()); setLang(getTranslationLang()) })
+      ensurePrefs().then(() => { setGoal(getDailyGoal()); setLang(getTranslationLang()); setReady(true) })
     }, [])
   )
 
   function chooseGoal(v: number) { setGoal(v); setDailyGoal(v) }
   function chooseLang(code: string) { setLang(code); setTranslationLang(code) }
 
+  // One logout at a time: a double tap used to post logout and replace to
+  // /login twice. Reset only if clearing the stored session fails.
+  const loggingOut = useRef(false)
   async function logout() {
-    await api.post('/api/auth/logout', {})
-    await clearToken()
-    await clearActiveChildId()
-    setParentUnlocked(false)
-    router.replace('/login')
+    if (loggingOut.current) return
+    loggingOut.current = true
+    setLoggingOutBusy(true)
+    try {
+      await api.post('/api/auth/logout', {})
+      await clearToken()
+      await clearActiveChildId()
+      setParentUnlocked(false)
+      router.replace('/login')
+    } catch {
+      loggingOut.current = false
+      setLoggingOutBusy(false)
+    }
   }
 
   // Change PIN: re-lock and open the gate straight in reset mode (verify
@@ -55,134 +74,104 @@ export default function Settings() {
     router.replace('/parent?reset=1')
   }
 
+  if (!allowed) return <View style={styles.blank} />
+  if (!ready) {
+    return (
+      <ParentPage>
+        <ParentHeader title="تنظیمات" />
+        <View style={styles.loading}><ActivityIndicator color={parentUI.accentText} accessibilityLabel="در حال بارگذاری" /></View>
+      </ParentPage>
+    )
+  }
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
-      <ScreenHeader title="تنظیمات" variant="parent" />
+    <ParentPage>
+      <ParentHeader title="تنظیمات" />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
       >
 
       {/* Learning settings */}
-      <Text style={styles.sectionLabel}>تنظیمات یادگیری</Text>
-      <View style={styles.card}>
+      <ParentSection label="تنظیمات یادگیری" />
+      <ParentCard>
         <Text style={styles.fieldTitle}>هدف روزانه</Text>
-        <View style={styles.chips}>
+        <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="هدف روزانه">
           {DAILY_GOALS.map((g) => (
-            <Pressable
-              key={g.value}
-              style={[styles.chip, goal === g.value && styles.chipActive]}
-              onPress={() => chooseGoal(g.value)}
-            >
-              <Text style={[styles.chipText, goal === g.value && { color: colors.onPrimary }]}>{g.label}</Text>
-            </Pressable>
+            <ParentChip key={g.value} label={g.label} selected={goal === g.value} onPress={() => chooseGoal(g.value)} />
           ))}
         </View>
 
-        <View style={styles.divider} />
+        <ParentDivider />
 
         <Text style={styles.fieldTitle}>زبان ترجمه‌ی داستان‌ها</Text>
         <Text style={styles.fieldHint}>زیر متن فارسی نمایش داده می‌شود</Text>
-        <View style={styles.chips}>
-          <Pressable
-            style={[styles.chip, lang === 'none' && styles.chipActive]}
-            onPress={() => chooseLang('none')}
-          >
-            <Text style={[styles.chipText, lang === 'none' && { color: colors.onPrimary }]}>خاموش</Text>
-          </Pressable>
+        <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="زبان ترجمه‌ی داستان‌ها">
+          <ParentChip label="خاموش" selected={lang === 'none'} onPress={() => chooseLang('none')} />
           {TRANSLATION_LANGS.map((l) => (
-            <Pressable
+            <ParentChip
               key={l.code}
-              style={[styles.chip, lang === l.code && styles.chipActive]}
+              label={`${l.flag} ${l.label}`}
+              accessibilityLabel={l.label}
+              selected={lang === l.code}
               onPress={() => chooseLang(l.code)}
-            >
-              <Text style={[styles.chipText, lang === l.code && { color: colors.onPrimary }]}>{l.flag} {l.label}</Text>
-            </Pressable>
+            />
           ))}
         </View>
-      </View>
+      </ParentCard>
 
       {/* Navigation to other parent sections */}
-      <Text style={styles.sectionLabel}>کودکان و محتوا</Text>
-      <View style={styles.card}>
-        <MenuRow label="کودکان" icon="person" onPress={() => router.push('/parent/children')} />
-        <View style={styles.divider} />
-        <MenuRow label="پیشرفت کامل" icon="trending-up" onPress={() => router.push('/parent/progress')} />
-        <View style={styles.divider} />
-        <MenuRow label="گفت‌وگوهای کودک با شخصیت‌ها" icon="chatbubbles" onPress={() => router.push('/parent/conversations')} />
-      </View>
+      <ParentSection label="کودکان و محتوا" />
+      <ParentCard style={styles.menu}>
+        <ParentRow label="کودکان" icon="person" onPress={() => router.push('/parent/children')} />
+        <ParentDivider />
+        <ParentRow label="پیشرفت کامل" icon="trending-up" onPress={() => router.push('/parent/progress')} />
+        <ParentDivider />
+        <ParentRow label="گفت‌وگوهای کودک با شخصیت‌ها" icon="chatbubbles" onPress={() => router.push('/parent/conversations')} />
+      </ParentCard>
 
-      <Text style={styles.sectionLabel}>اشتراک</Text>
-      <View style={styles.card}>
-        <MenuRow label="پلن و اشتراک" icon="card" onPress={() => router.push('/parent/plan')} />
-        <View style={styles.divider} />
-        <MenuRow label="اشتراک‌گذاری پیشرفت" icon="share-social" onPress={() => router.push('/parent/share')} />
-      </View>
+      <ParentSection label="اشتراک" />
+      <ParentCard style={styles.menu}>
+        <ParentRow label="پلن و اشتراک" icon="card" onPress={() => router.push('/parent/plan')} />
+        <ParentDivider />
+        <ParentRow label="اشتراک‌گذاری پیشرفت" icon="share-social" onPress={() => router.push('/parent/share')} />
+      </ParentCard>
 
       {/* Account */}
-      <Text style={styles.sectionLabel}>حساب کاربری</Text>
-      <View style={styles.card}>
-        <MenuRow label="قوانین و حریم خصوصی" icon="document-text" onPress={() => router.push('/legal')} />
-        <View style={styles.divider} />
-        <MenuRow label="تغییر پین والدین" icon="lock-closed" onPress={changePin} />
-        <View style={styles.divider} />
+      <ParentSection label="حساب کاربری" />
+      <ParentCard style={styles.menu}>
+        <ParentRow label="قوانین و حریم خصوصی" icon="document-text" onPress={() => router.push('/legal')} />
+        <ParentDivider />
+        <ParentRow label="تغییر پین والدین" icon="lock-closed" onPress={changePin} />
+        <ParentDivider />
         {!confirmLogout ? (
-          <Pressable style={styles.row} onPress={() => setConfirmLogout(true)}>
-            <IconChip name="log-out" tone="danger" size={32} iconSize={16} />
-            <Text style={[styles.rowLabel, { color: colors.danger }]}>خروج از حساب</Text>
-          </Pressable>
+          <ParentRow label="خروج از حساب" icon="log-out" tone="danger" onPress={() => setConfirmLogout(true)} />
         ) : (
-          <View style={{ paddingVertical: 12, gap: 10 }}>
+          <View style={styles.confirm} accessibilityLiveRegion="polite">
             <Text style={styles.confirmText}>مطمئنید که می‌خواهید خارج شوید؟</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Pressable style={[styles.confirmButton, { backgroundColor: colors.danger }]} onPress={logout}>
-                <Text style={styles.confirmButtonText}>بله، خروج</Text>
-              </Pressable>
-              <Pressable style={[styles.confirmButton, { backgroundColor: '#e2e8f0' }]} onPress={() => setConfirmLogout(false)}>
-                <Text style={[styles.confirmButtonText, { color: colors.text }]}>انصراف</Text>
-              </Pressable>
+            <View style={styles.confirmButtons}>
+              <ParentButton label="بله، خروج" tone="danger" busy={loggingOutBusy} onPress={() => { void logout() }} style={{ flex: 1 }} />
+              <ParentButton label="انصراف" tone="secondary" onPress={() => setConfirmLogout(false)} style={{ flex: 1 }} />
             </View>
           </View>
         )}
-      </View>
+      </ParentCard>
 
       <Text style={styles.version}>KoodakBook v0.1.0</Text>
       </ScrollView>
-    </View>
-  )
-}
-
-function MenuRow({ label, icon, onPress }: { label: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }) {
-  return (
-    <Pressable style={styles.row} onPress={onPress}>
-      <IconChip name={icon} size={32} iconSize={16} />
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.chevron}>←</Text>
-    </Pressable>
+    </ParentPage>
   )
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 20, gap: 12 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 4 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  sectionLabel: { fontSize: 12, fontFamily: fonts.bold, color: colors.muted, marginTop: 8, marginBottom: -2 },
-  card: { backgroundColor: colors.card, borderRadius: 18, padding: 16, gap: 10 },
-  fieldTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
-  fieldHint: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: -6 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: colors.bg, borderWidth: 1, borderColor: '#e5e7eb',
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 13, fontFamily: fonts.medium, color: colors.text },
-  divider: { height: 1, backgroundColor: '#f1f5f9' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, minHeight: 44 },
-  rowLabel: { flex: 1, fontSize: 15, fontFamily: fonts.medium, color: colors.text },
-  chevron: { fontSize: 18, color: colors.muted },
-  confirmText: { fontSize: 14, fontFamily: fonts.regular, color: colors.text },
-  confirmButton: { flex: 1, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
-  confirmButtonText: { color: colors.onPrimary, fontSize: 14, fontFamily: fonts.bold },
-  version: { textAlign: 'center', fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 8 },
+  blank: { flex: 1, backgroundColor: parentUI.page },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  content: { paddingHorizontal: spacing.md + 4, gap: spacing.sm + 4 },
+  menu: { paddingVertical: 0, gap: 0 },
+  fieldTitle: { fontSize: textSize.caption + 1, fontFamily: fonts.bold, color: parentUI.text, textAlign: textStart },
+  fieldHint: { fontSize: textSize.micro + 1, fontFamily: fonts.regular, color: parentUI.muted, marginTop: -6, textAlign: textStart },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  confirm: { paddingVertical: spacing.sm + 4, gap: spacing.sm + 2 },
+  confirmText: { fontSize: textSize.caption + 1, fontFamily: fonts.medium, color: parentUI.text, textAlign: textStart },
+  confirmButtons: { flexDirection: 'row', gap: spacing.sm + 2 },
+  version: { textAlign: 'center', fontSize: textSize.micro + 1, fontFamily: fonts.regular, color: parentUI.muted, marginTop: spacing.sm },
 })

@@ -13,6 +13,9 @@ interface SData { userId: string; childId: string; name: string; emoji: string }
 
 const online = new Map<string, Set<string>>()          // childId → socketIds
 const pending = new Map<string, { fromChildId: string; fromName: string; fromEmoji: string; fromSocketId: string; toChildId: string }>()
+// Games in progress. A room leaves this map when its game is won (game:move
+// with a winner), left (game:leave) or dropped (a player disconnects), so a
+// drop after a finished game doesn't tell anyone their friend "left".
 const rooms = new Map<string, { players: { childId: string; name: string; emoji: string }[] }>()
 
 const data = (s: Socket) => s.data as SData
@@ -124,6 +127,11 @@ export function setupRealtime(io: Server) {
     // Turn state relayed to the other player(s).
     socket.on('game:move', ({ roomId, state }: { roomId: string; state: unknown }) => {
       socket.to(roomId).emit('game:state', { state })
+      // The relay is unchanged; a won game just stops counting as in
+      // progress (see `rooms` and 'disconnecting' below). Both clients send
+      // { positions, current, die, winner: number | null }.
+      const winner = (state as { winner?: unknown } | null)?.winner
+      if (typeof winner === 'number') rooms.delete(roomId)
     })
 
     // Canned emoji reaction only — no free text ever.
@@ -137,13 +145,22 @@ export function setupRealtime(io: Server) {
       rooms.delete(roomId)
     })
 
+    // Tell the other player of any game in progress that this one dropped
+    // (app killed, network lost). It has to be 'disconnecting': by the time
+    // 'disconnect' fires socket.io v4 has already emptied socket.rooms, so the
+    // loop that used to live there never found a room and the friend was left
+    // waiting on a turn that would never come.
+    socket.on('disconnecting', () => {
+      for (const roomId of socket.rooms) {
+        if (!rooms.has(roomId)) continue
+        socket.to(roomId).emit('game:opponent-left')
+        rooms.delete(roomId)
+      }
+    })
+
     socket.on('disconnect', () => {
       removeOnline(d.childId, socket.id)
       void nudgeFriends(io, d.childId)
-      // Tell any rooms this socket was in that a player dropped.
-      for (const roomId of socket.rooms) {
-        if (rooms.has(roomId)) socket.to(roomId).emit('game:opponent-left')
-      }
     })
   })
 }

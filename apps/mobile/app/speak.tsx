@@ -1,17 +1,21 @@
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { AccessibilityInfo, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { Child, Word } from '@koodakbook/shared'
+import type { Word } from '@koodakbook/shared'
 import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
-import { playClip } from '@/lib/sound'
+import { playClip, stopClip } from '@/lib/sound'
 import { mediaUrl } from '@/lib/media'
-import { colors, fonts, ramps } from '@/lib/theme'
-import ScreenHeader from '@/components/ScreenHeader'
+import { fonts, iconSize, naturalLineHeight, radii, ramps, spacing, textSize, textStyles, ui } from '@/lib/theme'
+import ScreenBackground from '@/components/ScreenBackground'
+import { CharacterArt, ClayButton, ClaySurface } from '@/components/Clay'
+import { Icon } from '@/components/Icon'
+import { RoomBand, RoomProgress } from '@/components/RoomScene'
 import BottomNav from '@/components/BottomNav'
+import LoadState, { EmptyState } from '@/components/LoadState'
+import { goBack } from '@/lib/navigation'
 
 /**
  * تمرین گفتن (web: /child/speak) — listen and repeat. Web grades pronunciation
@@ -23,23 +27,40 @@ import BottomNav from '@/components/BottomNav'
 export default function Speak() {
   const insets = useSafeAreaInsets()
   const [words, setWords] = useState<Word[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  // Bumped by LoadState's retry to re-run the load below.
+  const [reloadKey, setReloadKey] = useState(0)
+  const retry = () => { setError(null); setReloadKey((k) => k + 1) }
   const [idx, setIdx] = useState(0)
   const [childId, setChildId] = useState('')
   const [said, setSaid] = useState(false)
+  // `said` is state, so two taps on «گفتم» in one frame both saw false and
+  // posted two productive reps for one word. The ref flips at once and
+  // resets with each new word.
+  const saidRef = useRef(false)
+  // A word still playing when the child leaves must not follow them.
+  useEffect(() => () => stopClip(), [])
 
   useEffect(() => {
+    // Leaving before the fetch settles used to set state on an unmounted screen.
+    let alive = true
     async function load() {
       const activeId = await getActiveChildId()
+      if (!alive) return
       if (activeId) setChildId(activeId)
       const res = await api.get<Word[]>('/api/words')
-      const all = res.data ?? []
+      if (!alive) return
+      // A failed fetch used to land on the empty «کلمه‌ای نیست» state.
+      if (!res.data) { setError(res.error ?? 'اتصال برقرار نشد. دوباره تلاش کن'); return }
+      const all = res.data
       // Prefer words with a real image or, failing that, an emoji, so the
       // child always has a visual cue — same test QuizCard uses, not emoji-only.
       const withVisual = all.filter((w) => w.image_url || wordEmoji(w.english))
       setWords((withVisual.length >= 8 ? withVisual : all).slice(0, 20))
     }
     load()
-  }, [])
+    return () => { alive = false }
+  }, [reloadKey])
 
   const word = words?.[idx]
 
@@ -52,16 +73,29 @@ export default function Speak() {
 
   if (!words) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.onPrimary} />
-      </View>
+      <ScreenBackground variant="warm">
+        <View style={styles.center}>
+          <LoadState error={error} onRetry={retry} onBack={() => goBack('/home')} />
+        </View>
+      </ScreenBackground>
     )
   }
   if (words.length === 0 || !word) {
+    // The header and nav too: this used to be a bare line with no way out.
     return (
-      <View style={styles.center}>
-        <Text style={styles.empty}>کلمه‌ای نیست</Text>
-      </View>
+      <ScreenBackground variant="warm">
+        <RoomBand ramp={ramps.speak} character="ava" title="تمرین گفتن" topInset={insets.top} />
+        {/* A successful, empty list: a friendly note, not an error. */}
+        <View style={[styles.center, styles.emptyWrap]}>
+          <EmptyState
+            character="ava"
+            emotion="thinking"
+            title="هنوز کلمه‌ای برای گفتن نیست"
+            body="به‌زودی کلمه‌های تازه می‌رسه."
+          />
+        </View>
+        <BottomNav />
+      </ScreenBackground>
     )
   }
 
@@ -69,8 +103,11 @@ export default function Speak() {
   const emoji = wordEmoji(word.english)
 
   function confirmSaid() {
-    if (said || !word) return
+    if (said || saidRef.current || !word) return
+    saidRef.current = true
     setSaid(true)
+    // The live region below is Android-only; VoiceOver needs telling.
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility('آفرین! تمرین کردی')
     // Productive-track rep — the child produced the word (web posts this on a
     // recognition match; here it's self-reported).
     if (childId) {
@@ -81,84 +118,124 @@ export default function Speak() {
   }
 
   function nextWord() {
+    saidRef.current = false
     setSaid(false)
     setIdx((i) => (i + 1) % (words?.length ?? 1))
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
-      <View style={{ alignSelf: 'stretch' }}>
-        <ScreenHeader title="تمرین گفتن 🎤" subtitle={`کلمه ${toPersianDigits(idx + 1)} از ${toPersianDigits(words.length)}`} />
-      </View>
-
-      <View style={styles.hint}>
-        <Text style={styles.hintText}>اول گوش کن، بعد بلند تکرار کن 🗣️</Text>
-      </View>
-
-      {/* Word card — tap to hear again */}
-      <Pressable style={styles.card} onPress={() => playClip(word.audio_url)}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.cardImage} contentFit="contain" />
-        ) : emoji ? (
-          <Text style={styles.cardEmoji}>{emoji}</Text>
-        ) : null}
-        <Text style={styles.cardWord}>{word.persian}</Text>
-        <Text style={styles.cardLatin}>{word.english}</Text>
-        <Text style={styles.cardListen}>🔊 اول گوش کن</Text>
-      </Pressable>
-
-      {said ? (
-        <View style={styles.feedback}>
-          <Text style={{ fontSize: 44 }}>🌟</Text>
-          <Text style={styles.feedbackText}>آفرین! تمرین کردی</Text>
+    <ScreenBackground variant="warm">
+      {/* Scrolls, like write.tsx: BottomNav is absolutely positioned, and the
+       * old fixed column pinned «کلمه بعدی» (marginTop: 'auto') to
+       * insets.bottom + 16 -- underneath the ~70-94pt nav bar -- and ran past
+       * the screen on short phones. flexGrow keeps the button low on tall ones. */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 108 }]}
+      >
+        {/* The speak room's band (components/RoomScene.tsx): آوا, the room's
+            host (Home's room card), on the pink-tinted hills; the how-to line
+            (was a separate pill) and the word count as a track. Full-bleed. */}
+        <View style={styles.bandWrap}>
+          <RoomBand
+            ramp={ramps.speak}
+            character="ava"
+            title="تمرین گفتن"
+            subtitle="اول گوش کن، بعد بلند تکرار کن"
+            topInset={insets.top}
+          >
+            <RoomProgress
+              ramp={ramps.speak}
+              done={idx}
+              total={words.length}
+              meta={`کلمه ${toPersianDigits(idx + 1)} از ${toPersianDigits(words.length)}`}
+              label={`کلمه ${toPersianDigits(idx + 1)} از ${toPersianDigits(words.length)}`}
+            />
+          </RoomBand>
         </View>
-      ) : (
-        <Pressable style={styles.sayButton} onPress={confirmSaid}>
-          <Text style={styles.sayButtonText}>🎤 گفتم!</Text>
-        </Pressable>
-      )}
 
-      <Pressable style={styles.nextButton} onPress={nextWord}>
-        <Text style={styles.nextButtonText}>کلمه بعدی ←</Text>
-      </Pressable>
+        {/* Word card — tap to hear again */}
+        <Pressable
+          style={styles.cardWrap}
+          onPress={() => playClip(word.audio_url)}
+          accessibilityRole="button"
+          accessibilityLabel={`${word.persian}، بشنو`}
+        >
+          {({ pressed }) => (
+            <ClaySurface ramp={ramps.speak} tone="soft" pressed={pressed} radius={radii.lg} faceStyle={styles.card}>
+              {image ? (
+                <Image source={{ uri: image }} style={styles.cardImage} contentFit="contain" />
+              ) : emoji ? (
+                <Text style={styles.cardEmoji}>{emoji}</Text>
+              ) : null}
+              <Text style={styles.cardWord}>{word.persian}</Text>
+              <Text style={styles.cardLatin}>{word.english}</Text>
+              <View style={styles.listenRow}>
+                <Icon name="volume" color={ramps.speak.ink} size={iconSize.inline} />
+                <Text style={styles.cardListen}>دوباره بشنو</Text>
+              </View>
+            </ClaySurface>
+          )}
+        </Pressable>
+
+        {said ? (
+          <View style={styles.feedback} accessibilityLiveRegion="polite">
+            <CharacterArt character="ava" emotion="proud" size={88} />
+            <Text style={styles.feedbackText}>آفرین! تمرین کردی</Text>
+          </View>
+        ) : (
+          // The screen's one primary action, so Home's deep clay (white is
+          // allowed only on the deep stop, >=7:1): the mic and «گفتم!».
+          <Pressable onPress={confirmSaid} accessibilityRole="button" accessibilityLabel="گفتم">
+            {({ pressed }) => (
+              <ClaySurface ramp={ramps.speak} tone="deep" pressed={pressed} radius={radii.pill} faceStyle={styles.sayButton}>
+                <Icon name="mic" color={ui.onDeep} size={40} strokeWidth={2.2} />
+                <Text style={styles.sayButtonText}>گفتم!</Text>
+              </ClaySurface>
+            )}
+          </Pressable>
+        )}
+
+        {/* Secondary while «گفتم» is the job; the primary action once it's done. */}
+        <ClayButton
+          ramp={ramps.speak}
+          tone={said ? 'bright' : 'soft'}
+          label="کلمه بعدی"
+          icon="chevron"
+          iconPosition="end"
+          onPress={nextWord}
+          style={styles.nextButton}
+        />
+      </ScrollView>
       <BottomNav />
-    </View>
+    </ScreenBackground>
   )
 }
 
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 20, paddingBottom: 92, gap: 16, alignItems: 'center' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  empty: { color: colors.muted, fontFamily: fonts.regular },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, alignSelf: 'stretch' },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 20, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  hint: { backgroundColor: '#fce7f3', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10 },
-  hintText: { fontSize: 13, fontFamily: fonts.medium, color: '#9d174d', textAlign: 'center' },
-  card: {
-    width: '100%', maxWidth: 360, backgroundColor: colors.card, borderRadius: 20,
-    padding: 24, alignItems: 'center', gap: 6,
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3,
-  },
-  cardEmoji: { fontSize: 72, lineHeight: 84 },
+  container: { flexGrow: 1, paddingHorizontal: spacing.md, gap: spacing.md, alignItems: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // Clear of the absolutely positioned BottomNav.
+  emptyWrap: { paddingBottom: 96 },
+  // Full-bleed: undo the container's side padding for the band.
+  bandWrap: { alignSelf: 'stretch', marginHorizontal: -spacing.md },
+  cardWrap: { width: '100%', maxWidth: 360 },
+  card: { padding: spacing.lg, alignItems: 'center', gap: spacing.sm },
+  // No fixed lineHeight: ~1.17x cut emoji on Android; the system emoji
+  // font's own height is right (Vazirmatn's naturalLineHeight isn't).
+  cardEmoji: { fontSize: 72 },
   cardImage: { width: 112, height: 112 },
-  cardWord: { fontSize: 44, fontFamily: fonts.display, color: colors.text },
-  cardLatin: { fontSize: 16, fontFamily: fonts.regular, color: colors.muted },
-  cardListen: { fontSize: 12, fontFamily: fonts.regular, color: '#b45309', marginTop: 4 },
-  feedback: { alignItems: 'center', gap: 4 },
-  feedbackText: { fontSize: 17, fontFamily: fonts.bold, color: colors.success },
-  sayButton: {
-    width: 120, height: 120, borderRadius: 60, backgroundColor: ramps.speak.bright,
-    borderBottomWidth: 5, borderBottomColor: ramps.speak.deep,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  // Dark ink, not white -- matches the module's own ramp instead of a
-  // one-off hex, and keeps the dark-ink-on-bright rule (2026-09-20 audit).
-  sayButtonText: { color: ramps.speak.ink, fontSize: 20, fontFamily: fonts.bold },
-  nextButton: {
-    width: '100%', maxWidth: 360, backgroundColor: colors.primary, borderRadius: 16,
-    paddingVertical: 15, alignItems: 'center', marginTop: 'auto',
-  },
-  nextButtonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
+  cardWord: { fontSize: 44, lineHeight: naturalLineHeight(44), fontFamily: fonts.display, color: ramps.speak.ink, textAlign: 'center' },
+  cardLatin: { fontSize: textSize.small, fontFamily: fonts.regular, color: ui.textMuted },
+  listenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  cardListen: { ...textStyles.label, color: ramps.speak.ink },
+  feedback: { alignItems: 'center', gap: spacing.xs },
+  // ui.success (the lessons ink), not colors.success: #22c55e is ~2:1 here.
+  feedbackText: { fontSize: textSize.body, fontFamily: fonts.bold, color: ui.success },
+  // Still the big round target (128pt), now deep clay: the one primary
+  // action. White sits only on the deep stop (theme ui.onDeep, >=7:1).
+  sayButton: { width: 128, height: 128, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  sayButtonText: { color: ui.onDeep, fontSize: textSize.cardTitle, fontFamily: fonts.display },
+  nextButton: { width: '100%', maxWidth: 360, marginTop: 'auto' },
 })

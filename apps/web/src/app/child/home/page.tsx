@@ -16,9 +16,13 @@ import Mascot from '@/components/child/Mascot'
 import BottomNav from '@/components/child/BottomNav'
 import Tutorial, { hasSeenTutorial } from '@/components/child/Tutorial'
 import { LESSON_TYPE_EMOJI, isLessonUnlocked, isStoryUnlocked, ALL_UNLOCKED } from '@koodakbook/shared'
-import { MODULE, ModuleCard, IconChip, Icon, type ModuleKey } from '@/components/child/kit'
-import { clayVars } from '@/components/child/clay'
+import { MODULE, ModuleCard, Icon, type ModuleKey } from '@/components/child/kit'
+import { ClayButton } from '@/components/child/clay'
 import CharacterAvatar from '@/components/child/CharacterAvatar'
+import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
+import StoryCover from '@/components/child/StoryCover'
+import ParentDoorNav from '@/components/child/ParentDoorNav'
 import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels, Letter, AppCharacter, ChildSession } from '@koodakbook/shared'
 
 /* Child home — redesigned against the 2026-09-21 mockup (WebHome.dc.html): a
@@ -170,6 +174,36 @@ import type { Lesson, Story, Child, DashboardSummary, ReviewItem, StrandLevels, 
  *    asks), so both are kept, positioned below the module grid.
  */
 
+/* 2026-09-28 visual-fidelity pass (against the approved reference; mobile
+ * Home parity). Supersedes the notes above where they disagree:
+ *  - Hero: a warm illustrated world with سیمرغ and a visible greeting by
+ *    name (now the page's h1). The continue card no longer carries its own
+ *    road scene — it overlaps the hero as ONE deep indigo card (.card-indigo):
+ *    host art thumb, label, title, the same real "X از Y" (bar + figure, only
+ *    when a peer set exists — else «بزن بریم!»), a round go-arrow.
+ *  - Learning path (new): phonics, letters (#alphabet), lessons, stories —
+ *    a plain list of rooms, deliberately UNNUMBERED with no order arrows
+ *    (the teaching order isn't approved; mobile Home matches). Counts are the
+ *    already-loaded lessons/stories/letters and the doneLessons/doneStories
+ *    sets — no new read. Phonics has no host (MODULE) and no count on this
+ *    page, so it shows a headphones mark and its tagline.
+ *  - Featured stories (new): unlocked stories only, the in-progress one
+ *    first («نیمه‌کاره», real lastStory), then unread, then read («خوندم»,
+ *    real doneStories). Covers are the shelf's own StoryCover. No "new" or
+ *    duration badge: nothing loaded here says either.
+ *  - The three stat tiles fold into ONE reward card: today's real minutes vs
+ *    the family's real goal (the same todayMin/goalMin), the xp star total
+ *    and words learned — linking to /child/rewards. Streak stays a header
+ *    pill, still band-3 only.
+ *  - Quiet parent card (new): its only control is ParentDoorNav's `card`
+ *    variant — the SAME hold + PIN door as the nav, so the "no second,
+ *    ungated tap-target" call above still holds.
+ *  - «دوستات منتظرتن» keeps every room the path doesn't (review, speak,
+ *    write, math, games, rewards + the conditional re-probe tile), as
+ *    regular-size clay tiles below the fold.
+ *  - Wide screens: path + stories take two thirds, reward + parent sit in a
+ *    side column; everything below is full width. */
+
 type NextUpKind = 'lesson' | 'review' | 'story' | 'phonics'
 interface NextUp { href: string; label: string; title: string; emoji: string; say: string; kind: NextUpKind }
 
@@ -181,38 +215,46 @@ const NEXTUP_MODULE: Record<NextUpKind, ModuleKey> = {
 
 interface GridItem { module: ModuleKey; title: string; sub: string; href: string; badge?: string }
 
-/* The mockup's continue-card scene, ported verbatim (var(--token) resolved to
- * literal hex — same reasoning as apps/mobile/app/home.tsx's
- * CONTINUE_SCENE_SVG, which this is a wider crop-to-fit sibling of; see the
- * file doc comment above for why the road stays as decoration while the
- * section-progress markers that sat on it do not). */
-const CONTINUE_SCENE_SVG = `<svg viewBox="0 0 354 224" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="354" height="224" fill="#FFF8EA"/>
-  <rect x="0" y="98" width="354" height="126" fill="#FFEFD6"/>
-  <defs><pattern id="kbDotsW" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.6" fill="#E8B765" opacity=".16"/></pattern></defs><rect x="0" y="0" width="354" height="110" fill="url(#kbDotsW)"/>
-  <circle cx="50" cy="38" r="30" fill="#FBBF24" opacity=".18"/>
-  <circle cx="50" cy="38" r="20" fill="#FBBF24"/>
-  <path d="M128 34 q3.6 -2.7 7.2 0 q3.6 -2.7 7.2 0" fill="none" stroke="#B99A63" stroke-width="1.71" stroke-linecap="round" opacity=".5"/><path d="M176 22 q2.8 -2.1 5.6 0 q2.8 -2.1 5.6 0" fill="none" stroke="#B99A63" stroke-width="1.33" stroke-linecap="round" opacity=".4"/>
-  <g fill="#FFFFFF" opacity=".9">
-    <rect x="236" y="26" width="60" height="15" rx="7.5"/>
-    <circle cx="250" cy="26" r="12"/><circle cx="268" cy="19" r="16"/><circle cx="288" cy="27" r="11"/>
-  </g>
-  <path d="M0 118 q70 -30 140 -8 q72 24 146 -6 q40 -16 68 2 L354 224 L0 224 Z" fill="#CFEDE2"/>
-  <path d="M0 142 q88 -38 184 -6 q96 30 170 -4 L354 224 L0 224 Z" fill="#8FE2CC"/>
-  <path d="M0 172 q110 -30 214 -2 q84 22 140 -6 L354 224 L0 224 Z" fill="#57D6BC"/>
-  <path d="M0 194 q140 -16 248 0 q58 8 106 -6 L354 224 L0 224 Z" fill="#F3E0B4"/>
-  <g><ellipse cx="26" cy="189" rx="14.56" ry="3.36" fill="#0F5C4A" opacity=".13"/><rect x="21.52" y="156.88" width="8.96" height="30.24" rx="4.48" fill="#8A5A24"/><circle cx="26" cy="145.68" r="19.04" fill="#127A55"/><circle cx="13.68" cy="154.64" r="11.76" fill="#0E6244"/><circle cx="37.2" cy="153.52" r="10.64" fill="#159C69"/><circle cx="19.28" cy="136.72" r="8.4" fill="#35C08C" opacity=".55"/></g><g><ellipse cx="330" cy="179" rx="11.7" ry="2.7" fill="#0F5C4A" opacity=".13"/><rect x="326.4" y="152.6" width="7.2" height="24.3" rx="3.6" fill="#8A5A24"/><circle cx="330" cy="143.6" r="15.3" fill="#127A55"/><circle cx="320.1" cy="150.8" r="9.45" fill="#0E6244"/><circle cx="339.0" cy="149.9" r="8.55" fill="#159C69"/><circle cx="324.6" cy="136.4" r="6.75" fill="#35C08C" opacity=".55"/></g>
-  <g opacity=".9"><circle cx="96" cy="206" r="2.108" fill="#F472B6"/><circle cx="93.148" cy="206" r="2.108" fill="#F472B6"/><circle cx="98.852" cy="206" r="2.108" fill="#F472B6"/><circle cx="96" cy="203.148" r="2.108" fill="#F472B6"/><circle cx="96" cy="208.852" r="2.108" fill="#F472B6"/><circle cx="96" cy="206" r="1.488" fill="#FFE9A8"/></g><g opacity=".9"><circle cx="246" cy="210" r="1.972" fill="#FBBF24"/><circle cx="243.332" cy="210" r="1.972" fill="#FBBF24"/><circle cx="248.668" cy="210" r="1.972" fill="#FBBF24"/><circle cx="246" cy="207.332" r="1.972" fill="#FBBF24"/><circle cx="246" cy="212.668" r="1.972" fill="#FBBF24"/><circle cx="246" cy="210" r="1.392" fill="#FFE9A8"/></g>
-  <ellipse cx="322" cy="190" rx="26" ry="6" fill="#0F5C4A" opacity=".16"/><ellipse cx="192" cy="106" rx="32" ry="8" fill="#0F5C4A" opacity=".16"/><ellipse cx="38" cy="178" rx="24" ry="6" fill="#0F5C4A" opacity=".16"/>
-  <path d="M 322 156 C 284 114 254 70 192 62 C 130 54 98 124 38 144" fill="none" stroke="#E3CE9C" stroke-width="25" stroke-linecap="round"/>
-  <path d="M 322 156 C 284 114 254 70 192 62 C 130 54 98 124 38 144" fill="none" stroke="#F9EDD2" stroke-width="17" stroke-linecap="round"/>
-  <path d="M236 40.0 Q237.3 44.7 242.0 46 Q237.3 47.3 236 52.0 Q234.7 47.3 230.0 46 Q234.7 44.7 236 40.0 Z" fill="#FFD98A" opacity=".95"/><path d="M154 29.2 Q155.04 32.96 158.8 34 Q155.04 35.04 154 38.8 Q152.96 35.04 149.2 34 Q152.96 32.96 154 29.2 Z" fill="#FFFFFF" opacity=".95"/>
-  <path d="M0 216 q46 -14 88 -3 q38 10 78 -4 q44 -14 86 -1 q40 12 82 -4 L354 224 L0 224 Z" fill="#3DBFA4"/>
-</svg>`
+/* The hero's world (2026-09-28 visual-fidelity pass, against the approved
+ * reference): a morning sky, a sun, clouds, far mountains and the same
+ * rolling teal hills the old continue-card scene used (same hex, so the
+ * palette didn't move), ending in the page's own cream so the hero melts
+ * into the page. Built in layers rather than one cropped picture: the sky is
+ * a CSS gradient, the land is a strip stretched to any width, and sun,
+ * clouds and trees are small fixed-size pieces — so a 1120px desktop hero
+ * and a 320px phone hero both look drawn for their width (one `slice`-cropped
+ * SVG showed a desktop only giant trees and hills). Decorative. */
+function HeroScene() {
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden="true"
+      style={{ background: 'linear-gradient(180deg, #CFEAFB 0%, #E3F3F4 55%, #FFF8EA 100%)' }}>
+      <svg viewBox="0 0 60 60" className="absolute top-12 start-[42%] w-16 h-16 lg:start-[48%]">
+        <circle cx="30" cy="30" r="28" fill="#FBBF24" opacity=".16" /><circle cx="30" cy="30" r="18" fill="#FCD34D" />
+      </svg>
+      <svg viewBox="0 0 80 34" className="absolute top-24 end-[34%] w-20 lg:end-[40%]">
+        <g fill="#FFFFFF" opacity=".92"><rect x="4" y="16" width="70" height="16" rx="8" /><circle cx="22" cy="16" r="12" /><circle cx="42" cy="11" r="11" /><circle cx="58" cy="18" r="9" /></g>
+      </svg>
+      <svg viewBox="0 0 80 34" className="absolute top-5 start-[18%] w-14 max-sm:hidden">
+        <g fill="#FFFFFF" opacity=".85"><rect x="4" y="16" width="70" height="16" rx="8" /><circle cx="22" cy="16" r="12" /><circle cx="42" cy="11" r="11" /><circle cx="58" cy="18" r="9" /></g>
+      </svg>
+      <svg viewBox="0 0 400 120" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 w-full h-[46%]">
+        <path d="M0 46 L54 10 L96 32 L150 -4 L214 40 L272 6 L334 36 L400 8 L400 120 L0 120 Z" fill="#BCD7F0" opacity=".7" />
+        <path d="M0 52 q80 -30 170 -8 q90 24 160 -8 q40 -16 70 -4 L400 120 L0 120 Z" fill="#CFEDE2" />
+        <path d="M0 74 q96 -30 200 -6 q100 22 200 -8 L400 120 L0 120 Z" fill="#8FE2CC" />
+        <path d="M0 94 q110 -22 214 -4 q84 14 186 -8 L400 120 L0 120 Z" fill="#57D6BC" opacity=".55" />
+        <path d="M0 108 q120 -14 230 -2 q90 8 170 -6 L400 120 L0 120 Z" fill="#FFF8EA" />
+      </svg>
+      <svg viewBox="0 0 40 60" className="absolute bottom-[15%] start-1 w-9 lg:start-[34%] lg:w-12">
+        <rect x="16" y="30" width="8" height="28" rx="4" fill="#8A5A24" /><circle cx="20" cy="22" r="17" fill="#127A55" /><circle cx="9" cy="30" r="10.5" fill="#0E6244" /><circle cx="30" cy="29" r="9.5" fill="#159C69" /><circle cx="14" cy="14" r="7.5" fill="#35C08C" opacity=".55" />
+      </svg>
+      <svg viewBox="0 0 40 60" className="absolute bottom-[20%] end-[40%] w-7 lg:w-9 max-[379px]:hidden">
+        <rect x="16" y="30" width="8" height="28" rx="4" fill="#8A5A24" /><circle cx="20" cy="22" r="17" fill="#127A55" /><circle cx="9" cy="30" r="10.5" fill="#0E6244" /><circle cx="30" cy="29" r="9.5" fill="#159C69" />
+      </svg>
+    </div>
+  )
+}
 
-// Goal ring geometry (mockup's own numbers: r=16, stroke=6, viewBox 44×44).
-const GOAL_R = 16
-const GOAL_CIRC = 2 * Math.PI * GOAL_R
+type PathItem = { module: ModuleKey; title: string; sub: string; href: string; pct?: number }
 
 export default function ChildHomePage() {
   const router = useRouter()
@@ -233,13 +275,24 @@ export default function ChildHomePage() {
   const [pickList, setPickList] = useState<Child[]>([])
   const [showPicker, setShowPicker] = useState(false)
   const [reprobeDue, setReprobeDue] = useState(false)
+  // A failed /api/children used to read as "this family has no children"
+  // and bounce the child to the parent dashboard. Same fix as mobile Home:
+  // an error screen with a retry.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  // A secondary read failing (lessons, stories, dashboard, progress) used to
+  // render the page as if it were empty -- the phonics fallback card, zero
+  // stats -- with nothing saying so. Now one honest note with a retry (web's
+  // counterpart of mobile Home's per-list NoteCards; web Home has no lesson/
+  // story lists of its own, so one note covers the page).
+  const [partialError, setPartialError] = useState(false)
+  const [reloading, setReloading] = useState(false)
 
   useChildSession(child?.id ?? null)
   useEffect(() => { if (!hasSeenTutorial()) setShowTutorial(true) }, [])
   useEffect(() => { api.get<AppCharacter[]>('/api/characters').then(r => { if (r.data) setFriends(r.data) }) }, [])
 
   async function loadForChild(c: Child) {
-    setChild(c)
     const [lessonsRes, storiesRes, lettersRes, dashRes, reviewRes, progressRes, placeRes, reprobeRes] = await Promise.all([
       api.get<Lesson[]>('/api/lessons'),
       api.get<Story[]>('/api/stories'),
@@ -252,6 +305,14 @@ export default function ChildHomePage() {
       // skippable game card, not an interstitial; reprobeDue never expires.
       api.get<{ due: boolean }>(`/api/placement/${c.id}/reprobe-due`),
     ])
+    // `child` is set here, with everything else, not before the fetch (same
+    // fix as the mobile Home, 2026-09-25): setting it first let the full page
+    // render with empty data -- the fallback next-up card, no path, no
+    // stories, no streak -- and swap to the real data a moment later. Until
+    // `child` is set the loading screen below stays up; all of these updates
+    // land in one render.
+    setChild(c)
+    setPartialError(!lessonsRes.data || !storiesRes.data || !dashRes.data || !progressRes.data)
     if (dashRes.data) {
       setStats({ words: dashRes.data.words_learned, streak: dashRes.data.streak_days, xp: dashRes.data.xp ?? 0 })
       // Real minutes-today for the stat row's goal ring — same field the
@@ -287,7 +348,8 @@ export default function ChildHomePage() {
     async function start() {
       const childRes = await api.get<Child[]>('/api/children')
       if (cancelled) return
-      const list = childRes.data ?? []
+      if (!childRes.data) { setLoadError(childRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن'); return }
+      const list = childRes.data
       if (list.length === 0) { router.replace('/parent/dashboard'); return }
       if (consumeChildPick() && list.length > 1) { setPickList(list); setShowPicker(true); return }
       const c = pickChild(list)
@@ -296,7 +358,7 @@ export default function ChildHomePage() {
     start()
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router])
+  }, [router, attempt])
 
   const band = child ? (childAge(child) <= 5 ? 1 : childAge(child) <= 7 ? 2 : 3) : 2
   // Streak display gate — see the file doc comment's product-ethics note.
@@ -306,7 +368,7 @@ export default function ChildHomePage() {
   //    is a new UI-only tag on the same result, for module-themed styling) ──
   const nextUp = useMemo<NextUp>(() => {
     if (lastLesson) return { href: `/child/lesson/${lastLesson.id}`, label: 'ادامه‌ی درس', title: lastLesson.title, emoji: LESSON_TYPE_EMOJI[lastLesson.type] ?? '📚', say: `بیا درس ${lastLesson.title} رو تمام کنیم!`, kind: 'lesson' }
-    if (reviewWords.length >= 3) return { href: '/child/review', label: 'مرور کلمه‌ها', title: `${reviewWords.length} کلمه منتظرند`, emoji: '🔄', say: 'بیا کلمه‌هایی که یاد گرفتی رو مرور کنیم!', kind: 'review' }
+    if (reviewWords.length >= 3) return { href: '/child/review', label: 'مرور کلمه‌ها', title: `${toPersianDigits(reviewWords.length)} کلمه منتظرند`, emoji: '🔄', say: 'بیا کلمه‌هایی که یاد گرفتی رو مرور کنیم!', kind: 'review' }
     if (lastStory) return { href: `/child/story/${lastStory.id}`, label: 'ادامه‌ی قصه', title: lastStory.title_persian, emoji: '📖', say: `بیا بقیه‌ی قصه‌ی ${lastStory.title_persian} رو بخونیم!`, kind: 'story' }
     const nl = lessons.find(l => isLessonUnlocked(l, strandLevels) && !doneLessons.has(l.id))
     if (nl) return { href: `/child/lesson/${nl.id}`, label: 'درس تازه', title: nl.title, emoji: LESSON_TYPE_EMOJI[nl.type] ?? '📚', say: `بیا درس ${nl.title} رو شروع کنیم!`, kind: 'lesson' }
@@ -348,14 +410,35 @@ export default function ChildHomePage() {
   const goalMin = typeof window !== 'undefined' ? (parseInt(localStorage.getItem('koodakbook_daily_goal_min') ?? '10', 10) || 10) : 10
   const goalPct = goalMin > 0 ? Math.min(1, todayMin / goalMin) : 0
 
-  // The 3×3 friends/module grid — see the file doc comment for every href
-  // and badge decision below.
-  const grid = useMemo<GridItem[]>(() => ([
-    { module: 'lessons', title: 'درس‌ها', href: '/child/lesson',
-      sub: `روزی راهنماته${lessons.length ? ` · ${toPersianDigits(lessons.length)} درس` : ''}` },
-    { module: 'letters', title: 'حروف الفبا', href: '#alphabet',
-      sub: `بومی راهنماته${letters.length ? ` · ${toPersianDigits(letters.length)} حرف` : ''}` },
+  // The learning path: four core rooms. NOT a teaching order — that order
+  // isn't approved (product rule, 2026-09-29; mobile Home is deliberately
+  // unnumbered too), so no step numbers and no arrows, just a row of rooms.
+  // Every count is already loaded on this page.
+  const path = useMemo<PathItem[]>(() => ([
     { module: 'phonics', title: 'صداها', href: '/child/phonics', sub: 'گوش کن و بگو' },
+    { module: 'letters', title: 'حروف الفبا', href: '#alphabet',
+      sub: letters.length ? `${toPersianDigits(letters.length)} حرف` : 'ضربه بزن، بشنو' },
+    { module: 'lessons', title: 'درس‌ها', href: '/child/lesson',
+      sub: lessons.length ? `${toPersianDigits(doneLessons.size)} از ${toPersianDigits(lessons.length)}` : 'کلمه‌های تازه',
+      pct: lessons.length ? doneLessons.size / lessons.length : undefined },
+    { module: 'stories', title: 'قصه‌ها', href: '/child/story',
+      sub: stories.length ? `${toPersianDigits(doneStories.size)} از ${toPersianDigits(stories.length)}` : 'بخون و گوش کن',
+      pct: stories.length ? doneStories.size / stories.length : undefined },
+  ]), [letters.length, lessons.length, stories.length, doneLessons, doneStories])
+
+  // Featured stories: the one in progress first, then unread unlocked ones,
+  // then the rest of the unlocked shelf — never a locked story (a card that
+  // opens onto a lock is a broken promise). Four are drawn; the fourth only
+  // shows on a wide screen.
+  const featured = useMemo(() => {
+    const open = stories.filter(s => isStoryUnlocked(s, strandLevels))
+    const rank = (s: Story) => (lastStory?.id === s.id ? 0 : doneStories.has(s.id) ? 2 : 1)
+    return [...open].sort((a, b) => rank(a) - rank(b)).slice(0, 4)
+  }, [stories, strandLevels, lastStory, doneStories])
+
+  // Every other room, still one tap from home (the path above carries the
+  // four core ones). See the file doc comment for every href and badge.
+  const moreRooms = useMemo<GridItem[]>(() => ([
     { module: 'review', title: 'مرور', href: '/child/review', sub: 'لاکی راهنماته',
       badge: reviewWords.length > 0 ? 'امروز' : undefined },
     { module: 'speak', title: 'گفتار', href: '/child/speak', sub: 'آوا راهنماته' },
@@ -363,12 +446,20 @@ export default function ChildHomePage() {
     { module: 'math', title: 'ریاضی', href: '/child/math', sub: 'خرسی راهنماته' },
     { module: 'games', title: 'بازی‌ها', href: '/child/games/memory', sub: 'تندپا راهنماته' },
     { module: 'rewards', title: 'جایزه‌ها', href: '/child/rewards', sub: 'سیمرغ راهنماته' },
-  ]), [lessons.length, letters.length, reviewWords.length])
+  ]), [reviewWords.length])
+
+  // Nothing of the page until its data is in (see loadForChild): the same
+  // loading screen, on the same child-bg, as every other child screen.
+  if (loadError) {
+    // No way-out link: this IS home.
+    return <ErrorState message={loadError} onRetry={() => { setLoadError(null); setAttempt(a => a + 1) }} backHref={null} />
+  }
+  if (!child && !showPicker) return <LoadingScreen />
 
   if (showPicker) {
     return (
       <div className="fixed inset-0 z-50 child-bg flex flex-col items-center justify-center p-6 gap-8">
-        <h1 className="font-display text-h1 font-black text-text-primary persian-text">کی می‌خواد بازی کنه؟ 🎮</h1>
+        <h1 className="font-display text-h1 font-black text-text-primary persian-text">کی می‌خواد بازی کنه؟ <span aria-hidden="true">🎮</span></h1>
         <div className="grid grid-cols-2 gap-5 w-full max-w-md">
           {pickList.map(c => (
             <motion.button key={c.id} onClick={() => resolveChild(c)} whileTap={{ scale: 0.94 }}
@@ -393,202 +484,322 @@ export default function ChildHomePage() {
     )
   }
 
+  const nextHost = MODULE[nextUpModule].character
+  const goalLabel = `امروز ${toPersianDigits(todayMin)} از ${toPersianDigits(goalMin)} دقیقه`
+
   return (
     <div className="min-h-screen child-bg pb-nav">
       <AnimatePresence>
         {showTutorial && <Tutorial childName={child?.name} onClose={() => setShowTutorial(false)} />}
       </AnimatePresence>
 
-      <div className="px-4 sm:px-6 lg:px-10 pt-5 pb-4 space-y-6">
-
-        {/* ── Header: identity strip, not the old full-bleed gradient hero.
-             No lock button here — ChildRail/BottomNav's hold-to-parent door
-             is the one gate on this route (see file doc comment). ── */}
-        <div className="flex items-center justify-between gap-3">
-          <button onClick={() => speakPersian(nextUp.say)} className="flex items-center gap-2.5" aria-label="کودک‌بوک — بگو چی کار کنیم">
-            <Mascot size={44} mood="proud" />
-            <span className="font-display font-black text-card-title text-text-primary">کودک‌بوک</span>
-          </button>
-          <div className="flex items-center gap-2">
-            {showStreak && (
-              <div className="flex items-center gap-1.5 h-10 px-3 rounded-pill bg-white shadow-card">
-                {/* Icon color: `-ink`, not `-bright` -- a Lucide stroke icon in the
-                    bright tone alone measures ~2.3:1 on this white pill (WCAG
-                    1.4.11 needs >=3:1 for a graphical UI object); `-ink` is the
-                    token this exact page already uses one line down for the
-                    adjacent streak-count text, and clears >=7:1 here too
-                    (2026-09-22 fresh-redesign contrast pass). */}
-                <span style={{ color: 'var(--ramp-phonics-ink)' }}><Icon name="streak" size="sm" strokeWidth={2.4} /></span>
-                <span className="font-bold text-sm" style={{ color: 'var(--ramp-phonics-ink)' }}>{toPersianDigits(stats.streak)}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5 h-10 px-3 rounded-pill bg-white shadow-card">
-              {/* Same fix as the streak icon above: `-bright` measured ~1.7:1 on
-                white, the worst contrast bug found in this pass. `-ink`
-                matches the xp-count text right beside it. */}
-              <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="star" size="sm" strokeWidth={2.4} /></span>
-              <span className="font-bold text-sm" style={{ color: 'var(--ramp-brand-ink)' }}>{toPersianDigits(stats.xp)}</span>
-            </div>
-            <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center overflow-hidden border-4 shrink-0"
-              style={{ background: 'var(--ramp-stories-soft)', borderColor: 'var(--ramp-stories-bright)' }} aria-hidden="true">
-              {mediaUrl(child?.avatar_url) ? (
-                <img src={mediaUrl(child?.avatar_url)!} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span className="font-display font-black text-lg" style={{ color: 'var(--ramp-stories-ink)' }}>{child?.name?.[0] ?? '؟'}</span>
+      {/* ── Hero: the warm world, سیمرغ in it, a greeting by name. ── */}
+      <section className="relative overflow-hidden" aria-labelledby="home-greeting">
+        <HeroScene />
+        <div className="relative px-4 sm:px-6 lg:px-10 pt-4">
+          {/* Header strip. No lock button here — ChildRail/BottomNav's
+              hold-to-parent door (and the parent card below, the same door)
+              is the one gate on this route (see file doc comment). */}
+          <div className="flex items-center justify-between gap-3">
+            <button onClick={() => speakPersian(nextUp.say)} className="flex items-center gap-2 min-h-[48px] rounded-2xl" aria-label="کودک‌بوک — بگو چی کار کنیم">
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center shadow-card"
+                style={{ background: 'linear-gradient(135deg, var(--ramp-letters-bright), var(--ramp-math-deep))', color: '#fff' }} aria-hidden="true">
+                <Icon name="stories" size="md" strokeWidth={2.4} />
+              </span>
+              <span className="font-display font-black text-card-title text-text-primary">کودک‌بوک</span>
+            </button>
+            <div className="flex items-center gap-2">
+              {showStreak && (
+                <div className="flex items-center gap-1.5 h-10 px-3 rounded-pill bg-white/90 shadow-card max-[359px]:px-2">
+                  {/* `-ink`, not `-bright`: a stroke icon in the bright tone
+                      alone is ~2.3:1 on white (WCAG 1.4.11 wants 3:1). */}
+                  <span style={{ color: 'var(--ramp-phonics-ink)' }}><Icon name="streak" size="sm" strokeWidth={2.4} /></span>
+                  <span className="font-bold text-sm" style={{ color: 'var(--ramp-phonics-ink)' }}>{toPersianDigits(stats.streak)}</span>
+                </div>
               )}
+              <div className="flex items-center gap-1.5 h-10 px-3 rounded-pill bg-white/90 shadow-card max-[359px]:px-2">
+                <span style={{ color: 'var(--ramp-brand-ink)' }}><Icon name="star" size="sm" strokeWidth={2.4} /></span>
+                <span className="font-bold text-sm" style={{ color: 'var(--ramp-brand-ink)' }}>{toPersianDigits(stats.xp)}</span>
+              </div>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-[3px] bg-white shrink-0 max-[359px]:hidden"
+                style={{ borderColor: 'var(--ramp-stories-bright)' }} aria-hidden="true">
+                {mediaUrl(child?.avatar_url) ? (
+                  <img src={mediaUrl(child?.avatar_url)!} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-display font-black text-lg" style={{ color: 'var(--ramp-stories-ink)' }}>{child?.name?.[0] ?? '؟'}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-end justify-between gap-2 pb-14 lg:pb-16">
+            <div className="min-w-0 pt-5 pb-10 lg:pt-8 lg:pb-12">
+              <h1 id="home-greeting" className="font-display font-black text-h2 sm:text-h1 text-text-primary persian-text">
+                سلام {child?.name}! <span aria-hidden="true">👋</span>
+              </h1>
+              <p className="text-body font-bold text-text-secondary persian-text">امروز چی یاد بگیریم؟</p>
+            </div>
+            {/* سیمرغ, the story companion — the hero's one character. */}
+            <div className="shrink-0 -me-2 lg:me-6" aria-hidden="true">
+              <div className="w-[150px] h-[150px] max-[359px]:w-[120px] max-[359px]:h-[120px] sm:w-[170px] sm:h-[170px] lg:w-[210px] lg:h-[210px] [&>*]:!w-full [&>*]:!h-full [&_svg]:w-full [&_svg]:h-full">
+                <Mascot size={200} mood="happy" />
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* ── Continue/journey card — the app's one decision, illustrated. ── */}
-        <Link href={nextUp.href} aria-label={`${nextUp.label}: ${nextUp.title}`}>
-          <motion.div whileTap={{ scale: 0.98 }}
-            className="rounded-[2.25rem] overflow-hidden shadow-raised bg-white">
-            <div className="h-[74px] px-4 sm:px-5 flex items-center justify-between gap-3 border-b border-border">
-              <div className="flex items-center gap-3 min-w-0">
-                <IconChip module={nextUpModule} size="lg" />
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-text-secondary">{nextUp.label}</p>
-                  <p className="font-display font-black text-card-title text-text-primary truncate">{nextUp.title}</p>
-                </div>
-              </div>
-              {nextUpProgress && (
-                <div className="hidden sm:flex flex-col items-end gap-1 shrink-0 w-28">
-                  <span className="text-xs font-bold text-text-secondary">
-                    {toPersianDigits(nextUpProgress.idx + 1)} از {toPersianDigits(nextUpProgress.total)}
-                  </span>
-                  <div className="h-2 w-full rounded-pill overflow-hidden" style={{ background: `var(--ramp-${nextUpModule}-soft)` }}>
-                    <div className="h-full rounded-pill" style={{ background: `var(--ramp-${nextUpModule}-bright)`, width: `${((nextUpProgress.idx + 1) / nextUpProgress.total) * 100}%` }} />
+      <div className="relative px-4 sm:px-6 lg:px-10 -mt-12 pb-4 space-y-7">
+        {partialError && child && (
+          <div role="status" className="rounded-3xl p-4 flex items-center gap-3 flex-wrap"
+            style={{ background: 'var(--ramp-brand-soft)', color: 'var(--ramp-brand-ink)' }}>
+            <CharacterAvatar slug="charkhi" size={48} mood="confused" />
+            <p className="flex-1 min-w-[10rem] font-bold text-small persian-text">نتونستیم همه‌چیز رو بیاریم.</p>
+            <div className="w-full sm:w-auto">
+              <ClayButton size="md" disabled={reloading}
+                onClick={async () => { setReloading(true); await loadForChild(child); setReloading(false) }}>
+                {reloading ? 'در حال آوردن...' : 'دوباره امتحان کن'}
+              </ClayButton>
+            </div>
+          </div>
+        )}
+
+        {/* ── Continue: the app's one decision, the deepest card on the page. ──
+            block + the card's radius so the focus ring follows the card. */}
+        <Link href={nextUp.href} aria-label={`${nextUp.label}: ${nextUp.title}${nextUpProgress ? `، ${toPersianDigits(nextUpProgress.idx + 1)} از ${toPersianDigits(nextUpProgress.total)}` : ''}`}
+          className="block rounded-[1.75rem]">
+          <motion.div whileTap={{ scale: 0.98 }} tabIndex={-1} /* wrapper inside a link: whileTap would otherwise add tabindex=0 (a second, nameless tab stop) */
+            className="card-indigo relative overflow-hidden p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+            <span className="shrink-0 w-[84px] h-[84px] sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center overflow-hidden"
+              style={{ background: `linear-gradient(160deg, var(--ramp-${nextUpModule}-soft), color-mix(in oklab, var(--ramp-${nextUpModule}-bright) 45%, white))` }} aria-hidden="true">
+              {nextHost
+                ? <CharacterAvatar slug={nextHost} size={84} mood="encouraging" />
+                : <span className="text-5xl">{nextUp.emoji}</span>}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-bold text-white/85">{nextUp.label}</p>
+              <p className="font-display font-black text-card-title sm:text-h2 text-white truncate">{nextUp.title}</p>
+              {nextUpProgress ? (
+                <div className="flex items-center gap-2 mt-2" aria-hidden="true">
+                  <div className="h-2.5 flex-1 max-w-[16rem] rounded-pill overflow-hidden bg-white/20">
+                    <div className="h-full rounded-pill" style={{ background: 'var(--ramp-lessons-bright)', width: `${((nextUpProgress.idx + 1) / nextUpProgress.total) * 100}%` }} />
                   </div>
+                  <span className="text-xs font-bold text-white/90 tabular-nums">{toPersianDigits(nextUpProgress.idx + 1)}/{toPersianDigits(nextUpProgress.total)}</span>
                 </div>
+              ) : (
+                <p className="text-xs sm:text-sm text-white/85 mt-1 persian-text">بزن بریم! <span aria-hidden="true">🎈</span></p>
               )}
             </div>
-            <div className="relative h-56 sm:h-64 lg:h-72 overflow-hidden">
-              <div className="absolute inset-0" aria-hidden="true"
-                dangerouslySetInnerHTML={{ __html: CONTINUE_SCENE_SVG.replace('<svg ', '<svg preserveAspectRatio="xMidYMid slice" width="100%" height="100%" ') }} />
-              {/* چرخی — fixed road/journey mascot, always here regardless of
-                  nextUp (see kit.tsx's MODULE comment + file doc comment). */}
-              <div className="absolute left-[8%] sm:left-[14%] top-[18%]" aria-hidden="true">
-                <CharacterAvatar slug="charkhi" size={64} mood="happy" />
-              </div>
-              {/* nextUp's own host character, swapped by kind. */}
-              {MODULE[nextUpModule].character && (
-                <div className="absolute right-[8%] sm:right-[14%] top-[10%]" aria-hidden="true">
-                  <CharacterAvatar slug={MODULE[nextUpModule].character!} size={112} mood="encouraging" />
-                </div>
-              )}
-              {/* A styled span, not a real <button> — the whole card above
-                  is already one <Link>, and a <button> nested inside an <a>
-                  is invalid HTML (same reasoning kit.tsx's own ChunkyButton
-                  was built on; this is that same technique, parametrized by
-                  nextUp's module ramp instead of ChunkyButton's fixed
-                  brand hue). */}
-              <div className="absolute bottom-4 right-4 sm:right-5">
-                <span style={clayVars(nextUpModule)} className="clay inline-flex items-center justify-center gap-1.5 font-bold min-h-[56px] px-6 text-lg">
-                  بزن بریم! 🎈
-                </span>
-              </div>
-            </div>
+            <span className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white shadow-card"
+              style={{ background: '#6366F1' }} aria-hidden="true">
+              <Icon name="next" size="md" strokeWidth={2.8} />
+            </span>
           </motion.div>
         </Link>
 
-        {/* ── Three real stat tiles ── */}
-        <div className={`grid gap-3 sm:gap-4 ${showStreak ? 'grid-cols-3' : 'grid-cols-2'}`}>
-          <div className="rounded-3xl p-4 flex items-center gap-3" style={{ background: 'var(--ramp-brand-bright)' }}>
-            <svg viewBox="0 0 44 44" width={42} height={42} className="shrink-0" aria-hidden="true">
-              <circle cx={22} cy={22} r={GOAL_R} fill="none" stroke="var(--ramp-brand-ink)" strokeWidth={6} opacity={0.22} />
-              <circle cx={22} cy={22} r={GOAL_R} fill="none" stroke="var(--ramp-brand-ink)" strokeWidth={6} strokeLinecap="round"
-                strokeDasharray={`${GOAL_CIRC * goalPct} ${GOAL_CIRC}`}
-                style={{ transform: 'rotate(-90deg)', transformOrigin: '22px 22px' }} />
-            </svg>
-            <div className="min-w-0">
-              <p className="text-xs font-bold opacity-70" style={{ color: 'var(--ramp-brand-ink)' }}>هدف امروز</p>
-              <p className="font-display font-black text-sm sm:text-base truncate" style={{ color: 'var(--ramp-brand-ink)' }}>
-                {toPersianDigits(todayMin)} از {toPersianDigits(goalMin)} دقیقه
-              </p>
-            </div>
-          </div>
-
-          {showStreak && (
-            <div className="rounded-3xl p-4 flex items-center gap-3" style={{ background: 'var(--ramp-phonics-soft)' }}>
-              <span className="shrink-0" style={{ color: 'var(--ramp-phonics-ink)' }}><Icon name="streak" size="xl" strokeWidth={2.2} /></span>
-              <div className="min-w-0">
-                <p className="text-xs font-bold opacity-70" style={{ color: 'var(--ramp-phonics-ink)' }}>پشت سر هم</p>
-                <p className="font-display font-black text-sm sm:text-base truncate" style={{ color: 'var(--ramp-phonics-ink)' }}>{toPersianDigits(stats.streak)} روز</p>
+        <div className="lg:grid lg:grid-cols-3 lg:gap-8 space-y-7 lg:space-y-0">
+          <div className="lg:col-span-2 space-y-7">
+            {/* ── Learning path: four rooms in the order a child climbs them ── */}
+            <section aria-labelledby="path-title">
+              <div className="flex items-end justify-between mb-3">
+                <h2 id="path-title" className="font-display font-black text-card-title text-text-primary">مسیر یادگیری</h2>
+                <Link href="/child/rooms" className="text-sm font-bold text-brand-text inline-flex items-center gap-1 min-h-[40px] rounded-lg">
+                  همه‌ی اتاق‌ها <Icon name="next" size="sm" strokeWidth={2.5} />
+                </Link>
               </div>
-            </div>
-          )}
+              <ul className="grid grid-cols-4 gap-2 min-[380px]:gap-3 sm:gap-5">
+                {path.map(p => (
+                  <li key={p.module} className="min-w-0">
+                    <Link href={p.href} aria-label={`${p.title}: ${p.sub}`}
+                      className="h-full block rounded-[1.5rem]">
+                      <motion.div whileTap={{ y: 3 }} tabIndex={-1}
+                        className="h-full card-soft flex flex-col items-center text-center px-1.5 pt-3 pb-2.5 sm:px-3 sm:pt-4"
+                        style={{ background: `linear-gradient(180deg, color-mix(in oklab, var(--ramp-${p.module}-bright) 26%, white), color-mix(in oklab, var(--ramp-${p.module}-bright) 12%, white))` }}>
+                        <span className="w-14 h-14 sm:w-[72px] sm:h-[72px] flex items-center justify-center" aria-hidden="true">
+                          {MODULE[p.module].character
+                            ? <span className="scale-[.78] sm:scale-100"><CharacterAvatar slug={MODULE[p.module].character!} size={72} mood="happy" /></span>
+                            : <span style={{ color: `var(--ramp-${p.module}-deep)` }}><Icon name="headphones" size={44} strokeWidth={2.2} /></span>}
+                        </span>
+                        <p className="mt-2 font-bold text-sm leading-tight text-text-primary">{p.title}</p>
+                        <p className="text-[11px] sm:text-xs font-medium mt-0.5 leading-tight" style={{ color: `var(--ramp-${p.module}-ink)` }}>{p.sub}</p>
+                        {p.pct !== undefined && (
+                          <span className="mt-1.5 h-1.5 w-4/5 rounded-pill overflow-hidden bg-white/80" aria-hidden="true">
+                            <span className="block h-full rounded-pill" style={{ width: `${Math.round(p.pct * 100)}%`, background: `var(--ramp-${p.module}-deep)` }} />
+                          </span>
+                        )}
+                      </motion.div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-          <div className="rounded-3xl p-4 flex items-center gap-3" style={{ background: 'var(--ramp-letters-soft)' }}>
-            <span className="shrink-0" style={{ color: 'var(--ramp-letters-ink)' }}><Icon name="star" size="xl" strokeWidth={2.2} /></span>
-            <div className="min-w-0">
-              <p className="text-xs font-bold opacity-70" style={{ color: 'var(--ramp-letters-ink)' }}>کلمه‌های یادگرفته</p>
-              <p className="font-display font-black text-sm sm:text-base truncate" style={{ color: 'var(--ramp-letters-ink)' }}>{toPersianDigits(stats.words)}</p>
-            </div>
+            {/* ── Featured stories: illustrated covers with a play badge ── */}
+            {featured.length > 0 && (
+              <section aria-labelledby="featured-title">
+                <div className="flex items-end justify-between mb-3">
+                  <h2 id="featured-title" className="font-display font-black text-card-title text-text-primary">قصه‌هایی برای تو</h2>
+                  <Link href="/child/story" className="text-sm font-bold text-brand-text inline-flex items-center gap-1 min-h-[40px] rounded-lg">
+                    همه <Icon name="next" size="sm" strokeWidth={2.5} />
+                  </Link>
+                </div>
+                <ul className="grid grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4">
+                  {featured.map((s, i) => {
+                    const done = doneStories.has(s.id)
+                    const inProgress = lastStory?.id === s.id
+                    const tag = inProgress ? 'نیمه‌کاره' : done ? 'خوندم' : null
+                    return (
+                      <li key={s.id} className={i === 3 ? 'hidden lg:block' : undefined}>
+                        <Link href={`/child/story/${s.id}`}
+                          aria-label={`${s.title_persian}${tag ? ` — ${tag}` : ''}`}
+                          className="block h-full rounded-[1.25rem]">
+                          <motion.div whileTap={{ scale: 0.97 }} tabIndex={-1}
+                            className="h-full bg-white rounded-[1.25rem] overflow-hidden shadow-card">
+                            <div className="relative">
+                              <StoryCover id={s.id} coverUrl={s.cover_url} className="h-24 sm:h-32" hostSize={56} sizes="(min-width: 1024px) 18vw, 33vw" />
+                              {tag && (
+                                <span aria-hidden="true" className="absolute top-2 start-2 rounded-pill px-2 py-0.5 text-[11px] font-bold text-white"
+                                  style={{ background: inProgress ? 'var(--ramp-math-deep)' : 'var(--ramp-lessons-deep)' }}>{tag}</span>
+                              )}
+                            </div>
+                            <div className="px-2.5 py-2 sm:px-3 sm:py-2.5">
+                              <p className="font-bold text-sm sm:text-base text-text-primary leading-snug persian-text line-clamp-2">{s.title_persian}</p>
+                              {s.age_min ? (
+                                <p className="text-[11px] sm:text-xs text-text-secondary mt-0.5 inline-flex items-center gap-1">
+                                  <Icon name="listen" size="xs" /> {toPersianDigits(s.age_min)}–{toPersianDigits(s.age_max ?? '')} سال
+                                </p>
+                              ) : null}
+                            </div>
+                          </motion.div>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          {/* ── Side column on a wide screen: reward + parent, quiet. ── */}
+          <div className="space-y-4">
+            {/* Reward/progress: today's real minutes against the family's
+                real goal, the real star total, the real words count. */}
+            <Link href="/child/rewards"
+              aria-label={`آفرین! ${goalLabel}. ${toPersianDigits(stats.xp)} ستاره، ${toPersianDigits(stats.words)} کلمه یاد گرفتی. برو به جایزه‌ها`}
+              className="block rounded-[1.75rem]">
+              <motion.div whileTap={{ scale: 0.98 }} tabIndex={-1}
+                className="card-soft p-4 flex items-center gap-3"
+                style={{ background: 'linear-gradient(135deg, #FFF7DA, #FFEFC2)' }}>
+                <span className="shrink-0 w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'radial-gradient(circle at 35% 30%, #FFF6D0, #FDE68A)' }} aria-hidden="true">
+                  <StarBuddy />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-text-primary persian-text truncate">آفرین {child?.name}، عالی پیش میری!</p>
+                  <div className="flex items-center gap-2 mt-1.5" aria-hidden="true">
+                    <span className="h-2.5 flex-1 rounded-pill overflow-hidden bg-white/80">
+                      <span className="block h-full rounded-pill" style={{ width: `${Math.round(goalPct * 100)}%`, background: 'var(--ramp-lessons-bright)' }} />
+                    </span>
+                  </div>
+                  <p className="text-xs font-medium mt-1" style={{ color: 'var(--ramp-rewards-ink)' }}>
+                    {goalLabel} · {toPersianDigits(stats.words)} کلمه
+                  </p>
+                </div>
+                <span className="shrink-0 flex flex-col items-center gap-0.5" style={{ color: 'var(--ramp-rewards-ink)' }} aria-hidden="true">
+                  <Icon name="gift" size="lg" strokeWidth={2.2} />
+                  <span className="text-xs font-black tabular-nums">{toPersianDigits(stats.xp)} <Icon name="star" size={11} strokeWidth={3} className="inline -mt-0.5" /></span>
+                </span>
+              </motion.div>
+            </Link>
+
+            {/* Quiet parent card: tells a grown-up where their door is. The
+                ONLY control in it is ParentDoorNav — the same hold + PIN gate
+                as the nav's door, never a tap-through (see doc comment). */}
+            <section aria-labelledby="parent-card-title" className="card-soft p-4 flex items-center gap-3 flex-wrap"
+              style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)' }}>
+              <span className="shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white"
+                style={{ background: 'linear-gradient(160deg, var(--ramp-review-bright), var(--ramp-review-deep))' }} aria-hidden="true">
+                <Icon name="locked" size="md" strokeWidth={2.4} />
+              </span>
+              <div className="flex-1 min-w-[6rem]">
+                <h2 id="parent-card-title" className="font-bold text-sm text-text-primary">بخش والدین</h2>
+                <p className="text-xs text-text-secondary persian-text leading-snug">گزارش پیشرفت و تنظیمات</p>
+              </div>
+              <div className="shrink-0" style={{ color: 'var(--ramp-review-ink)' }}>
+                <ParentDoorNav variant="card" />
+              </div>
+            </section>
           </div>
         </div>
 
-        {/* ── Friends/module grid ── */}
-        <div className="flex items-end justify-between">
-          <h2 className="font-display font-black text-card-title text-text-primary">دوستات منتظرتن</h2>
-          <Link href="/child/rooms" className="text-sm font-bold text-brand-text inline-flex items-center gap-1">
-            کتابخانه‌ی کامل <Icon name="prev" size="sm" strokeWidth={2.5} />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" role="list" aria-label="دوستات منتظرتن">
-          {grid.map(g => (
-            <div key={g.module} role="listitem">
-              <ModuleCard module={g.module} title={g.title} sub={g.sub} href={g.href} badge={g.badge} big />
-            </div>
-          ))}
-          {/* Re-placement's entry point — سیمرغ by name, so سیمرغ hosts it,
-              same as apps/mobile/app/home.tsx's own conditional 10th tile. */}
-          {reprobeDue && (
-            <div role="listitem">
-              <ModuleCard module="rewards" title="بازی سیمرغ" sub="سیمرغ دلش می‌خواد باهات بازی کنه!"
-                href="/onboarding/placement?mode=reprobe" big />
-            </div>
-          )}
-        </div>
+        {/* ── Every other room, one tap from home ── */}
+        <section aria-labelledby="more-rooms-title">
+          <div className="flex items-end justify-between mb-3">
+            <h2 id="more-rooms-title" className="font-display font-black text-card-title text-text-primary">دوستات منتظرتن</h2>
+            <Link href="/child/rooms" className="text-sm font-bold text-brand-text inline-flex items-center gap-1 min-h-[40px] rounded-lg">
+              کتابخانه‌ی کامل <Icon name="next" size="sm" strokeWidth={2.5} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" role="list" aria-label="دوستات منتظرتن">
+            {moreRooms.map(g => (
+              <div key={g.module} role="listitem">
+                <ModuleCard module={g.module} title={g.title} sub={g.sub} href={g.href} badge={g.badge} />
+              </div>
+            ))}
+            {/* Re-placement's entry point — سیمرغ by name, so سیمرغ hosts it,
+                same as apps/mobile/app/home.tsx's own conditional tile. */}
+            {reprobeDue && (
+              <div role="listitem">
+                <ModuleCard module="rewards" title="بازی سیمرغ" sub="سیمرغ دلش می‌خواد باهات بازی کنه!"
+                  href="/onboarding/placement?mode=reprobe" />
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* ── Friends carousel: not in the mockup, kept for reachability
              (see file doc comment) ── */}
         {friends.length > 0 && (
-          <section>
-            <h2 className="font-bold text-text-primary text-base mb-3">دوست‌های من 🦊</h2>
+          <section aria-labelledby="friends-title">
+            <h2 id="friends-title" className="font-display font-black text-card-title text-text-primary mb-3">دوست‌های من</h2>
             <div className="flex items-stretch gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-1 snap-x scroll-smooth" role="list" aria-label="دوست‌های من">
+              {/* role="listitem" sits on a wrapper, not on the Link/button:
+                  on the control itself it REPLACED the link/button role, so
+                  these were announced as plain list items. */}
               {friends.map(f => (
-                <Link key={f.slug} href={`/child/friends/${f.slug}`} role="listitem"
-                  aria-label={`برو پیش ${f.name_persian}`} className="flex-shrink-0 snap-start">
-                  <motion.div whileTap={{ scale: 0.93 }}
-                    className="w-28 bg-white rounded-2xl shadow-card flex flex-col items-center gap-1 py-3">
-                    <CharacterAvatar slug={f.slug} size={64} mood="idle" />
-                    <p className="font-bold text-text-primary text-sm">{f.name_persian}</p>
-                  </motion.div>
-                </Link>
+                <div key={f.slug} role="listitem" className="flex-shrink-0 snap-start">
+                  <Link href={`/child/friends/${f.slug}`}
+                    aria-label={`برو پیش ${f.name_persian}`} className="block rounded-[1.25rem]">
+                    <motion.div whileTap={{ scale: 0.93 }} tabIndex={-1}
+                      className="w-28 bg-white rounded-[1.25rem] shadow-card flex flex-col items-center gap-1 py-3">
+                      <CharacterAvatar slug={f.slug} size={64} mood="idle" />
+                      <p className="font-bold text-text-primary text-sm">{f.name_persian}</p>
+                    </motion.div>
+                  </Link>
+                </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* ── Alphabet — tap to hear; the "حروف الفبا" grid card's real
-             destination (#alphabet), not in the mockup, kept for
-             reachability (see file doc comment) ── */}
+        {/* ── Alphabet — tap to hear; the path's «حروف الفبا» step lands
+             here (#alphabet), kept for reachability (see file doc comment) ── */}
         {letters.length > 0 && (
-          <section id="alphabet" className="scroll-mt-20">
-            <h2 className="font-bold text-text-primary text-base mb-3">الفبا — ضربه بزن و بشنو 🔤</h2>
+          <section id="alphabet" className="scroll-mt-20" aria-labelledby="alphabet-title">
+            <h2 id="alphabet-title" className="font-display font-black text-card-title text-text-primary mb-3">الفبا — ضربه بزن و بشنو</h2>
             <div className="flex items-stretch gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-1 snap-x scroll-smooth" role="list" aria-label="الفبا">
               {letters.map(l => (
-                <button key={l.id} role="listitem"
-                  onClick={() => { playTap(); speakOrPlay(l.audio_url, l.name_persian) }}
-                  aria-label={`بشنو: ${l.name_persian}`}
-                  className="flex-shrink-0 snap-start">
-                  <motion.div whileTap={{ scale: 0.88 }}
-                    className="w-20 h-24 bg-white rounded-2xl shadow-card flex flex-col items-center justify-center gap-1">
-                    <span className="text-4xl font-bold leading-none" style={{ color: 'var(--ramp-letters-ink)' }}>{l.character}</span>
-                    <span className="text-[11px] text-text-secondary persian-text">{l.name_persian}</span>
-                  </motion.div>
-                </button>
+                <div key={l.id} role="listitem" className="flex-shrink-0 snap-start">
+                  <button
+                    onClick={() => { playTap(); speakOrPlay(l.audio_url, l.name_persian) }}
+                    aria-label={`بشنو: ${l.name_persian}`}
+                    className="block rounded-[1.25rem]">
+                    <motion.div whileTap={{ scale: 0.88 }} tabIndex={-1}
+                      className="w-20 h-24 bg-white rounded-[1.25rem] shadow-card flex flex-col items-center justify-center gap-1">
+                      <span className="text-4xl font-bold leading-none" style={{ color: 'var(--ramp-letters-ink)' }}>{l.character}</span>
+                      <span className="text-[11px] text-text-secondary persian-text">{l.name_persian}</span>
+                    </motion.div>
+                  </button>
+                </div>
               ))}
             </div>
           </section>
@@ -597,5 +808,21 @@ export default function ChildHomePage() {
 
       <BottomNav />
     </div>
+  )
+}
+
+/** The reward card's star — a small friendly face on the star the child
+ *  collects, not a stock glyph (the reference's star buddy). Decorative. */
+function StarBuddy() {
+  return (
+    <svg viewBox="0 0 48 48" width={44} height={44} aria-hidden="true">
+      <path d="M24 4.5l5.6 11.8 12.9 1.6-9.5 8.9 2.5 12.8L24 33.3l-11.5 6.3 2.5-12.8-9.5-8.9 12.9-1.6z"
+        fill="#FBBF24" stroke="#D97706" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="19.5" cy="22.5" r="2" fill="#5B3A00" />
+      <circle cx="28.5" cy="22.5" r="2" fill="#5B3A00" />
+      <path d="M20 27.5q4 3.4 8 0" fill="none" stroke="#5B3A00" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="16.5" cy="26.5" r="1.8" fill="#FB7185" opacity=".55" />
+      <circle cx="31.5" cy="26.5" r="1.8" fill="#FB7185" opacity=".55" />
+    </svg>
   )
 }

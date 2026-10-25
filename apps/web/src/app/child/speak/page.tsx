@@ -8,14 +8,16 @@ import { pickChild } from '@/lib/activeChild'
 import { mediaUrl } from '@/lib/media'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
-import { clayVars } from '@/components/child/clay'
+import { ClayButton, softClayVars } from '@/components/child/clay'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
+import EmptyState from '@/components/child/EmptyState'
 import Mascot from '@/components/child/Mascot'
 import Emoji from '@/components/shared/Emoji'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay, initSpeech } from '@/lib/speech'
 import { recognitionSupported, listenOnce } from '@/lib/recognition'
-import { wordEmoji } from '@koodakbook/shared'
+import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import type { Word, Child } from '@koodakbook/shared'
 
 type Phase = 'idle' | 'listening' | 'correct' | 'tryagain'
@@ -29,15 +31,20 @@ export default function SpeakPage() {
   const [phase, setPhase] = useState<Phase>('idle')
   const [heard, setHeard] = useState('')
   const supported = recognitionSupported()
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     initSpeech()
+    let cancelled = false
     async function load() {
       const [wordsRes, childRes] = await Promise.all([
         api.get<Word[]>('/api/words'),
         api.get<Child[]>('/api/children'),
       ])
+      if (cancelled) return
+      if (!wordsRes.data) { setLoadError(wordsRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن'); setLoading(false); return }
       // Prefer words that have a real image or, failing that, an emoji, so
       // the child always has a visual cue — same "has a visual" test WordTile
       // and QuizCard use, not emoji-only.
@@ -49,10 +56,23 @@ export default function SpeakPage() {
       setLoading(false)
     }
     load()
-  }, [router])
+    return () => { cancelled = true }
+  }, [router, attempt])
 
   if (loading) return <LoadingScreen message="در حال بارگذاری..." />
-  if (words.length === 0) return <LoadingScreen message="کلمه‌ای نیست" />
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => { setLoadError(null); setLoading(true); setAttempt(a => a + 1) }} />
+  }
+  // Empty, not loading (this used to be LoadingScreen, pulsing forever).
+  if (words.length === 0) {
+    return (
+      <div className="min-h-screen child-bg pb-nav">
+        <PageHeader title="تمرین گفتن" module="speak" />
+        <EmptyState message="کلمه‌ای برای تمرین نیست" />
+        <BottomNav />
+      </div>
+    )
+  }
 
   const word = words[idx]
   const image = mediaUrl(word.image_url)
@@ -86,11 +106,11 @@ export default function SpeakPage() {
 
   return (
     <div className="min-h-screen child-bg pb-nav">
-      <PageHeader title="تمرین گفتن" subtitle={`کلمه ${idx + 1} از ${words.length}`} module="speak" />
+      <PageHeader title="تمرین گفتن" subtitle={`کلمه ${toPersianDigits(idx + 1)} از ${toPersianDigits(words.length)}`} module="speak" />
 
       <div className="px-4 pt-6 flex flex-col items-center gap-5">
         {!supported && (
-          <div className="bg-amber-50 text-amber-700 text-sm rounded-2xl p-3 text-center persian-text max-w-sm">
+          <div className="bg-brand-soft text-brand-ink text-sm rounded-2xl p-3 text-center persian-text max-w-sm">
             مرورگر تو از تشخیص صدا پشتیبانی نمی‌کند. می‌توانی کلمه را بشنوی و بلند تکرار کنی.
           </div>
         )}
@@ -98,7 +118,8 @@ export default function SpeakPage() {
         {/* Word card */}
         <button
           onClick={() => { playTap(); speakOrPlay(word.audio_url, word.persian) }}
-          className="w-full max-w-sm bg-white rounded-2xl shadow-card p-6 flex flex-col items-center gap-2 touch-target-child"
+          className="w-full max-w-sm clay-static p-6 flex flex-col items-center gap-2 touch-target-child"
+          style={softClayVars('speak')}
           aria-label={`بشنو: ${word.persian}`}
         >
           {image ? (
@@ -108,15 +129,19 @@ export default function SpeakPage() {
           ) : null}
           <span className="text-5xl font-bold text-text-primary">{word.persian}</span>
           <span className="text-base text-text-secondary ltr">{word.english}</span>
-          <span className="flex items-center gap-1 text-xs text-amber-700"><Emoji name="speaker-high-volume" size={16} /> اول گوش کن</span>
+          <span className="flex items-center gap-1 text-xs text-speak-ink"><Emoji name="speaker-high-volume" size={16} /> اول گوش کن</span>
         </button>
 
-        {/* Mascot feedback */}
+        {/* Mascot feedback — in a live region so the result of a recording
+            is announced, not only shown. */}
+        {/* empty:-mt-5 cancels the column gap while nothing is showing, so
+            the always-mounted region doesn't add space. */}
+        <div role="status" className="flex flex-col items-center empty:-mt-5">
         <AnimatePresence mode="wait">
           {phase === 'correct' && (
             <motion.div key="correct" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-1">
               <Mascot size={90} mood="excited" />
-              <p className="font-bold text-green-600 text-lg">آفرین! درست گفتی 🌟</p>
+              <p className="font-bold text-green-700 text-lg">آفرین! درست گفتی <span aria-hidden="true">🌟</span></p>
             </motion.div>
           )}
           {phase === 'tryagain' && (
@@ -127,6 +152,7 @@ export default function SpeakPage() {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
 
         {/* Record button */}
         {supported && (
@@ -151,14 +177,9 @@ export default function SpeakPage() {
           {phase === 'listening' ? 'بگو...' : supported ? 'ضربه بزن و کلمه را بگو' : ''}
         </p>
 
-        <motion.button
-          onClick={nextWord}
-          whileTap={{ scale: 0.95 }}
-          style={clayVars('speak')}
-          className="clay w-full max-w-sm py-4 font-bold text-lg min-h-[56px]"
-        >
+        <ClayButton ramp="speak" size="lg" className="max-w-sm" onClick={nextWord}>
           کلمه بعدی ←
-        </motion.button>
+        </ClayButton>
       </div>
 
       <BottomNav />

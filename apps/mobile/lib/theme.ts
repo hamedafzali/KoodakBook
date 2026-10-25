@@ -1,3 +1,28 @@
+/* ── KoodakBook design tokens (mobile) ───────────────────────────────────────
+ *
+ * The child app's visual language is Home's (app/home.tsx, approved
+ * 2026-09-25): warm cream page gradient, illustrated scenery, cast characters,
+ * display-weight titles in dark ink, generous radii, clay surfaces. Every
+ * child screen builds from these tokens -- don't hand-type a hex, size or
+ * radius a token already names. Quick map:
+ *
+ *   Page        ScreenBackground variant="warm" (page.gradient); page.base is
+ *               its solid stand-in.
+ *   Colour      ramps.<module> for content (bright/soft/deep/ink, see below),
+ *               `ui` for semantic roles (text, muted, dividers, success/error,
+ *               selected, scrim), tones only for deliberate multi-colour sets.
+ *   Text        textStyles.* presets (font + size + colour) on the `type`
+ *               ladder; fonts.display for child headings only; textStart for
+ *               alignment. Never set a lineHeight below naturalLineHeight().
+ *   Shape       radii (md cards/tiles, lg buttons/hero cards, pill chips),
+ *               spacing (4pt rhythm), clay edges (components/Clay.tsx).
+ *   Contrast    every text token below is measured (WCAG 2.x) on the page
+ *               gradient's darkest stop #FEEBCB and on white; numbers inline.
+ *
+ * Primitives that apply all of this live in components/Clay.tsx (see its
+ * header), ScreenHeader, ScreenBackground and LoadState (+ EmptyState).
+ */
+
 // Matches web's brand tokens (apps/web/src/app/globals.css: --ramp-brand-*)
 // so the mobile app is the same saffron identity, not a placeholder. `primary`
 // is the bright fill (buttons, active chips) -- text/icons drawn ON that fill
@@ -80,6 +105,19 @@ export const tones = {
   lime:    { fill: '#A3E635', edge: '#4D7C0F', ink: '#1A2E05' },
 } as const
 
+// Quiz answer states, one pair for every child quiz (QuizCard in lessons and
+// review, the phonics quiz): a right answer turns bright green clay (the
+// lessons ramp, green = success), a wrong pick a pale rose face with the rose
+// tone's rim and ink. Both screens also show a ✅ / ❌ mark and say the result
+// in the option's spoken label, so the state never rests on colour alone.
+// Shown only AFTER an answer; before that every option wears the screen's own
+// ramp. (2026-09-26: phonics had this pair privately; QuizCard used one-off
+// #f0fdf4/#fef2f2 fills on white cards.)
+export const answerRamps: { right: Ramp; wrong: Ramp } = {
+  right: ramps.lessons,
+  wrong: { deep: tones.rose.edge, bright: tones.rose.fill, soft: colors.dangerSoft, ink: tones.rose.ink },
+}
+
 // Login = warm amber ("welcome back"), signup = fresh green ("start the
 // adventure") -- same differentiation web's AuthShell.tsx uses so the two
 // pages don't get mixed up. `onAccent` is the dark-ink pair for each button
@@ -92,13 +130,35 @@ export const auth = {
 
 // web's --radius-* scale (globals.css), for anything that should read as the
 // same "roundness" as a web card/button/chip rather than an arbitrary number.
-export const radii = { sm: 12, md: 20, lg: 28, xl: 40, pill: 999 }
+// The deliberate ladder (2026-09-28 visual-fidelity audit; `xs` added):
+//   xs 8    inner bits: a thumbnail's badge, a small image inside a tile
+//   sm 12   inputs, small tiles, chat bubbles, parent rows
+//   md 20   everyday cards and tiles (Home's path/story cards), thumbnails
+//   lg 28   hero / primary cards (Home's continue card), clay buttons
+//   xl 40   sheets and modals (RewardPopup, Tutorial)
+//   pill    chips, discs, progress tracks, the see-all link
+// Strays found in app/ + components/ and where they belong: 5/8/10 -> xs,
+// 14 -> sm, 16/18/22 -> md, 24 -> lg (or pill for a 48pt disc: use pill).
+// Prefer the role names in `shape` (below) over picking a step by eye.
+export const radii = { xs: 8, sm: 12, md: 20, lg: 28, xl: 40, pill: 999 }
+
+/** Radius by ROLE, so two screens drawing the same thing round it the same. */
+export const shape = {
+  chip: radii.pill, disc: radii.pill, track: radii.pill,
+  input: radii.sm, row: radii.sm, bubble: radii.sm,
+  tile: radii.md, card: radii.md, thumb: radii.md,
+  hero: radii.lg, button: radii.lg,
+  sheet: radii.xl,
+} as const
 
 // 4px rhythm, matching web's implicit Tailwind spacing scale -- didn't exist
 // as an explicit token on either platform until the 2026-09-20 audit; added
 // here so new screens have one to reach for instead of ad hoc padding/gap
 // numbers.
-export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 }
+// xxs/ms/xxl added 2026-09-28: `ms` (12) is Home's GAP (spacing.sm +
+// spacing.xs), the gap between cards in a row and inside a card's face --
+// the most hand-typed number in the app; name it instead.
+export const spacing = { xxs: 2, xs: 4, sm: 8, ms: 12, md: 16, lg: 24, xl: 32, xxl: 48 }
 
 // Soft elevation scale mirroring web's --shadow-1..4 (globals.css), for
 // anything that should read as the same "depth" as a web card/modal/hero.
@@ -115,7 +175,23 @@ export const shadows = {
 // needs every step -- pull what's relevant.
 export const type = {
   display: 40, h1: 32, h2: 24, cardTitle: 20, body: 18, small: 15,
+  // Added 2026-09-25 with the home redesign: the two sizes every screen was
+  // already hand-typing (eyebrows/meta at 13, tab labels at 11) now have names.
+  caption: 13, micro: 11,
+  // 2026-09-28: the hero greeting (reference: «سلام آریا!»), one step under h1.
+  hero: 28,
 }
+// Same ladder under a name that can sit in an import list next to other
+// tokens: `import { type }` reads as TypeScript's `type` modifier.
+export const textSize = type
+
+// Clay material, web's `.clay` (apps/web/src/app/globals.css): the 3D bottom
+// edge is a solid band of a deeper stop, and a press moves the face down by
+// exactly the thickness the edge loses, so the object's bottom stays put.
+// Mobile draws the band as a shell peeking out under the face rather than a
+// blurred box-shadow (RN shadows differ too much between iOS and Android).
+// Used by components/Clay.tsx.
+export const clay = { edge: 6, edgeSm: 4, pressedEdge: 2 } as const
 
 // One typeface app-wide (matches web's --font-vazirmatn/--font-display, see
 // docs/design-system.md). RN picks weight by family name, not fontWeight, so
@@ -131,6 +207,23 @@ export const fonts = {
   display: 'Vazirmatn_900Black',
 }
 
+// The page background: ONE source for every surface a child sees on the way
+// to Home (2026-09-25 theme-flash fix). Before this, startup crossed four
+// different "backgrounds": the native splash (#FFF8EA, app.json), an
+// illustrated LaunchScreen held on a 1.1s timer, React Navigation's default
+// grey card (rgb(242,242,242)), the auth gate's colors.bg (#fdf6ec), and only
+// then Home's warm gradient, which lived as literals in ScreenBackground.tsx.
+//   gradient  Home's (and every ScreenBackground 'warm') diagonal wash.
+//   base      its middle stop: the solid stand-in wherever a gradient can't be
+//             drawn -- the native splash and root view (app.json, which must
+//             match this; scripts/check-startup-theme.mjs enforces it) and the
+//             navigator's card behind each screen.
+// colors.bg is unchanged: ~40 other screens still use it as their flat fill.
+export const page = {
+  gradient: ['#FFFBF2', '#FFF3DE', '#FEEBCB'] as [string, string, string],
+  base: '#FFF3DE',
+}
+
 // Splash/scenery tokens (web's globals.css scenery block: --sky/--sky2/--far/
 // --mid/--near/--grass/--soil/--ink/--muted/--faint/--line), added for the
 // splash-unification port (2026-09-22) and meant to be reused by any other
@@ -142,3 +235,202 @@ export const scenery = {
   sky: '#FFF8EA', sky2: '#FFEFD6',
   far: '#CFEDE2', mid: '#8FE2CC', near: '#57D6BC', grass: '#3DBFA4', soil: '#F3E0B4',
 }
+
+/**
+ * Semantic roles (2026-09-27 design-system pass). Screens were reaching for
+ * literals (#e5e7eb, #f1f5f9, #16a34a, rgba(0,0,0,.55)...) or for tokens that
+ * fail on the page gradient; these name the role instead. Contrast is WCAG
+ * 2.x, measured on page.gradient's darkest stop (#FEEBCB) unless noted --
+ * the lighter stops, white and every ramp's `soft` only score higher.
+ *
+ * Text
+ *   textStrong  titles, the child's name: scenery.ink, 13.5:1.
+ *   text        body copy: colors.text, 11.0:1.
+ *   textMuted   meta / secondary lines ANYWHERE warm (page, white, any
+ *               ramp.soft, dangerSoft): 5.65:1 on #FEEBCB, >=5.4:1 on every
+ *               soft. Use this, not colors.muted / scenery.muted, which drop
+ *               to 4.46 / 4.43:1 on #FEEBCB (fail AA for body-size text; they
+ *               only pass on white and on ramp softs, which is where Home uses
+ *               colors.muted today).
+ *   faint       NON-TEXT only (placeholder art, disabled glyph strokes):
+ *               scenery.faint is 2.5:1.
+ *   onDeep      text on a ramp's `deep` stop / ClaySurface tone="deep": white,
+ *               >=7.0:1 on every ramp.
+ *   onDeepMuted secondary text on deep: white at 86%, >=5.38:1 on every ramp.
+ * Surfaces
+ *   surface     white card/sheet on the page (parent card, popups).
+ *   surfaceSoft a quieter warm card that still separates from the page.
+ *   divider     hairline borders on warm surfaces (scenery.line) -- use this,
+ *               not the cold greys colors.border/#e2e8f0, on child screens.
+ *   track       unfilled part of a progress bar on white/page.
+ *   highlight   warm amber fill growing under a hold/progress on white
+ *               (HoldToParent); behind text it keeps colors.text at 10.3:1.
+ *   scrim       modal backdrop (Tutorial, RewardPopup).
+ * Status (never colour alone: pair with a word, icon or ✓/✗)
+ *   success     text/icon: ramps.lessons.ink, 8.3:1. successSoft = its fill.
+ *               colors.success (#22c55e) is 1.95:1 -- FILL ONLY, never text.
+ *   error       text/icon: 5.53:1 (5.30 on errorSoft). colors.danger
+ *               (#dc2626) is 4.13:1 on #FEEBCB -- fill/border only.
+ *   locked      Home's convention: the card keeps its ramp, shows
+ *               «🔒 هنوز قفل» in textMuted, and says «، هنوز قفل است» in its
+ *               accessibility label. No fading (a faded tile reads disabled
+ *               and drops text contrast).
+ *   selected    a chosen option: ring of the option's own ramp.deep,
+ *               `selectedRing` pt wide (ClaySurface/ClayCard/ClayChip
+ *               `selected`), plus accessibilityState.selected.
+ *   disabledOpacity  a control that can't be used right now (ClayButton).
+ * Touch
+ *   hit         minimum touch target (pt), both axes.
+ */
+export const ui = {
+  textStrong: scenery.ink,
+  text: colors.text,
+  textMuted: '#6b5a47',
+  faint: scenery.faint,
+  onDeep: '#ffffff',
+  onDeepMuted: 'rgba(255,255,255,0.86)',
+  surface: colors.card,
+  surfaceSoft: '#FFFBF2',
+  divider: scenery.line,
+  track: 'rgba(43,33,22,0.10)',
+  highlight: '#FDE68A',
+  scrim: 'rgba(0,0,0,0.55)',
+  success: ramps.lessons.ink,
+  successSoft: ramps.lessons.soft,
+  error: '#b91c1c',
+  errorSoft: colors.dangerSoft,
+  lockedText: '#6b5a47',
+  selectedRing: 3,
+  disabledOpacity: 0.45,
+  hit: 44,
+} as const
+
+/**
+ * Text alignment for the reading start (right in Persian). Use it on any Text
+ * that is wider than its content (flex: 1, a stretched column, a card).
+ *
+ * Why 'left': React Native swaps textAlign left/right when the layout is RTL,
+ * on both platforms (iOS RCTAttributedTextUtils.mm, Android
+ * TextAttributeProps.kt), so 'left' is the start edge. Leaving it unset is not
+ * enough on iOS: the default (natural) alignment follows the app's UI
+ * localization, not the layout direction, and Persian text rendered
+ * left-aligned on the iOS Simulator under forced RTL (2026-09-25).
+ * 'right' would be the END edge under RTL; writingDirection: 'rtl' also
+ * right-aligns but reorders Latin text ("Hamed!" became "!Hamed").
+ * Text only: TextInput does NOT swap, so inputs keep textAlign: 'right'
+ * (the chat input's placeholder sat at the right on iOS, 2026-09-25).
+ */
+export const textStart = 'left' as const
+
+/**
+ * Vazirmatn's own line height for a font size: (hhea ascent 2100 + descent
+ * 1100) / 2048 units per em = 1.5625x. A fixed lineHeight below this leaves
+ * no room for tall letters and their marks (زبر، زیر، پیش): iOS draws them
+ * outside the line box anyway, but Android, which pads and clips the box,
+ * can cut them. Use it for large glyph text instead of a hand-picked number.
+ */
+export const naturalLineHeight = (size: number) => Math.ceil(size * 1.5625)
+
+/**
+ * Text presets: font + size (+ colour where the role fixes it) for the voices
+ * Home already uses, so a screen spreads one instead of re-typing three
+ * properties. Add `textAlign: textStart` (or 'center') at the use site; set a
+ * ramp's ink for titles on clay. No lineHeight: Vazirmatn's own (1.5625x,
+ * see naturalLineHeight) is what keeps marks from clipping; if a design needs
+ * one, use naturalLineHeight(size), never a smaller number.
+ *   heroTitle     the done-screen / hero big line (display 32, ink)
+ *   screenTitle   ScreenHeader child title, Home's child name (display 24)
+ *   sectionTitle  SectionHeading (display 20)
+ *   cardTitle     title inside a clay card (display 18; colour = ramp.ink)
+ *   tileTitle     title under a tile's art, Home's path tiles (display 15)
+ *   lead          subtitle / greeting line (medium 15, text)
+ *   body          reading copy (regular 15, text)
+ *   meta          counts, «۲ از ۵», locked line (medium 13, textMuted)
+ *   label         chip / eyebrow / small button text (bold 13)
+ * Hierarchy presets added 2026-09-28 (visual-fidelity sprint) -- one ladder
+ * every child screen climbs the same way (largest first):
+ *   heroGreeting  Home-style hero line / a screen's big hello (display 28)
+ *   screenTitle   ScreenHeader title (display 24)            -- above
+ *   sectionTitle  SectionHeading (display 20)                -- above
+ *   cardTitle     clay card title (display 18, ramp.ink)     -- above
+ *   button        ClayButton label (display 18; colour = ramp.ink)
+ *   seeAll        SectionHeading's «همه ›» link (bold 15, ink)
+ *   body / meta   -- above
+ *   micro         badges on covers, tab labels (bold 11; colour = ramp.ink)
+ */
+export const textStyles = {
+  heroTitle: { fontFamily: fonts.display, fontSize: type.h1, color: scenery.ink },
+  screenTitle: { fontFamily: fonts.display, fontSize: type.h2, color: scenery.ink },
+  sectionTitle: { fontFamily: fonts.display, fontSize: type.cardTitle, color: scenery.ink },
+  cardTitle: { fontFamily: fonts.display, fontSize: type.body },
+  tileTitle: { fontFamily: fonts.display, fontSize: type.small },
+  lead: { fontFamily: fonts.medium, fontSize: type.small, color: colors.text },
+  body: { fontFamily: fonts.regular, fontSize: type.small, color: colors.text },
+  meta: { fontFamily: fonts.medium, fontSize: type.caption, color: ui.textMuted },
+  label: { fontFamily: fonts.bold, fontSize: type.caption },
+  heroGreeting: { fontFamily: fonts.display, fontSize: type.hero, color: scenery.ink },
+  button: { fontFamily: fonts.display, fontSize: type.body },
+  seeAll: { fontFamily: fonts.bold, fontSize: type.small, color: scenery.ink },
+  micro: { fontFamily: fonts.bold, fontSize: type.micro },
+} as const
+
+/**
+ * Warm elevation (2026-09-28). `shadows` above mirrors web's neutral black
+ * scale and stays for compatibility; on child screens use these instead: the
+ * shadow is tinted with scenery.ink (a warm brown) at low opacity, so cards
+ * lift off the cream page without the grey "dirty" halo black gives.
+ * Clay surfaces already carry their depth in the edge band -- add `card` or
+ * `raised` only to flat white surfaces (parent card, popups, search field),
+ * and `deep` under the one DeepActionCard. Android: `elevation` (its shadow
+ * is not tinted before API 28; fine at these strengths).
+ *   card    flat white card / row on the page
+ *   raised  a floating control (bottom nav, header pill, FAB)
+ *   deep    under the deep action card (tinted with its own ink)
+ *   modal   popups and sheets over the scrim
+ */
+export const elevation = {
+  card: { shadowColor: scenery.ink, shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  raised: { shadowColor: scenery.ink, shadowOpacity: 0.12, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 5 },
+  deep: { shadowColor: ramps.math.ink, shadowOpacity: 0.24, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  modal: { shadowColor: scenery.ink, shadowOpacity: 0.18, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
+} as const
+
+/**
+ * "Deep action" surface (2026-09-28): the Continue-Learning family -- Home's
+ * continue card, a stories «ادامه‌ی قصه» card, any screen's single most
+ * important "carry on" card. Reference: a MUTED deep indigo card with white
+ * text, a bright green progress fill on a translucent track and a round go
+ * button. Round 2 (2026-09-29): its own indigo face (the reference's, not
+ * ramps.math's royal #2337FA); bright/soft/ink still come from ramps.math,
+ * so `ramp` below is a full Ramp any clay primitive accepts. Use
+ * DeepActionCard (components/Clay.tsx), which draws exactly these stops
+ * (ClaySurface `deepStops`); pass another ramp to it only when the card must
+ * wear its room's colour (then ClaySurface's derived deep stops apply --
+ * white still >=7:1 on every ramp's deep stop).
+ * Contrast (WCAG 2.x) on the face's LIGHTEST stop, #4338CA:
+ *   text        white                  7.90:1 (9.93 on faceEnd #3730A3)
+ *   textMuted   white 86%              6.28:1
+ *   fill        ramps.lessons.bright   4.11:1 non-text (>= 3:1)
+ *   track       white 28%              non-text; the fill carries the value
+ *   goFill/goInk  ramps.math.bright disc, math.ink glyph  5.00:1 (the disc
+ *               is decoration inside the one card-sized button)
+ *   pressedOverlay  darkens the face while pressed (only raises contrast)
+ */
+const DEEP_INDIGO = '#4338CA'
+export const deepAction = {
+  ramp: { deep: DEEP_INDIGO, bright: ramps.math.bright, soft: ramps.math.soft, ink: ramps.math.ink } as Ramp,
+  face: DEEP_INDIGO,
+  faceEnd: '#3730A3',
+  edge: '#312E81',
+  pressedOverlay: 'rgba(30,27,75,0.22)',
+  text: ui.onDeep,
+  textMuted: ui.onDeepMuted,
+  track: 'rgba(255,255,255,0.28)',
+  fill: ramps.lessons.bright,
+  goFill: ramps.math.bright,
+  goInk: ramps.math.ink,
+} as const
+
+/** Icon sizes (components/Icon.tsx), pt. inline = next to 13-15pt text;
+ *  control = in a 44pt disc/button; nav = bottom nav; hero = a feature glyph. */
+export const iconSize = { inline: 16, control: 22, nav: 26, hero: 32 } as const

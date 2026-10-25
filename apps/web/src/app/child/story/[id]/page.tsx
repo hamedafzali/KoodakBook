@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import StoryReader from '@/components/child/StoryReader'
 import RewardPopup from '@/components/child/RewardPopup'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import Mascot from '@/components/child/Mascot'
 import { pickChild } from '@/lib/activeChild'
 import { getTranslationLang } from '@/lib/translation'
@@ -18,6 +19,10 @@ type FullStory = Story & { pages: StoryPage[]; questions?: StoryQuestion[] }
 
 export default function StoryPage() {
   const router = useRouter()
+  // The unlock screen's 2.6s hop home: cleared on leave, or it pulled the
+  // child home from whatever screen they had moved on to.
+  const unlockTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (unlockTimer.current) clearTimeout(unlockTimer.current) }, [])
   const { id } = useParams<{ id: string }>()
   const [story, setStory] = useState<FullStory | null>(null)
   const [childId, setChildId] = useState('')
@@ -38,22 +43,34 @@ export default function StoryPage() {
    * what they just did, but reading it aloud is the thing the product exists
    * for, and it has to land while the story is still warm. */
   const afterRecord = useRef<(() => void) | null>(null)
+  // A failed fetch used to leave the reader on its loading screen forever.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
+    let cancelled = false
     async function load() {
       const [storyRes, childRes] = await Promise.all([
         api.get<FullStory>(`/api/stories/${id}?lang=${lang}`),
         api.get<Child[]>('/api/children'),
       ])
-      if (storyRes.data) setStory(storyRes.data)
-      const child = pickChild(childRes.data ?? [])
+      if (cancelled) return
+      // The child too: without its id the finished story is never saved.
+      if (!storyRes.data || !childRes.data) {
+        setLoadError(storyRes.error ?? childRes.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
+        return
+      }
+      setStory(storyRes.data)
+      const child = pickChild(childRes.data)
       if (child) setChildId(child.id)
       const consent = await api.get<{ consented_at: string | null }>('/api/read-aloud/consent')
-      setCanRecord(!!consent.data?.consented_at)
+      if (!cancelled) setCanRecord(!!consent.data?.consented_at)
     }
     load()
-  }, [id, router, lang])
+    return () => { cancelled = true }
+  }, [id, router, lang, attempt])
 
   // Self-heal: an AI story (created for this child) with any silent page builds
   // its own audio (single cloud voice), then we refetch so بشنو plays — no manual step.
@@ -109,17 +126,22 @@ export default function StoryPage() {
   }
 
   async function handleComplete() {
-    if (!childId || !story) return
+    if (!story) return
+    // Used to `return` without a child: the last page's «تمام» did nothing and
+    // the child was stuck. Now the child always gets a way out, and a failed
+    // save says so (with a retry) instead of pretending it worked.
+    if (!childId) { setSaveError('پیشرفتت ذخیره نشد.'); return }
     try {
       // new_badges / promotions are top-level on the response, not under `data`.
       const res = await api.post('/api/progress/story',
         { child_id: childId, story_id: story.id, last_page: story.pages.length - 1, completed: true }
-      ) as { new_badges?: Badge[]; promotions?: Promotion[] }
+      ) as { error?: string | null; new_badges?: Badge[]; promotions?: Promotion[] }
+      if (res.error) { setSaveError(res.error); return }
       const next = () => {
         if (res.new_badges?.[0]) setNewBadge(res.new_badges[0])
         else if (res.promotions?.length) {
           setShowUnlock(true)
-          setTimeout(() => router.push('/child/home'), 2600)
+          unlockTimer.current = setTimeout(() => router.push('/child/home'), 2600)
         }
         else router.push('/child/home')
       }
@@ -139,7 +161,28 @@ export default function StoryPage() {
     if (next) next(); else router.push('/child/home')
   }
 
+  if (loadError) {
+    return (
+      <ErrorState
+        message={loadError}
+        onRetry={() => { setLoadError(null); setAttempt(a => a + 1) }}
+        backHref="/child/story"
+        backLabel="برگشت به داستان‌ها"
+      />
+    )
+  }
   if (!story) return <LoadingScreen message="در حال بارگذاری داستان..." />
+
+  if (saveError) {
+    return (
+      <ErrorState
+        title="قصه تمام شد، ولی ذخیره نشد"
+        message={saveError}
+        onRetry={childId ? () => { setSaveError(null); handleComplete() } : undefined}
+        backHref="/child/home"
+      />
+    )
+  }
 
   if (showQuiz && story.questions?.length) {
     return <StoryQuiz questions={story.questions} onDone={finishQuiz} />

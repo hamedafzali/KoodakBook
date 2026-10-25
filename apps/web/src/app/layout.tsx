@@ -37,8 +37,13 @@ export const metadata: Metadata = {
   },
 }
 
+// Browser chrome and the PWA status bar in the page's own cream (child-bg's
+// first stop), not the old saffron #F5A623, which framed every cream page in
+// an orange bar. `colorScheme: 'light'`: the product has no dark theme, so a
+// dark-mode browser must not paint dark form controls or a dark canvas.
 export const viewport: Viewport = {
-  themeColor: '#F5A623',
+  themeColor: '#FFFBF0',
+  colorScheme: 'light',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -71,7 +76,15 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
+    // The page colour inline on <html> (the same #FEFAF5 as globals.css's body
+    // background): the browser canvas is cream from the very first paint, even
+    // before the stylesheet has arrived, instead of the UA's white.
+    <html
+      lang="fa"
+      dir="rtl"
+      className={`${vazirmatn.variable} h-full`}
+      style={{ backgroundColor: '#FEFAF5' }}
+    >
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

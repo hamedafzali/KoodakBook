@@ -1,16 +1,20 @@
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child, DashboardSummary } from '@koodakbook/shared'
 import { toPersianDigits } from '@koodakbook/shared'
 import { Ionicons } from '@expo/vector-icons'
-import PinGate from '@/components/PinGate'
-import ScreenHeader from '@/components/ScreenHeader'
-import IconChip from '@/components/IconChip'
+import PinGate, { PIN_BACKDROP } from '@/components/PinGate'
+import { PARENT_FALLBACK_ERROR } from '@/components/ParentLoadState'
+import { CharacterArt } from '@/components/Clay'
+import {
+  ParentButton, ParentCard, ParentChip, ParentDivider, ParentHeader, ParentNote, ParentPage, ParentRow, parentUI,
+} from '@/components/ParentUI'
 import { api } from '@/lib/api'
+import { goBack } from '@/lib/navigation'
 import { isParentUnlocked, setParentUnlocked } from '@/lib/parentGate'
-import { colors, fonts } from '@/lib/theme'
+import { fonts, ramps, scenery, spacing, textSize, textStart, ui } from '@/lib/theme'
 
 type Me = { id: string; email: string; plan: string; has_pin: boolean }
 
@@ -33,6 +37,15 @@ export default function ParentHub() {
   const [childrenLoaded, setChildrenLoaded] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
+  // Each load's failure is its own state (with a retry) instead of: an
+  // endless spinner for /api/auth/me and for the summary, and a failed
+  // /api/children dressed up as the day-zero "no children yet" page.
+  const [meError, setMeError] = useState<string | null>(null)
+  const [childrenError, setChildrenError] = useState<string | null>(null)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [loadKey, setLoadKey] = useState(0)
+  const [summaryKey, setSummaryKey] = useState(0)
+  const retryLoad = () => { setMeError(null); setChildrenError(null); setLoadKey((k) => k + 1) }
 
   useFocusEffect(
     useCallback(() => {
@@ -41,36 +54,61 @@ export default function ParentHub() {
       // and the gate must reappear (in reset mode via ?reset=1).
       setUnlocked(isParentUnlocked())
       api.get<Me>('/api/auth/me').then((res) => {
-        if (!cancelled && res.data) setMe(res.data)
+        if (cancelled) return
+        if (res.data) setMe(res.data)
+        else setMeError(res.error || PARENT_FALLBACK_ERROR)
       })
       api.get<Child[]>('/api/children').then((res) => {
         if (cancelled) return
         if (res.data) {
+          setChildrenError(null)
           setChildren(res.data)
-          setSelected((cur) => cur ?? res.data![0]?.id ?? null)
+          setSelected((cur) => (cur && res.data!.some((c) => c.id === cur) ? cur : res.data![0]?.id ?? null))
+          setChildrenLoaded(true)
+        } else {
+          setChildrenError(res.error || PARENT_FALLBACK_ERROR)
         }
-        setChildrenLoaded(true)
       })
       return () => { cancelled = true }
-    }, [])
+    }, [loadKey])
   )
 
   useFocusEffect(
     useCallback(() => {
       if (!selected || !unlocked) return
       let cancelled = false
-      setSummary(null)
+      setSummary(null); setSummaryError(null)
       api.get<DashboardSummary>(`/api/dashboard/${selected}`).then((res) => {
-        if (!cancelled && res.data) setSummary(res.data)
+        if (cancelled) return
+        if (res.data) setSummary(res.data)
+        else setSummaryError(res.error || PARENT_FALLBACK_ERROR)
       })
       return () => { cancelled = true }
-    }, [selected, unlocked])
+    }, [selected, unlocked, summaryKey])
   )
 
   if (!me) {
+    // Before the PIN, on the gate's own dark backdrop: entering the parent
+    // area used to show a cream frame and then the dark gate.
+    const bg = unlocked ? parentUI.page : PIN_BACKDROP
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.onPrimary} />
+      <View style={[styles.center, { backgroundColor: bg, padding: spacing.lg, gap: spacing.md - 2 }]}>
+        {meError ? (
+          <>
+            <Text
+              style={[styles.loadError, !unlocked && { color: ui.errorSoft }]}
+              accessibilityLiveRegion="polite"
+            >
+              {meError}
+            </Text>
+            <ParentButton label="دوباره تلاش کنید" onPress={retryLoad} style={styles.stateButton} />
+            <ParentButton
+              label="برگشت" tone="secondary" onPress={() => goBack('/home')} style={styles.stateButton}
+            />
+          </>
+        ) : (
+          <ActivityIndicator color={unlocked ? parentUI.accentText : ui.onDeep} accessibilityLabel="در حال بارگذاری" />
+        )}
       </View>
     )
   }
@@ -88,27 +126,27 @@ export default function ParentHub() {
   // Day zero: no child profile yet. Matches web's /parent/dashboard empty
   // state (سیمرغ منتظر همراهش است) rather than leaving a parent staring at
   // a spinner that never resolves (2026-09-20 audit, Critical #2).
-  if (childrenLoaded && children.length === 0) {
+  if (!childrenError && childrenLoaded && children.length === 0) {
     return (
-      <View style={[styles.center, { gap: 16, padding: 24 }]}>
-        <Text style={{ fontSize: 56 }}>🦚</Text>
-        <View style={{ alignItems: 'center', gap: 4 }}>
-          <Text style={styles.emptyTitle}>سیمرغ منتظر همراهش است</Text>
-          <Text style={styles.emptySub}>یک پروفایل برای فرزندتان بسازید تا اولین قصه شروع شود</Text>
+      <ParentPage>
+        <ParentHeader title="حالت والدین" subtitle={`${me.email} · پلن ${me.plan}`} fallback="/home" />
+        <View style={[styles.center, { gap: spacing.md, padding: spacing.lg }]}>
+          <CharacterArt character="simorgh" emotion="encouraging" size={96} />
+          <View style={{ alignItems: 'center', gap: spacing.xs }}>
+            <Text style={styles.emptyTitle} accessibilityRole="header">سیمرغ منتظر همراهش است</Text>
+            <Text style={styles.emptySub}>یک پروفایل برای فرزندتان بسازید تا اولین قصه شروع شود</Text>
+          </View>
+          <ParentButton label="ایجاد پروفایل" onPress={() => router.push('/onboarding')} style={styles.stateButton} />
         </View>
-        <Pressable style={styles.emptyButton} onPress={() => router.push('/onboarding')}>
-          <Text style={styles.emptyButtonText}>ایجاد پروفایل</Text>
-        </Pressable>
-      </View>
+      </ParentPage>
     )
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
-      <ScreenHeader
+    <ParentPage>
+      <ParentHeader
         title="حالت والدین"
         subtitle={`${me.email} · پلن ${me.plan}`}
-        variant="parent"
         // This IS the parent area's own root, not a sub-screen of it -- if
         // there's no history (deep link, or this is genuinely the first
         // screen in its stack), back should leave parent mode entirely
@@ -116,25 +154,41 @@ export default function ParentHub() {
         fallback="/home"
       />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
       >
 
-      {/* Child selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-        {children.map((c) => (
-          <Pressable
-            key={c.id}
-            style={[styles.chip, selected === c.id && styles.chipActive]}
-            onPress={() => setSelected(c.id)}
-          >
-            <Text style={[styles.chipText, selected === c.id && { color: colors.onPrimary }]}>{c.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      {/* Child selector + that child's summary, shown together once the
+          summary is in: the chips used to render empty, then fill, then
+          push the stats down when they landed (a partial first frame). */}
+      {childrenError || summaryError ? (
+        <View style={styles.inlineError}>
+          <ParentNote text={childrenError ?? summaryError ?? ''} tone="error" />
+          <ParentButton
+            label="دوباره تلاش کنید"
+            tone="secondary"
+            compact
+            onPress={childrenError ? retryLoad : () => setSummaryKey((k) => k + 1)}
+          />
+        </View>
+      ) : null}
+      {!childrenError && !summary && !summaryError ? (
+        <ActivityIndicator color={parentUI.accentText} style={{ marginVertical: spacing.xl }} accessibilityLabel="در حال بارگذاری" />
+      ) : null}
+      {children.length > 0 && (summary || summaryError) ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+          {children.map((c) => (
+            <ParentChip
+              key={c.id}
+              label={c.name}
+              role="button"
+              selected={selected === c.id}
+              onPress={() => setSelected(c.id)}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
 
-      {!summary ? (
-        <ActivityIndicator color={colors.onPrimary} style={{ marginTop: 30 }} />
-      ) : (
+      {summary && !childrenError && !summaryError ? (
         <>
           <View style={styles.statsGrid}>
             <Stat icon="flame" label="روزهای پیاپی" value={summary.streak_days} />
@@ -143,69 +197,53 @@ export default function ParentHub() {
             <Stat icon="school" label="درس‌های تمام‌شده" value={summary.lessons_completed} />
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>وضعیت کلمه‌ها</Text>
-            <MasteryRow label="تازه دیده" value={summary.mastery_breakdown.introduced} tint="#94a3b8" />
-            <MasteryRow label="در حال تمرین" value={summary.mastery_breakdown.practicing} tint="#f59e0b" />
-            <MasteryRow label="یادگرفته" value={summary.mastery_breakdown.mastered} tint="#22c55e" />
-            <MasteryRow label="ماندگار شده" value={summary.mastery_breakdown.consolidated} tint="#0ea5e9" />
-          </View>
+          <ParentCard>
+            <Text style={styles.cardTitle} accessibilityRole="header">وضعیت کلمه‌ها</Text>
+            <MasteryRow label="تازه دیده" value={summary.mastery_breakdown.introduced} tint={scenery.faint} />
+            <MasteryRow label="در حال تمرین" value={summary.mastery_breakdown.practicing} tint={ramps.brand.bright} />
+            <MasteryRow label="یادگرفته" value={summary.mastery_breakdown.mastered} tint={ramps.lessons.bright} />
+            <MasteryRow label="ماندگار شده" value={summary.mastery_breakdown.consolidated} tint={ramps.letters.bright} />
+          </ParentCard>
 
           {summary.recent_badges.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>نشان‌های اخیر</Text>
+            <ParentCard>
+              <Text style={styles.cardTitle} accessibilityRole="header">نشان‌های اخیر</Text>
               {summary.recent_badges.map((b) => (
                 <View key={b.id} style={styles.badgeRow}>
-                  <Ionicons name="medal" size={15} color={colors.primaryDeep} />
+                  <Ionicons name="medal" size={15} color={parentUI.accentText} />
                   <Text style={styles.badgeRowText}>{b.badge?.title ?? ''}</Text>
                 </View>
               ))}
-            </View>
+            </ParentCard>
           )}
         </>
-      )}
+      ) : null}
 
       {/* Menu — the rest of the parent area */}
-      <View style={styles.menu}>
-        <MenuRow icon="trending-up" label="پیشرفت کامل" sub="کلمات، درس‌ها، داستان‌ها، جلسات" onPress={() => router.push('/parent/progress')} />
-        <View style={styles.menuDivider} />
-        <MenuRow icon="person" label="کودکان" sub="افزودن کودک، نام کاربری ورود بچه‌ها" onPress={() => router.push('/parent/children')} />
-        <View style={styles.menuDivider} />
-        <MenuRow icon="people" label="دوستان" sub="کد دوستی و تأیید — برای بازی آنلاین" onPress={() => router.push('/parent/friends')} />
-        <View style={styles.menuDivider} />
-        <MenuRow icon="chatbubbles" label="گفت‌وگوها" sub="بازبینی چت کودک با شخصیت‌ها" onPress={() => router.push('/parent/conversations')} />
-        <View style={styles.menuDivider} />
-        <MenuRow icon="share-social" label="اشتراک‌گذاری پیشرفت" onPress={() => router.push('/parent/share')} />
-        <View style={styles.menuDivider} />
-        <MenuRow icon="card" label="پلن و اشتراک" onPress={() => router.push('/parent/plan')} />
-        <View style={styles.menuDivider} />
-        <MenuRow icon="settings" label="تنظیمات" sub="هدف روزانه، زبان ترجمه، پین، خروج" onPress={() => router.push('/parent/settings')} />
-      </View>
+      <ParentCard style={styles.menu}>
+        <ParentRow icon="trending-up" label="پیشرفت کامل" sub="کلمات، درس‌ها، داستان‌ها، جلسات" onPress={() => router.push(selected ? { pathname: '/parent/progress', params: { child: selected } } : '/parent/progress')} />
+        <ParentDivider />
+        <ParentRow icon="person" label="کودکان" sub="افزودن کودک، نام کاربری ورود بچه‌ها" onPress={() => router.push('/parent/children')} />
+        <ParentDivider />
+        <ParentRow icon="people" label="دوستان" sub="کد دوستی و تأیید — برای بازی آنلاین" onPress={() => router.push('/parent/friends')} />
+        <ParentDivider />
+        <ParentRow icon="chatbubbles" label="گفت‌وگوها" sub="بازبینی چت کودک با شخصیت‌ها" onPress={() => router.push(selected ? { pathname: '/parent/conversations', params: { child: selected } } : '/parent/conversations')} />
+        <ParentDivider />
+        <ParentRow icon="share-social" label="اشتراک‌گذاری پیشرفت" onPress={() => router.push(selected ? { pathname: '/parent/share', params: { child: selected } } : '/parent/share')} />
+        <ParentDivider />
+        <ParentRow icon="card" label="پلن و اشتراک" onPress={() => router.push('/parent/plan')} />
+        <ParentDivider />
+        <ParentRow icon="settings" label="تنظیمات" sub="هدف روزانه، زبان ترجمه، پین، خروج" onPress={() => router.push('/parent/settings')} />
+      </ParentCard>
       </ScrollView>
-    </View>
-  )
-}
-
-// Web's parent NavRow (apps/web/src/components/parent/flat.tsx) puts the
-// icon in a rounded, ramp-brand-soft-tinted chip rather than floating it bare
-// -- ported that here instead of a plain emoji + text arrow.
-function MenuRow({ icon, label, sub, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; sub?: string; onPress: () => void }) {
-  return (
-    <Pressable style={styles.menuRow} onPress={onPress}>
-      <IconChip name={icon} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.menuLabel}>{label}</Text>
-        {sub && <Text style={styles.menuSub}>{sub}</Text>}
-      </View>
-      <Text style={styles.menuChevron}>←</Text>
-    </Pressable>
+    </ParentPage>
   )
 }
 
 function Stat({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: number }) {
   return (
-    <View style={styles.stat}>
-      <Ionicons name={icon} size={22} color={colors.primaryDeep} />
+    <View style={styles.stat} accessible accessibilityLabel={`${label}: ${toPersianDigits(value)}`}>
+      <Ionicons name={icon} size={22} color={parentUI.accentText} />
       <Text style={styles.statValue}>{toPersianDigits(value)}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -214,7 +252,7 @@ function Stat({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; la
 
 function MasteryRow({ label, value, tint }: { label: string; value: number; tint: string }) {
   return (
-    <View style={styles.masteryRow}>
+    <View style={styles.masteryRow} accessible accessibilityLabel={`${label}: ${toPersianDigits(value)}`}>
       <View style={[styles.dot, { backgroundColor: tint }]} />
       <Text style={styles.masteryLabel}>{label}</Text>
       <Text style={styles.masteryValue}>{toPersianDigits(value)}</Text>
@@ -223,44 +261,26 @@ function MasteryRow({ label, value, tint }: { label: string; value: number; tint
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  content: { paddingHorizontal: 20, gap: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  emptyTitle: { fontSize: 19, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
-  emptySub: { fontSize: 14, fontFamily: fonts.medium, color: colors.muted, textAlign: 'center', maxWidth: 280 },
-  emptyButton: {
-    backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 28,
-    minHeight: 48, alignItems: 'center', justifyContent: 'center',
-  },
-  emptyButtonText: { color: colors.onPrimary, fontSize: 16, fontFamily: fonts.bold },
-  chip: {
-    paddingHorizontal: 18, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: '#e5e7eb',
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 14, fontFamily: fonts.medium, color: colors.text },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: parentUI.page },
+  content: { paddingHorizontal: spacing.md + 4, gap: spacing.md },
+  stateButton: { alignSelf: 'stretch', maxWidth: 320, width: '100%' },
+  emptyTitle: { fontSize: textSize.body, fontFamily: fonts.bold, color: parentUI.text, textAlign: 'center' },
+  emptySub: { fontSize: textSize.caption + 1, fontFamily: fonts.medium, color: parentUI.muted, textAlign: 'center', maxWidth: 280 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 2 },
   stat: {
-    width: '48%', flexGrow: 1, backgroundColor: colors.card, borderRadius: 18,
-    padding: 14, alignItems: 'center', gap: 2,
+    width: '48%', flexGrow: 1, backgroundColor: parentUI.surface, borderRadius: parentUI.radius,
+    borderWidth: 1, borderColor: parentUI.line, padding: spacing.md - 2, alignItems: 'center', gap: 2,
   },
-  statValue: { fontSize: 24, fontFamily: fonts.bold, color: colors.text },
-  statLabel: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
-  card: { backgroundColor: colors.card, borderRadius: 18, padding: 16, gap: 8 },
-  cardTitle: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
-  masteryRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statValue: { fontSize: textSize.h2, fontFamily: fonts.bold, color: parentUI.text },
+  statLabel: { fontSize: textSize.micro + 1, fontFamily: fonts.regular, color: parentUI.muted, textAlign: 'center' },
+  cardTitle: { fontSize: textSize.small, fontFamily: fonts.bold, color: parentUI.text, textAlign: textStart },
+  masteryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  masteryLabel: { flex: 1, fontSize: 13, fontFamily: fonts.regular, color: colors.text },
-  masteryValue: { fontSize: 14, fontFamily: fonts.bold, color: colors.text },
+  masteryLabel: { flex: 1, fontSize: textSize.caption, fontFamily: fonts.regular, color: parentUI.text, textAlign: textStart },
+  masteryValue: { fontSize: textSize.caption + 1, fontFamily: fonts.bold, color: parentUI.text },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  badgeRowText: { fontSize: 13, fontFamily: fonts.regular, color: colors.text },
-  menu: { backgroundColor: colors.card, borderRadius: 18, paddingHorizontal: 16 },
-  menuRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
-  menuLabel: { fontSize: 15, fontFamily: fonts.bold, color: colors.text },
-  menuSub: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  menuChevron: { fontSize: 18, color: colors.primaryDeep },
-  menuDivider: { height: 1, backgroundColor: '#f1f5f9' },
+  badgeRowText: { flex: 1, fontSize: textSize.caption, fontFamily: fonts.regular, color: parentUI.text, textAlign: textStart },
+  menu: { paddingVertical: 0, gap: 0 },
+  loadError: { color: ui.error, fontFamily: fonts.regular, fontSize: textSize.caption + 1, textAlign: 'center', lineHeight: 22 },
+  inlineError: { gap: spacing.sm, marginTop: spacing.sm, alignItems: 'center' },
 })

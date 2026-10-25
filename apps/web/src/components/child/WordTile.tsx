@@ -73,14 +73,15 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
 
       <motion.span
         lang="fa"
-        className={`font-bold text-gray-800 ${wordTextSizes[size]}`}
+        className={`font-bold text-text-primary ${wordTextSizes[size]}`}
         whileTap={{ scale: 1.15, color: '#d4871a' }}
+        tabIndex={-1}
         transition={{ type: 'spring', stiffness: 500, damping: 15 }}
       >
         {word.persian}
       </motion.span>
       <span lang="en" className="text-text-secondary text-base ltr">{word.english}</span>
-      <span className="text-xs text-amber-500 flex items-center gap-1 mt-0.5" aria-hidden="true">
+      <span className="text-xs text-brand-text flex items-center gap-1 mt-0.5" aria-hidden="true">
         <Emoji name="speaker-high-volume" size={14} /> بشنو
       </span>
       {recorded && <audio ref={audioRef} src={recorded} preload="none" />}

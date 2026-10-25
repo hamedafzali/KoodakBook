@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import {
-  ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View,
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View,
 } from 'react-native'
 import { router } from 'expo-router'
 import type { Child } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { setActiveChildId } from '@/lib/activeChild'
+import { authErrorMessage } from '@/lib/auth'
 import ScreenBackground from '@/components/ScreenBackground'
-import { colors, fonts } from '@/lib/theme'
+import { AuthField, AuthHero, AuthNote, AuthSheet, AuthTitle } from '@/components/AuthScene'
+import { ClayButton, HostAvatar } from '@/components/Clay'
+import { colors, fonts, radii, ramps, spacing, textSize, textStart } from '@/lib/theme'
 
 /**
  * First-child creation (web: /onboarding). level starts at 1; the placement
@@ -30,7 +33,7 @@ export default function Onboarding() {
     })
     setBusy(false)
     if (!res.data) {
-      setError(res.error ?? 'خطا')
+      setError(authErrorMessage(res, 'ساخت پروفایل انجام نشد. دوباره تلاش کنید'))
       setLimitReached(!!res.error && res.error.includes('حداکثر'))
       return
     }
@@ -40,74 +43,67 @@ export default function Onboarding() {
   }
 
   return (
-    <ScreenBackground variant="warm" decor>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.emoji}>🚀</Text>
-      <Text style={styles.title}>معرفی کودک</Text>
-      <Text style={styles.subtitle}>بیایید با هم شروع کنیم</Text>
+    <ScreenBackground variant="warm">
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+      <AuthHero character="roozi" emotion="encouraging" motif="path" />
+      <AuthSheet>
+      <AuthTitle title="معرفی کودک" lead="بیایید با هم شروع کنیم" />
 
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="اسم کودک (مثلاً لیلا)"
-          placeholderTextColor={colors.muted}
-          value={name}
-          onChangeText={setName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="سال تولد میلادی (اختیاری)"
-          placeholderTextColor={colors.muted}
-          keyboardType="number-pad"
-          maxLength={4}
-          value={birthYear}
-          onChangeText={setBirthYear}
-        />
-      </View>
+      <AuthField
+        label="اسم کودک"
+        placeholder="مثلاً لیلا"
+        returnKeyType="next"
+        value={name}
+        onChangeText={(t) => { setName(t); setError(null) }}
+      />
+      <AuthField
+        label="سال تولد میلادی (اختیاری)"
+        placeholder="2019"
+        keyboardType="number-pad"
+        maxLength={4}
+        value={birthYear}
+        onChangeText={setBirthYear}
+      />
 
+      {/* What happens next, with its host: سیمرغ runs the placement game. */}
       <View style={styles.note}>
-        <Text style={{ fontSize: 22 }}>🎮</Text>
+        <HostAvatar ramp={ramps.brand} size={52} character="simorgh" emotion="encouraging" />
         <Text style={styles.noteText}>
           بعد از این، یک بازی کوتاه و آسان انجام می‌دهیم تا بفهمیم از کجا شروع کنیم.
         </Text>
       </View>
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && <AuthNote text={error} />}
       {limitReached && (
-        <Pressable style={styles.upgradeButton} onPress={() => router.push('/parent/plan')}>
-          <Text style={styles.upgradeText}>مشاهده پلن‌ها و ارتقا ✨</Text>
-        </Pressable>
+        <ClayButton
+          ramp={ramps.brand} tone="soft" label="مشاهده پلن‌ها و ارتقا"
+          onPress={() => router.push('/parent/plan')}
+        />
       )}
 
-      <Pressable style={[styles.button, (busy || !name.trim()) && { opacity: 0.5 }]} disabled={busy || !name.trim()} onPress={submit}>
-        {busy ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={styles.buttonText}>بریم بازی کنیم! 🚀</Text>}
-      </Pressable>
+      <ClayButton
+        ramp={ramps.brand} label="بریم بازی کنیم!" busy={busy} disabled={!name.trim()}
+        onPress={submit}
+      />
+      </AuthSheet>
+      </ScrollView>
       </KeyboardAvoidingView>
     </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  emoji: { fontSize: 40 },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted },
-  form: { width: '100%', maxWidth: 360, gap: 10, marginTop: 6 },
-  input: {
-    backgroundColor: colors.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
-    fontSize: 16, fontFamily: fonts.regular, color: colors.text, textAlign: 'right',
-  },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1 },
   note: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 360,
-    backgroundColor: '#fef3c7', borderRadius: 14, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4,
+    backgroundColor: ramps.brand.soft, borderRadius: radii.md, padding: spacing.sm + 4,
+    borderWidth: 2, borderColor: ramps.brand.bright,
   },
-  noteText: { flex: 1, fontSize: 12, fontFamily: fonts.regular, color: '#92400e', lineHeight: 20 },
-  error: { color: colors.danger, fontFamily: fonts.regular, fontSize: 14, textAlign: 'center' },
-  upgradeButton: { backgroundColor: '#fef3c7', borderRadius: 14, paddingVertical: 11, paddingHorizontal: 20 },
-  upgradeText: { color: '#b45309', fontFamily: fonts.bold, fontSize: 14 },
-  button: {
-    backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 14,
-    width: '100%', maxWidth: 360, alignItems: 'center', marginTop: 4,
-  },
-  buttonText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
+  noteText: { flex: 1, fontSize: textSize.caption + 1, fontFamily: fonts.medium, color: colors.text, lineHeight: 24, textAlign: textStart },
 })

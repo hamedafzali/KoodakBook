@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { celebrate } from '@/lib/confetti'
 import { api } from '@/lib/api'
+import LoadingScreen from '@/components/child/LoadingScreen'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import { toPersianDigits, numberToPersianWord, childAge, shufflePM, distractors, sayNumber, sayPhrase } from '@/lib/persianMath'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
-import { clayVars } from '@/components/child/clay'
+import { ClayButton, answerVars, softClayVars } from '@/components/child/clay'
+import { useTimers } from '@/lib/useTimers'
 import Mascot from '@/components/child/Mascot'
 import { playTap, playSuccess, playComplete } from '@/lib/sounds'
 import { initSpeech } from '@/lib/speech'
@@ -37,7 +39,9 @@ export default function DigitsPage() {
     })
   }, [router])
 
-  if (max === null) return null
+  // Was `return null`: a blank white stage (not even child-bg) until the
+  // child's age arrived. Same loading screen as every other child page.
+  if (max === null) return <LoadingScreen />
   return <Game key={run} max={max} onReplay={() => setRun(x => x + 1)} onHome={() => router.push('/child/math')} />
 }
 
@@ -55,6 +59,8 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
   const [idx, setIdx] = useState(0)
   const [picked, setPicked] = useState<number | null>(null)
   const [stars, setStars] = useState(0)
+  // Round advance + voice lines die with the screen (were bare setTimeouts).
+  const later = useTimers()
   const q = questions[idx]
   const done = idx >= ROUNDS
 
@@ -73,7 +79,7 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
     const ok = n === q.value
     if (ok) { playSuccess(); setStars(s => s + 1); sayPhrase('afarin', 'آفرین!') }
     else sayNumber(q.value)
-    setTimeout(() => { setPicked(null); setIdx(i => i + 1) }, 1200)
+    later(() => { setPicked(null); setIdx(i => i + 1) }, 1200)
   }
 
   if (done) return (
@@ -81,14 +87,12 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
         <Mascot size={130} mood="excited" />
       </motion.div>
-      <h1 className="text-3xl font-bold text-text-primary">رقم‌شناس شدی! 🔢</h1>
+      <h1 className="text-3xl font-bold text-text-primary">رقم‌شناس شدی! <span aria-hidden="true">🔢</span></h1>
       <p className="text-text-primary persian-text">{toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا</p>
       <div className="flex flex-col gap-3 w-full max-w-xs">
-        <motion.button onClick={onReplay} whileTap={{ scale: 0.96 }}
-          style={clayVars('math')}
-          className="clay w-full py-4 font-bold text-lg min-h-[56px]">دوباره 🔁</motion.button>
+        <ClayButton ramp="math" size="lg" onClick={onReplay}>دوباره <span aria-hidden="true">🔁</span></ClayButton>
         <motion.button onClick={onHome} whileTap={{ scale: 0.96 }}
-          className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold">دنیای اعداد 🏠</motion.button>
+          className="w-full py-3.5 rounded-2xl border-2 border-border text-text-secondary font-bold min-h-[56px]">دنیای اعداد <span aria-hidden="true">🏠</span></motion.button>
       </div>
     </div>
   )
@@ -103,29 +107,28 @@ function Game({ max, onReplay, onHome }: { max: number; onReplay: () => void; on
       <div className="px-4 pt-5 max-w-md mx-auto space-y-6">
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-secondary persian-text">سؤال {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}</span>
-          <span className="text-amber-500">{'⭐'.repeat(stars)}</span>
+          <span className="text-amber-500" role="img" aria-label={`${toPersianDigits(stars)} ستاره`}>{'⭐'.repeat(stars)}</span>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-card p-7 text-center">
+        <div style={softClayVars('math')} className="clay-static p-7 text-center">
           <p className="text-text-secondary persian-text text-sm mb-3">
             {q.dir === 'toPersian' ? 'این عدد به رقمِ فارسی کدام است؟' : 'این عدد به رقمِ انگلیسی کدام است؟'}
           </p>
           <motion.p key={idx} initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 16 }}
-            className="text-7xl font-bold text-sky-600" dir="ltr">{prompt}</motion.p>
+            className="text-7xl font-bold" style={{ color: 'var(--ramp-math-ink)' }} dir="ltr">{prompt}</motion.p>
           <p className="text-sm text-text-secondary mt-2 persian-text">{numberToPersianWord(q.value)}</p>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           {q.options.map(n => {
             const show = picked !== null
-            const cls = show
-              ? n === q.value ? 'bg-green-100 border-green-400 text-green-700'
-                : n === picked ? 'bg-red-100 border-red-300 text-red-500' : 'bg-white border-border text-text-secondary'
-              : 'bg-white border-border text-text-primary'
+            // Shared answer faces (clay.tsx answerVars = mobile answerRamps):
+            // math's soft clay, then right = bright green, wrong pick = pale rose.
+            const state = !show ? null : n === q.value ? 'right' : n === picked ? 'wrong' : null
             return (
               <motion.button key={n} onClick={() => pick(n)} whileTap={{ scale: 0.94 }}
-                className={`rounded-2xl border-2 py-6 shadow-card font-bold text-4xl touch-target-child ${cls}`} dir="ltr"
-                aria-label={numberToPersianWord(n)}>
+                className="clay-option py-6 font-bold text-4xl touch-target-child" style={answerVars(state, 'math')} dir="ltr"
+                aria-label={`${numberToPersianWord(n)}${!show ? '' : n === picked ? (n === q.value ? '، درست' : '، نادرست') : n === q.value ? '، جواب درست' : ''}`}>
                 {optionLabel(n)}
               </motion.button>
             )

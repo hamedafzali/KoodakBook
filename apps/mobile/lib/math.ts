@@ -14,9 +14,14 @@ export function childAge(child: Child | null | undefined): number {
   return byLevel[child?.level ?? 1] ?? 4
 }
 
+/** `n` distinct numbers in 1..max, none equal to `target`. Asks for no more
+ *  than the range holds: the loop below never ended when it couldn't (every
+ *  current caller has room; this keeps a future one from hanging the app). */
 export function distractors(target: number, n: number, max: number): number[] {
   const out = new Set<number>()
-  while (out.size < n) {
+  const room = Math.max(0, Math.floor(max) - (target >= 1 && target <= max && Number.isInteger(target) ? 1 : 0))
+  const want = Math.min(n, room)
+  while (out.size < want) {
     const v = 1 + Math.floor(Math.random() * max)
     if (v !== target) out.add(v)
   }

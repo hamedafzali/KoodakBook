@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { router } from 'expo-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AccessibilityInfo, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native'
 import { goBack } from '@/lib/navigation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child } from '@koodakbook/shared'
@@ -9,7 +8,11 @@ import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { childAge, distractors, sayNumber, sayPhrase, shuffle } from '@/lib/math'
 import CelebrationOverlay from '@/components/CelebrationOverlay'
-import { colors, fonts } from '@/lib/theme'
+import ScreenBackground from '@/components/ScreenBackground'
+import { CharacterArt, ClayButton, ClaySurface } from '@/components/Clay'
+import { Icon } from '@/components/Icon'
+import { RESULT_ART, ResultCard, RoundTrack, StatChip } from '@/components/GameKit'
+import { answerRamps, colors, fonts, naturalLineHeight, radii, ramps, spacing, textSize, type Ramp } from '@/lib/theme'
 import ScreenHeader from '@/components/ScreenHeader'
 import BottomNav from '@/components/BottomNav'
 
@@ -17,6 +20,97 @@ import BottomNav from '@/components/BottomNav'
  * as 456, both directions. Age 6 → single digits; 7+ → two-digit numbers. */
 
 const ROUNDS = 8
+const DONE_TITLE = 'رقم‌شناس شدی!'
+// The number being read: 1.6x the display step, with Vazirmatn's own line
+// height so the tall Persian digits aren't clipped on Android.
+const PROMPT_SIZE = textSize.display * 1.6
+
+/* ── Answer option (2026-09-25 convergence pass) ─────────────────────────────
+ * Clay in the math ramp, pressed like every other clay control. Once an answer
+ * is picked the right option turns to green clay and a wrong pick to rose
+ * clay, each with a ✅/❌ mark and a spoken «درست»/«نادرست»/«جواب درست»
+ * (QuizCard's OptionGrid wording), so the result never rests on colour alone;
+ * the other options fade. Before answering the label is only the option
+ * itself, so nothing gives the answer away. */
+type OptionState = 'idle' | 'right' | 'wrong' | 'dim'
+// The shared quiz answer pair (theme.ts answerRamps, the same green/rose every
+// child quiz uses); this file used to assemble its own identical rose ramp.
+const OPTION_LOOK: Record<OptionState, { ramp: Ramp; tone: 'bright' | 'soft' }> = {
+  idle: { ramp: ramps.math, tone: 'soft' },
+  dim: { ramp: ramps.math, tone: 'soft' },
+  right: { ramp: answerRamps.right, tone: 'bright' },
+  wrong: { ramp: answerRamps.wrong, tone: 'soft' },
+}
+
+function optionState(n: number, answer: number, picked: number | null): OptionState {
+  if (picked === null) return 'idle'
+  if (n === answer) return 'right'
+  return n === picked ? 'wrong' : 'dim'
+}
+
+function AnswerOption({ state, isPicked, main, sub, a11yLabel, mainStyle, disabled = false, onPress }: {
+  state: OptionState
+  isPicked: boolean
+  main: string
+  sub?: string
+  a11yLabel: string
+  mainStyle?: StyleProp<TextStyle>
+  disabled?: boolean
+  onPress: () => void
+}) {
+  const look = OPTION_LOOK[state]
+  const locked = disabled || state !== 'idle'
+  const result = state === 'right' ? (isPicked ? '، درست' : '، جواب درست') : state === 'wrong' ? '، نادرست' : ''
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={locked}
+      accessibilityRole="button"
+      accessibilityLabel={`${a11yLabel}${result}`}
+      accessibilityState={{ disabled: locked, selected: isPicked }}
+      style={[optionStyles.slot, state === 'dim' && optionStyles.dim]}
+    >
+      {({ pressed }) => (
+        <ClaySurface ramp={look.ramp} tone={look.tone} pressed={pressed && !locked} radius={radii.md} style={optionStyles.fill} faceStyle={optionStyles.face}>
+          <Text style={[optionStyles.main, { color: look.ramp.ink }, mainStyle]}>{main}</Text>
+          {sub ? <Text style={[optionStyles.sub, { color: look.ramp.ink }]}>{sub}</Text> : null}
+          {/* Always takes its line, so marking the result doesn't resize the
+              row. A drawn ✓ / ✗ in a white disc (was ✅/❌ emoji); the
+              result is also in the spoken label. */}
+          <View style={optionStyles.mark}>
+            {state === 'right' || state === 'wrong' ? (
+              <View style={[optionStyles.markDisc, { borderColor: look.ramp.bright }]}>
+                <Icon name={state === 'right' ? 'check' : 'close'} color={look.ramp.ink} size={14} strokeWidth={3} />
+              </View>
+            ) : null}
+          </View>
+        </ClaySurface>
+      )}
+    </Pressable>
+  )
+}
+
+const optionStyles = StyleSheet.create({
+  slot: { flex: 1 },
+  dim: { opacity: 0.5 },
+  fill: { flex: 1 },
+  face: { flex: 1, minHeight: 88, paddingTop: spacing.sm + spacing.xs, paddingHorizontal: spacing.xs, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  main: { fontFamily: fonts.bold, fontSize: textSize.h1, textAlign: 'center' },
+  sub: { fontFamily: fonts.medium, fontSize: textSize.micro, textAlign: 'center' },
+  mark: { height: 26, alignItems: 'center', justifyContent: 'center' },
+  markDisc: {
+    width: 24, height: 24, borderRadius: radii.pill, borderWidth: 2, backgroundColor: colors.card,
+    alignItems: 'center', justifyContent: 'center',
+  },
+})
+
+/** Clears every pending feedback timer when the game unmounts (leaving mid-
+ *  feedback used to advance a round, and speak, on an unmounted screen). */
+function useLater() {
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  useEffect(() => () => { timers.current.forEach(clearTimeout); timers.current = [] }, [])
+  return (fn: () => void, ms: number) => { timers.current.push(setTimeout(fn, ms)) }
+}
 
 interface Q { value: number; dir: 'toPersian' | 'toWestern'; options: number[] }
 
@@ -25,16 +119,27 @@ export default function DigitsPage() {
   const [run, setRun] = useState(0)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
       const childId = await getActiveChildId()
       const res = await api.get<Child[]>('/api/children')
+      if (cancelled) return
       const child = res.data?.find((c) => c.id === childId)
       setMax(childAge(child) <= 6 ? 9 : 99)   // 6 → single digits; older → two-digit
     }
-    load()
+    // No child data only means no age band: single digits rather than a
+    // spinner forever (a thrown load used to leave it up).
+    load().catch(() => { if (!cancelled) setMax(9) })
+    return () => { cancelled = true }
   }, [])
 
-  if (max === null) return <View style={styles.center} />
+  if (max === null) {
+    return (
+      <ScreenBackground variant="warm" style={styles.center}>
+        <ActivityIndicator color={colors.onPrimary} accessibilityLabel="در حال بارگذاری" />
+      </ScreenBackground>
+    )
+  }
   return <Game key={run} max={max} onReplay={() => setRun((x) => x + 1)} />
 }
 
@@ -58,37 +163,51 @@ function Game({ max, onReplay }: { max: number; onReplay: () => void }) {
   const [stars, setStars] = useState(0)
   const done = idx >= ROUNDS
   const q = questions[Math.min(idx, ROUNDS - 1)]
+  const later = useLater()
 
   useEffect(() => {
     if (!done) sayNumber(q.value)   // hear the number, find it
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx])
 
+  // A ref, not `picked`: two taps in one frame both saw picked === null and
+  // answered twice (two stars, two advances: a question skipped).
+  const answeredRef = useRef(false)
+  // Result and finish said once in words (see counting.tsx).
+  useEffect(() => {
+    if (done) AccessibilityInfo.announceForAccessibility(`${DONE_TITLE} ${toPersianDigits(stars)} ستاره از ${toPersianDigits(ROUNDS)}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done])
+
   function pick(n: number) {
-    if (picked !== null || done) return
+    if (answeredRef.current || picked !== null || done) return
+    answeredRef.current = true
     setPicked(n)
     const ok = n === q.value
+    AccessibilityInfo.announceForAccessibility(ok ? 'درست!' : `جواب درست ${q.dir === 'toPersian' ? toPersianDigits(q.value) : String(q.value)} بود`)
     if (ok) { setStars((s) => s + 1); sayPhrase('afarin') }
     else sayNumber(q.value)
-    setTimeout(() => { setPicked(null); setIdx((i) => i + 1) }, 1200)
+    later(() => { answeredRef.current = false; setPicked(null); setIdx((i) => i + 1) }, 1200)
   }
 
   if (done) {
     return (
-      <View style={[styles.center, { gap: 12, padding: 24 }]}>
+      <ScreenBackground variant="warm" style={styles.done}>
         <CelebrationOverlay />
-        <Text style={{ fontSize: 56 }}>🔢</Text>
-        <Text style={styles.doneTitle}>رقم‌شناس شدی! 🔢</Text>
-        <Text style={styles.doneSub}>
-          {toPersianDigits(stars)} ستاره از {toPersianDigits(ROUNDS)} تا
-        </Text>
-        <Pressable style={styles.primaryButton} onPress={onReplay}>
-          <Text style={styles.primaryText}>دوباره 🔁</Text>
-        </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={() => goBack('/math')}>
-          <Text style={styles.secondaryText}>دنیای اعداد 🏠</Text>
-        </Pressable>
-      </View>
+        {/* The shared finish card (GameKit): خرسی, math's host, over the
+            room's sunburst, and the stars earned out of the rounds. */}
+        <ResultCard
+          ramp={ramps.math}
+          art={<CharacterArt character="khersi" emotion="proud" size={RESULT_ART} />}
+          title={DONE_TITLE}
+          stars={stars}
+          total={ROUNDS}
+          sub={`${toPersianDigits(stars)} ستاره از ${toPersianDigits(ROUNDS)} تا`}
+        >
+          <ClayButton ramp={ramps.math} label="دوباره" emoji="🔁" onPress={onReplay} />
+          <ClayButton ramp={ramps.math} tone="soft" label="دنیای اعداد" emoji="🏠" onPress={() => goBack('/math')} />
+        </ResultCard>
+      </ScreenBackground>
     )
   }
 
@@ -96,79 +215,62 @@ function Game({ max, onReplay }: { max: number; onReplay: () => void }) {
   const optionLabel = (n: number) => (q.dir === 'toPersian' ? toPersianDigits(n) : String(n))
 
   return (
-    <View style={{ flex: 1 }}>
+    <ScreenBackground variant="warm">
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1 }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 92 }]}
     >
       <ScreenHeader
-        title="رقم‌های فارسی ۱۲۳"
+        style={{ paddingHorizontal: 0 }}
+        title="رقم‌های فارسی"
         subtitle="۷ همان 7 است!"
         fallback="/math"
-        right={<Text style={{ fontSize: 14 }}>{'⭐'.repeat(stars)}</Text>}
+        // One star and a count, as in مارپله: a row of up to ROUNDS stars took
+        // the title's room at 320pt and wrapped it onto three lines. Hidden
+        // at zero but keeping its room (StatChip `hidden`), so the title
+        // doesn't re-wrap when the first star arrives.
+        right={<StatChip ramp={ramps.math} icon="rewardStar" value={toPersianDigits(stars)} accessibilityLabel={`${toPersianDigits(stars)} ستاره`} hidden={stars === 0} />}
       />
 
-      <Text style={styles.progressLabel}>
-        سؤال {toPersianDigits(idx + 1)} از {toPersianDigits(ROUNDS)}
-      </Text>
+      <RoundTrack ramp={ramps.math} label={`سؤال ${toPersianDigits(idx + 1)} از ${toPersianDigits(ROUNDS)}`} index={idx} total={ROUNDS} />
 
-      <View style={styles.promptCard}>
+      <ClaySurface ramp={ramps.math} tone="soft" radius={radii.lg} faceStyle={styles.promptCard}>
         <Text style={styles.promptHint}>
           {q.dir === 'toPersian' ? 'این عدد به رقمِ فارسی کدام است؟' : 'این عدد به رقمِ انگلیسی کدام است؟'}
         </Text>
         <Text style={styles.promptNumber}>{prompt}</Text>
         <Text style={styles.promptWord}>{numberToPersianWord(q.value)}</Text>
-      </View>
+      </ClaySurface>
 
       <View style={styles.options}>
-        {q.options.map((n) => {
-          const show = picked !== null
-          const bg = show
-            ? n === q.value ? styles.optionRight : n === picked ? styles.optionWrong : undefined
-            : undefined
-          return (
-            <Pressable key={n} onPress={() => pick(n)} style={[styles.option, bg]}>
-              <Text style={styles.optionNumber}>{optionLabel(n)}</Text>
-            </Pressable>
-          )
-        })}
+        {q.options.map((n) => (
+          <AnswerOption
+            key={n}
+            state={optionState(n, q.value, picked)}
+            isPicked={picked === n}
+            main={optionLabel(n)}
+            a11yLabel={optionLabel(n)}
+            mainStyle={styles.optionNumber}
+            onPress={() => pick(n)}
+          />
+        ))}
       </View>
     </ScrollView>
     <BottomNav />
-    </View>
+    </ScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  content: { paddingHorizontal: 20, gap: 14 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  progressLabel: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted },
-  promptCard: { backgroundColor: colors.card, borderRadius: 20, padding: 24, alignItems: 'center', gap: 8 },
-  promptHint: { fontSize: 14, fontFamily: fonts.regular, color: colors.muted },
-  promptNumber: { fontSize: 64, fontFamily: fonts.bold, color: '#0284c7', writingDirection: 'ltr' },
-  promptWord: { fontSize: 14, fontFamily: fonts.regular, color: colors.muted },
-  options: { flexDirection: 'row', gap: 10 },
-  option: {
-    flex: 1, backgroundColor: colors.card, borderRadius: 16, borderWidth: 2, borderColor: '#e5e7eb',
-    paddingVertical: 22, alignItems: 'center',
-  },
-  optionRight: { backgroundColor: '#dcfce7', borderColor: colors.success },
-  optionWrong: { backgroundColor: '#fee2e2', borderColor: colors.danger },
-  optionNumber: { fontSize: 32, fontFamily: fonts.bold, color: colors.text, writingDirection: 'ltr' },
-  doneTitle: { fontSize: 26, fontFamily: fonts.display, color: colors.text },
-  doneSub: { fontSize: 15, fontFamily: fonts.regular, color: colors.muted },
-  primaryButton: {
-    marginTop: 10, backgroundColor: colors.primary, borderRadius: 16,
-    paddingVertical: 14, paddingHorizontal: 60,
-  },
-  primaryText: { color: colors.onPrimary, fontSize: 17, fontFamily: fonts.bold },
-  secondaryButton: {
-    borderWidth: 2, borderColor: '#e2e8f0', borderRadius: 16,
-    paddingVertical: 12, paddingHorizontal: 40,
-  },
-  secondaryText: { color: colors.muted, fontSize: 15, fontFamily: fonts.bold },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  content: { paddingHorizontal: spacing.md, gap: spacing.md - 2 },
+  promptCard: { padding: spacing.lg, alignItems: 'center', gap: spacing.sm },
+  promptHint: { fontSize: textSize.small, fontFamily: fonts.medium, color: ramps.math.ink, textAlign: 'center' },
+  // writingDirection 'ltr' on the numbers is intentional: a two-digit Latin
+  // number must read 45, not 54, inside the forced-RTL layout.
+  promptNumber: { fontSize: PROMPT_SIZE, lineHeight: naturalLineHeight(PROMPT_SIZE), fontFamily: fonts.bold, color: ramps.math.deep, writingDirection: 'ltr' },
+  promptWord: { fontSize: textSize.small, fontFamily: fonts.medium, color: ramps.math.ink },
+  options: { flexDirection: 'row', gap: spacing.sm },
+  optionNumber: { fontSize: textSize.h1, writingDirection: 'ltr' },
+  done: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm + spacing.xs, padding: spacing.lg },
 })

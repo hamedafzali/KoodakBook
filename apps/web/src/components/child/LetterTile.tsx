@@ -24,7 +24,7 @@ const GROUP_COLORS: Record<number, string> = {
 
 export default function LetterTile({ letter, onClick }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const color = GROUP_COLORS[letter.group] ?? 'bg-gray-100 border-gray-300 text-gray-700'
+  const color = GROUP_COLORS[letter.group] ?? 'bg-surface-subtle border-border text-text-primary'
 
   function handleClick() {
     playTap()
@@ -48,6 +48,7 @@ export default function LetterTile({ letter, onClick }: Props) {
         className="text-5xl font-bold"
         aria-hidden="true"
         whileTap={{ scale: 1.3 }}
+        tabIndex={-1}
         transition={{ type: 'spring', stiffness: 500, damping: 12 }}
       >
         {letter.character}

@@ -6,8 +6,9 @@ import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
 import PageHeader from '@/components/child/PageHeader'
-import { clayVars } from '@/components/child/clay'
+import { ClayButton } from '@/components/child/clay'
 import LoadingScreen from '@/components/child/LoadingScreen'
+import ErrorState from '@/components/child/ErrorState'
 import Mascot from '@/components/child/Mascot'
 import type { Child } from '@koodakbook/shared'
 
@@ -34,15 +35,23 @@ export default function NewStoryPage() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // A failed fetch used to leave «بساز!» disabled with nothing saying why.
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
+    let cancelled = false
     async function load() {
       const res = await api.get<Child[]>('/api/children')
-      setChild(pickChild(res.data ?? []) ?? null)
+      if (cancelled) return
+      if (!res.data) setLoadError(res.error ?? 'اتصال برقرار نشد. دوباره تلاش کن')
+      else setChild(pickChild(res.data) ?? null)
       setLoading(false)
     }
     load()
-  }, [router])
+    return () => { cancelled = true }
+  }, [router, attempt])
 
   async function generate() {
     if (!child || generating) return
@@ -61,6 +70,16 @@ export default function NewStoryPage() {
   }
 
   if (loading) return <LoadingScreen message="در حال آماده‌سازی..." />
+  if (loadError) {
+    return (
+      <ErrorState
+        message={loadError}
+        onRetry={() => { setLoadError(null); setLoading(true); setAttempt(a => a + 1) }}
+        backHref="/child/story"
+        backLabel="برگشت به داستان‌ها"
+      />
+    )
+  }
 
   // Building the story takes a few seconds — show a friendly waiting screen.
   if (generating) {
@@ -69,7 +88,7 @@ export default function NewStoryPage() {
         <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}>
           <Mascot size={120} mood="excited" />
         </motion.div>
-        <h1 className="text-2xl font-bold text-text-primary">در حال نوشتن داستان تو... ✨</h1>
+        <h1 className="font-display text-2xl font-black text-text-primary" role="status">در حال نوشتن داستان تو... <span aria-hidden="true">✨</span></h1>
         <p className="text-text-secondary persian-text">یک لحظه صبر کن، دارم برایت یک داستان می‌سازم!</p>
         <div className="flex gap-1.5">
           {[0, 1, 2].map(i => (
@@ -104,7 +123,7 @@ export default function NewStoryPage() {
               aria-checked={theme === t.key}
               onClick={() => setTheme(t.key)}
               whileTap={{ scale: 0.96 }}
-              className={`flex items-center gap-3 px-4 py-4 rounded-2xl border-2 text-right transition-colors min-h-[64px] ${
+              className={`flex items-center gap-3 px-4 py-4 rounded-2xl border-2 text-start transition-colors min-h-[64px] ${
                 theme === t.key ? 'border-purple-500 bg-purple-50' : 'border-border bg-white hover:border-purple-300'
               }`}
             >
@@ -114,17 +133,11 @@ export default function NewStoryPage() {
           ))}
         </div>
 
-        {error && <p role="alert" className="text-red-500 text-sm mt-4 persian-text text-center">{error}</p>}
+        {error && <p role="alert" className="text-red-700 text-sm mt-4 persian-text text-center">{error}</p>}
 
-        <motion.button
-          onClick={generate}
-          disabled={!child}
-          whileTap={{ scale: 0.97 }}
-          style={clayVars('stories')}
-          className="clay w-full mt-6 font-bold py-4 text-lg disabled:opacity-50 touch-target-child min-h-[56px]"
-        >
-          بساز! ✨
-        </motion.button>
+        <ClayButton ramp="stories" size="lg" className="mt-6" onClick={generate} disabled={!child}>
+          بساز! <span aria-hidden="true">✨</span>
+        </ClayButton>
       </div>
     </div>
   )

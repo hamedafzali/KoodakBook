@@ -11,24 +11,33 @@ let dailyGoal = 10
 let translationLang = 'en'
 let tutorialSeen = false
 let hydrated: Promise<void> | null = null
+// True once the stored values are in the cache. A screen that shows a pref
+// (parent settings) renders nothing until then instead of the defaults
+// swapping to the stored values a frame later.
+let ready = false
 
 /** Load stored prefs into the cache. Idempotent; awaited by ensurePrefs(). */
 export function ensurePrefs(): Promise<void> {
   if (!hydrated) {
     hydrated = (async () => {
+      // Never rejects: a failed read keeps the defaults instead of leaving an
+      // unhandled rejection at startup and every awaiting screen stuck.
       const [g, l, t] = await Promise.all([
         SecureStore.getItemAsync(GOAL_KEY),
         SecureStore.getItemAsync(LANG_KEY),
         SecureStore.getItemAsync(TUTORIAL_KEY),
-      ])
+      ]).catch(() => [null, null, null] as const)
       if (g) dailyGoal = parseInt(g, 10) || 10
       if (l) translationLang = l
       if (t === '1') tutorialSeen = true
+      ready = true
     })()
   }
   return hydrated
 }
 
+/** Synchronous: have the stored prefs been read yet? */
+export const prefsReady = () => ready
 export const getDailyGoal = () => dailyGoal
 export const getTranslationLang = () => translationLang
 export const hasSeenTutorial = () => tutorialSeen

@@ -2,7 +2,8 @@
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Icon } from '@/components/icons'
-import { MODULE, type ModuleKey } from '@/components/child/kit'
+import { MODULE, roomBand, type ModuleKey } from '@/components/child/kit'
+import CharacterAvatar from '@/components/child/CharacterAvatar'
 
 interface Props {
   title: string
@@ -73,10 +74,19 @@ export default function PageHeader({
   }
   const hue = gradientClass.match(/from-([a-z]+)-/)?.[1] ?? 'amber'
   const bar = m ? MODULE[m].bar : (ACCENT[hue] ?? 'bg-amber-400')
-  const badge = noEmoji ? undefined : (emoji ?? (m ? MODULE[m].emoji : undefined))
+  /* Room identity (2026-09-28 visual-fidelity pass): a module screen is a
+     ROOM, so its header is a band in the room's own soft tint with the
+     room's host standing in it — the same "whose room is this" cue the
+     mobile screens and Home's learning path give. The host replaces the
+     identity emoji (one picture, not two); rooms without a host keep the
+     emoji. A caller's own rightSlot (a score, a counter) wins the slot. */
+  const host = m && !rightSlot ? MODULE[m].character : undefined
+  const badge = noEmoji || host ? undefined : (emoji ?? (m ? MODULE[m].emoji : undefined))
+  const band = m ? roomBand(m) : undefined
 
   return (
-    <div className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border px-4 pt-3 pb-3 ${className}`}>
+    <div style={band}
+      className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 pt-3 pb-3 ${m ? 'rounded-b-[1.75rem] shadow-card' : 'bg-white/90 border-border'} ${className}`}>
       <div className="flex items-center gap-2">
         <motion.button
           onClick={handleBack}
@@ -93,7 +103,9 @@ export default function PageHeader({
 
         <div className="flex-1 min-w-0">
           <h1 className="font-display font-black text-card-title text-text-primary truncate">
-            {badge && <span className="mr-1.5" aria-hidden="true">{badge}</span>}
+            {/* me-, not mr-: under RTL the gap belongs between the emoji and the
+                title (its inline-end), not on the outer edge. */}
+            {badge && <span className="me-1.5" aria-hidden="true">{badge}</span>}
             {title}
           </h1>
           <div className="flex items-center gap-2 mt-1">
@@ -103,6 +115,11 @@ export default function PageHeader({
         </div>
 
         {rightSlot && <div className="flex-shrink-0">{rightSlot}</div>}
+        {host && (
+          <span className="flex-shrink-0 -my-2 w-14 h-14 rounded-full flex items-center justify-center bg-white/80 shadow-card" aria-hidden="true">
+            <CharacterAvatar slug={host} size={52} mood="happy" />
+          </span>
+        )}
       </div>
     </div>
   )

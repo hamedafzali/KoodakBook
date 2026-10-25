@@ -1,13 +1,16 @@
-import { useCallback, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useCallback, useRef, useState } from 'react'
+import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Child } from '@koodakbook/shared'
 import { Ionicons } from '@expo/vector-icons'
-import ScreenHeader from '@/components/ScreenHeader'
+import ParentLoadState, { PARENT_FALLBACK_ERROR } from '@/components/ParentLoadState'
+import {
+  ParentButton, ParentCard, ParentChip, ParentDivider, ParentField, ParentHeader, ParentNote, ParentPage, ParentSection, parentUI,
+} from '@/components/ParentUI'
 import { api } from '@/lib/api'
 import { isParentUnlocked } from '@/lib/parentGate'
-import { colors, fonts } from '@/lib/theme'
+import { fonts, spacing, textSize, textStart } from '@/lib/theme'
 
 interface FriendReq { id: string; requester_name: string; addressee_child_id: string; addressee_name: string }
 interface Friend { id: string; name: string; avatar_url: string | null }
@@ -19,14 +22,24 @@ interface Friend { id: string; name: string; avatar_url: string | null }
  */
 export default function Friends() {
   const insets = useSafeAreaInsets()
+  // Checked during render too (see parent/children.tsx).
+  const allowed = isParentUnlocked()
   const [children, setChildren] = useState<Child[]>([])
   const [selected, setSelected] = useState<string | null>(null)
+  // The focus load reads the current pick from a ref: depending on
+  // `selected` (which the load itself sets) ran the whole load twice on the
+  // first visit and again on every chip tap.
+  const selectedRef = useRef<string | null>(null)
+  const select = (id: string | null) => { selectedRef.current = id; setSelected(id) }
   const [code, setCode] = useState<string | null>(null)
   const [friends, setFriends] = useState<Friend[]>([])
   const [requests, setRequests] = useState<FriendReq[]>([])
   const [input, setInput] = useState('')
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [loading, setLoading] = useState(true)
+  // A failed load used to show as "no children / no requests".
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   const loadForChild = useCallback(async (childId: string) => {
     setCode(null)
@@ -48,17 +61,23 @@ export default function Friends() {
           api.get<FriendReq[]>('/api/friends/requests'),
         ])
         if (cancelled) return
-        const list = childRes.data ?? []
+        if (!childRes.data || !reqRes.data) {
+          setLoadError(childRes.error || reqRes.error || PARENT_FALLBACK_ERROR)
+          return
+        }
+        const list = childRes.data
         setChildren(list)
         setRequests(reqRes.data ?? [])
-        const active = selected ?? list[0]?.id ?? null
-        setSelected(active)
+        // Keep the pick if that child still exists, else the first child.
+        const cur = selectedRef.current
+        const active = (cur && list.some((c) => c.id === cur) ? cur : list[0]?.id) ?? null
+        select(active)
         if (active) await loadForChild(active)
         setLoading(false)
       }
       load()
       return () => { cancelled = true }
-    }, [selected, loadForChild])
+    }, [loadForChild, reloadKey])
   )
 
   async function shareCode() {
@@ -77,7 +96,7 @@ export default function Friends() {
     const res = await api.post<{ friend_name: string; accepted: boolean }>('/api/friends/request', { child_id: selected, code: c })
     if (res.data) {
       setInput('')
-      setMsg({ ok: true, text: res.data.accepted ? `${res.data.friend_name} حالا دوست است! ✅` : `درخواست برای ${res.data.friend_name} فرستاده شد ✅` })
+      setMsg({ ok: true, text: res.data.accepted ? `${res.data.friend_name} حالا دوست است!` : `درخواست برای ${res.data.friend_name} فرستاده شد` })
       if (res.data.accepted) await loadForChild(selected)
     } else {
       setMsg({ ok: false, text: res.error ?? 'خطا' })
@@ -91,133 +110,141 @@ export default function Friends() {
   }
 
   async function pickChild(id: string) {
-    setSelected(id)
+    select(id)
     setMsg(null)
     await loadForChild(id)
   }
 
-  if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.onPrimary} /></View>
+  if (!allowed) return <View style={styles.blank} />
+  if (loading || loadError) {
+    return (
+      <ParentLoadState
+        title="دوستان" subtitle={SUBTITLE} error={loadError}
+        onRetry={() => { setLoadError(null); setReloadKey((k) => k + 1) }}
+      />
+    )
   }
 
   const activeChild = children.find((c) => c.id === selected)
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 12 }}>
-      <ScreenHeader title="دوستان" subtitle="فقط با کد و تأیید شما — بدون غریبه" variant="parent" />
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}>
+    <ParentPage>
+      <ParentHeader title="دوستان" subtitle={SUBTITLE} />
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.lg }]}
+        keyboardShouldPersistTaps="handled"
+      >
 
       {children.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {children.map((c) => (
-            <Pressable key={c.id} style={[styles.chip, selected === c.id && styles.chipActive]} onPress={() => pickChild(c.id)}>
-              <Text style={[styles.chipText, selected === c.id && { color: colors.onPrimary }]}>{c.name}</Text>
-            </Pressable>
+            <ParentChip key={c.id} role="button" label={c.name} selected={selected === c.id} onPress={() => { void pickChild(c.id) }} />
           ))}
         </ScrollView>
       )}
 
       {/* This child's code */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>کد دوستی {activeChild?.name}</Text>
-        <Text style={styles.code}>{code ?? '…'}</Text>
-        <Pressable style={styles.shareButton} onPress={shareCode}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="share-social" size={16} color={colors.onPrimary} />
-            <Text style={styles.shareText}>اشتراک‌گذاری کد</Text>
-          </View>
-        </Pressable>
+      <ParentCard>
+        <Text style={styles.cardLabel} accessibilityRole="header">کد دوستی {activeChild?.name}</Text>
+        {code ? (
+          <Text style={styles.code} accessibilityLabel={`کد: ${code.split('').join(' ')}`} selectable>{code}</Text>
+        ) : (
+          <ActivityIndicator color={parentUI.accentText} style={styles.codeLoading} accessibilityLabel="در حال بارگذاری کد" />
+        )}
+        <ParentButton label="اشتراک‌گذاری کد" tone="secondary" disabled={!code} onPress={shareCode} />
         <Text style={styles.hint}>این کد را به خانواده‌ی دوستِ کودک بدهید</Text>
-      </View>
+      </ParentCard>
 
       {/* Add a friend by code */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>افزودن دوست با کد</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TextInput
-            style={styles.input}
+      <ParentCard>
+        <Text style={styles.cardLabel} accessibilityRole="header">افزودن دوست با کد</Text>
+        <View style={styles.inlineRow}>
+          <ParentField
+            label="کد دوست"
+            style={{ flex: 1 }}
+            inputStyle={styles.codeInput}
             value={input}
-            onChangeText={setInput}
+            onChangeText={(t) => { setInput(t); setMsg(null) }}
             placeholder="KB-XXXXX"
-            placeholderTextColor={colors.muted}
             autoCapitalize="characters"
             autoCorrect={false}
+            returnKeyType="send"
+            onSubmitEditing={() => { void sendRequest() }}
           />
-          <Pressable style={styles.addButton} onPress={sendRequest}>
-            <Text style={styles.addText}>ارسال</Text>
-          </Pressable>
+          <ParentButton label="ارسال" compact disabled={!input.trim()} onPress={() => { void sendRequest() }} style={styles.inlineButton} />
         </View>
-        {msg && <Text style={[styles.msg, { color: msg.ok ? colors.success : colors.danger }]}>{msg.text}</Text>}
-      </View>
+        {msg && <ParentNote text={msg.text} tone={msg.ok ? 'success' : 'error'} />}
+      </ParentCard>
 
       {/* Incoming requests */}
       {requests.length > 0 && (
         <>
-          <Text style={styles.sectionLabel}>درخواست‌های دوستی</Text>
-          <View style={styles.card}>
-            {requests.map((r) => (
+          <ParentSection label="درخواست‌های دوستی" />
+          <ParentCard>
+            {requests.map((r, i) => (
               <View key={r.id} style={styles.reqRow}>
+                {i > 0 ? <ParentDivider /> : null}
                 <Text style={styles.reqText}>«{r.requester_name}» می‌خواهد دوستِ {r.addressee_name} شود</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <Pressable style={styles.acceptBtn} onPress={() => respond(r.id, true)}><Text style={styles.acceptText}>تأیید</Text></Pressable>
-                  <Pressable style={styles.declineBtn} onPress={() => respond(r.id, false)}><Text style={styles.declineText}>رد</Text></Pressable>
+                <View style={styles.reqButtons}>
+                  <ParentButton
+                    label="تأیید" compact style={{ flex: 1 }}
+                    accessibilityLabel={`تأیید دوستی ${r.requester_name}`}
+                    onPress={() => { void respond(r.id, true) }}
+                  />
+                  <ParentButton
+                    label="رد" tone="secondary" compact style={{ flex: 1 }}
+                    accessibilityLabel={`رد درخواست ${r.requester_name}`}
+                    onPress={() => { void respond(r.id, false) }}
+                  />
                 </View>
               </View>
             ))}
-          </View>
+          </ParentCard>
         </>
       )}
 
       {/* Friends list */}
-      <Text style={styles.sectionLabel}>دوستانِ {activeChild?.name}</Text>
-      <View style={styles.card}>
+      <ParentSection label={`دوستانِ ${activeChild?.name ?? ''}`} />
+      <ParentCard>
         {friends.length === 0 ? (
           <Text style={styles.empty}>هنوز دوستی اضافه نشده — کد را به هم بدهید تا با هم بازی کنند</Text>
         ) : (
           friends.map((f) => (
             <View key={f.id} style={styles.friendRow}>
-              <Ionicons name="person-circle" size={26} color={colors.primaryDeep} />
+              <Ionicons name="person-circle" size={26} color={parentUI.accentText} />
               <Text style={styles.friendName}>{f.name}</Text>
-              <Text style={styles.soon}>بازی آنلاین به‌زودی 🎲</Text>
+              <Text style={styles.soon}>بازی آنلاین به‌زودی</Text>
             </View>
           ))
         )}
-      </View>
+      </ParentCard>
       </ScrollView>
-    </View>
+    </ParentPage>
   )
 }
 
+const SUBTITLE = 'فقط با کد و تأیید شما — بدون غریبه'
+
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  content: { paddingHorizontal: 20, gap: 12 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 4 },
-  back: { fontSize: 24, color: colors.muted },
-  title: { fontSize: 22, fontFamily: fonts.bold, color: colors.text },
-  subtitle: { fontSize: 12, fontFamily: fonts.regular, color: colors.muted, marginTop: 2 },
-  chips: { gap: 8, paddingVertical: 2 },
-  chip: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999, backgroundColor: colors.card, borderWidth: 1, borderColor: '#e5e7eb' },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 14, fontFamily: fonts.medium, color: colors.text },
-  card: { backgroundColor: colors.card, borderRadius: 18, padding: 16, gap: 10 },
-  cardLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.text },
-  code: { fontSize: 30, fontFamily: fonts.bold, color: colors.onPrimary, letterSpacing: 3, textAlign: 'center', writingDirection: 'ltr' },
-  shareButton: { backgroundColor: colors.primarySoft, borderRadius: 14, paddingVertical: 11, alignItems: 'center' },
-  shareText: { color: colors.onPrimary, fontSize: 14, fontFamily: fonts.bold },
-  hint: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
-  input: { flex: 1, backgroundColor: colors.bg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 16, fontFamily: fonts.bold, color: colors.text, textAlign: 'center', letterSpacing: 2, writingDirection: 'ltr' },
-  addButton: { backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 20, justifyContent: 'center' },
-  addText: { color: colors.onPrimary, fontSize: 14, fontFamily: fonts.bold },
-  msg: { fontSize: 13, fontFamily: fonts.regular },
-  sectionLabel: { fontSize: 13, fontFamily: fonts.bold, color: colors.muted, marginTop: 8, marginBottom: -2 },
-  reqRow: { gap: 8, paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  reqText: { fontSize: 13, fontFamily: fonts.regular, color: colors.text },
-  acceptBtn: { backgroundColor: colors.success, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 16 },
-  acceptText: { color: colors.onPrimary, fontSize: 13, fontFamily: fonts.bold },
-  declineBtn: { backgroundColor: '#e2e8f0', borderRadius: 10, paddingVertical: 7, paddingHorizontal: 16 },
-  declineText: { color: colors.text, fontSize: 13, fontFamily: fonts.bold },
-  empty: { fontSize: 13, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center', lineHeight: 22 },
-  friendRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  friendName: { flex: 1, fontSize: 15, fontFamily: fonts.bold, color: colors.text },
-  soon: { fontSize: 11, fontFamily: fonts.regular, color: colors.muted },
+  blank: { flex: 1, backgroundColor: parentUI.page },
+  content: { paddingHorizontal: spacing.md + 4, gap: spacing.md - 2 },
+  chips: { gap: spacing.sm },
+  cardLabel: { fontSize: textSize.caption + 1, fontFamily: fonts.bold, color: parentUI.text, textAlign: textStart },
+  // A code is Latin: shown LTR, spaced, and read out letter by letter.
+  code: {
+    fontSize: 30, fontFamily: fonts.bold, color: parentUI.accentText, letterSpacing: 3,
+    textAlign: 'center', writingDirection: 'ltr',
+  },
+  codeLoading: { minHeight: 47 },
+  hint: { fontSize: textSize.micro + 1, fontFamily: fonts.regular, color: parentUI.muted, textAlign: 'center' },
+  inlineRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  inlineButton: { minHeight: 48 },
+  codeInput: { fontFamily: fonts.bold, textAlign: 'center', letterSpacing: 2, writingDirection: 'ltr' },
+  reqRow: { gap: spacing.sm },
+  reqButtons: { flexDirection: 'row', gap: spacing.sm },
+  reqText: { fontSize: textSize.caption + 1, fontFamily: fonts.regular, color: parentUI.text, textAlign: textStart },
+  empty: { fontSize: textSize.caption, fontFamily: fonts.regular, color: parentUI.muted, textAlign: 'center', lineHeight: 22 },
+  friendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2, minHeight: 44 },
+  friendName: { flex: 1, fontSize: textSize.small, fontFamily: fonts.bold, color: parentUI.text, textAlign: textStart },
+  soon: { fontSize: textSize.micro, fontFamily: fonts.regular, color: parentUI.muted },
 })

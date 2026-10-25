@@ -23,7 +23,7 @@ export default function EmptyState({ message, subMessage, action }: Props) {
         <Mascot size={90} mood="idle" />
       </motion.div>
       <div>
-        <p className="font-bold text-gray-700 text-lg persian-text">{message}</p>
+        <p className="font-display font-black text-text-primary text-lg persian-text">{message}</p>
         {subMessage && <p className="text-text-secondary text-sm mt-1 persian-text">{subMessage}</p>}
       </div>
       {action && <div className="mt-2">{action}</div>}

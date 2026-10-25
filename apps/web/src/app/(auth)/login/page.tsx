@@ -5,6 +5,20 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import { onSignIn } from '@/lib/auth'
 import { Icon } from '@/components/icons'
+import { softClayVars } from '@/components/child/clay'
+
+/* Only the backend's credential rejection means "wrong email or password".
+ * The api client's own offline / unreachable-server errors are already
+ * Persian and are shown as they are, so a dropped connection no longer reads
+ * as a wrong password; anything else gets a neutral retry message. */
+function loginErrorMessage(error: string | null | undefined, status?: number): string {
+  // No token is sent on login, so 401 is the credentials and 403 a suspended
+  // account; the message checks are the fallback for a response without one.
+  if (status === 401 || error === 'Invalid email or password') return 'ایمیل یا رمز عبور اشتباه است'
+  if (status === 403 || error === 'This account is suspended') return 'این حساب غیرفعال شده است'
+  if (error && /[\u0600-\u06FF]/.test(error)) return error
+  return 'ورود انجام نشد. دوباره تلاش کنید'
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -27,7 +41,7 @@ export default function LoginPage() {
     setError(null)
 
     const res = await api.post<{ token: string }>('/api/auth/login', { email, password })
-    if (res.error || !res.data) { setError('ایمیل یا رمز عبور اشتباه است'); setLoading(false); return }
+    if (res.error || !res.data) { setError(loginErrorMessage(res.error, res.status)); setLoading(false); return }
 
     onSignIn(res.data.token)
     router.push('/parent/dashboard')
@@ -37,7 +51,7 @@ export default function LoginPage() {
     <div className="bg-white rounded-[2rem] shadow-lg p-8 w-full max-w-sm">
         <div className="text-center mb-6">
           <p className="mb-2 flex justify-center text-brand-text"><Icon name="wave" size={40} strokeWidth={1.6} /></p>
-          <h1 className="text-2xl font-bold text-text-primary mb-1">خوش برگشتید!</h1>
+          <h1 className="font-display font-black text-2xl text-text-primary mb-1">خوش برگشتید!</h1>
           <p className="text-text-secondary text-sm">قصه‌ها منتظرند — وارد شوید</p>
         </div>
 
@@ -59,7 +73,9 @@ export default function LoginPage() {
               autoComplete="email"
               inputMode="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); setError(null) }}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'login-error' : undefined}
               className="ltr w-full border border-border rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-text focus:border-brand-text min-h-[48px]"
             />
           </div>
@@ -73,13 +89,15 @@ export default function LoginPage() {
               required
               autoComplete="current-password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => { setPassword(e.target.value); setError(null) }}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'login-error' : undefined}
               className="ltr w-full border border-border rounded-[0.875rem] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-text focus:border-brand-text min-h-[48px]"
             />
           </div>
 
           {error && (
-            <p role="alert" className="text-red-500 text-sm persian-text">{error}</p>
+            <p id="login-error" role="alert" className="text-red-700 text-sm persian-text">{error}</p>
           )}
 
           <button
@@ -97,7 +115,7 @@ export default function LoginPage() {
             ثبت‌نام رایگان
           </Link>
         </p>
-        <Link href="/kid" className="block text-center mt-4 bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 rounded-2xl py-3 font-bold text-sky-700 transition">
+        <Link href="/kid" className="clay-option flex items-center justify-center gap-2 text-center mt-4 min-h-[52px] px-4 py-3 font-bold" style={softClayVars('letters')}>
           <Icon name="child" size="sm" /> ورود بچه‌ها — با اسم مخصوص خودت
         </Link>
     </div>
