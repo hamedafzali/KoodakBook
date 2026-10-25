@@ -108,7 +108,12 @@ export default async function AppPage() {
               )}
             </div>
             {release && (
-              <a href={release.download_url} download
+              <a href={release.download_url}
+                // The stored file has a unique name (koodakbook-<time>-<id>.apk:
+                // /uploads is cached as immutable, so a new release must never
+                // reuse a name); the visitor still saves it as
+                // koodakbook-<version>.apk.
+                download={`koodakbook-${release.version_name}.apk`}
                 className="btn-brand ms-auto inline-flex items-center gap-2 rounded-2xl px-5 py-3 font-bold text-base">
                 <Icon name="save" size={20} /> دانلود اپ اندروید
               </a>
