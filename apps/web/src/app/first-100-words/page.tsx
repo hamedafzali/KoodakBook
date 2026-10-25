@@ -59,19 +59,22 @@ async function getFirst100Words(): Promise<PublicWord[]> {
   // See /alphabet/page.tsx's getLetters() for why this is wrapped: fetch()
   // throws on a connection failure rather than just returning a bad response.
   try {
-    const res = await fetch(`${BACKEND_URL}/api/words`, {
+    // ?order=curriculum: the words the lessons teach, in the order a child
+    // meets them (animals, colours, family, body, food, numbers, …). The old
+    // "stage, then alphabetical" sort made the first hundred all start with
+    // آ–ط, which is not what a child learns first.
+    const res = await fetch(`${BACKEND_URL}/api/words?order=curriculum`, {
       next: { revalidate },
     });
     if (!res.ok) return [];
     const json = await res.json();
     const words: PublicWord[] = json.data ?? [];
-    // The API's default order is alphabetical by category, not teaching order.
-    // Sort by curriculum stage (the order the app actually teaches them in),
-    // then Persian spelling as a stable tie-break, and take the first 100 —
-    // this is genuinely "the first hundred words a child learns," not an
-    // arbitrary slice.
-    return [...words]
-      .sort((a, b) => a.stage - b.stage || a.persian.localeCompare(b.persian))
+    // A spelling can exist twice in the word bank (نه "no" and نه "nine",
+    // آفتاب "sun"/"sunshine"): show each Persian word once, at its first
+    // place in the curriculum.
+    const seen = new Set<string>();
+    return words
+      .filter((w) => (seen.has(w.persian) ? false : (seen.add(w.persian), true)))
       .slice(0, WORD_COUNT);
   } catch {
     return [];
@@ -81,20 +84,19 @@ async function getFirst100Words(): Promise<PublicWord[]> {
 export default async function First100WordsPage() {
   const words = await getFirst100Words();
 
-  // Tile shows the word's own first letter — the emoji/image lives in the
-  // detail panel on tap, same as the alphabet page's example-word treatment.
-  // (A picture-grid tile per word would be nicer visually, but keeping the
-  // tile a glyph keeps both pages — and their one shared component — reading
-  // the same interaction, tap a tile to reveal a picture, not two designs.)
+  // Each tile is the whole word under its picture (image, else emoji). It
+  // used to be only the word's first letter, so sixteen ب-words showed as
+  // sixteen identical «ب» tiles and the page looked like a list of
+  // duplicates.
   const items: ExplorerItem[] = words.map((w) => ({
     id: w.id,
-    tile: w.persian.slice(0, 1),
+    tile: w.persian,
+    tileEmoji: wordEmoji(w.english) ?? null,
     audioUrl: w.audio_url,
     ttsFallback: w.persian,
     detailTitle: w.persian,
     detailSubtitle: `${w.english}${w.finglish ? ` (${w.finglish})` : ""}`,
     detailImage: w.image_url,
-    detailEmoji: wordEmoji(w.english),
   }));
 
   const jsonLd = {
@@ -159,6 +161,7 @@ export default async function First100WordsPage() {
             </p>
           ) : (
             <TapToHearExplorer
+              tileStyle="word"
               items={items}
               nudgeText="دوست داشتی؟ برای پیگیری پیشرفت فرزندت، رایگان ثبت‌نام کن."
             />

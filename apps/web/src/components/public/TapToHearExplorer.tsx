@@ -15,6 +15,8 @@ export interface ExplorerItem {
   id: string
   tile: string
   tileSub?: string
+  /** A picture for a word tile (emoji fallback when the word has no image). */
+  tileEmoji?: string | null
   audioUrl: string | null
   ttsFallback: string
   detailTitle: string
@@ -23,11 +25,18 @@ export interface ExplorerItem {
   detailIcon?: IconName | null
 }
 
+/* 'glyph': one big letter per tile (/alphabet). 'word': the whole word under
+ * its picture (/first-100-words) — a word page that showed only each word's
+ * first letter looked like the same letter repeated 16 times. */
+type TileStyle = 'glyph' | 'word'
+
 export function TapToHearExplorer({
   items,
   nudgeText,
+  tileStyle = 'glyph',
 }: {
   items: ExplorerItem[]
+  tileStyle?: TileStyle
   /** Shown once a visitor has tapped at least one tile — earned, not upfront. */
   nudgeText: string
 }) {
@@ -42,18 +51,30 @@ export function TapToHearExplorer({
 
   return (
     <div>
-      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+      <div className={tileStyle === 'word' ? 'grid grid-cols-3 sm:grid-cols-5 gap-2' : 'grid grid-cols-4 sm:grid-cols-6 gap-2'}>
         {items.map(item => (
           <button
             key={item.id}
             onClick={() => select(item)}
             aria-pressed={item.id === selectedId}
-            className={`aspect-square rounded-2xl border flex items-center justify-center text-xl sm:text-2xl font-bold transition
+            aria-label={tileStyle === 'word' ? item.detailTitle : undefined}
+            className={`rounded-2xl border flex items-center justify-center font-bold transition
+              ${tileStyle === 'word' ? 'flex-col gap-1 py-3 px-1 min-h-[92px] text-base' : 'aspect-square text-xl sm:text-2xl'}
               ${item.id === selectedId
                 ? 'bg-brand-light border-brand text-brand-text shadow-sm ring-2 ring-brand-light'
                 : 'bg-white border-slate-200 text-slate-800 hover:border-brand/50 hover:bg-brand-pale'}`}
           >
-            {item.tile}
+            {tileStyle === 'word' ? (
+              <>
+                <span className="text-3xl leading-none h-9 flex items-center" aria-hidden="true">
+                  {item.detailImage
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={item.detailImage} alt="" className="w-9 h-9 object-contain" />
+                    : item.tileEmoji ?? ''}
+                </span>
+                <span className="leading-snug text-center break-words">{item.tile}</span>
+              </>
+            ) : item.tile}
           </button>
         ))}
       </div>
@@ -68,6 +89,8 @@ export function TapToHearExplorer({
             {selected.detailImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={selected.detailImage} alt="" className="w-10 h-10 object-contain" />
+            ) : selected.tileEmoji ? (
+              <span aria-hidden="true">{selected.tileEmoji}</span>
             ) : (
               <Icon name={selected.detailIcon ?? 'listen'} size="sm" />
             )}

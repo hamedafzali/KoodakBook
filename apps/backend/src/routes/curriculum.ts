@@ -99,13 +99,22 @@ router.get('/stories/:id', asyncHandler(async (req, res) => {
 
 router.get('/words', asyncHandler(async (req, res) => {
   const { category, stage } = req.query
-  let sql = `select ${withAudio('w', 'word')} as obj from words w`
+  // ?order=curriculum: only words that are taught in a lesson, in the order
+  // the app teaches them (lesson order, then the word's place in its lesson).
+  // Used by the public /first-100-words page. Default stays category order.
+  const curriculum = req.query.order === 'curriculum'
+  let sql = curriculum
+    ? `select ${withAudio('w', 'word')} as obj from words w
+         join (select li.word_id, min(l.order_index * 1000 + li.order_index) as pos
+                 from lesson_items li join lessons l on l.id = li.lesson_id
+                where li.word_id is not null group by li.word_id) p on p.word_id = w.id`
+    : `select ${withAudio('w', 'word')} as obj from words w`
   const params: unknown[] = []
   const conditions: string[] = []
   if (category) { conditions.push(`w.category = $${params.push(category)}`); }
   if (stage)    { conditions.push(`w.stage = $${params.push(stage)}`); }
   if (conditions.length) sql += ' where ' + conditions.join(' and ')
-  sql += ' order by w.category, w.persian'
+  sql += curriculum ? ' order by p.pos, w.persian' : ' order by w.category, w.persian'
   const rows = await query<Obj>(sql, params)
   res.json({ data: rows.map(r => r.obj), error: null })
 }))
