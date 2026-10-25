@@ -7,6 +7,7 @@ import { getAiSettings, generateStory, translateLines, AiNotConfiguredError, typ
 import { synthesizeStoryPages } from '../lib/tts'
 import { parseSceneRef, isTranslationLang, langEnglishName } from '@koodakbook/shared'
 import { asyncHandler } from '../lib/asyncHandler'
+import { notifyAiFailure } from '../lib/adminNotify'
 import { isTrialEligible, trialExpiresAt, TRIAL_PLAN_KEY, TRIAL_DURATION_DAYS } from '../lib/tempPremiumTrial'
 
 const router = Router()
@@ -135,6 +136,7 @@ router.post('/stories/generate', requireAuth, requireChildOwner, async (req, res
       return
     }
     console.error('AI story generation failed:', err)
+    notifyAiFailure({ feature: 'داستان', message: (err as Error).message ?? String(err) }).catch(() => {})
     res.status(502).json({ data: null, error: 'ساختن داستان موفق نبود. دوباره تلاش کن' })
     return
   }

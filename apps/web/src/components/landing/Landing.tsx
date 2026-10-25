@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import FeedbackForm from '@/components/shared/FeedbackForm'
 import { Icon, type IconName } from '@/components/icons'
 import dynamic from 'next/dynamic'
 import Mascot from '@/components/child/Mascot'
@@ -515,7 +516,7 @@ export default async function Landing() {
       </section>
 
       {/* Mobile apps */}
-      <section className="bg-slate-900 text-white">
+      <section id="app" className="bg-slate-900 text-white scroll-mt-20">
         <div className="max-w-6xl mx-auto px-4 py-14 flex flex-col md:flex-row items-center justify-between gap-8">
           <div>
             <h2 className="text-2xl font-bold inline-flex items-center gap-2"><Icon name="mobile" size="lg" />نرم‌افزار موبایل در راه است</h2>
@@ -527,6 +528,10 @@ export default async function Landing() {
               <StoreBadge store="android" />
               <StoreBadge store="ios" />
             </div>
+            {/* Direct install today: Android APK + iPhone home-screen guide (app/app/page.tsx). */}
+            <a href="/app" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-amber-400 text-slate-900 font-bold px-5 py-2.5 hover:bg-amber-300">
+              <Icon name="save" size="md" /> همین حالا نصب کنید — اندروید، آیفون و آیپد
+            </a>
           </div>
           <div className="w-full md:w-auto md:min-w-[320px]">
             <WaitlistForm />
@@ -550,6 +555,15 @@ export default async function Landing() {
         </div>
       </section>
 
+      {/* Contact / feedback — lands in the admin feedback inbox (routes/feedback.ts). */}
+      <section id="contact" className="max-w-3xl mx-auto px-4 pb-16 scroll-mt-20">
+        <SectionTitle kicker="تماس با ما" title="پیشنهاد، مشکل یا سؤال؟ برایمان بنویسید"
+          sub="پیام شما مستقیم به تیم کودک‌بوک می‌رسد. اگر حساب دارید، از بخش والدین هم می‌توانید بنویسید و جواب را همان‌جا ببینید." />
+        <div className="rounded-3xl border border-border bg-white p-5 sm:p-7 shadow-sm">
+          <FeedbackForm mode="public" screen="landing" />
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="bg-gradient-to-b from-brand-pale to-white">
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
@@ -570,6 +584,8 @@ export default async function Landing() {
             <Link href="/first-100-words" className="hover:text-brand-text">۱۰۰ کلمه‌ی اول</Link>
             <Link href="/privacy" className="hover:text-brand-text">حریم خصوصی</Link>
             <Link href="/terms" className="hover:text-brand-text">شرایط استفاده</Link>
+            <Link href="/#contact" className="hover:text-brand-text">تماس با ما</Link>
+            <Link href="/app" className="hover:text-brand-text">نصب اپ</Link>
             <Link href="/login" className="hover:text-brand-text">ورود به نرم‌افزار</Link>
             <Link href="/signup" className="hover:text-brand-text">ثبت‌نام</Link>
           </nav>

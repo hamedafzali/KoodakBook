@@ -7,15 +7,45 @@ immediately: new signups, lead/contact form submissions. Code:
 ## What it is (and isn't)
 
 A direct heads-up to one private chat — no channel, no approval step, no
-queue, nothing to review. Two triggers so far:
+queue, nothing to review.
 
-- **New signup** — fired from `POST /auth/signup` (`apps/backend/src/routes/auth.ts`)
-  right after the account is created.
-- **New lead/contact submission** — fired from `POST /leads`
-  (`apps/backend/src/routes/leads.ts`) right after the row is inserted.
+**Instant messages** (one per event):
 
-Fire-and-forget: a Telegram hiccup logs an error but never fails the signup
-or submission (same reasoning as the digest, alert, and content-channel
+| Event | Where it fires |
+|---|---|
+| 👤 New signup | `POST /auth/signup` (`routes/auth.ts`) |
+| 📬 Lead / contact / waitlist submission | `POST /leads` (`routes/leads.ts`) |
+| 📝 New draft waiting in the Telegram approval queue | `createDraft()` (`routes/adminPostDrafts.ts`) |
+| ⚠️ AI-generated channel draft rejected by the content gate | `lib/postDraftGenerator.ts` |
+| 💳 New subscription (checkout completed) | Stripe webhook (`routes/billingWebhook.ts`) |
+| ↩️ Cancellation requested (ends at period end) | Stripe webhook, `customer.subscription.updated` |
+| 🔚 Subscription ended, account back on free | Stripe webhook, `customer.subscription.deleted` |
+| ⚠️ Payment failed | Stripe webhook, `invoice.payment_failed` |
+| 🚨 Server error (HTTP 500) | `middleware/errorHandler.ts` — at most one per route+message per 15 min |
+| 💥 Backend crashed / migration failed | `index.ts` process handlers — at most one per message per 15 min |
+| 🚀 Backend started (deploy or restart) | `index.ts` — at most one per 10 min, "+N" counts restarts in between |
+| 🤖 AI story generation failing | `routes/ai.ts` — at most one per 30 min |
+| 📱 Android app release published | `routes/appReleases.ts` |
+
+Throttling lives in the database (`admin_notify_log`, migration 067), so a
+crash-looping backend sends one message, not one per restart. A held-back
+message is counted, and the next one that goes out says "+N similar".
+
+**Daily summary** (`lib/adminSummary.ts`) — one message a day at
+`ADMIN_SUMMARY_HOUR` (default 21) in `ADMIN_SUMMARY_TZ` (default
+Europe/Berlin): signups, new children, active children (today and 7 days),
+sessions and minutes, lessons/stories completed, AI stories and AI usage,
+new subscriptions, paying and premium families, temporary premium grants,
+new and open leads, and the review queues (Telegram drafts, word images,
+story covers). It is claimed per local date in `admin_notify_log`, so it goes
+out exactly once a day even across restarts, and a backend that was down at
+21:00 sends it when it comes back the same evening.
+
+The admin panel's Reports → System tab has **Send test message** and **Send
+summary now** buttons.
+
+Fire-and-forget: a Telegram hiccup logs an error but never fails the request
+that triggered it (same reasoning as the digest, alert, and content-channel
 transports).
 
 This is a **third, separate bot and token** from both `TELEGRAM_BOT_TOKEN`
@@ -39,6 +69,10 @@ one capability its bot was made for.
    pasted into chat):
    - `ADMIN_TELEGRAM_BOT_TOKEN` — the token from step 1.
    - `ADMIN_TELEGRAM_CHAT_ID` — the numeric ID from step 2.
+   - Optional: `ADMIN_SUMMARY_TZ`, `ADMIN_SUMMARY_HOUR`, `APP_VERSION`.
+4. **Stripe events**: subscribe the webhook endpoint to
+   `checkout.session.completed`, `customer.subscription.updated`,
+   `customer.subscription.deleted` and `invoice.payment_failed`.
 
 With no token set, it **dry-runs** (logs the message instead of sending) —
 safe in any environment, including local dev.

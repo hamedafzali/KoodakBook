@@ -39,7 +39,9 @@ function splitStatements(sql: string): string[] {
   return statements
 }
 
-export async function migrate() {
+/** Applies every pending migration in filename order and returns the
+ *  filenames it applied (empty when the schema was already current). */
+export async function migrate(): Promise<string[]> {
   await db.query(`
     CREATE TABLE IF NOT EXISTS _migrations (
       filename   TEXT PRIMARY KEY,
@@ -52,9 +54,10 @@ export async function migrate() {
     files = fs.readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql')).sort()
   } catch {
     console.log('No migrations directory — skipping')
-    return
+    return []
   }
 
+  const applied: string[] = []
   for (const file of files) {
     const { rows } = await db.query('SELECT 1 FROM _migrations WHERE filename = $1', [file])
     if (rows.length > 0) continue
@@ -72,6 +75,7 @@ export async function migrate() {
       await client.query('INSERT INTO _migrations (filename) VALUES ($1)', [file])
       await client.query('COMMIT')
       console.log(`Migration applied: ${file}`)
+      applied.push(file)
     } catch (err) {
       await client.query('ROLLBACK')
       throw new Error(`Migration failed (${file}): ${(err as Error).message}`)
@@ -79,4 +83,5 @@ export async function migrate() {
       client.release()
     }
   }
+  return applied
 }

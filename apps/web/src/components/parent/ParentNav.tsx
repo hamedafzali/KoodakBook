@@ -13,6 +13,7 @@ const ITEMS = [
   { href: '/parent/friends', label: 'دوستان', icon: 'partner' as IconName },
   { href: '/parent/settings', label: 'تنظیمات', icon: 'settings' as IconName },
   { href: '/parent/share', label: 'اشتراک‌گذاری', icon: 'share' as IconName },
+  { href: '/parent/feedback', label: 'پیشنهاد و پیام', icon: 'message' as IconName },
 ]
 
 /** Desktop-only (lg+) sidebar nav for the parent area. */

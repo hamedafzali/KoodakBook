@@ -37,7 +37,7 @@ export function BarList({ items, color = '#f59e0b', suffix = '' }: {
         <div key={i}>
           <div className="flex justify-between text-xs mb-0.5">
             <span className="text-gray-600 truncate">{it.label}</span>
-            <span className="text-gray-400">{it.value}{suffix}{it.sub ? ` · ${it.sub}` : ''}</span>
+            <span className="text-gray-400">{it.value}{suffix}{it.sub ? ` — ${it.sub}` : ''}</span>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div className="h-full rounded-full" style={{ width: `${(it.value / max) * 100}%`, background: color }} />

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { LineChart, BarList, Donut, CohortHeatmap } from '@/components/charts'
 import { Icon, type IconName } from '@/components/icons'
+import Link from 'next/link'
 
 interface Stats { users: number; children: number; words: number; stories: number; lessons: number }
 interface Overview {
@@ -20,10 +21,14 @@ interface Overview {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [ov, setOv] = useState<Overview | null>(null)
+  const [queues, setQueues] = useState<Record<'word_images' | 'covers' | 'drafts' | 'leads' | 'feedback', number> | null>(null)
 
   useEffect(() => {
     api.get<Stats>('/api/admin/stats').then(r => { if (r.data) setStats(r.data) })
     api.get<Overview>('/api/admin/analytics/overview').then(r => { if (r.data) setOv(r.data) })
+    // Pending work, from the Reports API (needs analytics.view; hidden otherwise).
+    api.get<{ queues: Record<'word_images' | 'covers' | 'drafts' | 'leads' | 'feedback', number> }>('/api/admin/reports/content?days=7')
+      .then(r => { if (r.data) setQueues(r.data.queues) })
   }, [])
 
   const cards = [
@@ -59,6 +64,31 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      {queues && (
+        <div className="bg-white rounded-2xl shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-700 text-sm">کارهای منتظر شما</h3>
+            <Link href="/dashboard/reports" className="text-xs text-amber-700 hover:underline">همه‌ی گزارش‌ها ←</Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { href: '/dashboard/feedback', label: 'بازخورد خانواده‌ها', n: queues.feedback ?? 0, icon: 'characters' as IconName },
+              { href: '/dashboard/leads', label: 'درخواست‌های باز', n: queues.leads, icon: 'inbox' as IconName },
+              { href: '/dashboard/post-drafts', label: 'صف تأیید تلگرام', n: queues.drafts, icon: 'send' as IconName },
+              { href: '/dashboard/word-images', label: 'تصویر واژه‌ها', n: queues.word_images, icon: 'image' as IconName },
+              { href: '/dashboard/story-covers', label: 'جلد داستان‌ها', n: queues.covers, icon: 'stories' as IconName },
+            ].map(q => (
+              <Link key={q.href} href={q.href}
+                className={`rounded-xl border p-3 flex items-center gap-3 transition hover:shadow-sm ${q.n > 0 ? 'border-amber-200 bg-amber-50/60' : 'border-slate-100 bg-slate-50/50'}`}>
+                <Icon name={q.icon} size={18} className={q.n > 0 ? 'text-amber-600' : 'text-slate-400'} />
+                <span className="text-xs text-slate-600">{q.label}</span>
+                <span className={`ms-auto text-lg font-bold tabular-nums ${q.n > 0 ? 'text-amber-700' : 'text-slate-300'}`}>{q.n.toLocaleString('fa-IR')}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-4">
         <Panel title="رشد (۳۰ روز اخیر)">

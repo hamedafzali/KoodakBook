@@ -30,6 +30,10 @@ export const metadata: Metadata = {
   title: 'KoodakBook — فارسی برای کودکان',
   description: 'یادگیری فارسی برای کودکان ایرانی خارج از کشور — از طریق داستان، بازی و ارتباط با خانواده.',
   manifest: '/manifest.json',
+  // iOS ignores the manifest's icons for "Add to Home Screen" and uses
+  // apple-touch-icon instead — without one it saves a page screenshot as the
+  // app icon (see /app's iPhone guide).
+  icons: { apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }] },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

@@ -84,6 +84,8 @@ export default function ParentDashboardPage() {
   // Free/paid gate for the first-story upsell banner below — not part of
   // DashboardSummary, so it's its own small fetch (see /api/auth/me).
   const [plan, setPlan] = useState<string>('free')
+  // Replies from the team the parent hasn't opened yet (app/parent/feedback).
+  const [unreadReplies, setUnreadReplies] = useState(0)
   // Lazy initializer, not an effect: this reads a stored flag once to derive
   // initial state, it never subscribes to anything external, so it belongs
   // in useState (react-hooks/set-state-in-effect — same fix as login/page.tsx).
@@ -106,11 +108,13 @@ export default function ParentDashboardPage() {
   useEffect(() => {
     if (!isLoggedIn()) { router.push('/login'); return }
     async function load() {
-      const [childRes, meRes] = await Promise.all([
+      const [childRes, meRes, fbRes] = await Promise.all([
         api.get<Child[]>('/api/children'),
         api.get<{ plan: string }>('/api/auth/me'),
+        api.get<{ unread: number }>('/api/feedback/mine'),
       ])
       if (meRes.data?.plan) setPlan(meRes.data.plan)
+      setUnreadReplies(fbRes.data?.unread ?? 0)
       const list = childRes.data ?? []
       setChildren(list)
       const child = pickChild(list)
@@ -238,6 +242,19 @@ export default function ParentDashboardPage() {
             else, and it also means the upsell banner further down (gated on
             plan === 'free') naturally won't show the same visit, since the
             plan just changed server-side. */}
+        {unreadReplies > 0 && (
+          <Link href="/parent/feedback"
+            className="mb-4 rounded-xl px-4 py-3.5 flex items-center gap-3 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition">
+            <span className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-600 text-white" aria-hidden="true">
+              <Icon name="message" size="sm" />
+            </span>
+            <span className="text-sm font-bold persian-text flex-1 text-emerald-900">
+              تیم کودک‌بوک به پیام شما جواب داد — دیدن جواب
+            </span>
+            <Icon name="forward" size="sm" className="text-emerald-800" />
+          </Link>
+        )}
+
         {reward_unlocked_days && (
           <div
             role="status"
