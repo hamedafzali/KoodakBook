@@ -8,7 +8,7 @@ import type { SceneSlug, Story } from '@koodakbook/shared'
 import { SCENE_SLUGS, toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
-import { mediaUrl } from '@/lib/media'
+import { thumbUrl } from '@/lib/media'
 import SceneBackdrop from '@/components/SceneBackdrop'
 import ScreenBackground from '@/components/ScreenBackground'
 import { CharacterArt, ClaySurface, DeepActionCard, HostAvatar, SectionHeading, TextButton } from '@/components/Clay'
@@ -64,7 +64,7 @@ function StatusPill({ ramp, label, icon, solid = false }: { ramp: Ramp; label: s
  * fallback is never a made-up cover, only the scene library / the host.
  */
 function StoryCover({ story, style, fallback }: { story: Story; style: StyleProp<ImageStyle>; fallback: ReactNode }) {
-  const uri = mediaUrl(story.cover_url)
+  const uri = thumbUrl(story.cover_url, 200)
   const [failedUri, setFailedUri] = useState<string | null>(null)
   if (!uri || failedUri === uri) return <>{fallback}</>
   return <Image source={{ uri }} style={style} contentFit="cover" onError={() => setFailedUri(uri)} />

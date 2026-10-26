@@ -9,7 +9,7 @@ import { toPersianDigits } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import FriendAvatar from '@/components/FriendAvatar'
-import { mediaUrl } from '@/lib/media'
+import { thumbUrl } from '@/lib/media'
 import { playClip } from '@/lib/sound'
 import { playSuccess, playTap } from '@/lib/uiSound'
 import { shuffle } from '@/lib/math'
@@ -188,7 +188,7 @@ function Board({ words, host, onReplay }: { words: Word[]; host: AppCharacter | 
       picked.flatMap((w) =>
         ([0, 1] as const).map((i) => ({
           key: `${w.id}-${i}`, wordId: w.id, persian: w.persian, english: w.english,
-          audio: w.audio_url, image: mediaUrl(w.image_url),
+          audio: w.audio_url, image: thumbUrl(w.image_url, 100),
         }))
       )
     )

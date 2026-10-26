@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import type { Word } from '@koodakbook/shared'
 import { wordEmoji } from '@koodakbook/shared'
 import Emoji from '@/components/shared/Emoji'
-import { mediaUrl } from '@/lib/media'
+import { mediaUrl, thumbUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakPersian } from '@/lib/speech'
 import { tapMotionFor } from '@/lib/animation'
@@ -19,7 +19,7 @@ export default function WordTile({ word, size = 'md', onClick }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const recorded = mediaUrl(word.audio_url)
   const emoji = wordEmoji(word.english)
-  const image = mediaUrl(word.image_url)
+  const image = thumbUrl(word.image_url, 224)
   // Data-driven tap motion (Phase 0): driven by the row's animation template.
   const tap = tapMotionFor(word.animation_template, word.animation_params)
 

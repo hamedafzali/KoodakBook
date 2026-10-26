@@ -7,7 +7,7 @@ import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { playClip, stopClip } from '@/lib/sound'
-import { mediaUrl } from '@/lib/media'
+import { thumbUrl } from '@/lib/media'
 import { fonts, iconSize, naturalLineHeight, radii, ramps, spacing, textSize, textStyles, ui } from '@/lib/theme'
 import ScreenBackground from '@/components/ScreenBackground'
 import { CharacterArt, ClayButton, ClaySurface } from '@/components/Clay'
@@ -99,7 +99,7 @@ export default function Speak() {
     )
   }
 
-  const image = mediaUrl(word.image_url)
+  const image = thumbUrl(word.image_url, 112)
   const emoji = wordEmoji(word.english)
 
   function confirmSaid() {
