@@ -113,7 +113,10 @@ export default function VideosPage() {
           <EmptyState message="هنوز ویدیویی نیست" subMessage="به زودی ویدیوهای تازه اضافه می‌شود!" />
         ) : (
           <motion.div variants={container} initial="hidden" animate="show" key={cat}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" role="list" aria-label="لیست ویدیوها">
+            /* Like the stories list: this route is on the wide desktop stage
+               (child/layout.tsx WIDE_EXACT), so 4 across at lg is ~260px per
+               cover. Without the wide stage, xl put 5 tiny covers in 540px. */
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" role="list" aria-label="لیست ویدیوها">
             {shown.map((v, i) => (
               <motion.div key={v.id} variants={item} role="listitem">
                 <button onClick={() => setPlaying(i)} aria-label={`پخش ${v.title_fa}`}
@@ -143,11 +146,19 @@ function Player({ list, index, onIndex, onClose }: {
   const ref = useRef<HTMLVideoElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const [ended, setEnded] = useState(false)
+  // A browser may refuse to start a video with sound by itself (iOS Safari
+  // does when the player opens): then a big play button asks for one tap.
+  const [blocked, setBlocked] = useState(false)
   const hasPrev = index > 0
   const hasNext = index < list.length - 1
 
   const close = useCallback(() => { ref.current?.pause(); onClose() }, [onClose])
-  useEffect(() => { setEnded(false) }, [index])
+  useEffect(() => {
+    setEnded(false); setBlocked(false)
+    const el = ref.current
+    if (!el) return
+    el.play().catch(() => setBlocked(true))
+  }, [index])
   useEffect(() => {
     closeRef.current?.focus()
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
@@ -171,9 +182,17 @@ function Player({ list, index, onIndex, onClose }: {
 
       <div className="relative w-full max-w-4xl">
         <video key={v.id} ref={ref} src={v.video_url} poster={v.cover_url ?? undefined}
-          controls autoPlay playsInline controlsList="nodownload noplaybackrate" disablePictureInPicture
-          onEnded={() => setEnded(true)} onPlay={() => setEnded(false)}
+          controls playsInline controlsList="nodownload noplaybackrate" disablePictureInPicture
+          onEnded={() => setEnded(true)} onPlay={() => { setEnded(false); setBlocked(false) }}
           className="w-full max-h-[70vh] rounded-3xl bg-black aspect-video" />
+        {blocked && !ended && (
+          <button onClick={() => { ref.current?.play().catch(() => {}) }} aria-label={`پخش ${v.title_fa}`}
+            className="absolute inset-0 rounded-3xl bg-black/30 flex items-center justify-center">
+            <span className="w-24 h-24 rounded-full clay inline-flex items-center justify-center" style={clayVars('videos')}>
+              <Icon name="play" size={48} />
+            </span>
+          </button>
+        )}
         {ended && (
           <div className="absolute inset-0 rounded-3xl bg-black/60 flex items-center justify-center gap-4">
             <button onClick={() => { const el = ref.current; if (el) { el.currentTime = 0; el.play() } }}

@@ -17,7 +17,7 @@ import ChildRail from '@/components/child/ChildRail'
 // (which lay out as grids), and the story *reader* (two-page spread). Focused
 // single-task screens — the lesson player, phonics, speak, write, review and the
 // /new story form — deliberately stay a centred ~540 stage.
-const WIDE_EXACT = ['/child/home', '/child/lesson', '/child/story', '/child/rewards']
+const WIDE_EXACT = ['/child/home', '/child/lesson', '/child/story', '/child/rewards', '/child/videos']
 function isWideRoute(p: string) {
   if (WIDE_EXACT.includes(p)) return true
   if (p.startsWith('/child/story/') && p !== '/child/story/new') return true
