@@ -34,11 +34,13 @@ test("the child home renders the child's name and learning content", async ({ pa
   await page.goto("/child/home");
 
   // Stays in the child area (not bounced to /login or /onboarding/placement)
-  // and greets the child by name. exact: true matters here — the onboarding
-  // greeting text ("سلام آزمون! من سیمرغم") contains the fixture's child name
-  // as a substring, so a non-exact match can silently pass on the wrong screen.
+  // and greets the child by name. The redesigned home's greeting is the
+  // page's <h1> «سلام آزمون! 👋» (the emoji is aria-hidden, so the heading's
+  // accessible name is «سلام آزمون!»). exact: true still matters — the
+  // placement intro («سلام آزمون! من سیمرغم») starts with the same words, so
+  // a prefix match could pass on the wrong screen.
   await expect(page).toHaveURL(/\/child\/home/);
-  await expect(page.getByRole("heading", { name: "آزمون", exact: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("heading", { name: "سلام آزمون!", exact: true })).toBeVisible({ timeout: 15_000 });
 });
 
 test("the lesson screen renders the quiz with a progress indicator", async ({ page, request }) => {
