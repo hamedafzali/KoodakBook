@@ -149,6 +149,10 @@
   --color-rewards-bright: var(--ramp-rewards-bright);
   --color-rewards-soft: var(--ramp-rewards-soft);
   --color-rewards-ink: var(--ramp-rewards-ink);
+  --color-videos-deep: var(--ramp-videos-deep);
+  --color-videos-bright: var(--ramp-videos-bright);
+  --color-videos-soft: var(--ramp-videos-soft);
+  --color-videos-ink: var(--ramp-videos-ink);
 
   /* Semantic */
   --color-success:       #16A34A;
@@ -288,6 +292,11 @@
   --ramp-rewards-bright: #FBBF24;
   --ramp-rewards-soft:   #FFFBEB;
   --ramp-rewards-ink:    #654900;
+
+  --ramp-videos-deep:   #B50303;
+  --ramp-videos-bright: #F87171;
+  --ramp-videos-soft:   #FEF2F2;
+  --ramp-videos-ink:    #610000;
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */

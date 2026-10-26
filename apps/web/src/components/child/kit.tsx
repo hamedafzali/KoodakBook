@@ -28,12 +28,12 @@ import {
  *  its ramp is a build error, not a screen that renders unstyled. */
 export type ModuleKey =
   | 'lessons' | 'letters' | 'phonics' | 'stories' | 'review'
-  | 'speak' | 'write' | 'math' | 'games' | 'rewards'
+  | 'speak' | 'write' | 'math' | 'games' | 'rewards' | 'videos'
 
 const _moduleKeysAreRamps: Record<ModuleKey, Ramp> = {
   lessons: 'lessons', letters: 'letters', phonics: 'phonics', stories: 'stories',
   review: 'review', speak: 'speak', write: 'write', math: 'math',
-  games: 'games', rewards: 'rewards',
+  games: 'games', rewards: 'rewards', videos: 'videos',
 }
 void _moduleKeysAreRamps
 
@@ -69,6 +69,7 @@ export const MODULE: Record<ModuleKey, {
   math:    { character: 'khersi', emoji: '🔢', icon: 'math',    chip: 'bg-math-soft text-math-ink',       bar: 'bg-math-bright',    soft: 'bg-math-soft',    solid: 'bg-math-bright',    edge: 'border-math-deep' },
   games:   { character: 'tondpa', emoji: '🃏', icon: 'games',   chip: 'bg-games-soft text-games-ink',     bar: 'bg-games-bright',   soft: 'bg-games-soft',   solid: 'bg-games-bright',   edge: 'border-games-deep' },
   rewards: { character: 'simorgh', emoji: '🏆', icon: 'rewards', chip: 'bg-rewards-soft text-rewards-ink', bar: 'bg-rewards-bright', soft: 'bg-rewards-soft', solid: 'bg-rewards-bright', edge: 'border-rewards-deep' },
+  videos:  { emoji: '🎬', icon: 'videos',  chip: 'bg-videos-soft text-videos-ink',   bar: 'bg-videos-bright',  soft: 'bg-videos-soft',  solid: 'bg-videos-bright',  edge: 'border-videos-deep' },
 }
 /* چرخی (pixel-wizards-charachters v1.3.1, role جاده‌ها/"roads") is
  * deliberately absent from MODULE above — it doesn't host a content module,

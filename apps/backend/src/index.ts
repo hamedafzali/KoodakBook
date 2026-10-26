@@ -42,6 +42,7 @@ import { logAudit } from './lib/audit'
 import appReleasesRouter, { adminAppReleasesRouter } from './routes/appReleases'
 import adminReportsRouter from './routes/adminReports'
 import feedbackRouter, { adminFeedbackRouter } from './routes/feedback'
+import videosRouter, { adminVideosRouter } from './routes/videos'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -125,6 +126,8 @@ app.use('/api/admin',     adminAppReleasesRouter)
 app.use('/api/app',       appReleasesRouter)
 app.use('/api/admin',     adminFeedbackRouter)
 app.use('/api/feedback',  feedbackRouter)
+app.use('/api/admin',     adminVideosRouter)
+app.use('/api/videos',    videosRouter)
 app.use('/api/characters', charactersRouter)
 app.use('/api/friends',   friendsRouter)
 app.use('/api/leads',     leadsRouter)

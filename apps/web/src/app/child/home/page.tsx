@@ -445,6 +445,7 @@ export default function ChildHomePage() {
     { module: 'write', title: 'نوشتن', href: '/child/write', sub: 'شکل حرف‌ها' },
     { module: 'math', title: 'ریاضی', href: '/child/math', sub: 'خرسی راهنماته' },
     { module: 'games', title: 'بازی‌ها', href: '/child/games/memory', sub: 'تندپا راهنماته' },
+    { module: 'videos', title: 'ویدیوها', href: '/child/videos', sub: 'ترانه و تماشا' },
     { module: 'rewards', title: 'جایزه‌ها', href: '/child/rewards', sub: 'سیمرغ راهنماته' },
   ]), [reviewWords.length])
 

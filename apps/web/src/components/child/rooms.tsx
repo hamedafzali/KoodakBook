@@ -58,6 +58,7 @@ export const PLAY: Room[] = [
   { href: '/child/math/bazaar', module: 'rewards', title: 'بازار', sub: 'خرید و فروش', noHost: true },
   { href: '/child/games/memory', module: 'games', title: 'بازی حافظه', sub: 'جفت‌ها را پیدا کن' },
   { href: '/child/games/marpele', module: 'games', title: 'مارپله', sub: 'نردبان و مار' },
+  { href: '/child/videos', module: 'videos', title: 'ویدیوها', sub: 'ترانه و تماشا' },
 ]
 
 export const MINE: Room[] = [
