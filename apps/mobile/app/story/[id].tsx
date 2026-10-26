@@ -15,7 +15,7 @@ import StoryQuiz, { usableQuestions } from '@/components/StoryQuiz'
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { localAudio } from '@/lib/audioCache'
-import { mediaUrl } from '@/lib/media'
+import { mediaUrl, thumbUrl } from '@/lib/media'
 import { getTranslationLang } from '@/lib/prefs'
 import { clay, colors, fonts, naturalLineHeight, radii, ramps, scenery, spacing, textSize, textStart, ui } from '@/lib/theme'
 import LoadState from '@/components/LoadState'
@@ -287,8 +287,8 @@ export default function StoryReader() {
   }
 
   const isLast = pageIdx === story.pages.length - 1
-  const pageImg = page ? mediaUrl(page.image_url) : null
-  const coverImg = mediaUrl(story.cover_url)
+  const pageImg = page ? thumbUrl(page.image_url, 400) : null
+  const coverImg = thumbUrl(story.cover_url, 400)
   const shownPageImg = pageImg && !failedImages.has(pageImg) ? pageImg : null
   const shownCover = coverImg && !failedImages.has(coverImg) ? coverImg : null
   const lang = getTranslationLang()

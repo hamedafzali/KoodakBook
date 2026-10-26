@@ -24,7 +24,7 @@ import { LESSON_ROOM_STYLE, STORY_ROOM_STYLE, lessonRoomStyle, type RoomStyle } 
 import { api } from '@/lib/api'
 import { getActiveChildId } from '@/lib/activeChild'
 import { childAge } from '@/lib/math'
-import { mediaUrl } from '@/lib/media'
+import { mediaUrl, thumbUrl } from '@/lib/media'
 import { ensurePrefs, getDailyGoal, hasSeenTutorial } from '@/lib/prefs'
 import { playClip } from '@/lib/sound'
 import { useChildSession } from '@/lib/useChildSession'
@@ -390,7 +390,7 @@ export default function Home() {
       const peers = lessons.filter((l) => l.type === cur.type)
       return {
         key: cur.type, title: LESSON_TYPE_LABEL[cur.type] ?? cur.type, style: lessonRoomStyle(cur.type),
-        thumb: mediaUrl(cur.thumbnail_url) ?? null,
+        thumb: thumbUrl(cur.thumbnail_url, 80) ?? null,
         done: peers.filter((l) => doneLessons.has(l.id)).length, total: peers.length,
       }
     }
@@ -398,7 +398,7 @@ export default function Home() {
       const cur = stories.find((st) => `/story/${st.id}` === nextUp.href)
       if (!cur) return null
       return {
-        key: 'stories', title: 'قصه‌ها', style: STORY_ROOM_STYLE, thumb: mediaUrl(cur.cover_url) ?? null,
+        key: 'stories', title: 'قصه‌ها', style: STORY_ROOM_STYLE, thumb: thumbUrl(cur.cover_url, 80) ?? null,
         done: stories.filter((st) => doneStories.has(st.id)).length, total: stories.length,
       }
     }
@@ -957,7 +957,7 @@ function sceneFor(id: string): SceneSlug {
 /** A story's own cover, or its scene when it has none OR the image fails to
  *  load (a broken URL used to leave a pale empty box). Never made-up art. */
 function StoryCoverArt({ story }: { story: Story }) {
-  const uri = mediaUrl(story.cover_url)
+  const uri = thumbUrl(story.cover_url, 200)
   const [failedUri, setFailedUri] = useState<string | null>(null)
   if (!uri || failedUri === uri) return <SceneBackdrop scene={sceneFor(story.id)} style={styles.storyScene} />
   return <Image source={{ uri }} style={styles.storyCoverImage} contentFit="cover" transition={150} onError={() => setFailedUri(uri)} />

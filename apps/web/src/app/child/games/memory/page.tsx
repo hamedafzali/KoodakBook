@@ -6,7 +6,7 @@ import { celebrate } from '@/lib/confetti'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
-import { mediaUrl } from '@/lib/media'
+import { mediaUrl, thumbUrl } from '@/lib/media'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import { ClayButton } from '@/components/child/clay'
@@ -107,7 +107,7 @@ function Board({ words, host, onReplay, onHome }: { words: Word[]; host: AppChar
   const cards = useMemo<Card[]>(() => {
     const picked = shuffle(words).slice(0, PAIRS)
     return shuffle(picked.flatMap(w => ([0, 1] as const).map(i => ({
-      key: `${w.id}-${i}`, wordId: w.id, persian: w.persian, english: w.english, audio: mediaUrl(w.audio_url), image: mediaUrl(w.image_url),
+      key: `${w.id}-${i}`, wordId: w.id, persian: w.persian, english: w.english, audio: mediaUrl(w.audio_url), image: thumbUrl(w.image_url, 128),
     }))))
   }, [words])
 

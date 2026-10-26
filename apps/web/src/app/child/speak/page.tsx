@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import { isLoggedIn } from '@/lib/auth'
 import { pickChild } from '@/lib/activeChild'
-import { mediaUrl } from '@/lib/media'
+import { mediaUrl, thumbUrl } from '@/lib/media'
 import PageHeader from '@/components/child/PageHeader'
 import BottomNav from '@/components/child/BottomNav'
 import { ClayButton, softClayVars } from '@/components/child/clay'
@@ -75,7 +75,7 @@ export default function SpeakPage() {
   }
 
   const word = words[idx]
-  const image = mediaUrl(word.image_url)
+  const image = thumbUrl(word.image_url, 112)
   const emoji = wordEmoji(word.english)
 
   async function record() {

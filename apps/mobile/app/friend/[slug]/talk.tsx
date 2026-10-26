@@ -58,7 +58,9 @@ import { clay, colors, fonts, naturalLineHeight, radii, ramps, scenery, spacing,
  *    is on its way (busy, not faded) and fades only when there's nothing to
  *    send. The empty state says where the keyboard's microphone is.
  */
-interface Msg { role: 'child' | 'character'; text: string }
+// 'notice': not a message from anyone — a send that didn't go through,
+// shown as a small centred line so it can't be mistaken for the friend's reply.
+interface Msg { role: 'child' | 'character' | 'notice'; text: string }
 
 const OFFLINE = 'اتصال برقرار نشد. دوباره تلاش کن'
 // The backend's own limit (chatSchema: text max 300). Past it the post came
@@ -145,7 +147,7 @@ export default function Talk() {
     // api never rejects except through getToken (SecureStore); a rejection
     // here used to leave sendingRef stuck true and the chat unable to send.
     const res = await api.post<Reply>(`/api/characters/${slug}/chat`, { child_id: childId, text: value })
-      .catch(() => ({ data: null as Reply | null, error: OFFLINE }))
+      .catch(() => ({ data: null as Reply | null, error: OFFLINE, status: undefined as number | undefined }))
     sendingRef.current = false
     // Left the chat while waiting: no state updates, and no reply voice
     // playing over whatever screen the child is on now.
@@ -155,10 +157,20 @@ export default function Talk() {
       // Screen readers hear the reply as it arrives (no-op without one).
       AccessibilityInfo.announceForAccessibility(`${character?.name_persian ?? ''}: ${res.data.reply}`)
       if (res.data.audio_url) playClip(res.data.audio_url)
-    } else if (res.error) {
-      // Daily cap (429) and friends come back as a character-voiced goodbye.
+    } else if (res.status === 429 && res.error) {
+      // The daily cap comes back as the character's own goodbye line
+      // (characters.ts), so it is the friend speaking.
       setMessages((m) => [...(m ?? []), { role: 'character', text: res.error! }])
       AccessibilityInfo.announceForAccessibility(res.error)
+    } else {
+      // Offline, a server error or a rejected message: the friend didn't say
+      // anything. A notice line (not a friend bubble — that used to make an
+      // error read like the friend's answer), and the text goes back into
+      // the box so the child can just tap send again.
+      const note = res.error ?? OFFLINE
+      setMessages((m) => [...(m ?? []), { role: 'notice', text: `${note} — پیامت نرسید.` }])
+      setText((cur) => cur || value)
+      AccessibilityInfo.announceForAccessibility(note)
     }
     setSending(false)
   }
@@ -245,6 +257,13 @@ export default function Talk() {
           // where the answer will land.
           ListFooterComponent={sending ? <TypingRow character={character} ramp={ramp} /> : null}
           renderItem={({ item, index }) => {
+            if (item.role === 'notice') {
+              return (
+                <View style={styles.noticeRow} accessible accessibilityRole="alert" accessibilityLabel={item.text}>
+                  <Text style={styles.noticeText}>{item.text}</Text>
+                </View>
+              )
+            }
             const mine = item.role === 'child'
             // The friend's face closes each of their turns (the last of a
             // run of their messages); earlier bubbles in the run keep the
@@ -365,6 +384,9 @@ const EMPTY_ART = 120
 const MSG_DISC = 40
 
 const styles = StyleSheet.create({
+  // A send that failed: centred, quiet, clearly not a chat bubble.
+  noticeRow: { alignSelf: 'center', maxWidth: '86%', marginVertical: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: '#FEF3C7' },
+  noticeText: { fontFamily: fonts.medium, fontSize: textSize.caption, color: '#7C2D12', textAlign: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   // Layout on top of ScreenHeader's own row: the thread's divider below it.
   header: { paddingBottom: GAP, borderBottomWidth: 2, borderBottomColor: scenery.line },

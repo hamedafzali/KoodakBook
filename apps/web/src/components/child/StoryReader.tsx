@@ -8,7 +8,7 @@ import SceneBackdrop from './SceneBackdrop'
 import { ClayButton, softClayVars } from './clay'
 import { roomBand } from './kit'
 import { Icon } from '@/components/icons'
-import { mediaUrl } from '@/lib/media'
+import { mediaUrl, thumbUrl } from '@/lib/media'
 import { playTap } from '@/lib/sounds'
 import { speakOrPlay, speakPersian, stopSpeaking } from '@/lib/speech'
 
@@ -184,7 +184,7 @@ export default function StoryReader({ story, showBilingual, onBack, onPageChange
                 a story with no cover either falls back to the scene library. */}
             {mediaUrl(page.image_url) ? (
               <img
-                src={mediaUrl(page.image_url)!}
+                src={thumbUrl(page.image_url, 480)!}
                 alt={`صفحه ${page.page_number} از داستان ${story.title_persian}`}
                 className="rounded-lg shadow-lg w-full max-h-64 object-contain lg:w-1/2 lg:max-h-[64vh] lg:self-center"
               />

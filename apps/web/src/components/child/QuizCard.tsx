@@ -5,7 +5,7 @@ import type { Word, Letter } from '@koodakbook/shared'
 import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
 import Emoji from '@/components/shared/Emoji'
 import { ClayButton, answerVars, softClayVars, type Ramp } from '@/components/child/clay'
-import { mediaUrl } from '@/lib/media'
+import { thumbUrl } from '@/lib/media'
 import { playTap, playSuccess } from '@/lib/sounds'
 import { speakOrPlay } from '@/lib/speech'
 
@@ -46,7 +46,7 @@ function playErrorSound() {
 
 /** Visual for a word: real image if present, else mapped emoji, else null. */
 function wordVisual(word: Word): { type: 'img' | 'emoji'; value: string } | null {
-  const img = mediaUrl(word.image_url)
+  const img = thumbUrl(word.image_url, 80)
   if (img) return { type: 'img', value: img }
   const e = wordEmoji(word.english)
   if (e) return { type: 'emoji', value: e }

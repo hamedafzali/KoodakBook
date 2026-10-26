@@ -3,7 +3,7 @@ import { AccessibilityInfo, I18nManager, Pressable, StyleSheet, Text, View, type
 import { Image } from 'expo-image'
 import type { Letter, Word } from '@koodakbook/shared'
 import { toPersianDigits, wordEmoji } from '@koodakbook/shared'
-import { mediaUrl } from '@/lib/media'
+import { thumbUrl } from '@/lib/media'
 import { playClip } from '@/lib/sound'
 import { ClayButton, ClaySurface, HostAvatar, ProgressTrack } from '@/components/Clay'
 import { Icon } from '@/components/Icon'
@@ -41,7 +41,7 @@ interface Props {
 }
 
 function wordVisual(word: Word): { type: 'img' | 'emoji'; value: string } | null {
-  const img = mediaUrl(word.image_url)
+  const img = thumbUrl(word.image_url, 80)
   if (img) return { type: 'img', value: img }
   const e = wordEmoji(word.english)
   if (e) return { type: 'emoji', value: e }
