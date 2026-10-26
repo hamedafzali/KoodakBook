@@ -85,6 +85,7 @@ ANCHORS = {
     'math':    ('#818CF8', '#EEF2FF'),   # indigo-400 / indigo-50
     'games':   ('#C084FC', '#FAF5FF'),   # purple-400 / purple-50
     'rewards': ('#FBBF24', '#FFFBEB'),   # amber-400  / amber-50
+    'videos':  ('#F87171', '#FEF2F2'),   # red-400    / red-50  — the familiar "play" red
 }
 
 print(f"{'ramp':9} {'deep':8} {'bright':8} {'soft':8} {'ink':8}  "

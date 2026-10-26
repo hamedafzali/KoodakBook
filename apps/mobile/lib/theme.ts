@@ -84,6 +84,7 @@ export const ramps = {
   math:    { deep: '#2337FA', bright: '#818CF8', soft: '#EEF2FF', ink: '#000D87' },
   games:   { deep: '#7600ED', bright: '#C084FC', soft: '#FAF5FF', ink: '#430087' },
   rewards: { deep: '#745300', bright: '#FBBF24', soft: '#FFFBEB', ink: '#654900' },
+  videos:  { deep: '#B50303', bright: '#F87171', soft: '#FEF2F2', ink: '#610000' },
 } as const
 
 // Ad-hoc clay tones (web's apps/web/src/components/child/clay.tsx TONES) for

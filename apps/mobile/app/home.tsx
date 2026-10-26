@@ -148,6 +148,7 @@ const TILES = [
   { key: 'phonics', emoji: '🎵', title: 'صداها', href: '/phonics' as const, ramp: ramps.phonics, character: undefined as string | undefined },
   { key: 'speak', emoji: '🎤', title: 'بگو ببینم!', href: '/speak' as const, ramp: ramps.speak, character: 'ava' as string | undefined },
   { key: 'write', emoji: '✍️', title: 'بنویس', href: '/write' as const, ramp: ramps.write, character: undefined as string | undefined },
+  { key: 'videos', emoji: '🎬', title: 'ویدیوها', href: '/videos' as const, ramp: ramps.videos, character: undefined as string | undefined },
 ] as const
 
 // Learning-path identity per lesson type (ramp, host, emoji) comes from
@@ -877,6 +878,7 @@ export default function Home() {
                   title={tile.title}
                   sub={tile.key === 'review' && reviewCount > 0
                     ? `${toPersianDigits(reviewCount)} کلمه منتظرند`
+                    : tile.key === 'videos' ? 'ترانه و تماشا'
                     : tile.character ? `${HOST_NAME[tile.character]} راهنماته` : undefined}
                   ramp={tile.ramp}
                   character={tile.character}

@@ -38,7 +38,7 @@ export function lessonRoomStyle(type: string): RoomStyle {
  * phonics/write have no host on web either (emoji in the disc).
  */
 export type ModuleKey =
-  | 'lessons' | 'letters' | 'phonics' | 'stories' | 'review' | 'speak' | 'write' | 'math' | 'games' | 'rewards'
+  | 'lessons' | 'letters' | 'phonics' | 'stories' | 'review' | 'speak' | 'write' | 'math' | 'games' | 'rewards' | 'videos'
 
 export const MODULE_ROOM_STYLE: Record<ModuleKey, RoomStyle & { icon: IconName }> = {
   lessons: { ramp: ramps.lessons, character: 'roozi', emoji: '📚', icon: 'learn' },
@@ -51,4 +51,5 @@ export const MODULE_ROOM_STYLE: Record<ModuleKey, RoomStyle & { icon: IconName }
   math: { ramp: ramps.math, character: 'khersi', emoji: '🔢', icon: 'plus' },
   games: { ramp: ramps.games, character: 'tondpa', emoji: '🃏', icon: 'gamepad' },
   rewards: { ramp: ramps.rewards, character: 'simorgh', emoji: '🏆', icon: 'trophy' },
+  videos: { ramp: ramps.videos, emoji: '🎬', icon: 'play' },
 }

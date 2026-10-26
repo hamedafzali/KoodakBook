@@ -6,6 +6,7 @@ import {
   Home, ShieldCheck, CreditCard, Folder, ScrollText, Pencil, Type, FlaskConical,
   Smile, Inbox, LogOut, Plus, ChevronLeft, BarChart3,
   Download, Upload, Activity, Server, Bell, Rocket, TrendingUp, TrendingDown, ExternalLink,
+  Clapperboard, ArrowUp, ArrowDown,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -94,6 +95,9 @@ export const ICON = {
   server: Server,
   bell: Bell,
   rocket: Rocket,
+  video: Clapperboard,
+  moveUp: ArrowUp,
+  moveDown: ArrowDown,
   up: TrendingUp,
   down: TrendingDown,
   external: ExternalLink,

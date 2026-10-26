@@ -29,9 +29,9 @@ import CharacterAvatar from '@/components/child/CharacterAvatar'
  *  and regenerating — not hand-writing a stop. */
 export type Ramp =
   | 'brand' | 'lessons' | 'letters' | 'phonics' | 'stories'
-  | 'review' | 'speak' | 'write' | 'math' | 'games' | 'rewards'
+  | 'review' | 'speak' | 'write' | 'math' | 'games' | 'rewards' | 'videos'
 
-/** Feeds the `.clay` recipe its three colours. One recipe, eleven ramps.
+/** Feeds the `.clay` recipe its three colours. One recipe, twelve ramps.
  *  `ink` is the dark label colour that sits on `bright` — DESIGN_CHARTER.md:
  *  dark ink on the joyful fill, never white. */
 export function clayVars(ramp: Ramp): CSSProperties {

@@ -7,7 +7,7 @@ import {
   Settings, LogOut, User, Baby, Heart, Eye, Trash2, ArrowRight, ArrowLeft,
   Compass, Brain, Globe, Ban, BarChart3, UsersRound, Package, ShieldCheck,
   Gift, Smartphone, Rocket, CalendarDays, Clock, Sun, Moon, Sprout,
-  TrendingUp, Handshake, Download, Timer, FileText, Image as ImageIcon,
+  TrendingUp, Handshake, Download, Timer, FileText, Image as ImageIcon, Clapperboard,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -47,6 +47,7 @@ export const ICON = {
   math: Hash,
   games: Gamepad2,
   rewards: Trophy,
+  videos: Clapperboard,
 
   // navigation & chrome
   home: Home,

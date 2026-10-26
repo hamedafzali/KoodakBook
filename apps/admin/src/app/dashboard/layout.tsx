@@ -26,6 +26,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
   { title: 'محتوا', items: [
     { href: '/dashboard/lessons', label: 'درس‌ها', icon: 'folder', perm: 'content.read' },
     { href: '/dashboard/stories', label: 'داستان‌ها', icon: 'book', perm: 'content.read' },
+    { href: '/dashboard/videos', label: 'ویدیوها', icon: 'video', perm: 'content.read' },
     { href: '/dashboard/words', label: 'کلمات', icon: 'pencil', perm: 'content.read' },
     { href: '/dashboard/word-images', label: 'تصویر کلمات', icon: 'image', perm: 'content.read' },
     { href: '/dashboard/story-covers', label: 'تصویر جلد داستان‌ها', icon: 'image', perm: 'content.read' },
